@@ -1,0 +1,6 @@
+Oxygen Weather scaffold
+
+Derived structurally from the project owner's private space_game Android scaffold.
+No game source, game assets, build caches, emulator tokens, or machine-local runtime files are included.
+
+The generated demo weather values are synthetic and are not live weather observations or forecasts.

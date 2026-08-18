@@ -1,0 +1,22 @@
+# Provider Contract Template
+
+- **Provider:**
+- **Purpose:**
+- **Coverage:**
+- **Base endpoint:**
+- **Authentication:**
+- **Required headers:**
+- **Request/rate limits:**
+- **Caching rules:**
+- **Fields used:**
+- **Time format:**
+- **Unit format:**
+- **Weather-code mapping:**
+- **Error responses:**
+- **Attribution:**
+- **License:**
+- **Privacy implications:**
+- **Failover behavior:**
+- **Fixture/sample response location:**
+- **Official documentation:**
+- **Last terms review date:**

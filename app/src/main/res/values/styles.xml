@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.Oxygen" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#70D7E8</item>
+        <item name="android:navigationBarColor">#07151D</item>
+        <item name="android:statusBarColor">#07151D</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
