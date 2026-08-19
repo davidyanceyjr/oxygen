@@ -1,66 +1,50 @@
 # Active Cycle
 
 Status: committed
-Cycle ID: 2026-08-19-open-meteo-repository-path
-Mode: feature
-Goal: Return provider-neutral forecast data for an explicit selected `WeatherLocation` through the production repository path without using sample weather or exposing Open-Meteo implementation details.
-Roadmap slice: Slice 5: Explicit-Location Open-Meteo Repository Path from `.codex/plans/mvp-roadmap.md`.
+Cycle ID: 2026-08-19-open-meteo-geocoding-contract
+Mode: documentation-only
+Goal: Specify the MVP geocoding provider contract before adding geocoding code, while preserving provider replaceability and avoiding public Nominatim as the only production autocomplete backend.
+Roadmap slice: Slice 6: Geocoding Provider Contract from `.codex/plans/mvp-roadmap.md`.
 Branch or work context: local `oxygen` Android scaffold.
 Specification anchors:
 - `docs/OXYGEN_FULL_SPECIFICATION.md`
-- `docs/data-sources/OPEN_METEO_FORECAST.md`
 - `docs/data-sources/PROVIDER_TEMPLATE.md`
+- `.codex/plans/mvp-roadmap.md`
 Acceptance criteria:
-- The repository accepts an explicit caller-provided `WeatherLocation` and uses that location's latitude, longitude, and IANA timezone to build the Open-Meteo forecast request.
-- The repository composes the production Open-Meteo client, parser, and mapper to return provider-neutral `WeatherBundle` data on success.
-- The repository exposes loading, success, and domain-level error results suitable for later Home UI state.
-- No hidden default location, device-location fallback, or permission-dependent path is introduced.
-- `SampleWeather.bundle`, Open-Meteo DTOs, and Open-Meteo-specific client errors do not cross the production repository/UI boundary.
-- Open-Meteo attribution/provenance remains present in returned domain data.
-Acceptance boundary: `:core` contains the explicit-location Open-Meteo-backed repository production path and focused repository-boundary tests. A caller can exercise the repository with a concrete `WeatherLocation` and observe loading, success, or domain-level error results. This slice does not wire the repository into Compose/Home, remove the scaffold sample screen from app startup, add persistence/cache, add geocoding, add live provider fallback, or implement manual location UI.
+- The provider contract completes every field in `docs/data-sources/PROVIDER_TEMPLATE.md`, including endpoint, authentication, required headers, request/rate limits, caching rules, fields used, time/unit format, error responses, attribution, license, privacy implications, failover behavior, fixture locations, official documentation, and last terms review date.
+- Provider fields support place search, coordinates, timezone, country, administrative area, and optional elevation.
+- Provider identifiers are not user-facing `LocationId` values.
+- The contract avoids making a public OSM Nominatim server the only production autocomplete backend.
+Acceptance boundary: `docs/data-sources/OPEN_METEO_GEOCODING.md` exists as a provider contract for the initial MVP geocoding provider. This documentation-only slice does not add geocoding production code, fixtures, parser/mapper code, repository behavior, UI search, saved locations, provider activation, or release/user-facing data-source disclosure.
 In scope:
-- A domain-level repository result/state model that can represent loading, success with `WeatherBundle`, and forecast errors without exposing provider-specific DTOs or errors.
-- An Open-Meteo forecast provider or repository implementation that converts an explicit `WeatherLocation` into `OpenMeteoForecastRequest`.
-- Error translation from `OpenMeteoForecastClientError` into provider-neutral repository/domain errors such as offline/network unavailable, rate limited, provider unavailable, invalid response, and unexpected provider failure.
-- A small injectable clock/fetched-time seam where needed so repository tests can assert deterministic provenance and bundle metadata.
-- Focused tests for explicit coordinate/timezone propagation, success mapping through the production Open-Meteo parser/mapper path, loading-before-terminal result behavior, domain error translation, and absence of sample/provider-specific values at the repository boundary.
+- Review current official Open-Meteo geocoding documentation, Open-Meteo terms/privacy/license/pricing, GeoNames license/attribution material, and OSM public Nominatim policy constraints.
+- Document endpoint shape, authentication, rate limits, caching expectations, response fields, validation requirements, errors, attribution/license, privacy implications, and future fixture locations.
+- State that provider IDs are provider metadata only and Oxygen owns stable local `LocationId` values.
+- State that public OSM Nominatim must not be the only production autocomplete backend.
 Out of scope:
-- Compose/Home UI state wiring, app startup changes, first-run/manual location entry, geocoding/search, saved locations, Room/DataStore cache, stale data handling, retry/backoff policy, WorkManager, MET Norway fallback, alerts, unit preference presentation, live internet verification, emulator/manual verification, and data-source UI activation.
-Focused test command:
-- `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Repository*'`
+- Kotlin geocoding models, DTOs, parser/mapper, client, repository, UI state, Compose search, first-run location flow, persistence/cache implementation, live API calls, emulator/manual verification, provider activation, and root privacy/data-source release documents.
+Focused review command or procedure:
+- Review `docs/data-sources/OPEN_METEO_GEOCODING.md` against `docs/data-sources/PROVIDER_TEMPLATE.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`, official Open-Meteo geocoding docs/terms/license/pricing, GeoNames attribution/license information, and OSM public Nominatim policy.
 Real-path command or procedure:
-- Exercise the production repository in focused unit tests with an explicit `WeatherLocation`, the production Open-Meteo client/parser/mapper path, and an injected test transport returning checked-in Open-Meteo fixture bodies or representative transport failures. No live provider or emulator exercise is expected for this repository-boundary slice.
+- Documentation-only slice; no production path exists or is exercised.
 Broad verification commands:
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-- `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
 - `git diff --check`
 Current gate: ready
 Current phase: committed
-Last result: Slice 5 implemented as an explicit-location Open-Meteo repository path in `:core`; focused repository tests and broad Android verification commands passed; committed and pushed as `604da39`.
+Last result: Slice 6 provider contract added in `docs/data-sources/OPEN_METEO_GEOCODING.md`; official provider/policy pages browsed, reviewed against the template/spec/roadmap, `git diff --check` passed, and the work was committed at current HEAD.
 Blocker: none
-Next phase: plan Slice 6
+Next phase: plan Slice 7
 
 ## Implementation Plan
 
-1. Confirm the existing `WeatherRepository`, `ForecastProvider`, domain models, Open-Meteo client, parser, mapper, and tests still match this plan before writing Slice 5 tests.
-2. Add focused repository tests first:
-   - repository emits or exposes loading before a terminal success/error result;
-   - explicit `WeatherLocation` latitude, longitude, and `zoneId.id` are passed into the Open-Meteo request;
-   - fixture-backed success flows through the production Open-Meteo client, parser, and mapper into a `WeatherBundle`;
-   - returned data keeps the caller's `WeatherLocation`, Open-Meteo provenance, canonical units, and deterministic fetched time;
-   - network/offline, rate limit, provider unavailable, invalid response, provider rejection, and unexpected HTTP failures translate to provider-neutral domain errors;
-   - repository-facing result types do not expose `OpenMeteoForecastResponse`, Open-Meteo DTOs, or `OpenMeteoForecastClientError`;
-   - no repository production path references `SampleWeather.bundle`.
-3. Implement the smallest provider-neutral repository result/error surface needed for later UI state while preserving existing package ownership in `:core`.
-4. Implement an Open-Meteo-backed repository or forecast provider composition under `:core` that reuses `OpenMeteoForecastClient` and `OpenMeteoForecastMapper`.
-5. Keep `:app` Home/sample behavior unchanged in this slice; sample weather remains scaffold-only until the later UI activation slice.
-6. Run the focused repository tests, then broad Android verification commands, review the diff for scope, and update phase evidence in this file.
+1. Confirm the current specification and roadmap still require a geocoding provider contract before code.
+2. Browse official/current provider sources for Open-Meteo geocoding, terms/privacy, license, pricing/rate limits, GeoNames attribution/license material, and OSM public Nominatim policy.
+3. Add `docs/data-sources/OPEN_METEO_GEOCODING.md` using every field from the provider template.
+4. Ensure the contract covers place search, coordinates, timezone, country, administrative area, optional elevation, provider-neutral `LocationId`, privacy, attribution, and replaceability.
+5. Run `git diff --check`, review the diff for scope, update phase evidence, and append cycle history when ready.
 
 ## Phase Results
 
-- planned: Selected Slice 5 from `.codex/plans/mvp-roadmap.md` after Slice 4 commit. Planned acceptance boundary is an explicit-location Open-Meteo-backed repository path returning provider-neutral loading, success, or error results without activating Home UI.
-- covered: Added focused `OpenMeteoWeatherRepositoryTest` coverage for loading-before-terminal result behavior, explicit latitude/longitude/timezone propagation, fixture-backed success through the production Open-Meteo client/parser/mapper path, deterministic fetched time/provenance, provider-neutral error translation, and repository result types outside the Open-Meteo package.
-- implemented: Added provider-neutral `ForecastError` and `WeatherRepositoryResult` in `:core`, changed `WeatherRepository.refresh` to return a loading/success/error `Sequence`, and added `OpenMeteoWeatherRepository` that maps an explicit `WeatherLocation` through `OpenMeteoForecastClient` plus `OpenMeteoForecastMapper`. `:app` Home/sample behavior was not wired or changed.
-- verified: Red baseline failed before production implementation because repository result/error types and `OpenMeteoWeatherRepository` were missing; after implementation, `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Repository*'` passed; `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed; `git diff --check` passed.
-- committed: `604da39` (`Add Open-Meteo repository path`) pushed to `origin/agent/open-meteo-client-transport`.
+- planned: Selected Slice 6 from `.codex/plans/mvp-roadmap.md` after Slice 5 was committed. Planned acceptance boundary is an Open-Meteo geocoding provider contract only, with no production geocoding code or UI activation.
+- verified: Added `docs/data-sources/OPEN_METEO_GEOCODING.md` with every provider-template field, covering place search fields, coordinates, timezone, country/admin data, optional elevation, provider-neutral local `LocationId`, attribution/license, privacy, fixture locations, official documentation, and Nominatim public-server autocomplete constraints. Official source HEAD checks for Open-Meteo geocoding docs, Open-Meteo terms, Open-Meteo license, GeoNames about/license summary, and OSM public Nominatim policy returned HTTP 200. `git diff --check` passed. Android build/test commands were not run because this documentation-only slice changed no production or test code.
+- committed: `current HEAD` (`Add Open-Meteo geocoding contract`) created locally.
