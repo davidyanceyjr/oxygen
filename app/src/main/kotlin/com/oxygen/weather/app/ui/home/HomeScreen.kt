@@ -137,14 +137,14 @@ private fun CurrentHero(current: CurrentConditions) {
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "${cToF(current.temperatureC)}°",
+                    text = current.temperatureC?.let { "${cToF(it)}°" } ?: "—",
                     fontSize = 72.sp,
                     fontWeight = FontWeight.Light,
                     lineHeight = 76.sp,
                 )
                 Text(conditionName(current.condition), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = "Feels like ${current.apparentTemperatureC?.let(::cToF) ?: cToF(current.temperatureC)}°",
+                    text = "Feels like ${current.apparentTemperatureC?.let { "${cToF(it)}°" } ?: "unavailable"}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                 )
@@ -170,9 +170,9 @@ private fun HourlyStrip(hourly: List<HourlyForecast>, zoneId: ZoneId) {
                             style = MaterialTheme.typography.labelMedium,
                         )
                         Spacer(Modifier.height(8.dp))
-                        Text("${cToF(hour.temperatureC)}°", style = MaterialTheme.typography.titleMedium)
+                        Text(hour.temperatureC?.let { "${cToF(it)}°" } ?: "—", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "${hour.precipitationProbabilityPercent ?: 0}%",
+                            hour.precipitationProbabilityPercent?.let { "$it%" } ?: "—",
                             color = LocalOxygenPalette.current.precipitation,
                             style = MaterialTheme.typography.labelMedium,
                         )
@@ -198,13 +198,13 @@ private fun DailyPanel(daily: List<DailyForecast>) {
                         modifier = Modifier.width(62.dp),
                     )
                     Text(
-                        text = "${day.precipitationProbabilityPercent ?: 0}%",
+                        text = day.precipitationProbabilityPercent?.let { "$it%" } ?: "—",
                         modifier = Modifier.width(48.dp),
                         color = LocalOxygenPalette.current.precipitation,
                     )
                     Text(conditionShort(day.condition), modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f))
-                    Text("${cToF(day.lowC)}°", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.62f))
-                    Text("  ${cToF(day.highC)}°", fontWeight = FontWeight.SemiBold)
+                    Text(day.lowC?.let { "${cToF(it)}°" } ?: "—", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.62f))
+                    Text(day.highC?.let { "  ${cToF(it)}°" } ?: "  —", fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -215,7 +215,7 @@ private fun DailyPanel(daily: List<DailyForecast>) {
 private fun MetricsGrid(current: CurrentConditions) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Metric("Wind", current.wind?.let { "SW ${msToMph(it.speedMetersPerSecond)} mph" } ?: "—", Modifier.weight(1f))
+            Metric("Wind", current.wind?.speedMetersPerSecond?.let { "SW ${msToMph(it)} mph" } ?: "—", Modifier.weight(1f))
             Metric("Humidity", current.humidityPercent?.let { "$it%" } ?: "—", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

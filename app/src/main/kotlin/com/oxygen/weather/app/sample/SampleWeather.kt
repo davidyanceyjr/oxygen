@@ -54,6 +54,7 @@ object SampleWeather {
                 temperatureC = 23.3 + listOf(0.0, 0.7, 1.4, 1.8, 1.2, 0.3, -0.6, -1.2)[index],
                 precipitationProbabilityPercent = listOf(5, 5, 10, 10, 20, 55, 70, 45)[index],
                 condition = if (index >= 5) WeatherCondition.RAIN_SHOWERS else WeatherCondition.PARTLY_CLOUDY,
+                provenance = source.copy(type = DataType.FORECAST),
             )
         },
         daily = List(7) { index ->
@@ -71,6 +72,7 @@ object SampleWeather {
                     WeatherCondition.RAIN_SHOWERS,
                     WeatherCondition.PARTLY_CLOUDY,
                 )[index],
+                provenance = source.copy(type = DataType.FORECAST),
             )
         },
         alerts = listOf(

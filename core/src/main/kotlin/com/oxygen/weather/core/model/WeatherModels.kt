@@ -57,14 +57,14 @@ enum class WeatherCondition {
 }
 
 data class Wind(
-    val speedMetersPerSecond: Double,
+    val speedMetersPerSecond: Double?,
     val gustMetersPerSecond: Double? = null,
     val directionDegrees: Double? = null,
 )
 
 data class CurrentConditions(
     val time: Instant,
-    val temperatureC: Double,
+    val temperatureC: Double?,
     val apparentTemperatureC: Double? = null,
     val dewPointC: Double? = null,
     val humidityPercent: Int? = null,
@@ -79,20 +79,22 @@ data class CurrentConditions(
 
 data class HourlyForecast(
     val time: Instant,
-    val temperatureC: Double,
+    val temperatureC: Double?,
     val precipitationProbabilityPercent: Int? = null,
     val precipitationMm: Double? = null,
     val condition: WeatherCondition,
+    val provenance: DataProvenance,
 )
 
 data class DailyForecast(
     val dateEpochDay: Long,
-    val highC: Double,
-    val lowC: Double,
+    val highC: Double?,
+    val lowC: Double?,
     val precipitationProbabilityPercent: Int? = null,
     val condition: WeatherCondition,
     val sunrise: Instant? = null,
     val sunset: Instant? = null,
+    val provenance: DataProvenance,
 )
 
 enum class AlertSeverity { EXTREME, SEVERE, MODERATE, MINOR, UNKNOWN }
