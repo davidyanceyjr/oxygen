@@ -1,71 +1,65 @@
 # Active Cycle
 
-Status: committed
-Cycle ID: 2026-08-19-open-meteo-client-transport
+Status: verified
+Cycle ID: 2026-08-19-open-meteo-repository-path
 Mode: feature
-Goal: Fetch Open-Meteo forecast data through an isolated production client and classify transport/provider/parse failures without activating repository or UI success paths.
-Roadmap slice: Slice 4: Open-Meteo Client Transport and Error Classification from `.codex/plans/mvp-roadmap.md`.
+Goal: Return provider-neutral forecast data for an explicit selected `WeatherLocation` through the production repository path without using sample weather or exposing Open-Meteo implementation details.
+Roadmap slice: Slice 5: Explicit-Location Open-Meteo Repository Path from `.codex/plans/mvp-roadmap.md`.
 Branch or work context: local `oxygen` Android scaffold.
 Specification anchors:
 - `docs/OXYGEN_FULL_SPECIFICATION.md`
 - `docs/data-sources/OPEN_METEO_FORECAST.md`
 - `docs/data-sources/PROVIDER_TEMPLATE.md`
 Acceptance criteria:
-- Open-Meteo forecast base URL and query construction are isolated/configurable under `:core`; no provider URL or query literals are introduced in UI code.
-- The client requests only fields required by the first provider-backed Home path from the Open-Meteo provider contract.
-- Successful HTTP responses parse through the production `OpenMeteoForecastParser` and return `OpenMeteoForecastResponse`.
-- The client classifies network/offline failure, provider unavailable, HTTP/rate-limit where detectable, Open-Meteo provider error bodies, and invalid response bodies into typed client errors.
-- Provider DTOs and provider-specific client errors remain isolated from repository and UI consumers in this slice.
-Acceptance boundary: `:core` contains Open-Meteo-specific production client transport code, configurable request construction, a small injectable HTTP transport abstraction for tests, and focused client tests. The client returns parsed Open-Meteo DTOs or typed Open-Meteo client failures only; it does not map to `WeatherBundle`, implement `ForecastProvider`, wire `WeatherRepository`, cache data, or change Compose/Home behavior.
+- The repository accepts an explicit caller-provided `WeatherLocation` and uses that location's latitude, longitude, and IANA timezone to build the Open-Meteo forecast request.
+- The repository composes the production Open-Meteo client, parser, and mapper to return provider-neutral `WeatherBundle` data on success.
+- The repository exposes loading, success, and domain-level error results suitable for later Home UI state.
+- No hidden default location, device-location fallback, or permission-dependent path is introduced.
+- `SampleWeather.bundle`, Open-Meteo DTOs, and Open-Meteo-specific client errors do not cross the production repository/UI boundary.
+- Open-Meteo attribution/provenance remains present in returned domain data.
+Acceptance boundary: `:core` contains the explicit-location Open-Meteo-backed repository production path and focused repository-boundary tests. A caller can exercise the repository with a concrete `WeatherLocation` and observe loading, success, or domain-level error results. This slice does not wire the repository into Compose/Home, remove the scaffold sample screen from app startup, add persistence/cache, add geocoding, add live provider fallback, or implement manual location UI.
 In scope:
-- `OpenMeteoForecastRequest` or equivalent provider-specific request configuration using explicit latitude, longitude, and IANA timezone inputs.
-- Open-Meteo forecast URL/query construction for the contracted current, hourly, daily, time, unit, and forecast-window parameters.
-- Minimal production transport implementation suitable for Android/JVM, kept injectable so unit tests can exercise success and failure paths without live internet.
-- Typed Open-Meteo client failure model covering network/offline, provider unavailable/5xx, rate limit/429, provider bad request/error body, invalid response/parse failure, and unexpected HTTP failure where useful.
-- Focused tests that assert exact query parameters, successful response parsing through fixture JSON, and each required error classification.
+- A domain-level repository result/state model that can represent loading, success with `WeatherBundle`, and forecast errors without exposing provider-specific DTOs or errors.
+- An Open-Meteo forecast provider or repository implementation that converts an explicit `WeatherLocation` into `OpenMeteoForecastRequest`.
+- Error translation from `OpenMeteoForecastClientError` into provider-neutral repository/domain errors such as offline/network unavailable, rate limited, provider unavailable, invalid response, and unexpected provider failure.
+- A small injectable clock/fetched-time seam where needed so repository tests can assert deterministic provenance and bundle metadata.
+- Focused tests for explicit coordinate/timezone propagation, success mapping through the production Open-Meteo parser/mapper path, loading-before-terminal result behavior, domain error translation, and absence of sample/provider-specific values at the repository boundary.
 Out of scope:
-- Repository activation, `ForecastProvider` implementation, `WeatherRepository` results, Home UI state, Compose rendering of provider-backed success, sample weather removal, persistence/cache, retry policy, backoff, live internet verification, geocoding, alerts, unit preference presentation, and MET Norway fallback.
+- Compose/Home UI state wiring, app startup changes, first-run/manual location entry, geocoding/search, saved locations, Room/DataStore cache, stale data handling, retry/backoff policy, WorkManager, MET Norway fallback, alerts, unit preference presentation, live internet verification, emulator/manual verification, and data-source UI activation.
 Focused test command:
-- `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteo*Client*'`
+- `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Repository*'`
 Real-path command or procedure:
-- Run focused client tests with an injected test transport that returns checked-in Open-Meteo fixture bodies and throws representative I/O failures; no live provider or emulator exercise is expected for this isolated transport slice.
+- Exercise the production repository in focused unit tests with an explicit `WeatherLocation`, the production Open-Meteo client/parser/mapper path, and an injected test transport returning checked-in Open-Meteo fixture bodies or representative transport failures. No live provider or emulator exercise is expected for this repository-boundary slice.
 Broad verification commands:
 - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
 - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
 - `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
 - `git diff --check`
 Current gate: ready
-Current phase: committed
-Last result: Slice 4 implemented as an isolated Open-Meteo forecast client in `:core`; focused client tests and broad Android verification commands passed; committed locally as `current HEAD`.
+Current phase: ready
+Last result: Slice 5 implemented as an explicit-location Open-Meteo repository path in `:core`; focused repository tests and broad Android verification commands passed. Not committed.
 Blocker: none
-Next phase: red-or-baseline
+Next phase: commit
 
 ## Implementation Plan
 
-1. Discover existing Open-Meteo parser/mapper behavior, provider contract fields, and Gradle dependencies; confirm no nested `AGENTS.md` changes authority.
-2. Add focused client tests first:
-   - URL construction uses configurable base URL and explicit location/timezone.
-   - Current/hourly/daily field parameters exactly match the first Home-path contract.
-   - Canonical metric unit/time parameters and forecast window parameters are present.
-   - HTTP 200 fixture response is parsed through `OpenMeteoForecastParser`.
-   - I/O failure is classified as network/offline.
-   - HTTP 429 is classified as rate-limited.
-   - HTTP 5xx is classified as provider unavailable.
-   - HTTP 400 provider error JSON is classified as provider bad request/error body without leaking raw parser exceptions.
-   - Malformed or structurally invalid success bodies are classified as invalid response.
-3. Implement a provider-local client package in `core/src/main/kotlin/com/oxygen/weather/core/provider/openmeteo/`:
-   - request/configuration data type;
-   - URL/query builder;
-   - `OpenMeteoHttpTransport` abstraction and a small JVM/Android production implementation;
-   - `OpenMeteoForecastClient` that composes transport plus parser;
-   - sealed typed client result/error model.
-4. Keep all new provider-specific types under the Open-Meteo package and avoid changing `WeatherRepository`, `ForecastProvider`, app UI, or sample data.
-5. Run focused client tests, then broad Android verification commands, then review the diff for scope and update cycle evidence.
+1. Confirm the existing `WeatherRepository`, `ForecastProvider`, domain models, Open-Meteo client, parser, mapper, and tests still match this plan before writing Slice 5 tests.
+2. Add focused repository tests first:
+   - repository emits or exposes loading before a terminal success/error result;
+   - explicit `WeatherLocation` latitude, longitude, and `zoneId.id` are passed into the Open-Meteo request;
+   - fixture-backed success flows through the production Open-Meteo client, parser, and mapper into a `WeatherBundle`;
+   - returned data keeps the caller's `WeatherLocation`, Open-Meteo provenance, canonical units, and deterministic fetched time;
+   - network/offline, rate limit, provider unavailable, invalid response, provider rejection, and unexpected HTTP failures translate to provider-neutral domain errors;
+   - repository-facing result types do not expose `OpenMeteoForecastResponse`, Open-Meteo DTOs, or `OpenMeteoForecastClientError`;
+   - no repository production path references `SampleWeather.bundle`.
+3. Implement the smallest provider-neutral repository result/error surface needed for later UI state while preserving existing package ownership in `:core`.
+4. Implement an Open-Meteo-backed repository or forecast provider composition under `:core` that reuses `OpenMeteoForecastClient` and `OpenMeteoForecastMapper`.
+5. Keep `:app` Home/sample behavior unchanged in this slice; sample weather remains scaffold-only until the later UI activation slice.
+6. Run the focused repository tests, then broad Android verification commands, review the diff for scope, and update phase evidence in this file.
 
 ## Phase Results
 
-- planned: Selected Slice 4 from `.codex/plans/mvp-roadmap.md` after Slice 3 commit. Planned acceptance boundary is an isolated `:core` Open-Meteo client returning parsed DTOs or typed client failures only.
-- covered: Added focused `OpenMeteoForecastClientTest` coverage for configurable base URL/query construction, contracted current/hourly/daily field parameters, canonical unit/time/window parameters, fixture-backed HTTP 200 parsing through `OpenMeteoForecastParser`, I/O/network failure, HTTP 429 rate limit, HTTP 5xx provider unavailable, HTTP 400 provider error body, malformed success body, and unexpected HTTP status classification.
-- implemented: Added provider-local `OpenMeteoForecastRequest`, `OpenMeteoForecastClient`, typed client result/error model, injectable `OpenMeteoHttpTransport`, and `UrlConnectionOpenMeteoHttpTransport` under `core/src/main/kotlin/com/oxygen/weather/core/provider/openmeteo/`. No repository, `ForecastProvider`, UI, cache, or sample-weather activation path was changed.
-- verified: `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteo*Client*'` passed; `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed; `git diff --check` passed.
-- committed: `current HEAD` (`Add Open-Meteo client transport`).
+- planned: Selected Slice 5 from `.codex/plans/mvp-roadmap.md` after Slice 4 commit. Planned acceptance boundary is an explicit-location Open-Meteo-backed repository path returning provider-neutral loading, success, or error results without activating Home UI.
+- covered: Added focused `OpenMeteoWeatherRepositoryTest` coverage for loading-before-terminal result behavior, explicit latitude/longitude/timezone propagation, fixture-backed success through the production Open-Meteo client/parser/mapper path, deterministic fetched time/provenance, provider-neutral error translation, and repository result types outside the Open-Meteo package.
+- implemented: Added provider-neutral `ForecastError` and `WeatherRepositoryResult` in `:core`, changed `WeatherRepository.refresh` to return a loading/success/error `Sequence`, and added `OpenMeteoWeatherRepository` that maps an explicit `WeatherLocation` through `OpenMeteoForecastClient` plus `OpenMeteoForecastMapper`. `:app` Home/sample behavior was not wired or changed.
+- verified: Red baseline failed before production implementation because repository result/error types and `OpenMeteoWeatherRepository` were missing; after implementation, `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Repository*'` passed; `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed; `git diff --check` passed.

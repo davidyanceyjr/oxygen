@@ -31,6 +31,42 @@ interface RadarProvider {
     fun supports(location: GeoPoint): Boolean
 }
 
+sealed class ForecastError {
+    data object NetworkUnavailable : ForecastError()
+
+    data class RateLimited(
+        val providerId: String,
+    ) : ForecastError()
+
+    data class ProviderUnavailable(
+        val providerId: String,
+    ) : ForecastError()
+
+    data class InvalidResponse(
+        val providerId: String,
+    ) : ForecastError()
+
+    data class ProviderRejectedRequest(
+        val providerId: String,
+    ) : ForecastError()
+
+    data class UnexpectedProviderFailure(
+        val providerId: String,
+    ) : ForecastError()
+}
+
+sealed class WeatherRepositoryResult {
+    data object Loading : WeatherRepositoryResult()
+
+    data class Success(
+        val weather: WeatherBundle,
+    ) : WeatherRepositoryResult()
+
+    data class Failure(
+        val error: ForecastError,
+    ) : WeatherRepositoryResult()
+}
+
 interface WeatherRepository {
-    suspend fun refresh(location: WeatherLocation): WeatherBundle
+    fun refresh(location: WeatherLocation): Sequence<WeatherRepositoryResult>
 }
