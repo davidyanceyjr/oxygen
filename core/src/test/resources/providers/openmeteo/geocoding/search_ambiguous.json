@@ -1,0 +1,29 @@
+{
+  "results": [
+    {
+      "id": 5128581,
+      "name": "New York",
+      "latitude": 40.71427,
+      "longitude": -74.00597,
+      "country_code": "US",
+      "country": "United States",
+      "admin1": "New York",
+      "admin2": "New York County",
+      "timezone": "America/New_York",
+      "population": 8804190
+    },
+    {
+      "id": 5101760,
+      "name": "New York",
+      "latitude": 39.68591,
+      "longitude": -75.5327,
+      "country_code": "US",
+      "country": "United States",
+      "admin1": "New Jersey",
+      "admin2": "Essex County",
+      "timezone": "America/New_York",
+      "population": 20000
+    }
+  ],
+  "generationtime_ms": 0.74124336
+}

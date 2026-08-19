@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "id": 2,
+      "name": "Invalid Timezone",
+      "latitude": 41.85003,
+      "longitude": -87.65005,
+      "country_code": "US",
+      "country": "United States",
+      "timezone": "Mars/Base"
+    }
+  ],
+  "generationtime_ms": 0.1
+}

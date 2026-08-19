@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "id": 1,
+      "name": "Invalid Latitude",
+      "latitude": 95.0,
+      "longitude": -87.65005,
+      "country_code": "US",
+      "country": "United States",
+      "timezone": "America/Chicago"
+    }
+  ],
+  "generationtime_ms": 0.1
+}

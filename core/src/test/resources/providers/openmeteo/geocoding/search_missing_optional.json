@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "id": 1850147,
+      "name": "Tokyo",
+      "latitude": 35.6895,
+      "longitude": 139.69171,
+      "country_code": "JP",
+      "country": "Japan",
+      "timezone": "Asia/Tokyo"
+    }
+  ],
+  "generationtime_ms": 0.712
+}

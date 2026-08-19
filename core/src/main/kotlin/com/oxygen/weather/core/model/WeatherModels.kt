@@ -19,6 +19,28 @@ data class WeatherLocation(
     val zoneId: ZoneId,
 )
 
+data class GeocodingLocationCandidate(
+    val locationId: LocationId,
+    val displayName: String,
+    val point: GeoPoint,
+    val zoneId: ZoneId,
+    val country: String,
+    val countryCode: String,
+    val administrativeAreas: List<String> = emptyList(),
+    val elevationMeters: Double? = null,
+    val featureCode: String? = null,
+    val population: Int? = null,
+    val postcodes: List<String> = emptyList(),
+) {
+    val location: WeatherLocation = WeatherLocation(
+        id = locationId,
+        displayName = displayName,
+        point = point,
+        elevationMeters = elevationMeters,
+        zoneId = zoneId,
+    )
+}
+
 enum class DataType {
     OBSERVATION,
     MODEL_ESTIMATE,
