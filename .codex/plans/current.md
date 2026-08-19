@@ -1,6 +1,6 @@
 # Active Cycle
 
-Status: verified
+Status: committed
 Cycle ID: 2026-08-19-open-meteo-repository-path
 Mode: feature
 Goal: Return provider-neutral forecast data for an explicit selected `WeatherLocation` through the production repository path without using sample weather or exposing Open-Meteo implementation details.
@@ -36,10 +36,10 @@ Broad verification commands:
 - `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
 - `git diff --check`
 Current gate: ready
-Current phase: ready
-Last result: Slice 5 implemented as an explicit-location Open-Meteo repository path in `:core`; focused repository tests and broad Android verification commands passed. Not committed.
+Current phase: committed
+Last result: Slice 5 implemented as an explicit-location Open-Meteo repository path in `:core`; focused repository tests and broad Android verification commands passed; committed and pushed as `604da39`.
 Blocker: none
-Next phase: commit
+Next phase: plan Slice 6
 
 ## Implementation Plan
 
@@ -63,3 +63,4 @@ Next phase: commit
 - covered: Added focused `OpenMeteoWeatherRepositoryTest` coverage for loading-before-terminal result behavior, explicit latitude/longitude/timezone propagation, fixture-backed success through the production Open-Meteo client/parser/mapper path, deterministic fetched time/provenance, provider-neutral error translation, and repository result types outside the Open-Meteo package.
 - implemented: Added provider-neutral `ForecastError` and `WeatherRepositoryResult` in `:core`, changed `WeatherRepository.refresh` to return a loading/success/error `Sequence`, and added `OpenMeteoWeatherRepository` that maps an explicit `WeatherLocation` through `OpenMeteoForecastClient` plus `OpenMeteoForecastMapper`. `:app` Home/sample behavior was not wired or changed.
 - verified: Red baseline failed before production implementation because repository result/error types and `OpenMeteoWeatherRepository` were missing; after implementation, `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Repository*'` passed; `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed; `git diff --check` passed.
+- committed: `604da39` (`Add Open-Meteo repository path`) pushed to `origin/agent/open-meteo-client-transport`.
