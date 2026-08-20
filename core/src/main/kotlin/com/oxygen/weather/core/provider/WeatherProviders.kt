@@ -2,6 +2,7 @@ package com.oxygen.weather.core.provider
 
 import com.oxygen.weather.core.model.AirQuality
 import com.oxygen.weather.core.model.GeoPoint
+import com.oxygen.weather.core.model.GeocodingLocationCandidate
 import com.oxygen.weather.core.model.WeatherAlert
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherLocation
@@ -69,4 +70,51 @@ sealed class WeatherRepositoryResult {
 
 interface WeatherRepository {
     fun refresh(location: WeatherLocation): Sequence<WeatherRepositoryResult>
+}
+
+sealed class GeocodingError {
+    data object InvalidQuery : GeocodingError()
+    data object NetworkUnavailable : GeocodingError()
+
+    data class RateLimited(
+        val providerId: String,
+    ) : GeocodingError()
+
+    data class ProviderUnavailable(
+        val providerId: String,
+    ) : GeocodingError()
+
+    data class InvalidResponse(
+        val providerId: String,
+    ) : GeocodingError()
+
+    data class ProviderRejectedRequest(
+        val providerId: String,
+    ) : GeocodingError()
+
+    data class UnexpectedProviderFailure(
+        val providerId: String,
+    ) : GeocodingError()
+}
+
+sealed class GeocodingRepositoryResult {
+    data object Loading : GeocodingRepositoryResult()
+    data object Empty : GeocodingRepositoryResult()
+
+    data class Success(
+        val candidates: List<GeocodingLocationCandidate>,
+    ) : GeocodingRepositoryResult()
+
+    data class Failure(
+        val error: GeocodingError,
+    ) : GeocodingRepositoryResult()
+}
+
+interface GeocodingRepository {
+    fun search(
+        query: String,
+        count: Int = 10,
+        language: String? = null,
+        countryCode: String? = null,
+    ): Sequence<GeocodingRepositoryResult>
 }
