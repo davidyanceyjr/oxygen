@@ -10,5 +10,7 @@ local.properties
 .externalNativeBuild/
 .cxx/
 captures/
+.codex/test-artifacts/*
+!.codex/test-artifacts/README.md
 *.jks
 *.keystore

@@ -150,6 +150,16 @@ Use the repo-local environment wrapper for Android commands:
 git diff --check
 ```
 
+Save screenshots and test logs from verification under:
+
+```text
+.codex/test-artifacts/<cycle-id>/
+```
+
+Keep artifact payloads out of source control. Record the saved project-local
+paths in `.codex/plans/current.md` and `.codex/cycles/history.md` when they are
+used as evidence.
+
 For emulator/manual verification:
 
 ```bash

@@ -1,24 +1,54 @@
 package com.oxygen.weather.app
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.oxygen.weather.app.sample.SampleWeather
-import com.oxygen.weather.app.ui.home.HomeScreen
+import com.oxygen.weather.app.ui.firstrun.FirstRunLocationEntryScreen
 import com.oxygen.weather.app.ui.theme.OxygenTheme
 import com.oxygen.weather.app.ui.theme.OxygenThemeId
 
 @Composable
-fun OxygenApp() {
+fun OxygenApp(
+    stateHolder: OxygenAppStateHolder = remember { OxygenAppStateHolder() },
+    locationPermissionResult: LocationPermissionResult? = null,
+    onRequestLocationPermission: () -> Unit = {},
+) {
     var themeId by remember { mutableStateOf(OxygenThemeId.OXYGEN) }
+    var appState by remember(stateHolder) { mutableStateOf(stateHolder.presentationState) }
+
+    LaunchedEffect(locationPermissionResult) {
+        locationPermissionResult?.let {
+            stateHolder.onLocationPermissionResult(it)
+            appState = stateHolder.presentationState
+        }
+    }
 
     OxygenTheme(themeId = themeId) {
-        HomeScreen(
-            weather = SampleWeather.bundle,
-            selectedTheme = themeId,
-            onThemeSelected = { themeId = it },
-        )
+        when (val screen = appState.screen) {
+            is OxygenAppScreen.FirstRunLocationEntry -> FirstRunLocationEntryScreen(
+                state = screen,
+                onQueryChanged = {
+                    stateHolder.onManualLocationQueryChanged(it)
+                    appState = stateHolder.presentationState
+                },
+                onSearch = {
+                    stateHolder.onManualLocationSearchSubmitted()
+                    appState = stateHolder.presentationState
+                },
+                onUseMyLocation = {
+                    stateHolder.onUseMyLocation()
+                    stateHolder.consumeNextCommand()?.let { command ->
+                        when (command) {
+                            OxygenAppCommand.RequestLocationPermission -> onRequestLocationPermission()
+                        }
+                    }
+                    appState = stateHolder.presentationState
+                },
+            )
+            OxygenAppScreen.Home -> Unit
+        }
     }
 }
