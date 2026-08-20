@@ -1,5 +1,7 @@
 package com.oxygen.weather.app
 
+import android.os.Handler
+import android.os.Looper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,6 +20,13 @@ fun OxygenApp(
 ) {
     var themeId by remember { mutableStateOf(OxygenThemeId.OXYGEN) }
     var appState by remember(stateHolder) { mutableStateOf(stateHolder.presentationState) }
+    val mainHandler = remember { Handler(Looper.getMainLooper()) }
+
+    stateHolder.setOnStateChanged { state ->
+        mainHandler.post {
+            appState = state
+        }
+    }
 
     LaunchedEffect(locationPermissionResult) {
         locationPermissionResult?.let {
@@ -36,6 +45,14 @@ fun OxygenApp(
                 },
                 onSearch = {
                     stateHolder.onManualLocationSearchSubmitted()
+                    appState = stateHolder.presentationState
+                },
+                onRetry = {
+                    stateHolder.onManualLocationSearchRetry()
+                    appState = stateHolder.presentationState
+                },
+                onCandidateSelected = {
+                    stateHolder.onManualLocationCandidateSelected(it)
                     appState = stateHolder.presentationState
                 },
                 onUseMyLocation = {
