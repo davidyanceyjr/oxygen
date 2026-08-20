@@ -1,6 +1,6 @@
 # Active Cycle
 
-Status: verified
+Status: committed
 Cycle ID: 2026-08-19-open-meteo-geocoding-client-repository
 Mode: feature
 Goal: Search locations through an isolated Open-Meteo geocoding client and expose provider-neutral repository states for manual location search without leaking provider DTOs or provider IDs.
@@ -23,7 +23,7 @@ Acceptance criteria:
 - Repository success returns only provider-neutral `GeocodingLocationCandidate` values with embedded `WeatherLocation`; provider DTOs, provider IDs, and Open-Meteo-specific errors do not cross the repository boundary.
 Acceptance boundary: Slice 8 is complete when focused `:core` tests exercise the production Open-Meteo geocoding client and repository using fake HTTP transports and existing fixtures, proving query construction, success/empty/error states, deterministic ordering, and boundary isolation without live internet. This slice does not add Compose search UI, debounce/cancel behavior in Android state, first-run navigation, selected-location handoff, saved-location persistence, live provider calls, active Data Sources disclosure, or forecast loading from search results.
 Boundary decisions:
-- This active implementation slice is verified locally but not yet committed. `Status: verified`, `Current gate: ready`, and `Current phase: verified` mean Slice 8 is covered, implemented, and verified without live-provider or UI evidence.
+- This active implementation slice is committed locally. `Status: committed`, `Current gate: ready`, and `Current phase: committed` mean Slice 8 is covered, implemented, verified, and recorded in local version-control history without live-provider or UI evidence.
 - Add a new provider-neutral `GeocodingRepository` and geocoding search result/error types for this slice. The older scaffold `GeocodingProvider.search(query): List<WeatherLocation>` remains untouched and must not be used as Slice 8 evidence; replacing or adapting that scaffold interface is deferred until a later UI/state integration slice needs it.
 - The Open-Meteo geocoding repository exposes provider-neutral candidates, including embedded `WeatherLocation`; it does not expose provider DTOs, provider IDs, provider ranking internals, or Open-Meteo-specific client errors.
 - Fake HTTP transport is allowed only as a deterministic boundary for unit tests that exercise production client/parser/mapper/repository code. It is not live-provider verification and must not be reported as a live geocoding call.
@@ -45,10 +45,10 @@ Broad verification commands:
 - `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
 - `git diff --check`
 Current gate: ready
-Current phase: verified
+Current phase: committed
 Last result: Slice 8 Open-Meteo geocoding client and provider-neutral repository boundary are implemented in `:core`. Focused fake-transport tests and broad Android checks passed; no live provider call, UI, first-run flow, persistence, or active-provider disclosure was added.
 Blocker: none
-Next phase: commit or plan Slice 9
+Next phase: plan Slice 9
 
 ## Implementation Plan
 
@@ -67,3 +67,4 @@ Next phase: commit or plan Slice 9
 - covered: Added focused geocoding client and repository tests for configurable base URL/query construction, trimmed query, default/clamped count, optional filter omission/normalization/rejection, blank-query transport short circuit, parser-backed success and empty bodies, I/O network failure, 429, 5xx, provider error body, malformed success body, unexpected status, loading-before-terminal behavior, provider-neutral error translation, explicit empty state, deterministic provider order, and boundary isolation. Initial focused run failed at `:core:compileDebugUnitTestKotlin` because Slice 8 production types did not exist yet.
 - implemented: Added provider-neutral `GeocodingRepository`, `GeocodingRepositoryResult`, and `GeocodingError`; added `OpenMeteoGeocodingClient` with local request validation, configurable base URL, fakeable HTTP transport reuse, parser-backed HTTP classification, and no transport call for invalid local requests; added `OpenMeteoGeocodingRepository` mapping client success through `OpenMeteoGeocodingMapper` into provider-neutral candidates and translating Open-Meteo client/mapper failures to provider-neutral errors.
 - verified: `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Geocoding*Client*' --tests '*Geocoding*Repository*'` passed. `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed. `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` passed with `:app:testDebugUnitTest` `NO-SOURCE` and `:core:testDebugUnitTest` executed. `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed. `git diff --check` passed.
+- committed: `8748b03` (`Add Open-Meteo geocoding repository boundary`) created locally.
