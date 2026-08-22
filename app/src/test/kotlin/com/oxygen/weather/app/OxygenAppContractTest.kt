@@ -33,11 +33,14 @@ class OxygenAppContractTest {
             Path.of("src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt"),
             Path.of("src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt"),
             Path.of("src/main/kotlin/com/oxygen/weather/app/ui/firstrun/FirstRunLocationEntryScreen.kt"),
+            Path.of("src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt"),
         )
         val source = productionBoundaryFiles.joinToString("\n") { Files.readString(it) }
 
         assertFalse(source.contains("OpenMeteoGeocodingDto"))
         assertFalse(source.contains("OpenMeteoGeocodingResult"))
+        assertFalse(source.contains("OpenMeteoForecastResponse"))
+        assertFalse(source.contains("OpenMeteoForecastClientResult"))
         assertFalse(source.contains("providerId"))
     }
 }

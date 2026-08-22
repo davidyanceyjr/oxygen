@@ -9,6 +9,8 @@ import org.junit.Test
 import com.oxygen.weather.core.model.GeoPoint
 import com.oxygen.weather.core.model.GeocodingLocationCandidate
 import com.oxygen.weather.core.model.LocationId
+import com.oxygen.weather.core.provider.WeatherRepository
+import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import com.oxygen.weather.core.provider.GeocodingError
 import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
@@ -183,6 +185,8 @@ class FirstRunLocationStateHolderTest {
                 listOf(GeocodingRepositoryResult.Success(listOf(candidate))),
             ),
             searchExecutor = DirectExecutor,
+            weatherRepository = NeverCompletingWeatherRepository,
+            forecastExecutor = DirectExecutor,
         )
 
         stateHolder.onManualLocationQueryChanged("Springfield")
@@ -192,13 +196,14 @@ class FirstRunLocationStateHolderTest {
         stateHolder.onManualLocationCandidateSelected(result.id)
 
         val home = stateHolder.presentationState.screen as OxygenAppScreen.Home
+        val loading = home.forecast as HomeForecastPresentationState.Loading
         assertSame(result.location, stateHolder.presentationState.selectedLocation)
-        assertSame(result.location, home.loading.location)
-        assertEquals(candidate.location, home.loading.location)
-        assertEquals("Springfield", home.loading.title)
-        assertTrue(home.loading.subtitle.contains("39.7817, -89.6501"))
-        assertTrue(home.loading.subtitle.contains("America/Chicago"))
-        assertTrue(home.loading.statusText.contains("Springfield"))
+        assertSame(result.location, loading.location)
+        assertEquals(candidate.location, loading.location)
+        assertEquals("Springfield", loading.title)
+        assertTrue(loading.subtitle.contains("39.7817, -89.6501"))
+        assertTrue(loading.subtitle.contains("America/Chicago"))
+        assertTrue(loading.statusText.contains("Springfield"))
         assertTrue(stateHolder.presentationState.isShowingHome)
         assertNull(stateHolder.consumeNextCommand())
     }
@@ -220,6 +225,8 @@ class FirstRunLocationStateHolderTest {
         val stateHolder = OxygenAppStateHolder(
             geocodingRepository = repository,
             searchExecutor = executor,
+            weatherRepository = NeverCompletingWeatherRepository,
+            forecastExecutor = DirectExecutor,
         )
 
         try {
@@ -235,9 +242,10 @@ class FirstRunLocationStateHolderTest {
             assertTrue(executor.awaitTermination(2, TimeUnit.SECONDS))
 
             val home = stateHolder.presentationState.screen as OxygenAppScreen.Home
+            val loading = home.forecast as HomeForecastPresentationState.Loading
             assertSame(result.location, stateHolder.presentationState.selectedLocation)
-            assertSame(result.location, home.loading.location)
-            assertEquals("Madison", home.loading.title)
+            assertSame(result.location, loading.location)
+            assertEquals("Madison", loading.title)
             assertTrue(stateHolder.presentationState.isShowingHome)
         } finally {
             repository.finish()
@@ -294,6 +302,8 @@ class FirstRunLocationStateHolderTest {
                 listOf(GeocodingRepositoryResult.Success(listOf(candidate))),
             ),
             searchExecutor = DirectExecutor,
+            weatherRepository = NeverCompletingWeatherRepository,
+            forecastExecutor = DirectExecutor,
         )
 
         stateHolder.onManualLocationQueryChanged(longName)
@@ -302,7 +312,8 @@ class FirstRunLocationStateHolderTest {
             .searchState as ManualLocationSearchState.Results).candidates.single()
         stateHolder.onManualLocationCandidateSelected(result.id)
 
-        val loading = (stateHolder.presentationState.screen as OxygenAppScreen.Home).loading
+        val loading = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.Loading
         assertSame(result.location, loading.location)
         assertEquals(longName, loading.title)
         assertTrue(loading.statusText.contains(longName))
@@ -351,6 +362,11 @@ class FirstRunLocationStateHolderTest {
 
 private object DirectExecutor : Executor {
     override fun execute(command: Runnable) = command.run()
+}
+
+private object NeverCompletingWeatherRepository : WeatherRepository {
+    override fun refresh(location: com.oxygen.weather.core.model.WeatherLocation): Sequence<WeatherRepositoryResult> =
+        sequenceOf(WeatherRepositoryResult.Loading)
 }
 
 private class QueuedExecutor : Executor {

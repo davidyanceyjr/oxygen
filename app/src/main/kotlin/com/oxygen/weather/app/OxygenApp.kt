@@ -66,7 +66,13 @@ fun OxygenApp(
                     appState = stateHolder.presentationState
                 },
             )
-            is OxygenAppScreen.Home -> HomeLoadingScreen(state = screen.loading)
+            is OxygenAppScreen.Home -> HomeLoadingScreen(
+                state = screen.forecast,
+                onRetry = {
+                    stateHolder.onHomeForecastRetry()
+                    appState = stateHolder.presentationState
+                },
+            )
         }
     }
 }

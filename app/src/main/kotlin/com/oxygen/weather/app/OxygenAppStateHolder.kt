@@ -3,10 +3,14 @@ package com.oxygen.weather.app
 import com.oxygen.weather.core.model.GeocodingLocationCandidate
 import com.oxygen.weather.core.model.LocationId
 import com.oxygen.weather.core.model.WeatherLocation
+import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.GeocodingError
 import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
+import com.oxygen.weather.core.provider.WeatherRepository
+import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoGeocodingRepository
+import com.oxygen.weather.core.provider.openmeteo.OpenMeteoWeatherRepository
 import java.util.Locale
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -14,10 +18,15 @@ import java.util.concurrent.Executors
 class OxygenAppStateHolder(
     selectedLocation: WeatherLocation? = null,
     private val geocodingRepository: GeocodingRepository = OpenMeteoGeocodingRepository(),
+    private val weatherRepository: WeatherRepository = OpenMeteoWeatherRepository(),
     private val searchExecutor: Executor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "oxygen-geocoding-search").apply { isDaemon = true }
     },
+    private val forecastExecutor: Executor = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "oxygen-forecast-refresh").apply { isDaemon = true }
+    },
 ) {
+    @Volatile
     var presentationState: OxygenAppPresentationState = if (selectedLocation == null) {
         OxygenAppPresentationState(
             screen = OxygenAppScreen.FirstRunLocationEntry(),
@@ -26,7 +35,7 @@ class OxygenAppStateHolder(
     } else {
         OxygenAppPresentationState(
             screen = OxygenAppScreen.Home(
-                loading = HomeLoadingPresentationState.from(selectedLocation),
+                forecast = HomeForecastPresentationState.Loading.from(selectedLocation),
             ),
             selectedLocation = selectedLocation,
         )
@@ -35,6 +44,11 @@ class OxygenAppStateHolder(
 
     private var pendingCommand: OxygenAppCommand? = null
     private var onStateChanged: ((OxygenAppPresentationState) -> Unit)? = null
+    private var activeForecastRequestId = 0L
+
+    init {
+        selectedLocation?.let(::startHomeForecastLoad)
+    }
 
     fun setOnStateChanged(listener: (OxygenAppPresentationState) -> Unit) {
         onStateChanged = listener
@@ -65,13 +79,34 @@ class OxygenAppStateHolder(
         val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
         val results = firstRun.searchState as? ManualLocationSearchState.Results ?: return
         val selected = results.candidates.firstOrNull { it.id == candidateId } ?: return
+        startHomeForecastLoad(selected.location)
+    }
+
+    fun onHomeForecastRetry() {
+        val selectedLocation = presentationState.selectedLocation ?: return
+        startHomeForecastLoad(selectedLocation)
+    }
+
+    @Synchronized
+    private fun startHomeForecastLoad(location: WeatherLocation) {
+        val requestId = nextForecastRequestId()
         presentationState = OxygenAppPresentationState(
             screen = OxygenAppScreen.Home(
-                loading = HomeLoadingPresentationState.from(selected.location),
+                forecast = HomeForecastPresentationState.Loading.from(location),
             ),
-            selectedLocation = selected.location,
+            selectedLocation = location,
         )
         publishState()
+
+        forecastExecutor.execute {
+            weatherRepository.refresh(location).forEach { result ->
+                applyHomeForecastResult(
+                    requestId = requestId,
+                    location = location,
+                    result = result,
+                )
+            }
+        }
     }
 
     private fun startManualLocationSearch(submittedQuery: String) {
@@ -178,6 +213,39 @@ class OxygenAppStateHolder(
     private fun publishState() {
         onStateChanged?.invoke(presentationState)
     }
+
+    @Synchronized
+    private fun nextForecastRequestId(): Long {
+        activeForecastRequestId += 1
+        return activeForecastRequestId
+    }
+
+    @Synchronized
+    private fun applyHomeForecastResult(
+        requestId: Long,
+        location: WeatherLocation,
+        result: WeatherRepositoryResult,
+    ) {
+        if (requestId != activeForecastRequestId) return
+        if (presentationState.selectedLocation != location) return
+
+        val forecast = when (result) {
+            WeatherRepositoryResult.Loading -> HomeForecastPresentationState.Loading.from(location)
+            is WeatherRepositoryResult.Failure -> HomeForecastPresentationState.NoCacheError.from(
+                location = location,
+                message = result.error.toHomeForecastMessage(),
+            )
+            is WeatherRepositoryResult.Success -> HomeForecastPresentationState.ForecastReady.from(
+                location = location,
+            )
+        }
+
+        presentationState = OxygenAppPresentationState(
+            screen = OxygenAppScreen.Home(forecast = forecast),
+            selectedLocation = location,
+        )
+        publishState()
+    }
 }
 
 data class OxygenAppPresentationState(
@@ -188,25 +256,106 @@ data class OxygenAppPresentationState(
     val usesScaffoldWeather: Boolean = false
 }
 
-data class HomeLoadingPresentationState(
-    val location: WeatherLocation,
-    val title: String,
-    val subtitle: String,
-    val statusText: String,
-) {
-    companion object {
-        fun from(location: WeatherLocation): HomeLoadingPresentationState =
-            HomeLoadingPresentationState(
-                location = location,
-                title = location.displayName,
-                subtitle = listOf(
-                    "${location.point.latitude.formatCoordinate()}, ${location.point.longitude.formatCoordinate()}",
-                    location.zoneId.id,
-                ).joinToString(" | "),
-                statusText = "Preparing weather for ${location.displayName}",
-            )
+sealed interface HomeForecastPresentationState {
+    val location: WeatherLocation
+    val title: String
+    val subtitle: String
+    val forecastDisclosure: String
+    val forecastPrivacyNote: String
+
+    data class Loading(
+        override val location: WeatherLocation,
+        override val title: String,
+        override val subtitle: String,
+        val statusText: String,
+        override val forecastDisclosure: String = FORECAST_DISCLOSURE,
+        override val forecastPrivacyNote: String = FORECAST_PRIVACY_NOTE,
+    ) : HomeForecastPresentationState {
+        companion object {
+            fun from(location: WeatherLocation): Loading =
+                Loading(
+                    location = location,
+                    title = location.displayName,
+                    subtitle = location.forecastSubtitle(),
+                    statusText = "Loading weather for ${location.displayName}",
+                )
+        }
+    }
+
+    data class NoCacheError(
+        override val location: WeatherLocation,
+        override val title: String,
+        override val subtitle: String,
+        val message: HomeForecastMessage,
+        val retryLabel: String = "Retry",
+        val canRetry: Boolean = true,
+        override val forecastDisclosure: String = FORECAST_DISCLOSURE,
+        override val forecastPrivacyNote: String = FORECAST_PRIVACY_NOTE,
+    ) : HomeForecastPresentationState {
+        companion object {
+            fun from(
+                location: WeatherLocation,
+                message: HomeForecastMessage,
+            ): NoCacheError =
+                NoCacheError(
+                    location = location,
+                    title = location.displayName,
+                    subtitle = location.forecastSubtitle(),
+                    message = message,
+                )
+        }
+    }
+
+    data class ForecastReady(
+        override val location: WeatherLocation,
+        override val title: String,
+        override val subtitle: String,
+        val statusText: String,
+        override val forecastDisclosure: String = FORECAST_DISCLOSURE,
+        override val forecastPrivacyNote: String = FORECAST_PRIVACY_NOTE,
+    ) : HomeForecastPresentationState {
+        companion object {
+            fun from(location: WeatherLocation): ForecastReady =
+                ForecastReady(
+                    location = location,
+                    title = location.displayName,
+                    subtitle = location.forecastSubtitle(),
+                    statusText = "Forecast loaded for ${location.displayName}. Dashboard display is coming in a later slice.",
+                )
+        }
     }
 }
+
+enum class HomeForecastMessage(
+    val text: String,
+) {
+    NetworkUnavailable("Weather is offline or the network is unavailable. No cached forecast is available yet."),
+    RateLimited("Weather updates are temporarily rate-limited. Try again shortly."),
+    ProviderUnavailable("Weather updates are temporarily unavailable. Try again shortly."),
+    InvalidResponse("Weather data returned in a form Oxygen could not read. Try again later."),
+    RejectedRequest("Weather updates rejected that location request. Try again later."),
+    UnexpectedFailure("Weather update failed unexpectedly. Try again."),
+}
+
+private const val FORECAST_DISCLOSURE = "Weather data by Open-Meteo."
+private const val FORECAST_PRIVACY_NOTE =
+    "Forecast requests send this location's coordinates and timezone to Open-Meteo."
+
+private fun WeatherLocation.forecastSubtitle(): String =
+    listOf(
+        "${point.latitude.formatCoordinate()}, ${point.longitude.formatCoordinate()}",
+        zoneId.id,
+    ).joinToString(" | ")
+
+private fun ForecastError.toHomeForecastMessage(): HomeForecastMessage =
+    when (this) {
+        ForecastError.NetworkUnavailable -> HomeForecastMessage.NetworkUnavailable
+        is ForecastError.RateLimited -> HomeForecastMessage.RateLimited
+        is ForecastError.ProviderUnavailable -> HomeForecastMessage.ProviderUnavailable
+        is ForecastError.InvalidResponse -> HomeForecastMessage.InvalidResponse
+        is ForecastError.ProviderRejectedRequest -> HomeForecastMessage.RejectedRequest
+        is ForecastError.UnexpectedProviderFailure -> HomeForecastMessage.UnexpectedFailure
+    }
 
 sealed interface OxygenAppScreen {
     data class FirstRunLocationEntry(
@@ -224,7 +373,7 @@ sealed interface OxygenAppScreen {
     ) : OxygenAppScreen
 
     data class Home(
-        val loading: HomeLoadingPresentationState,
+        val forecast: HomeForecastPresentationState,
     ) : OxygenAppScreen
 }
 
