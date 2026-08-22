@@ -25,7 +25,9 @@ class OxygenAppStateHolder(
         )
     } else {
         OxygenAppPresentationState(
-            screen = OxygenAppScreen.Home,
+            screen = OxygenAppScreen.Home(
+                loading = HomeLoadingPresentationState.from(selectedLocation),
+            ),
             selectedLocation = selectedLocation,
         )
     }
@@ -63,10 +65,12 @@ class OxygenAppStateHolder(
         val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
         val results = firstRun.searchState as? ManualLocationSearchState.Results ?: return
         val selected = results.candidates.firstOrNull { it.id == candidateId } ?: return
-        updateFirstRunState {
-            it.copy(message = FirstRunLocationMessage.LocationSelectedForNextSlice)
-        }
-        presentationState = presentationState.copy(selectedLocation = selected.location)
+        presentationState = OxygenAppPresentationState(
+            screen = OxygenAppScreen.Home(
+                loading = HomeLoadingPresentationState.from(selected.location),
+            ),
+            selectedLocation = selected.location,
+        )
         publishState()
     }
 
@@ -101,6 +105,9 @@ class OxygenAppStateHolder(
         query: String,
         result: GeocodingRepositoryResult,
     ) {
+        val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
+        if (firstRun.submittedQuery != query) return
+
         updateFirstRunState {
             when (result) {
                 GeocodingRepositoryResult.Loading -> it.copy(
@@ -161,7 +168,7 @@ class OxygenAppStateHolder(
 
     private fun updateFirstRunState(update: (OxygenAppScreen.FirstRunLocationEntry) -> OxygenAppScreen.FirstRunLocationEntry) {
         val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry
-            ?: OxygenAppScreen.FirstRunLocationEntry()
+            ?: return
         presentationState = presentationState.copy(
             screen = update(firstRun),
         )
@@ -178,7 +185,27 @@ data class OxygenAppPresentationState(
     val selectedLocation: WeatherLocation?,
 ) {
     val isShowingHome: Boolean = screen is OxygenAppScreen.Home && selectedLocation != null
-    val usesSampleWeather: Boolean = false
+    val usesScaffoldWeather: Boolean = false
+}
+
+data class HomeLoadingPresentationState(
+    val location: WeatherLocation,
+    val title: String,
+    val subtitle: String,
+    val statusText: String,
+) {
+    companion object {
+        fun from(location: WeatherLocation): HomeLoadingPresentationState =
+            HomeLoadingPresentationState(
+                location = location,
+                title = location.displayName,
+                subtitle = listOf(
+                    "${location.point.latitude.formatCoordinate()}, ${location.point.longitude.formatCoordinate()}",
+                    location.zoneId.id,
+                ).joinToString(" | "),
+                statusText = "Preparing weather for ${location.displayName}",
+            )
+    }
 }
 
 sealed interface OxygenAppScreen {
@@ -196,7 +223,9 @@ sealed interface OxygenAppScreen {
         val geocodingPrivacyNote: String = "Your typed search is sent to Open-Meteo to find matching places.",
     ) : OxygenAppScreen
 
-    data object Home : OxygenAppScreen
+    data class Home(
+        val loading: HomeLoadingPresentationState,
+    ) : OxygenAppScreen
 }
 
 sealed interface ManualLocationSearchState {
@@ -245,7 +274,6 @@ enum class FirstRunLocationMessage(
     SearchUnexpectedFailure("Location search failed unexpectedly. Try again."),
     LocationPermissionOptional("Location permission is optional. You can search for a place instead."),
     LocationLookupNotConnected("Device location lookup is not connected yet in this slice."),
-    LocationSelectedForNextSlice("Location selected. Home handoff starts in the next slice."),
 }
 
 enum class LocationPermissionResult {

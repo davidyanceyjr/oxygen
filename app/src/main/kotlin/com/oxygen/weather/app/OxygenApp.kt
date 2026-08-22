@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.oxygen.weather.app.ui.firstrun.FirstRunLocationEntryScreen
+import com.oxygen.weather.app.ui.home.HomeLoadingScreen
 import com.oxygen.weather.app.ui.theme.OxygenTheme
 import com.oxygen.weather.app.ui.theme.OxygenThemeId
 
@@ -65,7 +66,7 @@ fun OxygenApp(
                     appState = stateHolder.presentationState
                 },
             )
-            OxygenAppScreen.Home -> Unit
+            is OxygenAppScreen.Home -> HomeLoadingScreen(state = screen.loading)
         }
     }
 }

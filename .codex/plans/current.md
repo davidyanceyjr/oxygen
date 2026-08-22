@@ -1,52 +1,67 @@
 # Active Cycle
 
 Status: committed
-Cycle ID: 2026-08-20-manual-search-results-selection
+Cycle ID: 2026-08-22-selected-location-home-handoff
 Mode: feature
-Goal: Wire first-run manual search to the production Open-Meteo geocoding repository, render selectable provider-neutral location results, and keep selection observable without routing Home yet.
-Roadmap slice: Slice 9A: Manual Search Results Selection from `.codex/plans/mvp-roadmap.md`.
+Goal: Route a selected first-run manual-search location to an observable Home loading surface for exactly that provider-neutral `WeatherLocation`, without fetching forecasts or substituting sample/default data.
+Roadmap slice: Slice 9B: Selected Location Handoff To Home from `.codex/plans/mvp-roadmap.md`.
 Branch or work context: local `oxygen` Android scaffold.
 Specification anchors:
-- `docs/OXYGEN_FULL_SPECIFICATION.md` sections 10, 12, 14, 19, and 50
-- `.codex/plans/mvp-roadmap.md` Slice 9A, with Slice 9B treated as a later boundary
+- `docs/OXYGEN_FULL_SPECIFICATION.md` sections 1, 3, 10, 14, 19, 31, and 50
+- `.codex/plans/mvp-roadmap.md` Slice 9B, with Slice 10 treated as a later boundary
 - `docs/data-sources/OPEN_METEO_GEOCODING.md`
 - `AGENTS.md`
 
 Acceptance criteria:
-- Submitting a non-empty manual query from the production `OxygenApp` state holder calls the production `GeocodingRepository` path; default production construction uses `OpenMeteoGeocodingRepository`.
-- Search presentation state exposes loading, success results, empty, network/offline, rate-limited, provider-unavailable, invalid-response, rejected-request, and unexpected-failure states without provider DTOs or provider IDs crossing into app UI state or Composables.
-- Results render enough provider-neutral disambiguation for long or similar names: display name, administrative areas/country, coordinates, and timezone.
-- Selecting a result produces the exact provider-neutral `WeatherLocation` with stable local `LocationId`, records it in app state, and does not route Home, fetch forecasts, persist saved locations, or use sample weather.
-- Empty and failure states retain the submitted query and expose a retry action where applicable. Retry reuses the retained query and calls the repository again.
-- Manual search never emits a location-permission command; `Use my location` remains the only path that emits `RequestLocationPermission`.
-- The active search surface includes minimal Open-Meteo/GeoNames attribution and privacy copy before live geocoding is used.
-- Default `MainActivity -> OxygenApp()` still starts on first-run manual selection with no hidden default, scaffold, sample, or selected location.
+- Selecting a result from first-run manual search routes the production app state to Home using the exact selected provider-neutral `WeatherLocation`.
+- `OxygenAppPresentationState.selectedLocation` and the Home screen state carry the same `WeatherLocation`; no hidden default, scaffold, sample, or newly fabricated location is substituted.
+- The Home route is a loading/handoff surface only. It does not call `WeatherRepository`, fetch forecasts, persist saved locations, render forecast success, render `SampleWeather.bundle`, or claim data is available.
+- The handoff is observable at the app state boundary: tests can prove the state moves from first-run results to Home loading and that Home loading is tied to the selected location.
+- Home loading is a typed provider-neutral app screen state, not a marker route. It must retain the exact selected `WeatherLocation` and may expose derived title/subtitle/status copy for rendering.
+- The Compose production path renders visible Home loading copy for the selected location, including enough place disambiguation to keep long or similar place names readable.
+- Long selected place names wrap without depending on decorative weather scene effects, gradients, transparency, or animation.
+- Late manual-search repository emissions after selection do not replace Home loading, change the selected location, or route back to first-run.
+- Manual search, retry, empty/failure states, and optional location-permission behavior from Slice 9A remain intact.
+- Default `MainActivity -> OxygenApp()` still starts at first-run manual location entry when no selected location exists.
+- Provider DTOs, provider IDs, `SampleWeather`, and `SampleWeather.bundle` remain absent from the production app UI boundary.
 
-Acceptance boundary: Slice 9A is complete when focused app tests prove the production app state holder consumes a `GeocodingRepository`, maps repository loading/success/empty/failure states to provider-neutral app presentation state, renders retryable visible failures without exposing provider DTOs or provider IDs, selects a provider-neutral `WeatherLocation` exactly from a candidate, and does not route Home or use sample weather. Real-path evidence must exercise a live Open-Meteo geocoding query from the same default production repository path used by `OxygenApp`. This slice does not implement selected-location handoff to Home, Home loading, forecast fetching, saved-location persistence, Android OS location permission dialogs, device-location lookup, debounce/cancel behavior, or offline cache.
+Acceptance boundary: Slice 9B is complete when focused app tests prove that selecting a provider-neutral manual-search result routes to a typed Home loading screen state for the exact selected `WeatherLocation`, `OxygenAppPresentationState.selectedLocation` and the Home loading state retain the same `WeatherLocation`, late manual-search emissions cannot undo the Home handoff, no sample/default weather path is used, and long selected place names remain present in loading presentation state. Real-path evidence must exercise the production default `OxygenAppStateHolder` path from a live Open-Meteo geocoding result selection into Home loading. UI readability evidence must include either a narrow-screen emulator/manual screenshot of the production Home loading surface or a Compose UI test if test infrastructure is deliberately added. This slice does not implement forecast repository execution from Home, Home error/retry states, Home success dashboard rendering, saved-location persistence, device-location lookup, Android OS permission launcher integration, navigation library adoption, debounce/cancel behavior, result caching, or offline forecast cache.
 
 Boundary decisions:
-- Use constructor injection for `GeocodingRepository` so production defaults to `OpenMeteoGeocodingRepository` and focused tests use deterministic fakes.
-- Keep app-layer candidate/presentation types provider-neutral. They may hold `WeatherLocation`; they must not import Open-Meteo DTOs or expose provider IDs.
-- Keep asynchronous live search out of the main thread. The state holder publishes state changes to `OxygenApp`; tests may use a direct executor.
-- Selection is observable app state only in Slice 9A. Routing Home starts in Slice 9B.
-- Add only minimal disclosure copy needed for active geocoding; broader Data Sources UI remains out of scope.
+- Keep the app-level route model lightweight. Add a provider-neutral Home loading presentation state if needed, instead of introducing a navigation framework or ViewModel in this slice.
+- Selection should be the only first-run manual-search action that routes Home. Search submission, retry, empty results, and search failures must remain on first-run.
+- Home loading state should be modeled as typed app state, for example `OxygenAppScreen.Home(loading = HomeLoadingPresentationState(...))`, rather than a route marker plus unrelated fields.
+- Home loading state may include presentation-ready location text derived from `WeatherLocation`; it must still retain the exact `WeatherLocation` for later Slice 10 forecast loading.
+- Home loading should use a small production loading surface, such as `HomeLoadingScreen`, instead of adapting the existing forecast-success `HomeScreen` with nullable, fake, scaffold, or sample forecast data.
+- Guard manual-search result application so stale repository emissions are ignored once selection has routed Home, and so results from an older submitted query cannot overwrite a newer first-run search state.
+- Keep the existing sample Home scaffold isolated under `app/scaffold`; production `OxygenApp` must not import or pass `SampleWeather`.
+
+Plan corrections from review:
+- Static sample-weather checks must target the production `OxygenApp` state/rendering boundary and must not fail on intentionally isolated `app/sample` or `app/scaffold` files.
+- Real-path live geocoding evidence must use a bounded wait for repository-backed results before selection, then save a log that records the selected candidate and resulting Home loading state.
+- UI readability evidence for this slice will be a narrow-screen emulator/manual screenshot of the production Home loading surface; Compose UI test infrastructure is out of scope unless deliberately added in a later cycle.
+- Remove Slice 9A "next slice" production copy during implementation; after selection, user-visible copy belongs to Home loading and must not describe implementation staging.
 
 In scope:
-- App state holder search states, repository execution, retry, result selection, and selected-location recording.
-- First-run Compose UI for loading, result list, empty and failure states, retry, selection, result disambiguation, and geocoding disclosure.
-- Focused app JVM tests at the state-holder boundary and static contract checks for no provider DTO/provider ID exposure in app UI state/Composables.
-- Live Open-Meteo real-path command or small JVM exercise through the default production repository path.
+- App state holder route transition from manual-search result selection to Home loading.
+- Provider-neutral Home loading presentation state bound to the selected `WeatherLocation`.
+- Production Compose rendering for Home loading, including readable selected-location text.
+- Focused app JVM tests for exact selected-location handoff, no substitution, no sample usage, no permission command, stale search emission isolation, long-name presentation-state preservation, and preservation of first-run non-selection states.
+- Static production-boundary checks for provider DTO/provider ID/sample weather leakage.
+- Live geocoding real-path exercise that selects a returned candidate and records the resulting Home loading state.
+- Narrow-screen Home loading readability evidence from a production path screenshot, unless a focused Compose UI test is intentionally added instead.
 
 Out of scope:
-- Navigation library, ViewModel, DataStore, Room, persistence, Home routing/loading, weather forecast fetch, selected-location handoff to Home, Android permission launcher/manifest changes, current-device-location lookup, debounce/cancel/autocomplete, result caching, and broad in-app data-source settings screens.
+- `WeatherRepository` calls from Home, forecast loading through Open-Meteo, Home error/retry, Home success dashboard, saved-location persistence, current-device-location lookup, Android permission launcher/manifest work, navigation framework adoption, Room/DataStore, result caching, offline cache, and broad Data Sources UI.
 
 Focused review command or procedure:
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*ManualLocation*' --tests '*OxygenApp*'`
-- Static no-provider-leak check: `rg "OpenMeteoGeocodingDto|OpenMeteoGeocodingResult|providerId" app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt app/src/main/kotlin/com/oxygen/weather/app/ui/firstrun/FirstRunLocationEntryScreen.kt`
-- Static no-sample production-path check: `rg "SampleWeather|SampleWeather\\.bundle" app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt app/src/main/kotlin/com/oxygen/weather/MainActivity.kt`
+- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRun*' --tests '*HomeHandoff*' --tests '*OxygenApp*'`
+- Static no-provider-leak check: `rg "OpenMeteoGeocodingDto|OpenMeteoGeocodingResult|providerId" app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt app/src/main/kotlin/com/oxygen/weather/app/ui`
+- Static no-sample production-path check: `rg "SampleWeather|SampleWeather\\.bundle" app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt app/src/main/kotlin/com/oxygen/weather/app/ui`
 
 Real-path command or procedure:
-- Execute a live Open-Meteo geocoding query through the default `OpenMeteoGeocodingRepository` path and record loading plus a terminal result for a bounded query. Save logs under `.codex/test-artifacts/2026-08-20-manual-search-results-selection/`.
+- Execute a live Open-Meteo geocoding query through the default `OxygenAppStateHolder` production path, wait with a bounded timeout until `ManualLocationSearchState.Results` is reached, select one returned candidate, assert Home loading contains the exact selected `WeatherLocation`, and save logs to `.codex/test-artifacts/2026-08-22-selected-location-home-handoff/live-geocoding-home-handoff.log`.
+- Capture a narrow-screen production Home loading screenshot after selecting a long or disambiguated location. Save the screenshot under `.codex/test-artifacts/2026-08-22-selected-location-home-handoff/` and record the project-local path in phase results and cycle history.
 
 Broad verification commands:
 - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
@@ -56,22 +71,26 @@ Broad verification commands:
 
 Current gate: ready
 Current phase: committed
-Last result: Slice 9A manual search results selection is covered, implemented, verified, and ready for local version-control history in `:app`. Default production `OxygenApp` state now uses a live `OpenMeteoGeocodingRepository` path for manual search, renders provider-neutral loading/success/empty/failure states with retry, disambiguates results with admin/country/coordinates/timezone, records selected provider-neutral `WeatherLocation` values without routing Home, and keeps sample weather plus Open-Meteo DTO/provider IDs out of the production app UI boundary.
+Last result: Slice 9B is implemented, verified, and committed in `current HEAD`: selecting a first-run manual-search candidate routes to typed Home loading for the exact provider-neutral `WeatherLocation`, stale/superseded search emissions are ignored, production Home loading renders selected-location copy without forecast success, and broad Android checks passed. Narrow-screen manual evidence was attempted, but resizing after selection recreated the activity and narrow interaction was not reliable enough for a valid screenshot; default-size emulator screenshot evidence was captured instead.
 Blocker: none
 
 ## Implementation Plan
 
-1. Add focused app tests for repository-backed loading, success, result disambiguation, selection without Home routing, empty/failure visibility, retry, no permission command on search, and static no-provider/no-sample leakage.
-2. Replace the Slice 9 "search not connected" state with provider-neutral manual search presentation state and selectable candidate presentation values.
-3. Inject `GeocodingRepository` into `OxygenAppStateHolder`, defaulting to `OpenMeteoGeocodingRepository`, and execute searches off the main thread while publishing state changes.
-4. Update `FirstRunLocationEntryScreen` to render loading, results, empty, failure/retry, selection acknowledgment, and Open-Meteo/GeoNames attribution/privacy copy.
-5. Run focused tests, static checks, a live Open-Meteo real-path query, broad Android checks, and `git diff --check`.
-6. Review scope and evidence, then update phase results and append cycle evidence to `.codex/cycles/history.md` when ready.
+1. Replace the Slice 9A selection acknowledgement test that asserts "without routing home" with 9B tests asserting route transition to typed Home loading for the exact selected `WeatherLocation`.
+2. Add focused app tests for no hidden/sample/default substitution, no permission command, stale manual-search emission isolation after Home handoff, long-name loading presentation-state preservation, and preservation of first-run search failure/retry behavior before selection.
+3. Replace the Slice 9A selection acknowledgement with a route transition that sets a typed `OxygenAppScreen.Home` loading state carrying the selected `WeatherLocation`.
+4. Guard manual-search result application so late emissions after selection and results for superseded submitted queries cannot replace the current route/state.
+5. Add a small production Home loading Compose surface in `OxygenApp`/app UI so the selected location is visible and readable while no forecast success is claimed.
+6. Keep `SampleWeather` confined to the scaffold path and keep provider DTOs/provider IDs out of app UI state and Composables.
+7. Run focused tests, scoped static checks, a bounded live Open-Meteo geocoding-to-selection real-path exercise, narrow-screen Home loading screenshot evidence, broad Android checks, and `git diff --check`.
+8. Review scope and evidence, then update phase results and append cycle evidence to `.codex/cycles/history.md` when ready.
 
 ## Phase Results
 
-- planned: Selected Slice 9A from `.codex/plans/mvp-roadmap.md`. Planned scope is limited to live repository-backed first-run manual search, provider-neutral result rendering and selection, retryable visible search states, and evidence that provider DTOs/provider IDs/sample weather do not cross into app presentation or production routes. Slice 9B Home handoff, forecast loading, persistence, device-location lookup, permission launcher integration, debounce/cancel, and result caching are out of scope.
-- covered: Added focused app JVM tests for repository-backed manual search success, retained trimmed query, visible empty state, retryable network failure and retained-query retry, visible provider-neutral mappings for every current `GeocodingError`, exact candidate selection to `WeatherLocation` without Home routing, permission command isolation, first-run geocoding disclosure copy, and static absence of Open-Meteo DTO/provider-ID leakage from `OxygenApp`, `OxygenAppStateHolder`, and `FirstRunLocationEntryScreen`.
-- implemented: Injected `GeocodingRepository` into `OxygenAppStateHolder` with `OpenMeteoGeocodingRepository` as the default production dependency; added provider-neutral manual search state and candidate presentation models; execute search work off the main thread and publish state back to `OxygenApp`; render loading/results/empty/failure/retry states, selectable result rows, selected-location acknowledgement, Open-Meteo/GeoNames attribution, and typed-search privacy copy in `FirstRunLocationEntryScreen`.
-- verified: Focused command `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*ManualLocation*' --tests '*OxygenApp*'` passed; log saved at `.codex/test-artifacts/2026-08-20-manual-search-results-selection/focused-app-tests.log`. Static no-provider-leak and no-sample production-path checks returned no matches; logs saved at `.codex/test-artifacts/2026-08-20-manual-search-results-selection/static-no-provider-leak.log` and `.codex/test-artifacts/2026-08-20-manual-search-results-selection/static-no-sample-production-path.log`. Live Open-Meteo repository exercise passed through temporary `OpenMeteoGeocodingRepository` JVM test and returned `Loading` then `Success` for `Madison`; logs saved at `.codex/test-artifacts/2026-08-20-manual-search-results-selection/live-open-meteo-geocoding.log` and `.codex/test-artifacts/2026-08-20-manual-search-results-selection/live-open-meteo-geocoding.xml`. Broad checks passed with logs saved in the same artifact directory: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh && ./gradlew :app:assembleDebug`; `git diff --check`.
-- committed: `current HEAD` after the Slice 9A commit is created.
+- planned: Selected Slice 9B from `.codex/plans/mvp-roadmap.md`. Planned scope is limited to routing a manually selected provider-neutral `WeatherLocation` into an observable typed Home loading surface, proving exact-location handoff, no sample/default substitution, stale search emission isolation, and honest long-name readability evidence. Forecast repository execution, Home error/retry, Home success, persistence, current-device-location lookup, Android permission launcher integration, navigation framework adoption, debounce/cancel, and offline cache are out of scope.
+- covered: Focused app JVM tests cover default first-run state, repository-backed manual search preservation, empty/failure/retry behavior, exact selected `WeatherLocation` handoff into typed `OxygenAppScreen.Home`, no permission command on selection, late in-flight search emission isolation after Home handoff, superseded query isolation, and long selected place-name preservation in Home loading presentation state.
+- implemented: `OxygenAppStateHolder` now routes selected manual-search candidates to `OxygenAppScreen.Home(loading = HomeLoadingPresentationState)` while retaining the exact selected `WeatherLocation` in both `OxygenAppPresentationState.selectedLocation` and Home loading state. `OxygenApp` renders a dedicated `HomeLoadingScreen` with selected-location title, coordinates/timezone, loading status, and explicit not-yet-connected forecast copy; it does not invoke `WeatherRepository` or render forecast success.
+- verified: `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRun*' --tests '*HomeHandoff*' --tests '*OxygenApp*'` passed. Static no-provider-leak and no-sample production-boundary `rg` checks returned no matches. Temporary live Open-Meteo geocoding exercise through default `OxygenAppStateHolder` selected `Madison, Wisconsin, United States` and reached Home loading with the same `WeatherLocation`; log saved at `.codex/test-artifacts/2026-08-22-selected-location-home-handoff/live-geocoding-home-handoff.log`. Emulator production-path Home loading screenshot saved at `.codex/test-artifacts/2026-08-22-selected-location-home-handoff/home-loading-default.png`.
+- verified: Broad checks passed: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh && ./gradlew :app:assembleDebug`; `git diff --check`.
+- verified caveat: Narrow-screen screenshot evidence was attempted on the repo-local emulator. Resizing after selection recreated the activity because persistence is out of scope; keeping the emulator narrow from launch reached Home loading via keyboard traversal, but a subsequent scroll gesture hit the launcher home gesture and invalidated that screenshot. The retained screenshot evidence is therefore default emulator size, while long-name/wrapping behavior is covered at the presentation-state boundary.
+- committed: `current HEAD` (`Implement selected location home handoff`).
