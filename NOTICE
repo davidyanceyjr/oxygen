@@ -1,6 +1,11 @@
-Oxygen Weather scaffold
+Oxygen Weather
 
-Derived structurally from the project owner's private space_game Android scaffold.
-No game source, game assets, build caches, emulator tokens, or machine-local runtime files are included.
+Copyright 2026 Oxygen Weather contributors
+
+This product includes software developed for Oxygen Weather.
 
 The generated demo weather values are synthetic and are not live weather observations or forecasts.
+
+Oxygen source-code licensing is separate from weather-data licensing and
+attribution. Active and planned weather data sources are documented in
+DATA_SOURCES.md and under docs/data-sources/.
