@@ -1,9 +1,18 @@
 package com.oxygen.weather.app
 
 import com.oxygen.weather.core.model.GeoPoint
+import com.oxygen.weather.core.model.AlertSeverity
+import com.oxygen.weather.core.model.CurrentConditions
+import com.oxygen.weather.core.model.DailyForecast
+import com.oxygen.weather.core.model.DataProvenance
+import com.oxygen.weather.core.model.DataType
+import com.oxygen.weather.core.model.HourlyForecast
 import com.oxygen.weather.core.model.LocationId
+import com.oxygen.weather.core.model.WeatherAlert
 import com.oxygen.weather.core.model.WeatherBundle
+import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
+import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
@@ -69,7 +78,7 @@ class HomeForecastStateHolderTest {
     @Test
     fun `repository success becomes visible non-loading terminal home state`() {
         val location = weatherLocation("manual-chicago", "Chicago")
-        val bundle = weatherBundle(location)
+        val bundle = fullWeatherBundle(location)
         val stateHolder = OxygenAppStateHolder(
             selectedLocation = location,
             weatherRepository = RecordingWeatherRepository(
@@ -85,8 +94,115 @@ class HomeForecastStateHolderTest {
         val ready = home.forecast as HomeForecastPresentationState.ForecastReady
         assertSame(location, stateHolder.presentationState.selectedLocation)
         assertSame(location, ready.location)
-        assertTrue(ready.statusText.contains("Dashboard display is coming in a later slice"))
         assertTrue(ready.forecastPrivacyNote.contains("Open-Meteo"))
+        assertEquals("Chicago", ready.dashboard.locationName)
+        assertEquals("18 deg C", ready.dashboard.current?.temperature)
+        assertEquals("Rain showers", ready.dashboard.current?.condition)
+        assertEquals("Feels like 17 deg C", ready.dashboard.current?.apparentTemperature)
+        assertEquals("Updated 5:30 AM", ready.dashboard.current?.updatedTime)
+        assertEquals("Model estimate", ready.dashboard.current?.dataTypeLabel)
+        assertEquals("Up to 60% precipitation chance in the next 6 hours; 1.2 mm possible in the next 6 hours", ready.dashboard.precipitationSummary)
+        assertEquals("6 AM", ready.dashboard.hourly[0].time)
+        assertEquals("18 deg C", ready.dashboard.hourly[0].temperature)
+        assertEquals("60%", ready.dashboard.hourly[0].precipitationProbability)
+        assertEquals("Sat, Aug 22", ready.dashboard.daily[0].date)
+        assertEquals("Low 12 deg C", ready.dashboard.daily[0].low)
+        assertEquals("High 23 deg C", ready.dashboard.daily[0].high)
+        assertEquals("5:15 AM", ready.dashboard.daily[0].sunrise)
+        assertEquals("8:01 PM", ready.dashboard.daily[0].sunset)
+        assertEquals(HomeMetricPresentation("Wind", "14 km/h, gust 25 km/h, 225 deg"), ready.dashboard.metrics.single { it.label == "Wind" })
+        assertEquals(HomeMetricPresentation("Visibility", "9.5 km"), ready.dashboard.metrics.single { it.label == "Visibility" })
+        assertEquals("Open-Meteo", ready.dashboard.source.sourceName)
+        assertEquals("Model estimate", ready.dashboard.source.dataType)
+        assertEquals("Fetched Aug 22, 7:00 AM CDT", ready.dashboard.source.fetchedAt)
+        assertEquals("Issued Aug 22, 6:45 AM CDT", ready.dashboard.source.issuedAt)
+        assertEquals("CC BY 4.0", ready.dashboard.source.license)
+        assertEquals("Flood Watch", ready.dashboard.alerts.single().event)
+        assertFalse(ready.dashboard.visibleText().contains("internal-open-meteo-id"))
+        assertEquals(
+            listOf(
+                HomeSuccessSection.LocationHeader,
+                HomeSuccessSection.Alerts,
+                HomeSuccessSection.Current,
+                HomeSuccessSection.NearTermPrecipitation,
+                HomeSuccessSection.Hourly,
+                HomeSuccessSection.Daily,
+                HomeSuccessSection.Metrics,
+                HomeSuccessSection.Sun,
+                HomeSuccessSection.Source,
+                HomeSuccessSection.ProvenanceFooter,
+            ),
+            ready.dashboard.sectionOrder,
+        )
+    }
+
+    @Test
+    fun `success with no returned weather data shows unavailable state without fabricated dashboard values`() {
+        val location = weatherLocation("manual-empty", "Empty City")
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(
+                    WeatherRepositoryResult.Loading,
+                    WeatherRepositoryResult.Success(weatherBundle(location)),
+                ),
+            ),
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals("Provider returned no current, hourly, or daily weather data for this location.", ready.dashboard.returnedDataUnavailableText)
+        assertEquals(null, ready.dashboard.current)
+        assertEquals(emptyList<HomeHourlyPresentation>(), ready.dashboard.hourly)
+        assertEquals(emptyList<HomeDailyPresentation>(), ready.dashboard.daily)
+        assertEquals(emptyList<HomeMetricPresentation>(), ready.dashboard.metrics)
+        assertEquals("Source unavailable", ready.dashboard.source.sourceName)
+        assertEquals("Fetched Aug 22, 7:00 AM CDT", ready.dashboard.source.fetchedAt)
+        assertFalse(ready.dashboard.visibleText().contains("0 deg C"))
+        assertFalse(ready.dashboard.visibleText().contains("0%"))
+    }
+
+    @Test
+    fun `partial success omits unavailable optional sections and preserves selected timezone`() {
+        val location = weatherLocation(
+            id = "manual-tokyo",
+            name = "Tokyo",
+            zoneId = "Asia/Tokyo",
+        )
+        val bundle = WeatherBundle(
+            location = location,
+            current = null,
+            hourly = listOf(
+                HourlyForecast(
+                    time = Instant.parse("2026-08-22T15:00:00Z"),
+                    temperatureC = null,
+                    precipitationProbabilityPercent = null,
+                    precipitationMm = null,
+                    condition = WeatherCondition.UNKNOWN,
+                    provenance = forecastProvenance(),
+                ),
+            ),
+            daily = emptyList(),
+            fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(WeatherRepositoryResult.Success(bundle)),
+            ),
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals("Current conditions unavailable", ready.dashboard.currentUnavailableText)
+        assertEquals(null, ready.dashboard.precipitationSummary)
+        assertEquals("12 AM", ready.dashboard.hourly.single().time)
+        assertEquals("Unavailable", ready.dashboard.hourly.single().temperature)
+        assertEquals(null, ready.dashboard.hourly.single().precipitationProbability)
+        assertEquals(emptyList<HomeMetricPresentation>(), ready.dashboard.metrics)
+        assertEquals(null, ready.dashboard.sun)
     }
 
     @Test
@@ -307,12 +423,13 @@ private inline fun <reified T : HomeForecastPresentationState> awaitHomeState(
 private fun weatherLocation(
     id: String,
     name: String,
+    zoneId: String = "America/Chicago",
 ): WeatherLocation =
     WeatherLocation(
         id = LocationId(id),
         displayName = name,
         point = GeoPoint(43.0731, -89.4012),
-        zoneId = ZoneId.of("America/Chicago"),
+        zoneId = ZoneId.of(zoneId),
     )
 
 private fun weatherBundle(location: WeatherLocation): WeatherBundle =
@@ -320,3 +437,95 @@ private fun weatherBundle(location: WeatherLocation): WeatherBundle =
         location = location,
         fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
     )
+
+private fun fullWeatherBundle(location: WeatherLocation): WeatherBundle =
+    WeatherBundle(
+        location = location,
+        current = CurrentConditions(
+            time = Instant.parse("2026-08-22T10:30:00Z"),
+            temperatureC = 18.4,
+            apparentTemperatureC = 17.2,
+            dewPointC = 11.6,
+            humidityPercent = 72,
+            pressureHpa = 1012.4,
+            visibilityMeters = 9500.0,
+            cloudCoverPercent = 88,
+            wind = Wind(
+                speedMetersPerSecond = 4.0,
+                gustMetersPerSecond = 7.0,
+                directionDegrees = 225.0,
+            ),
+            precipitationMm = 0.4,
+            condition = WeatherCondition.RAIN_SHOWERS,
+            provenance = forecastProvenance(),
+        ),
+        hourly = listOf(
+            HourlyForecast(
+                time = Instant.parse("2026-08-22T11:00:00Z"),
+                temperatureC = 18.0,
+                precipitationProbabilityPercent = 60,
+                precipitationMm = 1.2,
+                condition = WeatherCondition.RAIN,
+                provenance = forecastProvenance(type = DataType.FORECAST),
+            ),
+            HourlyForecast(
+                time = Instant.parse("2026-08-22T12:00:00Z"),
+                temperatureC = 19.2,
+                precipitationProbabilityPercent = null,
+                precipitationMm = null,
+                condition = WeatherCondition.CLOUDY,
+                provenance = forecastProvenance(type = DataType.FORECAST),
+            ),
+        ),
+        daily = listOf(
+            DailyForecast(
+                dateEpochDay = java.time.LocalDate.parse("2026-08-22").toEpochDay(),
+                highC = 22.7,
+                lowC = 12.3,
+                precipitationProbabilityPercent = 40,
+                condition = WeatherCondition.RAIN_SHOWERS,
+                sunrise = Instant.parse("2026-08-22T10:15:00Z"),
+                sunset = Instant.parse("2026-08-23T01:01:00Z"),
+                provenance = forecastProvenance(type = DataType.FORECAST),
+            ),
+        ),
+        alerts = listOf(
+            WeatherAlert(
+                id = "alert-1",
+                event = "Flood Watch",
+                headline = "Flooding possible near rivers",
+                severity = AlertSeverity.MODERATE,
+                effective = Instant.parse("2026-08-22T12:00:00Z"),
+                expires = Instant.parse("2026-08-22T18:00:00Z"),
+                issuer = "Test Weather Office",
+                provenance = forecastProvenance(type = DataType.OFFICIAL_ALERT),
+            ),
+        ),
+        fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
+    )
+
+private fun forecastProvenance(type: DataType = DataType.MODEL_ESTIMATE): DataProvenance =
+    DataProvenance(
+        providerId = "internal-open-meteo-id",
+        sourceName = "Open-Meteo",
+        issuedAt = Instant.parse("2026-08-22T11:45:00Z"),
+        fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
+        type = type,
+        licenseId = "CC BY 4.0",
+    )
+
+private fun HomeSuccessPresentation.visibleText(): String =
+    buildString {
+        append(locationName).append('\n')
+        append(locationSubtitle).append('\n')
+        alerts.forEach { append(listOfNotNull(it.event, it.headline, it.severity, it.issuer, it.effective, it.expires).joinToString(" ")).append('\n') }
+        current?.let { append(listOf(it.temperature, it.condition, it.apparentTemperature, it.updatedTime, it.dataTypeLabel).joinToString(" ")).append('\n') }
+        append(currentUnavailableText.orEmpty()).append('\n')
+        append(precipitationSummary.orEmpty()).append('\n')
+        hourly.forEach { append(listOfNotNull(it.time, it.condition, it.temperature, it.precipitationProbability).joinToString(" ")).append('\n') }
+        daily.forEach { append(listOfNotNull(it.date, it.condition, it.precipitationProbability, it.high, it.low, it.sunrise, it.sunset).joinToString(" ")).append('\n') }
+        metrics.forEach { append("${it.label} ${it.value}\n") }
+        sun?.let { append("${it.sunrise} ${it.sunset}\n") }
+        append(listOfNotNull(source.sourceName, source.dataType, source.fetchedAt, source.issuedAt, source.license).joinToString(" "))
+        append(returnedDataUnavailableText.orEmpty())
+    }

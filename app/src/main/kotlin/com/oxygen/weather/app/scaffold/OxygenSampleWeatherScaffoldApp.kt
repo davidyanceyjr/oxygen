@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.sample.SampleWeather
 import com.oxygen.weather.app.ui.home.HomeScreen
 import com.oxygen.weather.app.ui.theme.OxygenTheme
@@ -16,7 +17,10 @@ fun OxygenSampleWeatherScaffoldApp() {
 
     OxygenTheme(themeId = themeId) {
         HomeScreen(
-            weather = SampleWeather.bundle,
+            state = HomeForecastPresentationState.ForecastReady.from(
+                location = SampleWeather.bundle.location,
+                weather = SampleWeather.bundle,
+            ),
             selectedTheme = themeId,
             onThemeSelected = { themeId = it },
         )

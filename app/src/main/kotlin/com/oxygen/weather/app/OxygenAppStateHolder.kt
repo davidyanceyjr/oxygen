@@ -237,6 +237,7 @@ class OxygenAppStateHolder(
             )
             is WeatherRepositoryResult.Success -> HomeForecastPresentationState.ForecastReady.from(
                 location = location,
+                weather = result.weather,
             )
         }
 
@@ -310,17 +311,20 @@ sealed interface HomeForecastPresentationState {
         override val location: WeatherLocation,
         override val title: String,
         override val subtitle: String,
-        val statusText: String,
+        val dashboard: HomeSuccessPresentation,
         override val forecastDisclosure: String = FORECAST_DISCLOSURE,
         override val forecastPrivacyNote: String = FORECAST_PRIVACY_NOTE,
     ) : HomeForecastPresentationState {
         companion object {
-            fun from(location: WeatherLocation): ForecastReady =
+            fun from(
+                location: WeatherLocation,
+                weather: com.oxygen.weather.core.model.WeatherBundle,
+            ): ForecastReady =
                 ForecastReady(
                     location = location,
                     title = location.displayName,
                     subtitle = location.forecastSubtitle(),
-                    statusText = "Forecast loaded for ${location.displayName}. Dashboard display is coming in a later slice.",
+                    dashboard = weather.toHomeSuccessPresentation(selectedLocation = location),
                 )
         }
     }
@@ -341,7 +345,7 @@ private const val FORECAST_DISCLOSURE = "Weather data by Open-Meteo."
 private const val FORECAST_PRIVACY_NOTE =
     "Forecast requests send this location's coordinates and timezone to Open-Meteo."
 
-private fun WeatherLocation.forecastSubtitle(): String =
+internal fun WeatherLocation.forecastSubtitle(): String =
     listOf(
         "${point.latitude.formatCoordinate()}, ${point.longitude.formatCoordinate()}",
         zoneId.id,
