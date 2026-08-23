@@ -1,121 +1,99 @@
 # Active Cycle
 
-Status: implemented
-Cycle ID: 2026-08-22-provider-backed-home-success-dashboard
-Mode: feature
-Goal: Render the Home success dashboard from the selected location's provider-neutral `WeatherBundle` returned by `WeatherRepository`, replacing the Slice 10 terminal placeholder with real current, hourly, daily, metric, sun/update/source, and provenance UI where data exists.
-Roadmap slice: Slice 11: Provider-Backed Home Success Dashboard from `.codex/plans/mvp-roadmap.md`.
+Status: verified
+Cycle ID: 2026-08-23-met-norway-provider-contract
+Mode: documentation-only
+Goal: Specify the MET Norway Locationforecast provider contract for Oxygen's MVP forecast fallback before any MET Norway DTO, client, mapper, repository, fallback, cache, UI, or disclosure-active behavior is implemented.
+Roadmap slice: Slice 12: MET Norway Provider Contract from `.codex/plans/mvp-roadmap.md`.
 Branch or work context: local `oxygen` Android scaffold.
 Specification anchors:
-- `docs/OXYGEN_FULL_SPECIFICATION.md` sections 1, 3, 6, 12, 17, 31, 39, 40, and 44
-- `.codex/plans/mvp-roadmap.md` Slice 11, with Slice 11A and later cache/fallback/units/accessibility gates treated as later boundaries
-- `docs/data-sources/OPEN_METEO_FORECAST.md`
+- `docs/OXYGEN_FULL_SPECIFICATION.md` sections 1, 4, 5, 6, 12, 16, 17, 39, 40, 44, 46, and 48
+- `.codex/plans/mvp-roadmap.md` Slice 12, plus fallback constraints in the Forecast Provider Scope and Release Gate
+- `docs/data-sources/PROVIDER_TEMPLATE.md`
+- `docs/data-sources/OPEN_METEO_FORECAST.md` failover boundary
 - `AGENTS.md`
 
 Pre-implementation authority gate:
-- Gate 3A is now recorded in `.codex/cycles/history.md` as a corrective documentation-only backfill. Slice 11 may start from this plan after confirming the Gate 3A commit is present in history.
+- Slice 11 provider-backed Home success is recorded in `.codex/cycles/history.md` as verified and user accepted, but not committed. Slice 12 may proceed because it is a documentation-only provider-contract slice and does not depend on uncommitted Slice 11 code changes.
+- README provider-status text is known stale: it still says no network weather provider has been wired, while `DATA_SOURCES.md` and cycle history record active Open-Meteo forecast/geocoding production paths. Do not use that stale README sentence to block Slice 12; resolve it in a separate corrective documentation slice or when the README is next deliberately touched.
+- Confirm no nested `AGENTS.md` changes the rules for `docs/data-sources/`.
+- Confirm MET Norway is still listed only as a specified roadmap fallback, not an active/current provider, in root disclosure documents before and after this slice.
 
 Acceptance criteria:
-- Manual selection still routes Home using the exact selected `WeatherLocation`; no hidden default, scaffold, or sample location is substituted.
-- Home has no default-location setting or app-selected default in Slice 11. The Home location is selected only by the user path or by an explicit test driver fixture.
-- `WeatherRepositoryResult.Success` maps the actual returned `WeatherBundle` into provider-neutral Home success presentation state. The success UI renders only values derived from that bundle and the selected location.
-- The Slice 10 terminal placeholder text is removed from the success path. Success must render a real dashboard, not a "coming later" message.
-- Success renders MVP Home sections in the specified order where data exists: location header, alert area when present, current-condition hero, near-term precipitation summary when supported by existing domain data, hourly forecast, daily forecast, condition metric grid, sun/update/source information, and provenance footer.
-- Alert rendering is in scope only for provider-neutral `WeatherAlert` values already present in the returned `WeatherBundle`. Air-quality rendering is out of scope for Slice 11; do not render an air-quality card, add air-quality provider shortcuts, or fabricate air-quality values from Open-Meteo forecast success.
-- Missing/null values are displayed as unavailable/unknown or the affected optional field is omitted. Nulls must never be coerced to `0`, empty strings, fake times, fake alerts, fake air quality, or sample values.
-- If `WeatherBundle.current` is null and hourly/daily lists are empty, success renders a provider-neutral returned-data-unavailable state, not an empty or fabricated dashboard. If no child object carries `DataProvenance`, render `WeatherBundle.fetchedAt`, `Source unavailable`, and omit license/source details that are not known.
-- Partial data is handled without fabrication: no hourly data omits the hourly section; no daily data omits daily and sun sections; no current data with hourly/daily data renders the available forecast sections plus an unavailable current state.
-- Current conditions from Open-Meteo remain visibly labeled as model estimates, not observations.
-- Time presentation uses the `WeatherLocation.zoneId`, not the device timezone.
-- Source/update/provenance UI uses `DataProvenance` and `WeatherBundle.fetchedAt`, including provider source name, data type, deterministic local fetched/updated timestamps, and license where available. Relative age text is out of scope unless a clock is injected and covered by focused tests.
-- Provider IDs may remain in core domain `DataProvenance` for traceability, but provider IDs, provider DTOs, provider client result types, provider error bodies, and provider implementation names must not become user-facing text or Compose inputs. UI receives provider-neutral labels derived from domain provenance such as source name, data type, fetched time, and license.
-- Forecast request disclosure from Slice 10 remains visible somewhere on the active provider-backed success surface until a fuller Data Sources surface is implemented.
-- Long selected place names, large font, narrow widths, and effects-disabled/decorative-scene-independent reading remain supported by stable layout dimensions and text wrapping.
-- Loading, no-cache error, retry, first-run manual search, permission-denied behavior, stale geocoding isolation, duplicate forecast-load prevention, obsolete forecast-emission isolation, and no-sample production-boundary checks from earlier slices remain intact.
-- Provider DTOs, Open-Meteo client result types, `SampleWeather`, and `SampleWeather.bundle` remain absent from Home presentation state and Composables. Provider construction may remain isolated at the composition/state-holder boundary as in Slice 10.
+- Create `docs/data-sources/MET_NORWAY_FORECAST.md` from `docs/data-sources/PROVIDER_TEMPLATE.md` with every template field completed.
+- The contract identifies MET Norway Locationforecast as the specified MVP forecast fallback, not an active fallback implementation.
+- The contract names the production endpoint, authentication model, required identifying `User-Agent` or header identity, request/rate-limit expectations, caching requirements, cache-header handling, attribution, license, privacy implications, official documentation, and last terms review date.
+- The contract defines Home-path fields needed for current, hourly, daily, metric, sun/update/source, provenance, and stale/cache UI needs.
+- The contract defines MET Norway time and unit semantics, including UTC/local timestamp handling and canonical Oxygen unit mapping.
+- The contract defines weather-symbol mapping obligations to Oxygen's provider-neutral `WeatherCondition` taxonomy, including unknown-symbol fallback.
+- The contract defines error and retry classifications needed by later client/repository work: network/offline, rate limited where detectable, provider unavailable, invalid response, unsupported or insufficient forecast data where applicable, and cache-not-modified behavior where applicable.
+- The contract defines fallback behavior without averaging, merging, smoothing, or mixing MET Norway values with Open-Meteo values. Provenance must identify whichever provider served displayed data.
+- MET Norway-specific product names, symbol codes, endpoint details, HTTP behavior, and provider error bodies remain contract/provider concerns; they must not be described as UI, Compose, Home state, saved-location, units, or cache-consumer inputs.
+- Root disclosure files may mention MET Norway only as a specified roadmap provider unless production fallback behavior has already been implemented and verified in a later slice.
+- The slice does not claim MET Norway can fetch, parse, map, cache, or serve production weather data.
 
-Acceptance boundary: Slice 11 is complete when focused app tests prove that a controlled `WeatherRepositoryResult.Success` for a selected provider-neutral location produces a Home success dashboard populated from the exact returned `WeatherBundle`, including current hero, hourly rows, daily rows, metric values, sun/update/source/provenance text, model-estimate labeling, null/unavailable handling, partial-empty handling, returned-data-unavailable handling, and location-timezone formatting, while preserving Slice 10 loading/error/retry behavior. Real-path evidence must exercise the default production path from live Open-Meteo geocoding result selection into a bounded Open-Meteo forecast success and save a log. Slice 11 is `verified` only when a production Home success screenshot is also saved, unless the plan is explicitly amended to name and accept a substitute evidence source. Slice 11 is not verified by retaining a bundle in state, reusing `SampleWeather`, rendering placeholder cards, running static checks alone, or asserting that Composables exist without checking visible state. Amendment: normal production Home screenshots plus deterministic state-holder/presentation assertions are accepted for Slice 11.
+Acceptance boundary: Slice 12 is complete when `docs/data-sources/MET_NORWAY_FORECAST.md` exists, completes the provider template, is reviewed against the Oxygen specification, roadmap fallback constraints, Open-Meteo failover boundary, and primary MET Norway documentation/terms/license/caching guidance, and records source-review evidence. Slice 12 is not verified by creating code stubs, adding dependencies, adding provider interfaces that do not fetch data, updating active-provider disclosures, or saying fallback exists.
 
 Boundary decisions:
-- Keep domain models in `:core` unchanged unless a missing field blocks rendering a required existing-provider value. If model changes are required, prove them with mapper/repository tests and keep provider-neutral names.
-- Reuse the existing `HomeScreen` visual direction only as a UI implementation starting point. Its production success path must receive presentation-ready state from `OxygenAppStateHolder`, not `SampleWeather.bundle`, and it must not keep the scaffold's source footer language.
-- Introduce and test a Home success presentation model before production Compose success rendering so formatting, null handling, time-zone conversion, source labels, section ordering, and privacy/provenance copy are testable outside Compose. Raw `WeatherBundle` may be read only by the mapper/state-holder boundary and must not be stored as Home success state or passed to Composables. Keep provider-specific DTO names and provider IDs out of the presentation model.
-- Keep US/custom unit settings out of scope. Until unit preferences exist, Slice 11 displays canonical metric units derived from domain models: degrees Celsius, millimeters, hectopascals, percent, meters or kilometers for visibility, and wind speed converted from meters per second only when the label names the displayed unit. Unit preferences and US/UK/custom conversion remain later slices.
-- Do not implement cache, stale-cache UI, explicit pull-to-refresh, saved locations, MET Norway fallback, alerts provider integration, air-quality provider integration, detail screens, Data Sources/About navigation, unit preference UI, or release-candidate claims in this cycle.
-- Alert sections render only if the returned `WeatherBundle` already contains provider-neutral alerts. Do not invent active alerts for Open-Meteo success. Air-quality sections are out of scope for Slice 11 even though `WeatherBundle` has an `airQuality` field.
-- UV is omitted in Slice 11 unless a provider-neutral domain field already exists by implementation time. Do not fabricate UV or add provider-specific UV shortcuts solely to fill the metric grid.
-- Near-term precipitation summary renders only when at least one near-term hourly item has precipitation probability or precipitation amount. It may summarize maximum known probability and/or total known amount over the selected near-term window. If all near-term precipitation inputs are null, omit the section.
-
-Minimum real dashboard for Slice 11:
-- Location header: selected `WeatherLocation.displayName`, coordinates/timezone only as secondary metadata where useful.
-- Current hero: current temperature, condition, apparent temperature when present, local updated time or age, and model-estimate label when current provenance type is `MODEL_ESTIMATE`.
-- Hourly forecast: first available Home-window hourly rows with local time, condition, temperature, and precipitation probability when present.
-- Daily forecast: available daily rows with local day/date, condition, precipitation probability when present, low/high, and sunrise/sunset where available.
-- Metric grid: only fields already present in `CurrentConditions`: feels-like, humidity, wind speed/gust/direction, pressure, visibility, dew point, cloud cover, and precipitation amount.
-- Sun card: sunrise and sunset from daily data when present.
-- Source/provenance footer: source name, data type, deterministic local fetched time, issued time when present, license when present, and forecast request disclosure.
+- This is documentation-only. Do not edit production Kotlin, tests, Gradle files, manifests, resources, screenshots, or app UI for this slice unless a higher-authority conflict makes the contract impossible without a documented correction.
+- Do not add MET Norway fixtures in this slice. Fixtures belong to Slice 13A.
+- Do not add MET Norway DTOs, parser code, mapper code, transport code, repository code, fallback-selection code, cache schema, Room/DataStore code, WorkManager code, or UI states.
+- Do not update `DATA_SOURCES.md` to list MET Norway as active/current. If touched at all, it may only preserve or clarify roadmap-only status.
+- If provider terms, attribution, caching, or required header guidance conflict with the roadmap or specification, stop and record the exact conflict before coding.
+- Use primary sources for provider facts. If a primary source is unavailable, record the exact unavailable source and avoid filling contract fields with guesses.
 
 In scope:
-- Map successful `WeatherBundle` data from `WeatherRepositoryResult.Success` into a provider-neutral, presentation-ready Home success model at the app state-holder/presentation boundary.
-- Replace the success placeholder in production Home routing with the provider-backed dashboard.
-- Presentation formatting for alert cards when real provider-neutral alerts exist, current temperature/apparent temperature/condition, hourly time/temperature/precipitation probability, daily day/condition/precipitation/high/low/sunrise/sunset, current metric grid, near-term precipitation when real inputs exist, update/source/provenance footer, returned-data-unavailable success, and unavailable/null values.
-- Ordered presentation sections for Home success, so focused tests can assert required MVP order and exact values without depending on brittle pixel positioning.
-- Focused app JVM tests for state-holder success mapping, presentation formatting, null preservation, timezone conversion, provenance/model-estimate labeling, no sample/default substitution, no provider leakage, and preservation of Slice 10 non-success behavior.
-- Compose-boundary assertions, deterministic state-holder/presentation assertions, or emulator screenshot evidence proving visible dashboard sections render provider-backed presentation state rather than scaffold/sample weather. Static checks are required guardrails but are not sufficient UI proof. For Slice 11, normal Home screenshots plus exact presentation tests are accepted.
-- Live production-path evidence using the default `OxygenAppStateHolder` path and Open-Meteo success for a manually selected geocoding result.
+- Review MET Norway official API documentation, Locationforecast documentation, terms of service, license/attribution guidance, caching guidance, required identification/User-Agent guidance, response examples/schema guidance, and weather-symbol documentation.
+- Review Oxygen authorities and existing Open-Meteo forecast contract to keep fallback semantics compatible without copying provider-specific Open-Meteo assumptions.
+- Add the MET Norway forecast provider contract under `docs/data-sources/`.
+- Record exact official source URLs and review date in the contract.
+- Run documentation-focused checks and record evidence under `.codex/test-artifacts/2026-08-23-met-norway-provider-contract/`. `source-checks.log` must record each reviewed official URL, HTTP result, provider page title or section, contract fields supported, review notes, and review date.
+- Update `.codex/cycles/history.md` only after the contract has passed review and checks.
 
 Out of scope:
-- Gate 3A implementation unless selected separately before this slice starts.
-- Slice 11A explicit refresh/pull-to-refresh behavior.
-- Cache schema, stale-cache display, offline retained forecasts, Room/DataStore, saved locations, default Home location settings, current-device-location lookup, Android OS permission launcher/manifest work, navigation framework adoption, MET Norway fallback, provider preference UI, units preferences, official alerts provider path, radar, air quality provider path, detail screens, widgets, notifications, full Data Sources/About surface, and release-candidate claims.
+- Any implementation or test that suggests MET Norway production fallback behavior exists.
+- Active provider disclosure changes, release-candidate claims, fallback selection, provider health/backoff, cache writes, stale-cache display, offline launch, saved locations, units, alerts, radar, air quality, maps, settings/about UI, or screenshots.
 
 Focused review command or procedure:
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*' --tests '*HomeSuccess*' --tests '*HomeHandoff*' --tests '*FirstRun*' --tests '*OxygenApp*'`
-- Add or update focused tests so they fail before implementation because Slice 10 success still renders only terminal placeholder text.
-- Presentation tests must assert metric units, no fabricated zeroes, near-term precipitation omission or summary from real inputs, returned-data-unavailable handling, alert rendering from a controlled provider-neutral `WeatherAlert`, and timezone formatting with a non-device timezone fixture.
-- Presentation tests must assert exact displayed values, not just section existence: current temperature/condition/apparent temperature/model-estimate label, hourly local times, daily local dates, metric labels/units, sun times, source/provenance fields, and unavailable/null labels or omissions.
-- Presentation/provider-leak tests must use a controlled provenance with a distinctive internal `providerId` and assert that provider ID does not appear in Home presentation text, Compose inputs, or visible UI assertions while source name, data type, fetched/issued time, and license remain visible where present.
-- UI evidence must include deterministic assertions or screenshots for visible current hero, hourly, daily, metrics, sun/source/provenance, unavailable/null handling, long-name/narrow-width handling, and effects-disabled semantics. Static source checks alone cannot verify Slice 11 UI. For this slice, exact state-holder/presentation assertions plus normal Home screenshots are accepted.
-- Static no-provider-leak check: `rg "OpenMeteo.*Dto|OpenMeteoForecastResponse|OpenMeteoGeocodingResponse|OpenMeteoForecastClientResult|OpenMeteoGeocodingClientResult" app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt app/src/main/kotlin/com/oxygen/weather/app/ui`
-- Static no-provider-id-ui check: `rg "providerId|open-meteo|OpenMeteo" app/src/main/kotlin/com/oxygen/weather/app/ui`
-- Static no-Open-Meteo-ui-import check: `rg "openmeteo|OpenMeteo" app/src/main/kotlin/com/oxygen/weather/app/ui`
-- Static no-sample production-path check: `rg "SampleWeather|SampleWeather\\.bundle" app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt app/src/main/kotlin/com/oxygen/weather/app/ui`
-- Static no-placeholder-success check: `rg "coming in a later slice|Dashboard display is coming|placeholder|TODO" app/src/main/kotlin/com/oxygen/weather/app app/src/test/kotlin/com/oxygen/weather/app`
+- Review `docs/data-sources/MET_NORWAY_FORECAST.md` against every field in `docs/data-sources/PROVIDER_TEMPLATE.md`.
+- Review the contract against `docs/OXYGEN_FULL_SPECIFICATION.md` sections 5, 6.2, 6.3, 12, 16, 17, 39, 40, 44, 46, and 48.
+- Review the contract against `.codex/plans/mvp-roadmap.md` Slice 12 and the roadmap Forecast Provider Scope.
+- Review `docs/data-sources/OPEN_METEO_FORECAST.md` to ensure the fallback boundary remains consistent and no averaging/merging is introduced.
+- Use primary-source HTTP checks for each official MET Norway source cited by the contract, saving the command output to `.codex/test-artifacts/2026-08-23-met-norway-provider-contract/source-checks.log`.
+- Static no-implementation check, including untracked files: `git status --short | rg -v '^( M|A |\\?\\?) (DATA_SOURCES.md|docs/data-sources/MET_NORWAY_FORECAST.md|\\.codex/plans/current.md|\\.codex/cycles/history.md|\\.codex/test-artifacts/2026-08-23-met-norway-provider-contract/)'`
+- Static no-active-provider-disclosure check: `rg -n "active.*MET Norway|MET Norway.*active|current.*MET Norway|MET Norway.*current" README.md DATA_SOURCES.md PRIVACY.md NOTICE THIRD_PARTY_LICENSES.md LICENSE`
+- Static roadmap-only disclosure check: `rg -n "MET Norway.*roadmap|MET Norway.*specified|specified roadmap.*MET Norway|MET Norway.*not active" README.md DATA_SOURCES.md PRIVACY.md`
 
 Real-path command or procedure:
-- Execute a live Open-Meteo geocoding query through the default `OxygenAppStateHolder` production path, wait with a bounded timeout until `ManualLocationSearchState.Results`, select one candidate, wait for terminal `ForecastReady`, and record the selected candidate, repository result sequence, rendered Home success presentation fields, provenance/source fields, null/unavailable fields, timezone used for hourly/daily/sun formatting, and final non-loading state to `.codex/test-artifacts/2026-08-22-provider-backed-home-success-dashboard/live-provider-backed-home-success.log`.
-- Install and launch the debug app on the repo-local emulator, perform the manual selection path while stable, and capture at least one production Home success screenshot. Save evidence under `.codex/test-artifacts/2026-08-22-provider-backed-home-success-dashboard/`.
+- None. This is a documentation-only provider-contract slice. Do not perform live weather fetches as proof of implementation. Primary-source reachability checks are review evidence, not product behavior.
 
 Broad verification commands:
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-- `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
 - `git diff --check`
+- Android build/test commands are not required for this documentation-only slice unless files outside documentation/planning/history are changed. If any production, test, Gradle, manifest, resource, or script file changes, run:
+  - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
+  - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
+  - `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
 
-Current gate: implemented
-Current phase: verification
-Last result: Slice 11 production success now maps `WeatherRepositoryResult.Success.weather` into provider-neutral Home dashboard presentation state and renders current, hourly, daily, metrics, sun/source/provenance, unavailable, and provider-disclosure UI from that projection. Focused app tests, static leakage checks, broad Android checks, a live default `OxygenAppStateHolder` geocoding-to-forecast exercise, and normal-font emulator Home screenshots were run and saved under `.codex/test-artifacts/2026-08-22-provider-backed-home-success-dashboard/`.
-Blocker: none for Slice 11 after evidence-boundary amendment.
+Current gate: verified
+Current phase: ready
+Last result: Created `docs/data-sources/MET_NORWAY_FORECAST.md` as a documentation-only provider contract, reviewed it against the provider template, Oxygen specification, roadmap fallback constraints, Open-Meteo failover boundary, and primary MET Norway sources. Source-review evidence is saved at `.codex/test-artifacts/2026-08-23-met-norway-provider-contract/source-checks.log`.
+Blocker: none.
 
 ## Implementation Plan
 
-1. Baseline current Slice 10 behavior with focused app tests and static checks, confirming success currently stops at the terminal placeholder.
-2. Add focused failing tests for Home success presentation state generated from a controlled provider-neutral `WeatherBundle`, including location identity, section ordering signals, alert rendering from real `WeatherAlert` values, minimum dashboard values, null/unavailable handling, returned-data-unavailable handling, metric units, near-term precipitation behavior, timezone formatting, model-estimate labeling, and provenance/source text.
-3. Add focused failing tests that prove success rendering does not import provider DTO/client-result types, does not expose provider IDs as UI text or Compose inputs, does not use `SampleWeather`, and does not preserve placeholder success copy.
-4. Add focused regression tests for loading/error/retry, duplicate-load prevention, obsolete emission isolation, first-run manual search, and selected-location handoff.
-5. Implement the minimal success presentation mapping in `OxygenAppStateHolder` or adjacent app-layer presentation code, converting the actual `WeatherBundle` into a provider-neutral formatted Home success projection and keeping the raw bundle out of Home success state and Composables.
-6. Implement production Compose success dashboard rendering from presentation state in MVP Home order, with stable dimensions, readable wrapping, no scaffold source footer copy, and no dependency on decorative scene effects.
-7. Run focused tests and static checks. Save logs under `.codex/test-artifacts/2026-08-22-provider-backed-home-success-dashboard/`.
-8. Run the live Open-Meteo geocoding-to-forecast success exercise and save the log. Capture emulator screenshots for normal Home success where feasible.
-9. Run broad Android checks and `git diff --check`.
-10. Review the diff for SLOP risks: no fake success, no sample data, no fabricated zeroes, no hidden defaults, no provider DTO leakage, no placeholder dashboard, no cache/fallback/units claims, no unverified release status. Update phase results and append cycle evidence to `.codex/cycles/history.md` only when ready.
+1. Gather MET Norway primary sources: API overview, Locationforecast endpoint docs, terms of service, license/attribution, required identifying headers/User-Agent, caching headers/guidance, response fields, and weather-symbol documentation.
+2. Create `.codex/test-artifacts/2026-08-23-met-norway-provider-contract/` and save source reachability/review notes there.
+3. Draft `docs/data-sources/MET_NORWAY_FORECAST.md` from `PROVIDER_TEMPLATE.md`, completing every field with cited, primary-source-backed facts or explicit unknown/unsupported notes where the provider docs do not specify a detail.
+4. Define the fallback contract boundary: Open-Meteo remains default, MET Norway is a future fallback, values are not averaged or merged, and provenance must identify the serving provider.
+5. Define mapping obligations only at the contract level: Locationforecast fields needed for Home, canonical units, timestamp handling, weather-symbol mapping, provenance, cache metadata, and null-preservation expectations.
+6. Run focused review/static checks and `git diff --check`; run Android broad checks only if non-documentation files changed.
+7. Review the diff for SLOP risks: no code stubs, no fake provider success, no active-fallback disclosure, no release claims, no unverified cache/fallback behavior, no provider-specific leakage into UI claims.
+8. Update phase results and append factual cycle evidence to `.codex/cycles/history.md` only after the documentation contract and checks are complete.
 
 ## Phase Results
 
-- planned: Selected Slice 11 from `.codex/plans/mvp-roadmap.md`. Planning identified Gate 3A as an unresolved authority gate that must be completed or explicitly amended before implementation begins. Review tightened the plan to resolve provider-provenance wording, define the minimum real dashboard from existing domain models, require real UI evidence, name temporary metric unit display, and block fake near-term precipitation, UV, empty dashboard, placeholder success, and static-check-only verification.
-- committed-gate: Gate 3A corrective documentation-only backfill added root `LICENSE`, refreshed root notice, third-party license, data-source, and privacy disclosures, and recorded active Open-Meteo forecast/geocoding provider disclosure separately from specified roadmap providers.
-- covered: Focused app tests in `HomeForecastStateHolderTest` now assert exact Slice 11 success presentation values from a controlled provider-neutral `WeatherBundle`: selected location identity, current hero, hourly/daily rows, alert rendering, metric units, sun times, source/provenance text, model-estimate label, provider-ID non-leakage, returned-data-unavailable state, null/no-fabrication behavior, optional-section omission, near-term precipitation, timezone formatting, and retained loading/error/retry behavior. Focused log: `.codex/test-artifacts/2026-08-22-provider-backed-home-success-dashboard/focused-app-tests.log`.
-- implemented: `OxygenAppStateHolder` maps success through `WeatherBundle.toHomeSuccessPresentation(selectedLocation)`; production Home success receives `HomeSuccessPresentation` rather than raw `WeatherBundle`; `HomeLoadingScreen` renders ordered dashboard sections from presentation state; the old success placeholder copy was removed; scaffold sample usage is isolated behind presentation mapping.
-- verified-partial: Static leakage checks returned no matches for provider DTO/client/result leakage, provider IDs in UI, Open-Meteo UI imports, sample weather in the production Home boundary, or placeholder success copy. Broad checks passed: `:app:compileDebugKotlin`, `:app:testDebugUnitTest :core:testDebugUnitTest`, `:app:assembleDebug`, and `git diff --check`; logs saved under `.codex/test-artifacts/2026-08-22-provider-backed-home-success-dashboard/`.
-- real-path: A temporary JVM harness exercised the default `OxygenAppStateHolder` path with live Open-Meteo geocoding, selected `Madison, Wisconsin, United States`, reached Home `ForecastReady`, and logged current/hourly/daily/metrics/sun/source/provenance fields to `.codex/test-artifacts/2026-08-22-provider-backed-home-success-dashboard/live-provider-backed-home-success.log`. The temporary harness was removed after the run.
-- ui-evidence: Emulator install/launch and ADB-driven manual search captured normal production Home success screenshots at `.codex/test-artifacts/2026-08-22-provider-backed-home-success-dashboard/home-success-dashboard.png`, `home-success-dashboard-lower.png`, and `home-success-dashboard-metrics-source.png`, showing selected location, current hero, model-estimate labeling, hourly, daily, metrics, sun/source/provenance, and forecast request disclosure.
+- planned: Selected Slice 12 from `.codex/plans/mvp-roadmap.md` after reviewing the specification, provider template, current cycle state, cycle history, build files, and roadmap. The plan is documentation-only.
+- unblocked: Slice 11 provider-backed Home success is recorded in cycle history as verified and user accepted, though not committed. README provider-status text is stale and must not be used as Slice 12 provider-status evidence.
+- source-reviewed: Primary-source HTTP checks for MET Weather API overview, Getting Started, Locationforecast docs, HOWTO, data model, Forecast JSON, OpenAPI schema, interface/errors, terms, FAQ, Locationforecast FAQ, license, MET privacy statement, and weathericons returned HTTP 200. Evidence saved at `.codex/test-artifacts/2026-08-23-met-norway-provider-contract/source-checks.log`.
+- contract-created: Added `docs/data-sources/MET_NORWAY_FORECAST.md` from the provider template with completed fields for endpoint, authentication, required User-Agent/header identity, request/rate expectations, caching, Home-path fields, UTC/unit semantics, symbol mapping obligations, errors/retry/cache-not-modified handling, attribution, license, privacy, fallback behavior, fixture location, official docs, and last terms review date.
+- boundary-reviewed: No Kotlin, Gradle, manifest, resource, fixture, active-provider disclosure, fallback-selection, cache schema, or UI files were changed for this documentation-only slice. `DATA_SOURCES.md` was narrowly clarified to keep MET Norway explicitly roadmap-only for the planned static disclosure check.

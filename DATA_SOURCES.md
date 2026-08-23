@@ -38,7 +38,7 @@ These providers are specified by the roadmap or product specification but are
 not active/current until their own contracts, production paths, and verification
 evidence are complete:
 
-- MET Norway — forecast fallback.
+- MET Norway — specified roadmap forecast fallback only.
 - NOAA/NWS — United States official alerts and later observations/radar.
 - Environment and Climate Change Canada — Canadian official alerts.
 - Open-Meteo/CAMS — air-quality path where appropriate.
