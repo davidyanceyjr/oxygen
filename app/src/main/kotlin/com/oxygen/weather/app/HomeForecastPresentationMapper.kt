@@ -154,9 +154,9 @@ data class HomeSourcePresentation(
 
 private fun CurrentConditions.toCurrentPresentation(zoneId: ZoneId): HomeCurrentPresentation =
     HomeCurrentPresentation(
-        temperature = temperatureC.formatCelsius(),
+        temperature = temperatureC.formatFahrenheit(),
         condition = condition.displayName(),
-        apparentTemperature = apparentTemperatureC?.let { "Feels like ${it.formatCelsius()}" } ?: "Feels like unavailable",
+        apparentTemperature = apparentTemperatureC?.let { "Feels like ${it.formatFahrenheit()}" } ?: "Feels like unavailable",
         updatedTime = "Updated ${time.formatLocalTime(zoneId)}",
         dataTypeLabel = provenance.type.displayLabel(),
     )
@@ -165,7 +165,7 @@ private fun HourlyForecast.toHourlyPresentation(zoneId: ZoneId): HomeHourlyPrese
     HomeHourlyPresentation(
         time = HOUR_FORMAT.format(time.atZone(zoneId)),
         condition = condition.displayName(),
-        temperature = temperatureC.formatCelsius(),
+        temperature = temperatureC.formatFahrenheit(),
         precipitationProbability = precipitationProbabilityPercent?.let { "$it%" },
     )
 
@@ -174,19 +174,19 @@ private fun DailyForecast.toDailyPresentation(zoneId: ZoneId): HomeDailyPresenta
         date = DAY_FORMAT.format(LocalDate.ofEpochDay(dateEpochDay)),
         condition = condition.displayName(),
         precipitationProbability = precipitationProbabilityPercent?.let { "$it%" },
-        high = highC?.let { "High ${it.formatCelsius()}" } ?: "High unavailable",
-        low = lowC?.let { "Low ${it.formatCelsius()}" } ?: "Low unavailable",
+        high = highC?.let { "High ${it.formatFahrenheit()}" } ?: "High unavailable",
+        low = lowC?.let { "Low ${it.formatFahrenheit()}" } ?: "Low unavailable",
         sunrise = sunrise?.formatLocalTime(zoneId),
         sunset = sunset?.formatLocalTime(zoneId),
     )
 
 private fun CurrentConditions.toMetricRows(): List<HomeMetricPresentation> = buildList {
-    add(HomeMetricPresentation("Feels like", apparentTemperatureC.formatCelsius()))
+    add(HomeMetricPresentation("Feels like", apparentTemperatureC.formatFahrenheit()))
     humidityPercent?.let { add(HomeMetricPresentation("Humidity", "$it%")) }
     wind?.toMetricText()?.let { add(HomeMetricPresentation("Wind", it)) }
     pressureHpa?.let { add(HomeMetricPresentation("Pressure", "${it.roundToInt()} hPa")) }
     visibilityMeters?.let { add(HomeMetricPresentation("Visibility", it.formatVisibility())) }
-    dewPointC?.let { add(HomeMetricPresentation("Dew point", it.formatCelsius())) }
+    dewPointC?.let { add(HomeMetricPresentation("Dew point", it.formatFahrenheit())) }
     cloudCoverPercent?.let { add(HomeMetricPresentation("Cloud cover", "$it%")) }
     precipitationMm?.let { add(HomeMetricPresentation("Precipitation", it.formatMillimeters())) }
 }
@@ -256,7 +256,7 @@ private fun Instant.formatLocalTime(zoneId: ZoneId): String = TIME_FORMAT.format
 
 private fun Instant.formatFetched(zoneId: ZoneId): String = FETCHED_FORMAT.format(atZone(zoneId))
 
-private fun Double?.formatCelsius(): String = this?.let { "${it.roundToInt()} deg C" } ?: UNAVAILABLE
+private fun Double?.formatFahrenheit(): String = this?.let { "${((it * 9.0 / 5.0) + 32.0).roundToInt()} deg F" } ?: UNAVAILABLE
 
 private fun Double.formatMillimeters(): String = String.format(Locale.US, "%.1f mm", this)
 
