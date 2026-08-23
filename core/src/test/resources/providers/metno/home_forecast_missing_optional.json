@@ -1,0 +1,49 @@
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-87.625, 41.875]
+  },
+  "properties": {
+    "meta": {
+      "updated_at": "2026-08-23T10:15:00Z",
+      "units": {
+        "air_temperature": "celsius",
+        "precipitation_amount": "mm"
+      }
+    },
+    "timeseries": [
+      {
+        "time": "2026-08-23T11:00:00Z",
+        "data": {
+          "instant": {
+            "details": {
+              "air_temperature": null,
+              "relative_humidity": null,
+              "wind_speed": null
+            }
+          },
+          "next_1_hours": {
+            "summary": {
+              "symbol_code": null
+            },
+            "details": {
+              "precipitation_amount": null,
+              "probability_of_precipitation": null
+            }
+          }
+        }
+      },
+      {
+        "time": "2026-08-23T12:00:00Z",
+        "data": {
+          "instant": {
+            "details": {
+              "air_temperature": 23.0
+            }
+          }
+        }
+      }
+    ]
+  }
+}

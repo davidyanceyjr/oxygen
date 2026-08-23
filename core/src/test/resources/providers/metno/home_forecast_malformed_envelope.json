@@ -1,0 +1,15 @@
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-87.625, 41.875]
+  },
+  "properties": {
+    "meta": {
+      "updated_at": "2026-08-23T10:15:00Z",
+      "units": {
+        "air_temperature": "celsius"
+      }
+    }
+  }
+}

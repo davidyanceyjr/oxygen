@@ -1,0 +1,32 @@
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-87.625, 41.875]
+  },
+  "properties": {
+    "meta": {
+      "updated_at": "2026-08-23T10:15:00Z",
+      "units": {
+        "air_temperature": "celsius"
+      }
+    },
+    "timeseries": [
+      {
+        "time": "2026-08-23T11:00:00Z",
+        "data": {
+          "instant": {
+            "details": {
+              "air_temperature": 22.4
+            }
+          },
+          "next_1_hours": {
+            "summary": {
+              "symbol_code": "lightssnowshowersandthunder_day"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

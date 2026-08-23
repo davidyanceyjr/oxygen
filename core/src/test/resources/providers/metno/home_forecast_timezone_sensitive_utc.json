@@ -1,0 +1,50 @@
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [139.6917, 35.6895, 40.0]
+  },
+  "properties": {
+    "meta": {
+      "updated_at": "2026-12-31T14:30:00Z",
+      "units": {
+        "air_temperature": "celsius",
+        "wind_speed": "m/s"
+      }
+    },
+    "timeseries": [
+      {
+        "time": "2026-12-31T14:00:00Z",
+        "data": {
+          "instant": {
+            "details": {
+              "air_temperature": 5.2,
+              "wind_speed": 2.1
+            }
+          },
+          "next_1_hours": {
+            "summary": {
+              "symbol_code": "fair_night"
+            }
+          }
+        }
+      },
+      {
+        "time": "2026-12-31T15:00:00Z",
+        "data": {
+          "instant": {
+            "details": {
+              "air_temperature": 4.9,
+              "wind_speed": 1.8
+            }
+          },
+          "next_1_hours": {
+            "summary": {
+              "symbol_code": "clearsky_night"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
