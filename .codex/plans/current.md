@@ -1,39 +1,45 @@
 # Active Cycle
 
-Status: verified
-Cycle ID: 2026-08-23-met-norway-fixtures-dto-parsing
+Status: planned
+Cycle ID: 2026-08-23-met-norway-symbol-domain-mapping
 Mode: feature
-Goal: Implement Slice 13A by parsing representative MET Norway Locationforecast compact fixtures into provider-specific DTOs without adding mapping, client transport, repository fallback, cache, or UI behavior.
-Roadmap slice: Slice 13A: MET Norway Fixtures and DTO Parsing from `.codex/plans/mvp-roadmap.md`.
+Goal: Implement Slice 13B by converting parsed MET Norway Locationforecast compact data into provider-neutral Oxygen weather domain models, with symbol mapping, timestamp handling, provenance, and null preservation verified at the `:core` mapper boundary.
+Roadmap slice: Slice 13B: MET Norway Symbol and Domain Mapping from `.codex/plans/mvp-roadmap.md`.
 Branch or work context: local `oxygen` Android scaffold.
 Specification anchors:
 - `docs/OXYGEN_FULL_SPECIFICATION.md` sections 1, 4, 5, 6.2, 6.3, 12, 16, 17, 39, 40, 44, 46, and 48
-- `.codex/plans/mvp-roadmap.md` Slice 13A and Forecast Provider Scope
-- `docs/data-sources/MET_NORWAY_FORECAST.md`
+- `.codex/plans/mvp-roadmap.md` Slice 13B and Forecast Provider Scope
+- `docs/data-sources/MET_NORWAY_FORECAST.md` fields used, time format, unit format, weather-code mapping, failover behavior, and Oxygen semantics
+- Existing `OpenMeteoForecastMapper` and mapper tests as local style precedent, not as permission to copy Open-Meteo-specific assumptions
 - `AGENTS.md`
 
 Acceptance criteria:
-- Add MET Norway Locationforecast compact DTOs under `:core` provider implementation code.
-- Add a parser that reads only the first Home-path compact response fields defined by `docs/data-sources/MET_NORWAY_FORECAST.md`.
-- Required envelope validation fails deterministically for missing or malformed `type`, `geometry.coordinates`, `properties.meta.updated_at`, `properties.meta.units`, or `properties.timeseries`.
-- Nullable weather values remain null and are not fabricated as zero.
-- Symbol codes are parsed and preserved for Slice 13B mapping, including unknown and documented typo symbol-code values.
-- Time strings and provider unit metadata are parsed as provider data only; timestamp conversion and unit validation/mapping are left to Slice 13B unless required for deterministic parser validation.
-- MET Norway DTOs remain isolated from UI/domain consumers.
+- Add a provider-local MET Norway forecast mapper under `core.provider.metno` that accepts `WeatherLocation`, `MetNoForecastResponse`, and deterministic `fetchedAt`.
+- Map the first Home-path current, hourly, and daily values into provider-neutral `WeatherBundle`, `CurrentConditions`, `HourlyForecast`, and `DailyForecast` without exposing MET Norway DTOs or symbol strings beyond the provider package.
+- Supported MET Norway `symbol_code` families map to `WeatherCondition`; unknown, unsupported, malformed, empty, or null symbol codes map to `UNKNOWN`.
+- Normalize only documented `_day`, `_night`, and `_polartwilight` suffixes for symbol mapping. Preserve provider-specific symbol strings only inside tests/mapper internals.
+- Use MET Norway UTC timestamps as `Instant` values and use `WeatherLocation.zoneId` only for local daily grouping. Do not use the phone timezone.
+- Validate required mapped units from `properties.meta.units` before mapping; unexpected units fail deterministically through a provider-local mapper exception instead of being silently converted or guessed.
+- Preserve null weather values as null/unknown; do not fabricate zeros or default weather values.
+- Use canonical Oxygen domain units directly from the contracted MET Norway units: Celsius, hPa, percent, millimeters, degrees, meters per second, and unitless UV values where mapped.
+- Provenance identifies provider ID `met-norway`, source name `MET Norway`, license `NLOD-2.0 OR CC-BY-4.0`, `issuedAt` from valid `properties.meta.updated_at`, caller-supplied `fetchedAt`, `MODEL_ESTIMATE` for current conditions, and `FORECAST` for hourly/daily rows.
+- Fallback semantics remain non-active: no averaging, merging, smoothing, fallback selection, Open-Meteo calls, client transport, repository behavior, cache behavior, UI behavior, or data-source active disclosure changes.
 
-Acceptance boundary: Slice 13A is complete when fixture-backed core parser tests prove normal compact parsing, missing optional/null preservation, malformed envelope failure, unexpected unit metadata preservation, unknown symbol preservation, documented typo symbol preservation, and UTC/time metadata parsing. Slice 13A is not verified by live provider fetches, mapper behavior, client transport, repository fallback, cache behavior, UI display, or active-provider disclosure changes.
+Acceptance boundary: Slice 13B is complete when fixture-backed core mapper tests prove provider-neutral Home-path mapping, contracted symbol-family mapping, unknown/null symbol fallback, UTC timestamp conversion, location-timezone daily grouping, provenance, required-unit validation failure, null preservation, and no provider leakage outside `core.provider.metno`. Slice 13B is not verified by live MET Norway fetches, client transport, repository fallback, cache behavior, UI display, or active-provider disclosure changes.
 
 Boundary decisions:
-- Do not add MET Norway client transport, mapper, repository, fallback selection, cache schema, active provider disclosures, Compose/UI state, Gradle dependencies, or app behavior.
+- Do not add MET Norway client transport, HTTP headers/User-Agent behavior, repository path, fallback selection, cache schema, Room/DataStore, WorkManager, Compose/UI state, Gradle dependencies, active provider disclosure, or app behavior.
 - Do not update `DATA_SOURCES.md` to list MET Norway as active/current.
-- Keep provider-specific DTOs and parser exceptions inside `core.provider.metno`.
-- Fixtures live under `core/src/test/resources/providers/metno/`.
+- Do not modify Open-Meteo production behavior except if a compile-only shared domain issue is discovered and explicitly recorded before editing.
+- Do not broaden provider-neutral domain models unless the mapper cannot satisfy the existing 13B contract without a documented higher-authority conflict.
+- Avoid AI slop: no TODO-only mapper branches, no fake live provider success, no empty abstractions for future slices, no unverified release/fallback claims, and no tests that merely prove symbols or constructors exist.
 
 Focused evidence:
-- `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*MetNo*Parser*'`
+- `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*MetNo*Mapper*'`
+- Static provider-boundary check: `rg -n "MetNo|metno|MET Norway|symbol_code" app core/src/main/kotlin/com/oxygen/weather/core/model core/src/main/kotlin/com/oxygen/weather/core/provider/WeatherProviders.kt README.md DATA_SOURCES.md PRIVACY.md`
 
 Real-path command or procedure:
-- None. This parser slice is verified with offline fixtures only. Do not perform live MET Norway fetches as proof of implementation.
+- None. This mapper slice is verified with offline fixtures only. Do not perform live MET Norway fetches as proof of implementation.
 
 Broad verification commands:
 - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
@@ -41,27 +47,19 @@ Broad verification commands:
 - `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
 - `git diff --check`
 
-Current gate: verified
-Current phase: ready
-Last result: Added provider-local MET Norway Locationforecast compact DTOs, parser, representative offline fixtures, and focused parser tests. Focused and broad verification passed; logs are saved under `.codex/test-artifacts/2026-08-23-met-norway-fixtures-dto-parsing/`.
+Current gate: planned
+Current phase: contract
+Last result: Selected Slice 13B after Slice 13A was verified and committed at `a0081f8`. No 13B implementation files changed yet.
 Blocker: none.
 
 ## Implementation Plan
 
-1. Mirror existing Open-Meteo parser style for a provider-local MET Norway compact DTO/parser boundary.
-2. Add representative compact JSON fixtures for normal Home-path data, missing optional values, malformed envelope, unexpected units, unknown symbol, documented typo symbol, and timezone-sensitive UTC timestamps.
-3. Add focused parser tests proving only provider-specific parsing behavior.
-4. Run focused parser tests and broad verification commands.
-5. Review the diff for SLOP risks and update current/history evidence only with commands actually run.
+1. Add failing/covering `MetNoForecastMapperTest` cases for normal Home-path mapping, null preservation, UTC/local-date behavior, provenance, required-unit failure, contracted symbol families, unknown/null symbols, and no provider leakage.
+2. Implement `MetNoForecastMapper` in `core.provider.metno` using existing provider-local DTOs and current Oxygen domain models.
+3. Keep daily mapping conservative: derive daily rows from available MET Norway period data grouped by the selected location timezone, without sunrise/sunset fabrication because Locationforecast compact does not provide those fields.
+4. Run focused mapper tests, static provider-boundary check, and broad verification commands.
+5. Record only command-backed evidence in `.codex/plans/current.md` and `.codex/cycles/history.md` when the slice is actually verified.
 
 ## Phase Results
 
-- planned: Selected Slice 13A as the next bounded implementation slice after the committed MET Norway provider contract.
-- covered: Added `MetNoForecastParserTest` with fixture-backed coverage for normal compact parsing, missing optional/null preservation, malformed envelope failure, unexpected unit metadata preservation, unknown symbol preservation, documented typo symbol preservation, and UTC time metadata parsing.
-- implemented: Added provider-local DTOs and parser under `core/src/main/kotlin/com/oxygen/weather/core/provider/metno/`, plus fixtures under `core/src/test/resources/providers/metno/`.
-- verified: `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*MetNo*Parser*'` passed; log saved at `.codex/test-artifacts/2026-08-23-met-norway-fixtures-dto-parsing/focused-metno-parser.log`.
-- verified: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed; log saved at `.codex/test-artifacts/2026-08-23-met-norway-fixtures-dto-parsing/app-compile-debug-kotlin.log`.
-- verified: `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` passed; log saved at `.codex/test-artifacts/2026-08-23-met-norway-fixtures-dto-parsing/app-core-test-debug-unit.log`.
-- verified: `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed; log saved at `.codex/test-artifacts/2026-08-23-met-norway-fixtures-dto-parsing/app-assemble-debug.log`.
-- verified: `git diff --check` passed with no output; log saved at `.codex/test-artifacts/2026-08-23-met-norway-fixtures-dto-parsing/git-diff-check.log`.
-- reviewed: Static boundary review found no MET Norway parser types in app/UI or provider-neutral core surfaces; root disclosure still lists MET Norway as specified roadmap fallback only. Log saved at `.codex/test-artifacts/2026-08-23-met-norway-fixtures-dto-parsing/review-boundary.log`.
+- planned: Selected Slice 13B as the next bounded implementation slice after committed Slice 13A.
