@@ -87,6 +87,37 @@ class OxygenAppStateHolder(
         startHomeForecastLoad(selectedLocation)
     }
 
+    fun onOpenAbout() {
+        val currentScreen = presentationState.screen
+        if (currentScreen is OxygenAppScreen.About) return
+
+        presentationState = presentationState.copy(
+            screen = OxygenAppScreen.About(
+                returnScreen = currentScreen,
+                selectedSurface = null,
+            ),
+        )
+        publishState()
+    }
+
+    fun onAboutSurfaceSelected(surfaceId: AboutSurfaceId) {
+        updateAboutState {
+            it.copy(selectedSurface = surfaceId)
+        }
+    }
+
+    fun onAboutBack() {
+        val about = presentationState.screen as? OxygenAppScreen.About ?: return
+        if (about.selectedSurface != null) {
+            presentationState = presentationState.copy(
+                screen = about.copy(selectedSurface = null),
+            )
+        } else {
+            presentationState = presentationState.copy(screen = about.returnScreen)
+        }
+        publishState()
+    }
+
     @Synchronized
     private fun startHomeForecastLoad(location: WeatherLocation) {
         val requestId = nextForecastRequestId()
@@ -140,43 +171,46 @@ class OxygenAppStateHolder(
         query: String,
         result: GeocodingRepositoryResult,
     ) {
-        val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
+        val screen = presentationState.screen
+        val firstRun = screen.visibleOrReturnScreen() as? OxygenAppScreen.FirstRunLocationEntry ?: return
         if (firstRun.submittedQuery != query) return
 
-        updateFirstRunState {
-            when (result) {
-                GeocodingRepositoryResult.Loading -> it.copy(
+        val nextFirstRun = when (result) {
+            GeocodingRepositoryResult.Loading -> firstRun.copy(
+                submittedQuery = query,
+                message = null,
+                searchState = ManualLocationSearchState.Loading(query),
+            )
+            GeocodingRepositoryResult.Empty -> firstRun.copy(
+                submittedQuery = query,
+                message = FirstRunLocationMessage.SearchNoResults,
+                searchState = ManualLocationSearchState.Empty(query),
+            )
+            is GeocodingRepositoryResult.Success -> firstRun.copy(
+                submittedQuery = query,
+                message = null,
+                searchState = ManualLocationSearchState.Results(
+                    query = query,
+                    candidates = result.candidates.map { candidate -> candidate.toManualLocationCandidate() },
+                ),
+            )
+            is GeocodingRepositoryResult.Failure -> {
+                val message = result.error.toFirstRunLocationMessage()
+                firstRun.copy(
                     submittedQuery = query,
-                    message = null,
-                    searchState = ManualLocationSearchState.Loading(query),
-                )
-                GeocodingRepositoryResult.Empty -> it.copy(
-                    submittedQuery = query,
-                    message = FirstRunLocationMessage.SearchNoResults,
-                    searchState = ManualLocationSearchState.Empty(query),
-                )
-                is GeocodingRepositoryResult.Success -> it.copy(
-                    submittedQuery = query,
-                    message = null,
-                    searchState = ManualLocationSearchState.Results(
+                    message = message,
+                    searchState = ManualLocationSearchState.Failure(
                         query = query,
-                        candidates = result.candidates.map { candidate -> candidate.toManualLocationCandidate() },
+                        message = message,
+                        canRetry = result.error !is GeocodingError.InvalidQuery,
                     ),
                 )
-                is GeocodingRepositoryResult.Failure -> {
-                    val message = result.error.toFirstRunLocationMessage()
-                    it.copy(
-                        submittedQuery = query,
-                        message = message,
-                        searchState = ManualLocationSearchState.Failure(
-                            query = query,
-                            message = message,
-                            canRetry = result.error !is GeocodingError.InvalidQuery,
-                        ),
-                    )
-                }
             }
         }
+        presentationState = presentationState.copy(
+            screen = screen.withVisibleOrReturnScreen(nextFirstRun),
+        )
+        publishState()
     }
 
     fun onUseMyLocation() {
@@ -202,11 +236,18 @@ class OxygenAppStateHolder(
     }
 
     private fun updateFirstRunState(update: (OxygenAppScreen.FirstRunLocationEntry) -> OxygenAppScreen.FirstRunLocationEntry) {
-        val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry
+        val screen = presentationState.screen
+        val firstRun = screen.visibleOrReturnScreen() as? OxygenAppScreen.FirstRunLocationEntry
             ?: return
         presentationState = presentationState.copy(
-            screen = update(firstRun),
+            screen = screen.withVisibleOrReturnScreen(update(firstRun)),
         )
+        publishState()
+    }
+
+    private fun updateAboutState(update: (OxygenAppScreen.About) -> OxygenAppScreen.About) {
+        val about = presentationState.screen as? OxygenAppScreen.About ?: return
+        presentationState = presentationState.copy(screen = update(about))
         publishState()
     }
 
@@ -241,8 +282,10 @@ class OxygenAppStateHolder(
             )
         }
 
+        val nextHome = OxygenAppScreen.Home(forecast = forecast)
+        val currentScreen = presentationState.screen
         presentationState = OxygenAppPresentationState(
-            screen = OxygenAppScreen.Home(forecast = forecast),
+            screen = currentScreen.withVisibleOrReturnScreen(nextHome),
             selectedLocation = location,
         )
         publishState()
@@ -379,7 +422,29 @@ sealed interface OxygenAppScreen {
     data class Home(
         val forecast: HomeForecastPresentationState,
     ) : OxygenAppScreen
+
+    data class About(
+        val returnScreen: OxygenAppScreen,
+        val selectedSurface: AboutSurfaceId? = null,
+        val title: String = "Settings / About",
+        val surfaceOptions: List<AboutSurfaceId> = aboutSurfaceOptions,
+    ) : OxygenAppScreen {
+        val surfaceState: AboutSurfaceState
+            get() = aboutSurfaceState(selectedSurface)
+    }
 }
+
+private fun OxygenAppScreen.visibleOrReturnScreen(): OxygenAppScreen =
+    when (this) {
+        is OxygenAppScreen.About -> returnScreen
+        else -> this
+    }
+
+private fun OxygenAppScreen.withVisibleOrReturnScreen(nextScreen: OxygenAppScreen): OxygenAppScreen =
+    when (this) {
+        is OxygenAppScreen.About -> copy(returnScreen = nextScreen)
+        else -> nextScreen
+    }
 
 sealed interface ManualLocationSearchState {
     data object Idle : ManualLocationSearchState

@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.oxygen.weather.app.ui.about.AboutScreen
 import com.oxygen.weather.app.ui.firstrun.FirstRunLocationEntryScreen
 import com.oxygen.weather.app.ui.home.HomeLoadingScreen
 import com.oxygen.weather.app.ui.theme.OxygenTheme
@@ -65,11 +66,30 @@ fun OxygenApp(
                     }
                     appState = stateHolder.presentationState
                 },
+                onOpenAbout = {
+                    stateHolder.onOpenAbout()
+                    appState = stateHolder.presentationState
+                },
             )
             is OxygenAppScreen.Home -> HomeLoadingScreen(
                 state = screen.forecast,
                 onRetry = {
                     stateHolder.onHomeForecastRetry()
+                    appState = stateHolder.presentationState
+                },
+                onOpenAbout = {
+                    stateHolder.onOpenAbout()
+                    appState = stateHolder.presentationState
+                },
+            )
+            is OxygenAppScreen.About -> AboutScreen(
+                state = screen,
+                onSurfaceSelected = {
+                    stateHolder.onAboutSurfaceSelected(it)
+                    appState = stateHolder.presentationState
+                },
+                onBack = {
+                    stateHolder.onAboutBack()
                     appState = stateHolder.presentationState
                 },
             )

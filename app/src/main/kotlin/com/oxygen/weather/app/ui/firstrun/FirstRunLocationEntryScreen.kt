@@ -39,6 +39,7 @@ fun FirstRunLocationEntryScreen(
     onRetry: () -> Unit,
     onCandidateSelected: (LocationId) -> Unit,
     onUseMyLocation: () -> Unit,
+    onOpenAbout: () -> Unit,
 ) {
     Surface(Modifier.fillMaxSize()) {
         Column(
@@ -89,6 +90,12 @@ fun FirstRunLocationEntryScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(state.useMyLocationLabel)
+                }
+                OutlinedButton(
+                    onClick = onOpenAbout,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Settings / About")
                 }
             }
             state.message?.let { message ->

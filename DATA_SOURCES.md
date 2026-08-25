@@ -4,14 +4,15 @@ This document records repository-level data-source disclosure for the providers
 that have production paths in this repository. It is separate from Oxygen
 source-code licensing.
 
-## Active Current Providers
+## Active App Providers
 
 ### Forecasts: Open-Meteo
 
-- Purpose: Default forecast provider for explicit selected locations.
-- Data shown by current production path: provider-neutral forecast repository
-  success data. Slice 10 reaches a terminal success carrier; Slice 11 is
-  planned to render the provider-backed Home success dashboard.
+- Purpose: Installed-app default forecast provider for explicit selected
+  locations.
+- Data shown by current production path: provider-neutral Home forecast success
+  presentation with source, update, data type, and license provenance from the
+  served provider data.
 - Request data: selected location latitude, longitude, IANA timezone, requested
   forecast variables, and normal client network metadata such as IP address.
 - Attribution: Weather data by Open-Meteo.com.
@@ -32,16 +33,41 @@ source-code licensing.
   attribution license, as recorded in docs/data-sources/OPEN_METEO_GEOCODING.md.
 - Last terms review date: 2026-08-19.
 
-## Specified Roadmap Providers
+## Implemented Provider Paths And Capabilities
+
+### Forecasts: MET Norway
+
+- Purpose: Implemented forecast provider path and core fallback-selection
+  capability.
+- Current app status: not wired as the active installed-app forecast fallback in
+  this build.
+- Verified capability: Slice 14 covers repository-level fallback selection with
+  MET Norway provenance preserved when the controlled fallback repository serves
+  forecast data.
+- Not yet implemented or verified: installed-app fallback wiring, live fallback
+  Home UI screenshots, cache persistence, stale offline UI, provider health or
+  backoff state, and release-candidate fallback behavior.
+- Request data when this provider path is used: selected location latitude and
+  longitude, optional altitude when present, an identifying User-Agent/contact
+  header, and normal client network metadata such as IP address.
+- Attribution: Weather forecast from MET Norway.
+- Data license: Norwegian Licence for Open Government Data (NLOD) 2.0, as
+  recorded in docs/data-sources/MET_NORWAY_FORECAST.md.
+- Last terms review date: 2026-08-23.
+
+## Roadmap-Only Providers
 
 These providers are specified by the roadmap or product specification but are
-not active/current until their own contracts, production paths, and verification
-evidence are complete:
+not active/current until their own contracts, production paths, app wiring, and
+verification evidence are complete:
 
-- MET Norway — specified roadmap forecast fallback only.
 - NOAA/NWS — United States official alerts and later observations/radar.
 - Environment and Climate Change Canada — Canadian official alerts.
 - Open-Meteo/CAMS — air-quality path where appropriate.
+
+Oxygen does not currently implement official alert lookup, air-quality lookup,
+radar, saved-location persistence, unit preferences, or offline forecast cache
+behavior.
 
 Before any additional provider becomes active, document its current terms,
 attribution, rate/caching requirements, privacy implications, and last review

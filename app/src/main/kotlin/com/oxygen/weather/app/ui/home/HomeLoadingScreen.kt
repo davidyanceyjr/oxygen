@@ -16,6 +16,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,6 +31,7 @@ import com.oxygen.weather.app.HomeForecastPresentationState
 fun HomeLoadingScreen(
     state: HomeForecastPresentationState,
     onRetry: () -> Unit = {},
+    onOpenAbout: () -> Unit = {},
 ) {
     Surface(Modifier.fillMaxSize()) {
         Column(
@@ -58,6 +60,12 @@ fun HomeLoadingScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
             )
+            OutlinedButton(
+                onClick = onOpenAbout,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Settings / About")
+            }
             when (state) {
                 is HomeForecastPresentationState.Loading -> LoadingContent(state)
                 is HomeForecastPresentationState.NoCacheError -> ErrorContent(
