@@ -65,6 +65,7 @@ sealed class WeatherRepositoryResult {
 
     data class Failure(
         val error: ForecastError,
+        val diagnostics: List<ForecastError> = listOf(error),
     ) : WeatherRepositoryResult()
 }
 

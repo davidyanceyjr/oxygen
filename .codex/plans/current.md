@@ -1,6 +1,6 @@
 # Active Cycle
 
-Status: planned
+Status: committed
 Cycle ID: 2026-08-23-forecast-fallback-selection
 Mode: feature
 Goal: Implement Slice 14 by adding a provider-neutral forecast fallback repository that attempts Open-Meteo first and, only for explicitly eligible Open-Meteo failures, attempts MET Norway once without hiding the served provider provenance or introducing UI, cache, saved-location, alert, unit, or disclosure behavior.
@@ -55,9 +55,9 @@ Broad verification commands:
 - `git diff --check`
 - Save broad verification logs under `.codex/test-artifacts/2026-08-23-forecast-fallback-selection/` and record the project-local paths in Phase Results before reporting the slice ready.
 
-Current gate: planned
-Current phase: ready-to-implement
-Last result: Slice 14 selected as the next bounded implementation slice after verified Slice 13D. The plan confines work to provider-neutral forecast fallback selection and explicitly excludes UI, cache, disclosure, saved-location, alert, unit, and live-provider claims.
+Current gate: committed
+Current phase: ready
+Last result: Slice 14 implemented and verified as a provider-neutral core repository fallback selector. `FallbackWeatherRepository` emits one top-level loading result, attempts the default repository first, falls back once only for eligible default failures, preserves exact caller locations, returns fallback provenance through the provider-neutral `WeatherBundle`, preserves ordered both-provider diagnostics on terminal fallback failure, skips fallback for non-eligible failures, and does not retain retry state across refresh calls. App production wiring and disclosure surfaces remain unchanged.
 Blocker: none.
 
 ## Implementation Plan
@@ -79,3 +79,11 @@ Blocker: none.
 - planned: Selected Slice 14 as the next bounded implementation slice after verified Slice 13D. Acceptance is limited to deterministic core repository fallback selection with fake provider repositories and provider-neutral state.
 - planned-review-resolved: Incorporated `.codex/review/findings.md` recommendations by tightening retry-loop proof across repeated refresh calls, selecting the additive `WeatherRepositoryResult.Failure.diagnostics` result-surface change, removing the default-constructor step, extending static provider-boundary checks to provider-specific repository/package references, and defining retryable as the existing repository failure path for this slice.
 - planned-review-resolved: Removed both-provider failure ambiguity without changing the existing `Failure.error` contract: Slice 14 now requires the top-level error to be the MET Norway/fallback terminal error and diagnostics to be ordered by attempted provider, Open-Meteo/default first and MET Norway/fallback second.
+- covered: Added focused core tests in `core/src/test/kotlin/com/oxygen/weather/core/provider/FallbackWeatherRepositoryTest.kt` for one top-level loading emission with child loading suppression, Open-Meteo/default success without fallback call, eligible default failures causing exactly one fallback attempt with exact selected location, fallback success provenance preservation, both-provider failure top-level fallback error plus ordered diagnostics, non-eligible default failures skipping fallback, and repeated refresh calls across distinct locations without retained retry state.
+- implemented: Added `core/src/main/kotlin/com/oxygen/weather/core/provider/FallbackWeatherRepository.kt`, composing two provider-neutral `WeatherRepository` instances without default constructors, provider-specific imports, provider DTO/client access, UI routing, cache behavior, live requests, or app production wiring. Added non-breaking `WeatherRepositoryResult.Failure.diagnostics`, defaulting to `listOf(error)`.
+- verified: `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Fallback*Repository*'` passed; log saved at `.codex/test-artifacts/2026-08-23-forecast-fallback-selection/focused-fallback-repository-tests.log`.
+- verified: Static provider-boundary check returned no matches; log saved at `.codex/test-artifacts/2026-08-23-forecast-fallback-selection/static-provider-boundary-check.log`.
+- verified: Static app-leakage/disclosure check returned no matches; log saved at `.codex/test-artifacts/2026-08-23-forecast-fallback-selection/static-app-leakage-check.log`.
+- verified: Broad checks passed: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`, `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`, `. scripts/android-env.sh && ./gradlew :app:assembleDebug`, and `git diff --check`. Logs saved at `.codex/test-artifacts/2026-08-23-forecast-fallback-selection/app-compile-debug-kotlin.log`, `.codex/test-artifacts/2026-08-23-forecast-fallback-selection/app-core-test-debug-unit-test.log`, `.codex/test-artifacts/2026-08-23-forecast-fallback-selection/app-assemble-debug.log`, and `.codex/test-artifacts/2026-08-23-forecast-fallback-selection/git-diff-check.log`.
+- verified: Real-path command or procedure was not required for this deterministic repository-selection slice; no live Open-Meteo, live MET Norway, Home UI, cache, saved-location, unit, alert, or active disclosure behavior is claimed.
+- committed: Slice 14 committed in version-control history.
