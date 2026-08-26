@@ -5,8 +5,8 @@ Oxygen is designed around data minimization.
 The standard build contains no advertising SDK, behavioral analytics, marketing
 attribution, cross-app tracking, or mandatory account system.
 
-Location permission is optional. A user must be able to search for and save
-locations manually. Manual location search must not request Android location
+Location permission is optional. A user can search for locations manually in
+the current app build. Manual location search must not request Android location
 permission.
 
 ## Active Provider Requests

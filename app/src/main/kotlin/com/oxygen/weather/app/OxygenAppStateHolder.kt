@@ -2,6 +2,7 @@ package com.oxygen.weather.app
 
 import com.oxygen.weather.core.model.GeocodingLocationCandidate
 import com.oxygen.weather.core.model.LocationId
+import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.GeocodingError
@@ -361,14 +362,18 @@ sealed interface HomeForecastPresentationState {
         companion object {
             fun from(
                 location: WeatherLocation,
-                weather: com.oxygen.weather.core.model.WeatherBundle,
-            ): ForecastReady =
-                ForecastReady(
+                weather: WeatherBundle,
+            ): ForecastReady {
+                val dashboard = weather.toHomeSuccessPresentation(selectedLocation = location)
+                return ForecastReady(
                     location = location,
                     title = location.displayName,
                     subtitle = location.forecastSubtitle(),
-                    dashboard = weather.toHomeSuccessPresentation(selectedLocation = location),
+                    dashboard = dashboard,
+                    forecastDisclosure = dashboard.source.toForecastDisclosure(),
+                    forecastPrivacyNote = dashboard.source.toForecastPrivacyNote(),
                 )
+            }
         }
     }
 }
@@ -387,6 +392,28 @@ enum class HomeForecastMessage(
 private const val FORECAST_DISCLOSURE = "Weather data by Open-Meteo."
 private const val FORECAST_PRIVACY_NOTE =
     "Forecast requests send this location's coordinates and timezone to Open-Meteo."
+private const val UNAVAILABLE_SOURCE_NAME = "Source unavailable"
+private const val UNAVAILABLE_FORECAST_DISCLOSURE = "Weather data source unavailable."
+private const val UNAVAILABLE_FORECAST_PRIVACY_NOTE =
+    "Forecast request destination is unavailable from the returned data."
+
+private fun HomeSourcePresentation.toForecastDisclosure(): String {
+    val source = sourceName.trim()
+    return if (source.isEmpty() || source == UNAVAILABLE_SOURCE_NAME) {
+        UNAVAILABLE_FORECAST_DISCLOSURE
+    } else {
+        "Weather data by $source."
+    }
+}
+
+private fun HomeSourcePresentation.toForecastPrivacyNote(): String {
+    val source = sourceName.trim()
+    return if (source.isEmpty() || source == UNAVAILABLE_SOURCE_NAME) {
+        UNAVAILABLE_FORECAST_PRIVACY_NOTE
+    } else {
+        "Forecast requests send this location's coordinates and timezone to $source."
+    }
+}
 
 internal fun WeatherLocation.forecastSubtitle(): String =
     listOf(

@@ -61,9 +61,16 @@ SPACE_GAME_EMULATOR_WINDOW=1 scripts/start-emulator.sh
 
 ## Important
 
-The screen currently displays `SampleWeather.bundle`. It is deliberately marked as scaffold data. No network weather provider has been wired yet.
+The installed app uses active Open-Meteo production paths for manual location
+search and selected-location forecasts. The retained sample weather bundle is
+scaffold/preview data only, not the production Home path.
 
-The first implementation milestone should be Open-Meteo DTO/client/mapping plus real UI state, followed by Room persistence and saved locations.
+MET Norway is implemented as a forecast provider path with verified core
+fallback-selection behavior, but it is not wired as the active installed-app
+forecast fallback in this build.
+
+Saved-location persistence, offline forecast cache, unit preferences, alerts,
+air quality, and radar are not implemented yet.
 
 ## Specification
 

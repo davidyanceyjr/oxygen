@@ -44,7 +44,7 @@ fun AboutScreen(
             Text(
                 text = state.surfaceState.title,
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             if (state.selectedSurface == null) {

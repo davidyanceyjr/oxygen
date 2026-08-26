@@ -139,6 +139,83 @@ class HomeForecastStateHolderTest {
     }
 
     @Test
+    fun `Open-Meteo success renders Open-Meteo forecast footer disclosure`() {
+        val location = weatherLocation("manual-open-meteo-footer", "Open-Meteo Footer City")
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(
+                    WeatherRepositoryResult.Success(
+                        fullWeatherBundle(
+                            location = location,
+                            provenance = forecastProvenance(
+                                providerId = "internal-open-meteo-id",
+                                sourceName = "Open-Meteo",
+                                licenseId = "CC BY 4.0",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        assertEquals("Weather data by Open-Meteo.", ready.forecastDisclosure)
+        assertTrue(ready.forecastPrivacyNote.contains("Open-Meteo"))
+    }
+
+    @Test
+    fun `MET Norway success renders MET Norway forecast footer disclosure`() {
+        val location = weatherLocation("manual-metno-footer", "MET Norway Footer City")
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(
+                    WeatherRepositoryResult.Success(
+                        fullWeatherBundle(
+                            location = location,
+                            provenance = forecastProvenance(
+                                providerId = "metno-provider-id",
+                                sourceName = "MET Norway",
+                                licenseId = "NLOD 2.0",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        assertEquals("Weather data by MET Norway.", ready.forecastDisclosure)
+        assertTrue(ready.forecastPrivacyNote.contains("MET Norway"))
+        assertFalse(ready.forecastDisclosure.contains("Open-Meteo"))
+    }
+
+    @Test
+    fun `unavailable forecast provenance does not guess Open-Meteo footer disclosure`() {
+        val location = weatherLocation("manual-unavailable-footer", "Unavailable Footer City")
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(WeatherRepositoryResult.Success(weatherBundle(location))),
+            ),
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        assertEquals("Weather data source unavailable.", ready.forecastDisclosure)
+        assertFalse(ready.forecastPrivacyNote.contains("Open-Meteo"))
+    }
+
+    @Test
     fun `success with no returned weather data shows unavailable state without fabricated dashboard values`() {
         val location = weatherLocation("manual-empty", "Empty City")
         val stateHolder = OxygenAppStateHolder(
@@ -440,7 +517,10 @@ private fun weatherBundle(location: WeatherLocation): WeatherBundle =
         fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
     )
 
-private fun fullWeatherBundle(location: WeatherLocation): WeatherBundle =
+private fun fullWeatherBundle(
+    location: WeatherLocation,
+    provenance: DataProvenance = forecastProvenance(),
+): WeatherBundle =
     WeatherBundle(
         location = location,
         current = CurrentConditions(
@@ -459,7 +539,7 @@ private fun fullWeatherBundle(location: WeatherLocation): WeatherBundle =
             ),
             precipitationMm = 0.4,
             condition = WeatherCondition.RAIN_SHOWERS,
-            provenance = forecastProvenance(),
+            provenance = provenance,
         ),
         hourly = listOf(
             HourlyForecast(
@@ -468,7 +548,7 @@ private fun fullWeatherBundle(location: WeatherLocation): WeatherBundle =
                 precipitationProbabilityPercent = 60,
                 precipitationMm = 1.2,
                 condition = WeatherCondition.RAIN,
-                provenance = forecastProvenance(type = DataType.FORECAST),
+                provenance = provenance.copy(type = DataType.FORECAST),
             ),
             HourlyForecast(
                 time = Instant.parse("2026-08-22T12:00:00Z"),
@@ -476,7 +556,7 @@ private fun fullWeatherBundle(location: WeatherLocation): WeatherBundle =
                 precipitationProbabilityPercent = null,
                 precipitationMm = null,
                 condition = WeatherCondition.CLOUDY,
-                provenance = forecastProvenance(type = DataType.FORECAST),
+                provenance = provenance.copy(type = DataType.FORECAST),
             ),
         ),
         daily = listOf(
@@ -488,7 +568,7 @@ private fun fullWeatherBundle(location: WeatherLocation): WeatherBundle =
                 condition = WeatherCondition.RAIN_SHOWERS,
                 sunrise = Instant.parse("2026-08-22T10:15:00Z"),
                 sunset = Instant.parse("2026-08-23T01:01:00Z"),
-                provenance = forecastProvenance(type = DataType.FORECAST),
+                provenance = provenance.copy(type = DataType.FORECAST),
             ),
         ),
         alerts = listOf(
@@ -500,20 +580,25 @@ private fun fullWeatherBundle(location: WeatherLocation): WeatherBundle =
                 effective = Instant.parse("2026-08-22T12:00:00Z"),
                 expires = Instant.parse("2026-08-22T18:00:00Z"),
                 issuer = "Test Weather Office",
-                provenance = forecastProvenance(type = DataType.OFFICIAL_ALERT),
+                provenance = provenance.copy(type = DataType.OFFICIAL_ALERT),
             ),
         ),
         fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
     )
 
-private fun forecastProvenance(type: DataType = DataType.MODEL_ESTIMATE): DataProvenance =
+private fun forecastProvenance(
+    type: DataType = DataType.MODEL_ESTIMATE,
+    providerId: String = "internal-open-meteo-id",
+    sourceName: String = "Open-Meteo",
+    licenseId: String = "CC BY 4.0",
+): DataProvenance =
     DataProvenance(
-        providerId = "internal-open-meteo-id",
-        sourceName = "Open-Meteo",
+        providerId = providerId,
+        sourceName = sourceName,
         issuedAt = Instant.parse("2026-08-22T11:45:00Z"),
         fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
         type = type,
-        licenseId = "CC BY 4.0",
+        licenseId = licenseId,
     )
 
 private fun HomeSuccessPresentation.visibleText(): String =

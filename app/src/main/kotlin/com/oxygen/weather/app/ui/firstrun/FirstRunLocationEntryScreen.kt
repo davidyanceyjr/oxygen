@@ -58,7 +58,7 @@ fun FirstRunLocationEntryScreen(
             )
             Text(
                 text = state.title,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
