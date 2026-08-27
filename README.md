@@ -69,8 +69,12 @@ MET Norway is implemented as a forecast provider path with verified core
 fallback-selection behavior, but it is not wired as the active installed-app
 forecast fallback in this build.
 
-Saved-location persistence, offline forecast cache, unit preferences, alerts,
-air quality, and radar are not implemented yet.
+Core now includes a repository-level forecast cache wrapper that can persist one
+provider-served forecast bundle and emit the stored current/hourly/daily rows
+back through the repository boundary. It is not wired into the installed app yet.
+
+Saved-location persistence, installed-app offline forecast cache behavior, unit
+preferences, alerts, air quality, and radar are not implemented yet.
 
 ## Specification
 

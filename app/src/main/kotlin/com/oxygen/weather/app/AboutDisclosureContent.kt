@@ -60,7 +60,7 @@ private val dataSourceSections = listOf(
         body = listOf(
             "MET Norway forecast is implemented as a provider path and covered as a core fallback-selection capability.",
             "MET Norway is not wired as the active installed-app forecast fallback in this build.",
-            "Installed-app fallback wiring, fallback Home UI verification, cache persistence, and stale offline UI are not implemented or verified yet.",
+            "Core forecast-cache persistence is implemented at the repository boundary; installed-app cache wiring, fallback wiring, fallback Home UI verification, and stale offline UI are not implemented or verified yet.",
         ),
     ),
     AboutSection(

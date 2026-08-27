@@ -45,8 +45,8 @@ source-code licensing.
   MET Norway provenance preserved when the controlled fallback repository serves
   forecast data.
 - Not yet implemented or verified: installed-app fallback wiring, live fallback
-  Home UI screenshots, cache persistence, stale offline UI, provider health or
-  backoff state, and release-candidate fallback behavior.
+  Home UI screenshots, installed-app cache wiring, stale offline UI, provider
+  health or backoff state, and release-candidate fallback behavior.
 - Request data when this provider path is used: selected location latitude and
   longitude, optional altitude when present, an identifying User-Agent/contact
   header, and normal client network metadata such as IP address.
@@ -65,9 +65,12 @@ verification evidence are complete:
 - Environment and Climate Change Canada — Canadian official alerts.
 - Open-Meteo/CAMS — air-quality path where appropriate.
 
-Oxygen does not currently implement official alert lookup, air-quality lookup,
-radar, saved-location persistence, unit preferences, or offline forecast cache
-behavior.
+Oxygen core includes a repository-level cache wrapper that persists one
+provider-served forecast bundle as provider-neutral current/hourly/daily rows
+scoped by local `LocationId`. The installed app does not yet wire that cache and
+does not implement offline forecast cache behavior, failed-refresh stale
+retention, saved-location persistence, unit preferences, official alert lookup,
+air-quality lookup, or radar.
 
 Before any additional provider becomes active, document its current terms,
 attribution, rate/caching requirements, privacy implications, and last review

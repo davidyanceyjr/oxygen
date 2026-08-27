@@ -54,6 +54,8 @@ sealed class ForecastError {
     data class UnexpectedProviderFailure(
         val providerId: String,
     ) : ForecastError()
+
+    data object LocalCacheFailure : ForecastError()
 }
 
 sealed class WeatherRepositoryResult {

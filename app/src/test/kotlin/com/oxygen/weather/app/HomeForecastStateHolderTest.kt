@@ -293,6 +293,7 @@ class HomeForecastStateHolderTest {
             ForecastError.ProviderUnavailable("open-meteo") to HomeForecastMessage.ProviderUnavailable,
             ForecastError.InvalidResponse("open-meteo") to HomeForecastMessage.InvalidResponse,
             ForecastError.ProviderRejectedRequest("open-meteo") to HomeForecastMessage.RejectedRequest,
+            ForecastError.LocalCacheFailure to HomeForecastMessage.LocalCacheFailure,
             ForecastError.UnexpectedProviderFailure("open-meteo") to HomeForecastMessage.UnexpectedFailure,
         )
 

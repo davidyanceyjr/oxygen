@@ -36,6 +36,7 @@ class FallbackWeatherRepository(
     private fun ForecastError.isFallbackEligible(): Boolean =
         when (this) {
             ForecastError.NetworkUnavailable,
+            ForecastError.LocalCacheFailure,
             is ForecastError.ProviderRejectedRequest,
             -> false
             is ForecastError.RateLimited,

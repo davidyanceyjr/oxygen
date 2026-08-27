@@ -41,8 +41,9 @@ statement, as recorded in docs/data-sources/MET_NORWAY_FORECAST.md.
 
 ## Local Data
 
-Selected locations and cached forecasts are intended to be stored locally when
-those features are implemented. This repository does not currently include
-saved-location persistence, unit preferences, alert lookup, air-quality lookup,
-radar, active installed-app forecast fallback wiring, or offline forecast cache
-behavior.
+Core includes a repository-level forecast cache wrapper that stores one
+provider-served forecast bundle locally when an app or test explicitly uses that
+wrapper. The installed app does not yet wire this cache and does not currently
+include saved-location persistence, unit preferences, alert lookup, air-quality
+lookup, radar, active installed-app forecast fallback wiring, or offline forecast
+cache behavior.

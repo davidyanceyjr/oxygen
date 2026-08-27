@@ -386,6 +386,7 @@ enum class HomeForecastMessage(
     ProviderUnavailable("Weather updates are temporarily unavailable. Try again shortly."),
     InvalidResponse("Weather data returned in a form Oxygen could not read. Try again later."),
     RejectedRequest("Weather updates rejected that location request. Try again later."),
+    LocalCacheFailure("Weather data was received but could not be saved locally. Try again."),
     UnexpectedFailure("Weather update failed unexpectedly. Try again."),
 }
 
@@ -428,6 +429,7 @@ private fun ForecastError.toHomeForecastMessage(): HomeForecastMessage =
         is ForecastError.ProviderUnavailable -> HomeForecastMessage.ProviderUnavailable
         is ForecastError.InvalidResponse -> HomeForecastMessage.InvalidResponse
         is ForecastError.ProviderRejectedRequest -> HomeForecastMessage.RejectedRequest
+        ForecastError.LocalCacheFailure -> HomeForecastMessage.LocalCacheFailure
         is ForecastError.UnexpectedProviderFailure -> HomeForecastMessage.UnexpectedFailure
     }
 

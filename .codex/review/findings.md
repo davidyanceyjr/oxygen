@@ -1,38 +1,40 @@
-# Slice 14 Plan Review Findings
+# Slice 16 Plan Review Findings
 
 ## Review Metadata
 
-- Review date: 2026-08-25
+- Review date: 2026-08-26
 - Reviewer: Codex
 - Repository: `/home/opsman/project_git/oxygen`
-- Reviewed cycle: `2026-08-23-forecast-fallback-selection`
-- Scope: Pre-implementation review of `.codex/plans/current.md` for gaps, blockers, and slop
+- Reviewed cycle: `2026-08-26-cache-one-forecast-bundle`
+- Scope: Pre-implementation review of `.codex/plans/current.md` for gaps, blockers, and LLM slop
 - Build/test commands run: none; this review updates review notes only
 
 ## Findings
 
-1. `.codex/plans/current.md:27` narrows the retry-loop proof below the roadmap wording. `.codex/plans/mvp-roadmap.md:317` says repeated failures must not cause wasteful retry loops from repository refresh calls or location changes, while the current plan proves only that one `refresh(location)` does not recursively retry.
+1. `.codex/plans/current.md:75` leaves a slop opening around storage. The spec and roadmap point at Room as the intended local source of truth (`docs/OXYGEN_FULL_SPECIFICATION.md:495`, `.codex/plans/mvp-roadmap.md:339`), but the plan allows a fallback "narrow storage interface" without saying it must be durable production storage. That could let an in-memory fake pass repository tests while not implementing cache persistence.
 
-   Recommendation: keep Slice 14 core-only, but make the boundary explicit. Add a focused test that two separate `refresh` calls, including distinct locations, perform exactly one Open-Meteo attempt and at most one MET Norway attempt per call, with no retained automatic retry state. Also add a plan note that app/state-holder location-change loop behavior remains out of scope until fallback is wired into app behavior. This avoids claiming UI-level loop prevention without evidence.
+   Recommendation: tighten this to Room unless blocked. If Room is blocked, the fallback must still be durable local production storage, not an in-memory test store, and the blocker must be recorded explicitly.
 
-2. `WeatherRepositoryResult.Failure` currently carries a single `ForecastError` at `core/src/main/kotlin/com/oxygen/weather/core/provider/WeatherProviders.kt:66`, so the current model cannot preserve both Open-Meteo and MET Norway failure causes required by `.codex/plans/current.md:25` and `.codex/plans/mvp-roadmap.md:316`.
+2. `.codex/plans/current.md:23` requires "provider cache metadata inputs," but the current domain surface only exposes `DataProvenance` fields at `core/src/main/kotlin/com/oxygen/weather/core/model/WeatherModels.kt:52` and `WeatherRepositoryResult.Success(weather)` at `core/src/main/kotlin/com/oxygen/weather/core/provider/WeatherProviders.kt:62`. HTTP cache headers are not available at that boundary. The plan avoids fabrication, which is good, but the metadata contract is still too vague.
 
-   Recommendation: use a non-breaking additive result-surface change: add an optional provider-neutral diagnostics field to `WeatherRepositoryResult.Failure`, for example `val diagnostics: List<ForecastError> = listOf(error)`. Existing call sites that read `failure.error` keep working, existing tests compile with the default value, and fallback tests can assert that both causes are preserved without adding provider-specific UI copy or logs-as-behavior.
+   Recommendation: define the Slice 16 metadata record explicitly as provider ID, source name, license ID, data type, issued time, fetched time, plus nullable HTTP/cache fields that remain null until provider clients expose richer values. Tests should prove null preservation, not vague metadata existence.
 
-3. `.codex/plans/current.md:67` leaves room for a default `FallbackWeatherRepository` constructor that instantiates `OpenMeteoWeatherRepository` and `MetNoWeatherRepository`. That is unnecessary for the accepted fake-repository evidence and risks coupling provider-neutral selection to provider-specific production classes before app wiring intentionally uses it.
+3. `.codex/plans/current.md:24` and `.codex/plans/current.md:77` are mildly ambiguous about "production repository path." App default wiring is still direct `OpenMeteoWeatherRepository()` at `app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt:21`. If Slice 16 keeps app wiring unchanged, it must not imply installed-app Open-Meteo success is cache-wrapped.
 
-   Recommendation: remove the default-constructor step from Slice 14. Implement only constructor injection of two `WeatherRepository` instances and test the selection behavior through that boundary. Let the later app-wiring/disclosure slice decide how production repositories are composed, with its own observable evidence.
+   Recommendation: either wire the cache wrapper into app default forecast behavior and produce installed-app evidence, or explicitly state that the cache wrapper is production core repository code exercised by a live repository/state-holder path while installed-app cache behavior remains unimplemented.
 
-4. The static provider-boundary check at `.codex/plans/current.md:43` catches DTO/client/parser/header leakage but would not catch provider-neutral fallback code importing `OpenMeteoWeatherRepository` or `MetNoWeatherRepository`.
+4. `.codex/plans/current.md:49` hardcodes static-check paths `core/src/main/kotlin/com/oxygen/weather/core/cache` and `core/src/main/kotlin/com/oxygen/weather/core/storage`. If implementation chooses different package names, the check can miss leaks or fail on missing paths.
 
-   Recommendation: extend the static check for this slice to flag provider-specific repository imports or package references outside their provider packages, unless they appear only in tests. This enforces the intended composition boundary and keeps the fallback selector provider-neutral without relying on review memory.
+   Recommendation: decide package names before implementation or define the static check against the actual created cache/storage production paths plus all app production Kotlin.
 
-5. `.codex/plans/current.md:25` says the both-provider failure should be "retryable," but retryability is not currently a first-class repository contract. The app presently derives retry UI from provider-neutral forecast failure messages, not from a dedicated retry flag.
+5. `.codex/review/findings.md` previously contained Slice 15 review findings while the active cycle is Slice 16. This is not a feature blocker because `.codex/plans/current.md:92` called it unrelated, but it is status drift if review findings are treated as current evidence.
 
-   Recommendation: do not add a retryability abstraction in Slice 14. Define "retryable" for this slice as returning `WeatherRepositoryResult.Failure` through the existing repository failure path, preserving app behavior. If retryability later needs a typed policy, add it in the cache/error-state slice where UI behavior can be exercised.
+   Recommendation: replace the review findings with this Slice 16 review, and keep future review files aligned with the active reviewed cycle or clearly archive older findings by cycle ID.
+
+## Blockers
+
+No hard blocker found. The active plan is mostly well bounded: it excludes offline launch, failed-refresh retention, saved locations, unit preferences, alerts, air quality, radar, background work, release behavior, and active installed-app MET Norway fallback.
 
 ## Summary
 
-The current plan is mostly well bounded: it selects one repository boundary, avoids live-provider theater, keeps MET Norway out of active app disclosure, and excludes UI/cache/saved-location claims. The main implementation risk is overstating what core-only tests prove.
-
-Recommended plan edits before implementation: add the non-breaking diagnostics field, remove the default-constructor step, tighten the static boundary check, and clarify the retry-loop acceptance boundary.
+The main LLM-slop risk is passing tests around a cache-shaped abstraction without proving a real persisted forecast path. Clarify durable storage, define exact nullable cache metadata, and make the app-wiring claim precise before implementation.
