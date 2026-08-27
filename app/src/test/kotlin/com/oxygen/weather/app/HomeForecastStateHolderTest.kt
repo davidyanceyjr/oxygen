@@ -14,10 +14,12 @@ import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.ForecastError
+import com.oxygen.weather.core.provider.ForecastFreshness
 import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.Executor
@@ -317,6 +319,76 @@ class HomeForecastStateHolderTest {
             assertFalse(forecastError.message.text.contains("open-meteo"))
             assertFalse(forecastError.message.text.contains("providerId"))
             assertTrue(forecastError.forecastDisclosure.contains("Open-Meteo"))
+        }
+    }
+
+    @Test
+    fun `stale success after failed refresh keeps dashboard visible with retry metadata`() {
+        val location = weatherLocation("manual-stale-cache", "Stale Cache City")
+        val bundle = fullWeatherBundle(location)
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(
+                    WeatherRepositoryResult.Loading,
+                    WeatherRepositoryResult.Success(
+                        weather = bundle,
+                        freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                            staleAge = Duration.ofMinutes(45),
+                            refreshFailure = ForecastError.NetworkUnavailable,
+                        ),
+                    ),
+                ),
+            ),
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        val stale = ready.freshness as HomeForecastFreshness.StaleAfterFailedRefresh
+
+        assertSame(location, ready.location)
+        assertEquals("65 deg F", ready.dashboard.current?.temperature)
+        assertEquals("Open-Meteo", ready.dashboard.source.sourceName)
+        assertEquals("Fetched Aug 22, 7:00 AM CDT", ready.dashboard.source.fetchedAt)
+        assertEquals("45 minutes", stale.staleAgeText)
+        assertEquals(HomeForecastMessage.NetworkUnavailable, stale.refreshFailureMessage)
+        assertTrue(stale.statusText.contains("cached forecast"))
+        assertTrue(stale.statusText.contains("45 minutes"))
+        assertTrue(ready.canRetry)
+        assertEquals("Retry", ready.retryLabel)
+        assertFalse(ready.isRefreshInProgress)
+    }
+
+    @Test
+    fun `same-location loading while ready keeps previous dashboard visible`() {
+        val location = weatherLocation("manual-refresh-ready", "Refresh Ready City")
+        val weatherRepository = ControlledWeatherRepository()
+        val executor = Executors.newFixedThreadPool(2)
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = weatherRepository,
+            forecastExecutor = executor,
+        )
+
+        try {
+            val first = weatherRepository.awaitCall(0)
+            first.emit(WeatherRepositoryResult.Success(fullWeatherBundle(location)))
+            val initialReady = awaitHomeState<HomeForecastPresentationState.ForecastReady>(stateHolder)
+            assertEquals("65 deg F", initialReady.dashboard.current?.temperature)
+
+            stateHolder.onHomeForecastRetry()
+            val second = weatherRepository.awaitCall(1)
+            second.emit(WeatherRepositoryResult.Loading)
+            val refreshing = awaitHomeState<HomeForecastPresentationState.ForecastReady>(stateHolder)
+
+            assertSame(location, refreshing.location)
+            assertEquals("65 deg F", refreshing.dashboard.current?.temperature)
+            assertTrue(refreshing.isRefreshInProgress)
+            assertEquals("Refreshing weather for Refresh Ready City", refreshing.refreshInProgressText)
+        } finally {
+            weatherRepository.finishAll()
+            executor.shutdownNow()
         }
     }
 

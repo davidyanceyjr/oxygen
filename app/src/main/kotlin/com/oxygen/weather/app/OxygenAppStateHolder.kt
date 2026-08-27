@@ -5,6 +5,7 @@ import com.oxygen.weather.core.model.LocationId
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.ForecastError
+import com.oxygen.weather.core.provider.ForecastFreshness
 import com.oxygen.weather.core.provider.GeocodingError
 import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
@@ -12,6 +13,7 @@ import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoGeocodingRepository
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoWeatherRepository
+import java.time.Duration
 import java.util.Locale
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -122,9 +124,21 @@ class OxygenAppStateHolder(
     @Synchronized
     private fun startHomeForecastLoad(location: WeatherLocation) {
         val requestId = nextForecastRequestId()
+        val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
+        val nextForecast = if (
+            currentHome?.forecast is HomeForecastPresentationState.ForecastReady &&
+            currentHome.forecast.location == location
+        ) {
+            currentHome.forecast.copy(
+                isRefreshInProgress = true,
+                refreshInProgressText = "Refreshing weather for ${location.displayName}",
+            )
+        } else {
+            HomeForecastPresentationState.Loading.from(location)
+        }
         presentationState = OxygenAppPresentationState(
             screen = OxygenAppScreen.Home(
-                forecast = HomeForecastPresentationState.Loading.from(location),
+                forecast = nextForecast,
             ),
             selectedLocation = location,
         )
@@ -272,7 +286,18 @@ class OxygenAppStateHolder(
         if (presentationState.selectedLocation != location) return
 
         val forecast = when (result) {
-            WeatherRepositoryResult.Loading -> HomeForecastPresentationState.Loading.from(location)
+            WeatherRepositoryResult.Loading -> {
+                val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
+                val currentReady = currentHome?.forecast as? HomeForecastPresentationState.ForecastReady
+                if (currentReady != null && currentReady.location == location) {
+                    currentReady.copy(
+                        isRefreshInProgress = true,
+                        refreshInProgressText = "Refreshing weather for ${location.displayName}",
+                    )
+                } else {
+                    HomeForecastPresentationState.Loading.from(location)
+                }
+            }
             is WeatherRepositoryResult.Failure -> HomeForecastPresentationState.NoCacheError.from(
                 location = location,
                 message = result.error.toHomeForecastMessage(),
@@ -280,6 +305,7 @@ class OxygenAppStateHolder(
             is WeatherRepositoryResult.Success -> HomeForecastPresentationState.ForecastReady.from(
                 location = location,
                 weather = result.weather,
+                freshness = result.freshness,
             )
         }
 
@@ -356,6 +382,11 @@ sealed interface HomeForecastPresentationState {
         override val title: String,
         override val subtitle: String,
         val dashboard: HomeSuccessPresentation,
+        val freshness: HomeForecastFreshness = HomeForecastFreshness.Fresh,
+        val isRefreshInProgress: Boolean = false,
+        val refreshInProgressText: String? = null,
+        val retryLabel: String = "Retry",
+        val canRetry: Boolean = false,
         override val forecastDisclosure: String = FORECAST_DISCLOSURE,
         override val forecastPrivacyNote: String = FORECAST_PRIVACY_NOTE,
     ) : HomeForecastPresentationState {
@@ -363,6 +394,7 @@ sealed interface HomeForecastPresentationState {
             fun from(
                 location: WeatherLocation,
                 weather: WeatherBundle,
+                freshness: ForecastFreshness = ForecastFreshness.Fresh,
             ): ForecastReady {
                 val dashboard = weather.toHomeSuccessPresentation(selectedLocation = location)
                 return ForecastReady(
@@ -370,12 +402,26 @@ sealed interface HomeForecastPresentationState {
                     title = location.displayName,
                     subtitle = location.forecastSubtitle(),
                     dashboard = dashboard,
+                    freshness = freshness.toHomeForecastFreshness(),
+                    isRefreshInProgress = false,
+                    refreshInProgressText = null,
+                    canRetry = freshness is ForecastFreshness.StaleAfterFailedRefresh,
                     forecastDisclosure = dashboard.source.toForecastDisclosure(),
                     forecastPrivacyNote = dashboard.source.toForecastPrivacyNote(),
                 )
             }
         }
     }
+}
+
+sealed interface HomeForecastFreshness {
+    data object Fresh : HomeForecastFreshness
+
+    data class StaleAfterFailedRefresh(
+        val staleAgeText: String,
+        val refreshFailureMessage: HomeForecastMessage,
+        val statusText: String,
+    ) : HomeForecastFreshness
 }
 
 enum class HomeForecastMessage(
@@ -432,6 +478,33 @@ private fun ForecastError.toHomeForecastMessage(): HomeForecastMessage =
         ForecastError.LocalCacheFailure -> HomeForecastMessage.LocalCacheFailure
         is ForecastError.UnexpectedProviderFailure -> HomeForecastMessage.UnexpectedFailure
     }
+
+private fun ForecastFreshness.toHomeForecastFreshness(): HomeForecastFreshness =
+    when (this) {
+        ForecastFreshness.Fresh -> HomeForecastFreshness.Fresh
+        is ForecastFreshness.StaleAfterFailedRefresh -> {
+            val ageText = staleAge.toStaleAgeText()
+            val message = refreshFailure.toHomeForecastMessage()
+            HomeForecastFreshness.StaleAfterFailedRefresh(
+                staleAgeText = ageText,
+                refreshFailureMessage = message,
+                statusText = "Showing cached forecast from $ageText ago because refresh failed.",
+            )
+        }
+    }
+
+private fun Duration.toStaleAgeText(): String {
+    val minutes = toMinutes().coerceAtLeast(0)
+    return when {
+        minutes < 1 -> "less than 1 minute"
+        minutes == 1L -> "1 minute"
+        minutes < 60 -> "$minutes minutes"
+        minutes < 120 -> "1 hour"
+        minutes < 24 * 60 -> "${minutes / 60} hours"
+        minutes < 48 * 60 -> "1 day"
+        else -> "${minutes / (24 * 60)} days"
+    }
+}
 
 sealed interface OxygenAppScreen {
     data class FirstRunLocationEntry(

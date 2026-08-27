@@ -71,7 +71,10 @@ forecast fallback in this build.
 
 Core now includes a repository-level forecast cache wrapper that can persist one
 provider-served forecast bundle and emit the stored current/hourly/daily rows
-back through the repository boundary. It is not wired into the installed app yet.
+back through the repository boundary. When that wrapper is used, a foreground
+refresh failure can retain the same selected location's cached forecast as a
+stale success with explicit refresh-failed metadata. The durable cache wrapper
+is not wired into the installed app yet.
 
 Saved-location persistence, installed-app offline forecast cache behavior, unit
 preferences, alerts, air quality, and radar are not implemented yet.

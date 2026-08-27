@@ -11,10 +11,14 @@ import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.ForecastError
+import com.oxygen.weather.core.provider.ForecastFreshness
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
+import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
@@ -109,7 +113,7 @@ class CachedWeatherRepositoryTest {
     @Test
     fun providerFailureKeepsExistingNoCacheFailurePath() {
         val providerFailure = WeatherRepositoryResult.Failure(ForecastError.NetworkUnavailable)
-        val storage = RecordingForecastCacheStorage(storedReads = mapOf(chicago.id to bundle(chicago, "open-meteo")))
+        val storage = RecordingForecastCacheStorage(storedReads = emptyMap())
 
         val failure = CachedWeatherRepository(
             upstream = FixedWeatherRepository(WeatherRepositoryResult.Loading, providerFailure),
@@ -118,7 +122,107 @@ class CachedWeatherRepositoryTest {
 
         assertSame(providerFailure.error, failure.error)
         assertEquals(emptyList<WeatherBundle>(), storage.replacements)
-        assertEquals(emptyList<LocationId>(), storage.reads)
+        assertEquals(listOf(chicago.id), storage.reads)
+    }
+
+    @Test
+    fun failedRefreshWithSameLocationCacheEmitsCachedStaleSuccess() {
+        val cachedBundle = bundle(
+            location = chicago,
+            providerId = "open-meteo",
+            sourceName = "Open-Meteo Forecast API",
+            temperatureC = 19.0,
+        )
+        val failure = ForecastError.NetworkUnavailable
+        val success = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(
+                WeatherRepositoryResult.Loading,
+                WeatherRepositoryResult.Failure(failure),
+            ),
+            storage = RecordingForecastCacheStorage(storedReads = mapOf(chicago.id to cachedBundle)),
+            clock = fixedClock("2026-08-26T11:05:00Z"),
+        ).refresh(chicago).terminalSuccess()
+
+        assertSame(cachedBundle, success.weather)
+        assertEquals(chicago, success.weather.location)
+        assertEquals(chicago.id, success.weather.location.id)
+        assertEquals(19.0, requireNotNull(success.weather.current).temperatureC)
+        assertEquals(cachedBundle.hourly, success.weather.hourly)
+        assertEquals(cachedBundle.daily, success.weather.daily)
+        assertEquals(Instant.parse("2026-08-26T10:20:00Z"), success.weather.fetchedAt)
+        assertEquals("open-meteo", requireNotNull(success.weather.current).provenance.providerId)
+        assertEquals("Open-Meteo Forecast API", requireNotNull(success.weather.current).provenance.sourceName)
+
+        val freshness = success.freshness as ForecastFreshness.StaleAfterFailedRefresh
+        assertEquals(Duration.ofMinutes(45), freshness.staleAge)
+        assertSame(failure, freshness.refreshFailure)
+    }
+
+    @Test
+    fun successThenLaterFailedRefreshRetainsCachedForecastForSameLocation() {
+        val providerBundle = bundle(chicago, "open-meteo", sourceName = "Open-Meteo Forecast API", temperatureC = 17.0)
+        val storage = MutableForecastCacheStorage()
+        val repository = CachedWeatherRepository(
+            upstream = PerCallWeatherRepository(
+                listOf(WeatherRepositoryResult.Success(providerBundle)),
+                listOf(WeatherRepositoryResult.Loading, WeatherRepositoryResult.Failure(ForecastError.NetworkUnavailable)),
+            ),
+            storage = storage,
+            clock = fixedClock("2026-08-26T11:05:00Z"),
+        )
+
+        val firstSuccess = repository.refresh(chicago).terminalSuccess()
+        val retainedSuccess = repository.refresh(chicago).terminalSuccess()
+
+        assertSame(providerBundle, firstSuccess.weather)
+        assertEquals(providerBundle, retainedSuccess.weather)
+        assertEquals(17.0, requireNotNull(retainedSuccess.weather.current).temperatureC)
+        assertEquals("Open-Meteo Forecast API", requireNotNull(retainedSuccess.weather.current).provenance.sourceName)
+        val freshness = retainedSuccess.freshness as ForecastFreshness.StaleAfterFailedRefresh
+        assertEquals(Duration.ofMinutes(45), freshness.staleAge)
+        assertSame(ForecastError.NetworkUnavailable, freshness.refreshFailure)
+    }
+
+    @Test
+    fun failedRefreshDoesNotReadAnotherLocationsCache() {
+        val madisonBundle = bundle(madison, "open-meteo", temperatureC = 12.0)
+        val failure = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(
+                WeatherRepositoryResult.Failure(ForecastError.ProviderUnavailable("open-meteo")),
+            ),
+            storage = RecordingForecastCacheStorage(storedReads = mapOf(madison.id to madisonBundle)),
+            clock = fixedClock("2026-08-26T11:05:00Z"),
+        ).refresh(chicago).terminalFailure()
+
+        assertEquals(ForecastError.ProviderUnavailable("open-meteo"), failure.error)
+    }
+
+    @Test
+    fun failedRefreshCacheReadFailureEmitsLocalCacheFailure() {
+        val failure = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(
+                WeatherRepositoryResult.Failure(ForecastError.InvalidResponse("open-meteo")),
+            ),
+            storage = RecordingForecastCacheStorage(
+                storedReads = mapOf(chicago.id to bundle(chicago, "open-meteo")),
+                readFailure = IllegalStateException("read failed"),
+            ),
+            clock = fixedClock("2026-08-26T11:05:00Z"),
+        ).refresh(chicago).terminalFailure()
+
+        assertSame(ForecastError.LocalCacheFailure, failure.error)
+    }
+
+    @Test
+    fun providerRejectedRequestDoesNotRetainCachedForecast() {
+        val rejected = ForecastError.ProviderRejectedRequest("open-meteo")
+        val failure = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Failure(rejected)),
+            storage = RecordingForecastCacheStorage(storedReads = mapOf(chicago.id to bundle(chicago, "open-meteo"))),
+            clock = fixedClock("2026-08-26T11:05:00Z"),
+        ).refresh(chicago).terminalFailure()
+
+        assertSame(rejected, failure.error)
     }
 
     @Test
@@ -201,6 +305,9 @@ class CachedWeatherRepositoryTest {
             fetchedAt = Instant.parse("2026-08-26T10:20:00Z"),
         )
     }
+
+    private fun fixedClock(instant: String): Clock =
+        Clock.fixed(Instant.parse(instant), ZoneOffset.UTC)
 }
 
 private class FixedWeatherRepository(
@@ -209,9 +316,32 @@ private class FixedWeatherRepository(
     override fun refresh(location: WeatherLocation): Sequence<WeatherRepositoryResult> = results.asSequence()
 }
 
+private class PerCallWeatherRepository(
+    private vararg val responses: List<WeatherRepositoryResult>,
+) : WeatherRepository {
+    private var callIndex = 0
+
+    override fun refresh(location: WeatherLocation): Sequence<WeatherRepositoryResult> {
+        val response = responses.getOrElse(callIndex) { responses.last() }
+        callIndex += 1
+        return response.asSequence()
+    }
+}
+
+private class MutableForecastCacheStorage : ForecastCacheStorage {
+    private val bundles = mutableMapOf<LocationId, WeatherBundle>()
+
+    override fun replaceBundle(bundle: WeatherBundle) {
+        bundles[bundle.location.id] = bundle
+    }
+
+    override fun readBundle(locationId: LocationId): WeatherBundle? = bundles[locationId]
+}
+
 private class RecordingForecastCacheStorage(
     private val storedReads: Map<LocationId, WeatherBundle>,
     private val replaceFailure: RuntimeException? = null,
+    private val readFailure: RuntimeException? = null,
 ) : ForecastCacheStorage {
     val replacements = mutableListOf<WeatherBundle>()
     val reads = mutableListOf<LocationId>()
@@ -222,6 +352,7 @@ private class RecordingForecastCacheStorage(
     }
 
     override fun readBundle(locationId: LocationId): WeatherBundle? {
+        readFailure?.let { throw it }
         reads += locationId
         return storedReads[locationId]
     }

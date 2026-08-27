@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.HomeMetricPresentation
+import com.oxygen.weather.app.HomeForecastFreshness
 import com.oxygen.weather.app.HomeForecastPresentationState
 
 @Composable
@@ -72,7 +73,10 @@ fun HomeLoadingScreen(
                     state = state,
                     onRetry = onRetry,
                 )
-                is HomeForecastPresentationState.ForecastReady -> ReadyContent(state)
+                is HomeForecastPresentationState.ForecastReady -> ReadyContent(
+                    state = state,
+                    onRetry = onRetry,
+                )
             }
             ProviderDisclosure(state)
         }
@@ -119,12 +123,36 @@ private fun ErrorContent(
 }
 
 @Composable
-private fun ReadyContent(state: HomeForecastPresentationState.ForecastReady) {
+private fun ReadyContent(
+    state: HomeForecastPresentationState.ForecastReady,
+    onRetry: () -> Unit,
+) {
     val dashboard = state.dashboard
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        state.refreshInProgressText?.let { refreshText ->
+            DashboardCard {
+                Text(refreshText, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        when (val freshness = state.freshness) {
+            HomeForecastFreshness.Fresh -> Unit
+            is HomeForecastFreshness.StaleAfterFailedRefresh -> {
+                DashboardCard {
+                    Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+                    Text("Refresh failed: ${freshness.refreshFailureMessage.text}", style = MaterialTheme.typography.bodySmall)
+                    if (state.canRetry) {
+                        Button(onClick = onRetry) {
+                            Text(text = state.retryLabel)
+                        }
+                    }
+                }
+            }
+        }
+
         dashboard.alerts.forEach { alert ->
             DashboardCard {
                 Text(alert.event, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)

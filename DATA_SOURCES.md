@@ -67,10 +67,12 @@ verification evidence are complete:
 
 Oxygen core includes a repository-level cache wrapper that persists one
 provider-served forecast bundle as provider-neutral current/hourly/daily rows
-scoped by local `LocationId`. The installed app does not yet wire that cache and
-does not implement offline forecast cache behavior, failed-refresh stale
-retention, saved-location persistence, unit preferences, official alert lookup,
-air-quality lookup, or radar.
+scoped by local `LocationId`. When that wrapper is used, a foreground refresh
+failure can retain the same selected location's cached forecast as a stale
+success with explicit refresh-failed metadata at the repository and app-state
+boundary. The installed app does not yet wire that durable cache and does not
+implement offline forecast cache behavior, saved-location persistence, unit
+preferences, official alert lookup, air-quality lookup, or radar.
 
 Before any additional provider becomes active, document its current terms,
 attribution, rate/caching requirements, privacy implications, and last review

@@ -43,7 +43,9 @@ statement, as recorded in docs/data-sources/MET_NORWAY_FORECAST.md.
 
 Core includes a repository-level forecast cache wrapper that stores one
 provider-served forecast bundle locally when an app or test explicitly uses that
-wrapper. The installed app does not yet wire this cache and does not currently
-include saved-location persistence, unit preferences, alert lookup, air-quality
-lookup, radar, active installed-app forecast fallback wiring, or offline forecast
-cache behavior.
+wrapper. When the wrapper is used, foreground refresh failure can show the same
+selected location's cached forecast as stale instead of replacing it with a
+no-cache error. The installed app does not yet wire this durable cache and does
+not currently include saved-location persistence, unit preferences, alert
+lookup, air-quality lookup, radar, active installed-app forecast fallback
+wiring, or offline forecast cache behavior.
