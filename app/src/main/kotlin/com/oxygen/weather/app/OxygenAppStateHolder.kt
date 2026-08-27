@@ -419,7 +419,7 @@ sealed interface HomeForecastFreshness {
 
     data class StaleAfterFailedRefresh(
         val staleAgeText: String,
-        val refreshFailureMessage: HomeForecastMessage,
+        val refreshFailureMessage: HomeRefreshFailureMessage,
         val statusText: String,
     ) : HomeForecastFreshness
 }
@@ -434,6 +434,16 @@ enum class HomeForecastMessage(
     RejectedRequest("Weather updates rejected that location request. Try again later."),
     LocalCacheFailure("Weather data was received but could not be saved locally. Try again."),
     UnexpectedFailure("Weather update failed unexpectedly. Try again."),
+}
+
+enum class HomeRefreshFailureMessage(
+    val text: String,
+) {
+    NetworkUnavailable("Refresh could not reach the weather service or network."),
+    RateLimited("Weather refresh is temporarily rate-limited. Try again shortly."),
+    ProviderUnavailable("Weather refresh is temporarily unavailable. Try again shortly."),
+    InvalidResponse("Weather refresh returned data Oxygen could not read. Try again later."),
+    UnexpectedFailure("Weather refresh failed unexpectedly. Try again."),
 }
 
 private const val FORECAST_DISCLOSURE = "Weather data by Open-Meteo."
@@ -479,12 +489,23 @@ private fun ForecastError.toHomeForecastMessage(): HomeForecastMessage =
         is ForecastError.UnexpectedProviderFailure -> HomeForecastMessage.UnexpectedFailure
     }
 
+private fun ForecastError.toHomeRefreshFailureMessage(): HomeRefreshFailureMessage =
+    when (this) {
+        ForecastError.NetworkUnavailable -> HomeRefreshFailureMessage.NetworkUnavailable
+        is ForecastError.RateLimited -> HomeRefreshFailureMessage.RateLimited
+        is ForecastError.ProviderUnavailable -> HomeRefreshFailureMessage.ProviderUnavailable
+        is ForecastError.InvalidResponse -> HomeRefreshFailureMessage.InvalidResponse
+        is ForecastError.ProviderRejectedRequest,
+        ForecastError.LocalCacheFailure,
+        is ForecastError.UnexpectedProviderFailure -> HomeRefreshFailureMessage.UnexpectedFailure
+    }
+
 private fun ForecastFreshness.toHomeForecastFreshness(): HomeForecastFreshness =
     when (this) {
         ForecastFreshness.Fresh -> HomeForecastFreshness.Fresh
         is ForecastFreshness.StaleAfterFailedRefresh -> {
             val ageText = staleAge.toStaleAgeText()
-            val message = refreshFailure.toHomeForecastMessage()
+            val message = refreshFailure.toHomeRefreshFailureMessage()
             HomeForecastFreshness.StaleAfterFailedRefresh(
                 staleAgeText = ageText,
                 refreshFailureMessage = message,

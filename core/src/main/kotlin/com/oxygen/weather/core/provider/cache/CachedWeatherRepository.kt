@@ -29,7 +29,7 @@ class CachedWeatherRepository(
                     val readback = try {
                         storage.replaceBundle(result.weather)
                         storage.readBundle(location.id)
-                    } catch (_: RuntimeException) {
+                    } catch (_: Exception) {
                         null
                     }
 
@@ -51,7 +51,7 @@ class CachedWeatherRepository(
 
         val cachedBundle = try {
             storage.readBundle(location.id)
-        } catch (_: RuntimeException) {
+        } catch (_: Exception) {
             return WeatherRepositoryResult.Failure(ForecastError.LocalCacheFailure)
         } ?: return failure
 

@@ -14,6 +14,7 @@ import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.ForecastFreshness
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
+import java.io.IOException
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -214,6 +215,22 @@ class CachedWeatherRepositoryTest {
     }
 
     @Test
+    fun failedRefreshCacheReadIoFailureEmitsLocalCacheFailure() {
+        val failure = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(
+                WeatherRepositoryResult.Failure(ForecastError.NetworkUnavailable),
+            ),
+            storage = RecordingForecastCacheStorage(
+                storedReads = mapOf(chicago.id to bundle(chicago, "open-meteo")),
+                readFailure = IOException("stream failed"),
+            ),
+            clock = fixedClock("2026-08-26T11:05:00Z"),
+        ).refresh(chicago).terminalFailure()
+
+        assertSame(ForecastError.LocalCacheFailure, failure.error)
+    }
+
+    @Test
     fun providerRejectedRequestDoesNotRetainCachedForecast() {
         val rejected = ForecastError.ProviderRejectedRequest("open-meteo")
         val failure = CachedWeatherRepository(
@@ -230,6 +247,36 @@ class CachedWeatherRepositoryTest {
         val storage = RecordingForecastCacheStorage(
             storedReads = emptyMap(),
             replaceFailure = IllegalStateException("disk full"),
+        )
+
+        val failure = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(bundle(chicago, "open-meteo"))),
+            storage = storage,
+        ).refresh(chicago).terminalFailure()
+
+        assertSame(ForecastError.LocalCacheFailure, failure.error)
+    }
+
+    @Test
+    fun cacheWriteIoFailureEmitsProviderNeutralLocalFailure() {
+        val storage = RecordingForecastCacheStorage(
+            storedReads = mapOf(chicago.id to bundle(chicago, "open-meteo")),
+            replaceFailure = IOException("disk failed"),
+        )
+
+        val failure = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(bundle(chicago, "open-meteo"))),
+            storage = storage,
+        ).refresh(chicago).terminalFailure()
+
+        assertSame(ForecastError.LocalCacheFailure, failure.error)
+    }
+
+    @Test
+    fun cacheReadbackIoFailureAfterWriteEmitsProviderNeutralLocalFailure() {
+        val storage = RecordingForecastCacheStorage(
+            storedReads = mapOf(chicago.id to bundle(chicago, "open-meteo")),
+            readFailure = IOException("readback failed"),
         )
 
         val failure = CachedWeatherRepository(
@@ -340,8 +387,8 @@ private class MutableForecastCacheStorage : ForecastCacheStorage {
 
 private class RecordingForecastCacheStorage(
     private val storedReads: Map<LocationId, WeatherBundle>,
-    private val replaceFailure: RuntimeException? = null,
-    private val readFailure: RuntimeException? = null,
+    private val replaceFailure: Exception? = null,
+    private val readFailure: Exception? = null,
 ) : ForecastCacheStorage {
     val replacements = mutableListOf<WeatherBundle>()
     val reads = mutableListOf<LocationId>()
