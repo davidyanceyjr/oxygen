@@ -47,6 +47,7 @@ import com.oxygen.weather.app.ui.components.WeatherConditionMark
 fun HomeLoadingScreen(
     state: HomeForecastPresentationState,
     onRetry: () -> Unit = {},
+    onRefresh: () -> Unit = {},
     onOpenAbout: () -> Unit = {},
 ) {
     Surface(Modifier.fillMaxSize()) {
@@ -92,7 +93,7 @@ fun HomeLoadingScreen(
                 )
                 is HomeForecastPresentationState.ForecastReady -> ReadyContent(
                     state = state,
-                    onRetry = onRetry,
+                    onRefresh = onRefresh,
                     onOpenAbout = onOpenAbout,
                 )
             }
@@ -145,7 +146,7 @@ private fun ErrorContent(
 @Composable
 private fun ReadyContent(
     state: HomeForecastPresentationState.ForecastReady,
-    onRetry: () -> Unit,
+    onRefresh: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
     val dashboard = state.dashboard
@@ -177,6 +178,16 @@ private fun ReadyContent(
             ) {
                 Text("Settings / About")
             }
+            Button(
+                onClick = onRefresh,
+                enabled = state.canRefresh && !state.isRefreshInProgress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("home-refresh"),
+            ) {
+                Text(text = state.refreshLabel)
+            }
         }
 
         state.refreshInProgressText?.let { refreshText ->
@@ -191,17 +202,6 @@ private fun ReadyContent(
                     Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
                     Text("Refresh failed: ${freshness.refreshFailureMessage.text}", style = MaterialTheme.typography.bodySmall)
-                    if (state.canRetry) {
-                        Button(
-                            onClick = onRetry,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 48.dp)
-                                .testTag("home-retry"),
-                        ) {
-                            Text(text = state.retryLabel)
-                        }
-                    }
                 }
             }
         }

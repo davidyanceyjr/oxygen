@@ -6,19 +6,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.HomeForecastMessage
 import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.HomeSuccessSection
+import com.oxygen.weather.app.OxygenApp
+import com.oxygen.weather.app.OxygenAppStateHolder
 import com.oxygen.weather.app.ui.theme.OxygenTheme
 import com.oxygen.weather.core.model.AlertSeverity
 import com.oxygen.weather.core.model.CurrentConditions
@@ -35,10 +40,13 @@ import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.ForecastFreshness
+import com.oxygen.weather.core.provider.WeatherRepository
+import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.concurrent.Executor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -88,6 +96,9 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("H 73 deg F   L 54 deg F").assertIsDisplayed()
         composeRule.onNodeWithText("Weather data by Open-Meteo.").assertExists()
         composeRule.onNodeWithTag("home-hourly-row").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-refresh").assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Retry").assertCountEquals(0)
         assertEquals(
             listOf(
                 HomeSuccessSection.LocationHeader,
@@ -106,7 +117,7 @@ class HomeDashboardUiTest {
     }
 
     @Test
-    fun staleSuccessKeepsForecastContentRetryAndRefreshFailureVisible() {
+    fun staleSuccessKeepsForecastContentRefreshAndRefreshFailureVisible() {
         val location = weatherLocation(name = "Stale Cache City")
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = location,
@@ -121,7 +132,9 @@ class HomeDashboardUiTest {
 
         composeRule.onNodeWithTag("home-section-stale").assertIsDisplayed()
         composeRule.onNodeWithText("Cached forecast").assertIsDisplayed()
-        composeRule.onNodeWithText("Retry").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-refresh").assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Retry").assertCountEquals(0)
         composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
         composeRule.onNodeWithText("Open-Meteo").assertIsDisplayed()
         composeRule.assertVerticalOrder(
@@ -183,7 +196,7 @@ class HomeDashboardUiTest {
 
         composeRule.onNodeWithText(location.displayName).assertIsDisplayed()
         composeRule.onNodeWithText("Open-Meteo Long Provider Attribution Name").assertExists()
-        composeRule.onNodeWithText("Retry").assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh").assertIsDisplayed()
         composeRule.assertReadableBoundsAfterScroll(
             "home-section-location",
             "home-section-stale",
@@ -194,6 +207,65 @@ class HomeDashboardUiTest {
             "home-section-source",
             "home-section-provenance-footer",
         )
+    }
+
+    @Test
+    fun oxygenAppRefreshClickRequestsExactSelectedLocationOnce() {
+        val location = weatherLocation(id = "manual-click-refresh", name = "Click Refresh City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            OxygenApp(stateHolder = stateHolder)
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(location), repository.locations)
+        composeRule.onNodeWithTag("home-refresh").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(location, location), repository.locations)
+    }
+
+    @Test
+    fun oxygenAppStaleRefreshClickRequestsExactSelectedLocationOnce() {
+        val location = weatherLocation(id = "manual-click-stale-refresh", name = "Click Stale City")
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location),
+                    freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                        staleAge = Duration.ofMinutes(45),
+                        refreshFailure = ForecastError.NetworkUnavailable,
+                    ),
+                ),
+            ),
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            OxygenApp(stateHolder = stateHolder)
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(location), repository.locations)
+        composeRule.onNodeWithTag("home-refresh").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(location, location), repository.locations)
+        composeRule.onAllNodesWithText("Retry").assertCountEquals(0)
     }
 }
 
@@ -218,6 +290,24 @@ private fun ComposeContentTestRule.setHomeContent(
                 }
             }
         }
+    }
+}
+
+private object DirectExecutor : Executor {
+    override fun execute(command: Runnable) = command.run()
+}
+
+private class RecordingWeatherRepository(
+    private vararg val responses: List<WeatherRepositoryResult>,
+) : WeatherRepository {
+    val locations = mutableListOf<WeatherLocation>()
+    private var callIndex = 0
+
+    override fun refresh(location: WeatherLocation): Sequence<WeatherRepositoryResult> {
+        locations += location
+        val response = responses.getOrElse(callIndex) { responses.last() }
+        callIndex += 1
+        return response.asSequence()
     }
 }
 

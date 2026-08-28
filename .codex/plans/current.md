@@ -1,51 +1,79 @@
 # Active Cycle
 
 Status: committed
-Cycle ID: 2026-08-28-repository-engineering-gate
-Mode: documentation-and-repository-maintenance
-Goal: Complete the Repository Engineering Gate before major persistence work.
-Roadmap slice: Repository Engineering Gate.
-Branch or work context: local `oxygen` Android scaffold after project-review roadmap integration.
+Cycle ID: 2026-08-28-explicit-home-refresh-control
+Mode: feature
+Goal: Add an explicit Home refresh control for provider-backed fresh and stale dashboards.
+Roadmap slice: Slice 17B: Explicit Home Refresh Control.
+Branch or work context: local `oxygen` Android scaffold after Repository Engineering Gate completion.
 
 Specification anchors:
 - `AGENTS.md`
 - `README.md`
+- `docs/OXYGEN_FULL_SPECIFICATION.md`
 - `.codex/plans/mvp-roadmap.md`
 - `.codex/cycles/history.md`
-- `.codex/review/findings.md`
-- `LICENSE`
-- `LICENSE-TODO.md`
-- `NOTICE`
-- `THIRD_PARTY_LICENSES.md`
-- `.gitignore`
-- `.github/workflows/`
+- `app/src/main/`
+- `app/src/test/`
+- `app/src/androidTest/`
+- `core/src/main/`
+- `core/src/test/`
+
+Prerequisites:
+- Repository Engineering Gate is committed.
+- Slice 17A Home dashboard presentation alignment is committed.
+- Repository-level stale-success behavior exists for failed refresh with cached data.
+
+Selected behavior:
+- A user viewing a provider-backed Home success or stale-success dashboard can explicitly refresh the forecast for the exact selected location.
+- Refresh state remains observable at the app state and UI boundary without relying on recomposition side effects.
+- The existing retry behavior for no-cache errors remains distinct from refresh on a dashboard with data.
 
 Acceptance criteria:
-- The repository license contradiction is resolved by explicit project-owner decision: GPL-3.0-or-later is the intended source license, the current root `LICENSE` contains GPL-3.0-or-later text, and related notices distinguish Oxygen source licensing from weather-data/provider attribution.
-- A baseline GitHub CI workflow is added for compile, unit tests, assemble, and whitespace checks using the repo-local Android environment wrapper or an equivalent hosted Android/JDK/Gradle setup.
-- At least one hosted CI run passes before CI is cited as durable verification evidence.
-- `main` branch protection is configured after CI exists, requiring baseline CI checks, blocking force pushes and deletion, and using pull requests before merge. Mandatory second-party review remains optional for solo maintenance.
-- README maturity/status remains accurate and does not imply MVP, beta, release-candidate, offline, saved-location, alert, unit, or installed-app fallback completion.
-- Evidence-retention expectations remain documented: raw local logs can stay ignored, but roadmap/release/readiness claims must be reproducible through CI or retained in reviewable project artifacts.
+- Fresh Home success exposes a visible `Refresh` control.
+- Stale Home success exposes a visible `Refresh` control while preserving stale/source/failure metadata.
+- No-cache error states continue to expose `Retry`; dashboard success/stale-success states do not label the refresh action as retry.
+- Production state-holder and UI wiring distinguish dashboard refresh from no-cache retry, for example with separate refresh and retry callbacks.
+- Activating refresh invokes the forecast repository for the exact selected `WeatherLocation`; no default, sample, stale previous, or hidden location is substituted.
+- Refresh is caused only by explicit user action or a controlled state-holder trigger, not by every recomposition.
+- Refresh-in-progress state is visible without replacing useful dashboard data with an empty loading screen.
+- Successful refresh replaces the displayed dashboard data with the newly served provider-neutral forecast, clears refresh-in-progress state, clears stale failure metadata, and does not leave stale dashboard values visible.
+- Failed refresh with useful cached data clears refresh-in-progress state and retains the stale dashboard with source, stale age, failure, and refresh metadata.
+- Failed refresh without cache clears refresh-in-progress state and remains a retryable provider-neutral no-cache error.
+- Refresh and retry controls have adequate touch targets, meaningful text or accessibility labels, stable layout, and remain readable on narrow screens and large font settings.
+- `SampleWeather.bundle`, provider DTOs, provider IDs, and provider-specific errors do not cross into production Home state or Composables.
 
-Acceptance boundary: The Repository Engineering Gate is complete when license status, baseline CI, hosted CI evidence, branch protection, README status, and evidence-retention policy are all resolved and recorded. This gate does not add app behavior, provider behavior, Room, DataStore, offline launch, saved locations, unit preferences, alerts, installed-app fallback, presentation settings, or release readiness.
+Acceptance boundary: Slice 17B is complete when a user-visible `Refresh` control is implemented for fresh and stale Home dashboards, `Retry` remains reserved for no-cache errors, refresh action is verified through the app state and Compose/OxygenApp boundary for the exact selected `WeatherLocation`, refresh-in-progress retains useful dashboard content, terminal success/failure states clear in-progress state correctly, and static checks show no sample/provider DTO/provider-error leakage into production Home state or Composables. This slice does not add offline launch, installed-app durable cache wiring, saved-location persistence, background refresh, unit preferences, appearance persistence, alert lookup, air-quality lookup, radar, new provider behavior, or release readiness.
 
 ## Implementation Plan
 
-1. Resolve the source-license contradiction with an explicit project-owner decision before editing license files.
-2. Add the smallest baseline GitHub CI workflow that can run the required Android checks in hosted CI.
-3. Run local broad verification for the CI/documentation changes.
-4. Record hosted CI outcome or the exact hosted-run blocker.
-5. Configure or document `main` branch protection once CI status checks exist.
-6. Review README/status language and evidence-retention wording for unsupported claims.
-7. Append completion evidence to `.codex/cycles/history.md` only when the gate is actually verified or committed.
+1. Discover the current Home state holder, Home presentation state, refresh/retry plumbing, repository interfaces, and existing Home state/Compose tests.
+2. Add or update focused failing tests for explicit refresh from fresh success and stale success, exact selected-location repository calls, refresh-in-progress dashboard retention, successful replacement, failed-refresh stale retention, and no-cache error preservation.
+3. Add or update Compose/UI-boundary tests for visible refresh control, accessibility label/text, stable section layout, and compact-width/large-font readability.
+4. Add or update an `OxygenApp`-level click-through test with a controlled `WeatherRepository` proving fresh and stale dashboard `Refresh` taps request the exact selected `WeatherLocation`, while recomposition alone does not create extra refresh calls.
+5. Implement the smallest production-path changes needed in Home state and UI to expose and handle explicit refresh separately from no-cache retry.
+6. Run focused app tests for Home forecast/state, Home presentation UI, and `OxygenApp` refresh click-through behavior.
+7. Run static checks for sample/provider DTO leakage across production Home boundaries:
+   - `rg -n "SampleWeather|core\\.provider\\.(openmeteo|metno).*Dtos|providerId|open-meteo|metno-provider" app/src/main/kotlin/com/oxygen/weather/app`
+   - `rg -n "OpenMeteo.*Dto|MetNo.*Dto|ForecastError\\.(RateLimited|ProviderUnavailable|InvalidResponse|ProviderRejectedRequest|UnexpectedProviderFailure)" app/src/main/kotlin/com/oxygen/weather/app`
+   - Expected result: no production Home/UI leakage, allowing deliberate provider-neutral disclosure source names only when derived from provenance.
+8. Run broad verification:
+   - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
+   - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
+   - `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
+   - `git diff --check`
+9. Exercise the Android UI boundary with controlled repository data and save logs/screenshots under `.codex/test-artifacts/2026-08-28-explicit-home-refresh-control/`. Installed-app/emulator evidence may prove visible control behavior and interaction plumbing, but stale durable-cache behavior is not claimed unless installed-app cache wiring is added in this slice.
+10. Review the diff for scope, update this plan with evidence, and append cycle evidence to `.codex/cycles/history.md` only when the slice is ready or committed.
 
 ## Phase Results
 
-- planned: Selected Repository Engineering Gate as the next roadmap item after project-review integration. No CI, branch protection, hosted CI evidence, or full gate completion has been completed yet.
-- implemented: Project owner selected GPL-3.0-or-later for Oxygen source code on 2026-08-28. Root `LICENSE`, `LICENSE-TODO.md`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, and `README.md` now record the license decision while keeping weather-data/provider attribution separate.
-- implemented: Added baseline GitHub Actions workflow at `.github/workflows/android-ci.yml` with hosted Android/JDK/Gradle setup and separate compile, debug unit test, assemble, and whitespace steps.
-- verified: Local broad checks passed on 2026-08-28 through the repo-local Android environment wrapper. Evidence saved under `.codex/test-artifacts/2026-08-28-repository-engineering-gate/`: `compile-debug-kotlin.log`, `debug-unit-tests.log`, `assemble-debug.log`, and `git-diff-check.log`.
-- verified: Hosted GitHub Actions run `33175936627` passed on commit `e7dbc75a9b2113f43b6fa0a3ab0c10c6b3f37535`; job `Android checks` passed compile, debug unit tests, assemble, and whitespace steps. Run URL: `https://github.com/davidyanceyjr/oxygen/actions/runs/33175936627`.
-- implemented: `main` branch protection was configured after hosted CI passed. Protection requires strict status check `Android checks`, blocks force pushes, blocks deletion, enforces protection for administrators, and requires pull-request review settings with `required_approving_review_count` set to `0` for solo maintenance.
-- committed: Repository Engineering Gate evidence was committed and pushed through `main` history. Final record updates are being merged through protected-branch PR workflow.
+- planned: Selected Slice 17B after committed Repository Engineering Gate and committed Home dashboard presentation alignment.
+- covered: Added focused state-holder tests for dashboard refresh labels, exact selected-location refresh calls, refresh-in-progress dashboard retention, successful refresh replacement/stale-metadata clearing, and refresh failure without cache falling back to retryable no-cache error. Added Compose/OxygenApp tests for visible dashboard `Refresh`, stale dashboard `Refresh`, no dashboard `Retry`, compact large-font bounds, and fresh/stale click-through calls using the exact selected `WeatherLocation`.
+- implemented: `OxygenAppStateHolder` now exposes `onHomeForecastRefresh()` separately from `onHomeForecastRetry()`, only refreshes from ready Home dashboards, and uses the current dashboard `WeatherLocation`. `OxygenApp` passes separate retry and refresh callbacks. `HomeLoadingScreen` renders a full-width 48dp-minimum `Refresh` control for fresh and stale dashboard states, keeps `Retry` reserved for no-cache errors, and disables duplicate taps while refresh is in progress while preserving the visible dashboard.
+- verified: Pre-fix red state-holder log saved at `.codex/test-artifacts/2026-08-28-explicit-home-refresh-control/pre-fix-red-home-refresh-state.log`.
+- verified: Focused state-holder tests passed: `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest'`; log saved at `.codex/test-artifacts/2026-08-28-explicit-home-refresh-control/focused-home-refresh-state.log`.
+- verified: Focused Compose/OxygenApp boundary tests passed on `oxygen_starter(AVD) - 17`: `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`; 7 tests executed; log saved at `.codex/test-artifacts/2026-08-28-explicit-home-refresh-control/focused-home-dashboard-ui.log`.
+- verified: Broad checks passed: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh && ./gradlew :app:assembleDebug`; `git diff --check`. Logs saved in `.codex/test-artifacts/2026-08-28-explicit-home-refresh-control/`.
+- verified: The broad planned `rg` patterns produced pre-existing non-Home-boundary matches in the sample scaffold package and provider-neutral `ForecastError` mapping; raw logs saved as `static-home-provider-leak-1.log` and `static-home-provider-leak-2.log`. Focused Home production-boundary checks returned no matches; logs saved as `static-production-home-boundary-leak-1.log` and `static-production-home-boundary-leak-2.log`.
+- verified: This slice did not add offline launch, installed-app durable cache wiring, saved-location persistence, background refresh, unit preferences, appearance persistence, alert lookup, air-quality lookup, radar, new provider behavior, release readiness, or active installed-app MET Norway fallback.
+- committed: Explicit Home Refresh Control evidence and implementation were committed in this history entry.

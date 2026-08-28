@@ -90,6 +90,12 @@ class OxygenAppStateHolder(
         startHomeForecastLoad(selectedLocation)
     }
 
+    fun onHomeForecastRefresh() {
+        val home = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home ?: return
+        if (home.forecast !is HomeForecastPresentationState.ForecastReady) return
+        startHomeForecastLoad(home.forecast.location)
+    }
+
     fun onOpenAbout() {
         val currentScreen = presentationState.screen
         if (currentScreen is OxygenAppScreen.About) return
@@ -385,6 +391,8 @@ sealed interface HomeForecastPresentationState {
         val freshness: HomeForecastFreshness = HomeForecastFreshness.Fresh,
         val isRefreshInProgress: Boolean = false,
         val refreshInProgressText: String? = null,
+        val refreshLabel: String = "Refresh",
+        val canRefresh: Boolean = true,
         val retryLabel: String = "Retry",
         val canRetry: Boolean = false,
         override val forecastDisclosure: String = FORECAST_DISCLOSURE,
@@ -405,7 +413,8 @@ sealed interface HomeForecastPresentationState {
                     freshness = freshness.toHomeForecastFreshness(),
                     isRefreshInProgress = false,
                     refreshInProgressText = null,
-                    canRetry = freshness is ForecastFreshness.StaleAfterFailedRefresh,
+                    canRefresh = true,
+                    canRetry = false,
                     forecastDisclosure = dashboard.source.toForecastDisclosure(),
                     forecastPrivacyNote = dashboard.source.toForecastPrivacyNote(),
                 )

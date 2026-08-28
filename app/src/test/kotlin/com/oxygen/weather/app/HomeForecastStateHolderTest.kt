@@ -125,6 +125,9 @@ class HomeForecastStateHolderTest {
         assertEquals("CC BY 4.0", ready.dashboard.source.license)
         assertEquals("Flood Watch", ready.dashboard.alerts.single().event)
         assertFalse(ready.dashboard.visibleText().contains("internal-open-meteo-id"))
+        assertEquals("Refresh", ready.refreshLabel)
+        assertTrue(ready.canRefresh)
+        assertFalse(ready.canRetry)
         assertEquals(
             listOf(
                 HomeSuccessSection.LocationHeader,
@@ -362,7 +365,7 @@ class HomeForecastStateHolderTest {
     }
 
     @Test
-    fun `stale success after failed refresh keeps dashboard visible with retry metadata`() {
+    fun `stale success after failed refresh keeps dashboard visible with refresh metadata`() {
         val location = weatherLocation("manual-stale-cache", "Stale Cache City")
         val bundle = fullWeatherBundle(location)
         val stateHolder = OxygenAppStateHolder(
@@ -396,13 +399,14 @@ class HomeForecastStateHolderTest {
         assertFalse(stale.refreshFailureMessage.text.contains("No cached forecast is available yet"))
         assertTrue(stale.statusText.contains("cached forecast"))
         assertTrue(stale.statusText.contains("45 minutes"))
-        assertTrue(ready.canRetry)
-        assertEquals("Retry", ready.retryLabel)
+        assertTrue(ready.canRefresh)
+        assertEquals("Refresh", ready.refreshLabel)
+        assertFalse(ready.canRetry)
         assertFalse(ready.isRefreshInProgress)
     }
 
     @Test
-    fun `same-location loading while ready keeps previous dashboard visible`() {
+    fun `explicit home refresh while ready keeps previous dashboard visible`() {
         val location = weatherLocation("manual-refresh-ready", "Refresh Ready City")
         val weatherRepository = ControlledWeatherRepository()
         val executor = Executors.newFixedThreadPool(2)
@@ -418,7 +422,7 @@ class HomeForecastStateHolderTest {
             val initialReady = awaitHomeState<HomeForecastPresentationState.ForecastReady>(stateHolder)
             assertEquals("65 deg F", initialReady.dashboard.current?.temperature)
 
-            stateHolder.onHomeForecastRetry()
+            stateHolder.onHomeForecastRefresh()
             val second = weatherRepository.awaitCall(1)
             second.emit(WeatherRepositoryResult.Loading)
             val refreshing = awaitHomeState<HomeForecastPresentationState.ForecastReady>(stateHolder)
@@ -427,10 +431,85 @@ class HomeForecastStateHolderTest {
             assertEquals("65 deg F", refreshing.dashboard.current?.temperature)
             assertTrue(refreshing.isRefreshInProgress)
             assertEquals("Refreshing weather for Refresh Ready City", refreshing.refreshInProgressText)
+            assertEquals(listOf(location, location), weatherRepository.locations)
         } finally {
             weatherRepository.finishAll()
             executor.shutdownNow()
         }
+    }
+
+    @Test
+    fun `explicit home refresh success replaces dashboard and clears stale metadata`() {
+        val location = weatherLocation("manual-refresh-success", "Refresh Success City")
+        val firstBundle = fullWeatherBundle(location)
+        val refreshedBundle = fullWeatherBundle(location).copy(
+            current = fullWeatherBundle(location).current?.copy(temperatureC = 24.0),
+            fetchedAt = Instant.parse("2026-08-22T13:00:00Z"),
+        )
+        val weatherRepository = ControlledWeatherRepository()
+        val executor = Executors.newFixedThreadPool(2)
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = weatherRepository,
+            forecastExecutor = executor,
+        )
+
+        try {
+            val first = weatherRepository.awaitCall(0)
+            first.emit(
+                WeatherRepositoryResult.Success(
+                    weather = firstBundle,
+                    freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                        staleAge = Duration.ofMinutes(30),
+                        refreshFailure = ForecastError.NetworkUnavailable,
+                    ),
+                ),
+            )
+            val stale = awaitHomeState<HomeForecastPresentationState.ForecastReady>(stateHolder)
+            assertTrue(stale.freshness is HomeForecastFreshness.StaleAfterFailedRefresh)
+
+            stateHolder.onHomeForecastRefresh()
+            val second = weatherRepository.awaitCall(1)
+            second.emit(WeatherRepositoryResult.Loading)
+            assertTrue(awaitHomeState<HomeForecastPresentationState.ForecastReady>(stateHolder).isRefreshInProgress)
+            second.emit(WeatherRepositoryResult.Success(refreshedBundle))
+
+            val refreshed = awaitReadyState(stateHolder) { it.dashboard.current?.temperature == "75 deg F" }
+            assertSame(location, refreshed.location)
+            assertEquals("75 deg F", refreshed.dashboard.current?.temperature)
+            assertEquals(HomeForecastFreshness.Fresh, refreshed.freshness)
+            assertFalse(refreshed.isRefreshInProgress)
+            assertEquals(null, refreshed.refreshInProgressText)
+            assertEquals(listOf(location, location), weatherRepository.locations)
+        } finally {
+            weatherRepository.finishAll()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `explicit home refresh failure without cache becomes no-cache error`() {
+        val location = weatherLocation("manual-refresh-no-cache", "Refresh No Cache City")
+        val weatherRepository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+            listOf(
+                WeatherRepositoryResult.Loading,
+                WeatherRepositoryResult.Failure(ForecastError.NetworkUnavailable),
+            ),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = weatherRepository,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onHomeForecastRefresh()
+
+        val error = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.NoCacheError
+        assertSame(location, error.location)
+        assertEquals(HomeForecastMessage.NetworkUnavailable, error.message)
+        assertEquals(listOf(location, location), weatherRepository.locations)
     }
 
     @Test
@@ -611,6 +690,19 @@ private inline fun <reified T : HomeForecastPresentationState> awaitHomeState(
         Thread.sleep(10)
     }
     error("Timed out waiting for Home forecast state ${T::class.java.simpleName}")
+}
+
+private fun awaitReadyState(
+    stateHolder: OxygenAppStateHolder,
+    predicate: (HomeForecastPresentationState.ForecastReady) -> Boolean,
+): HomeForecastPresentationState.ForecastReady {
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+    while (System.nanoTime() < deadline) {
+        val forecast = (stateHolder.presentationState.screen as? OxygenAppScreen.Home)?.forecast
+        if (forecast is HomeForecastPresentationState.ForecastReady && predicate(forecast)) return forecast
+        Thread.sleep(10)
+    }
+    error("Timed out waiting for matching Home ready state")
 }
 
 private fun weatherLocation(
