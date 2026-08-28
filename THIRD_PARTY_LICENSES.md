@@ -1,6 +1,7 @@
 # Third-Party Licenses
 
-Oxygen source code is licensed under the repository LICENSE file.
+Oxygen source code is licensed under GPL-3.0-or-later as recorded in the
+repository LICENSE file.
 
 This repository currently contains no imported weather icon pack, map asset
 pack, or third-party artwork.

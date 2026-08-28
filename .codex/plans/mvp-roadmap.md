@@ -19,6 +19,8 @@ Before implementation starts, copy one bounded behavior slice from this release 
 
 Focused evidence means behavior-specific tests at the provider, repository, Android state, or Compose boundary. Live provider checks and emulator/manual exercises are real-path evidence. Gradle compilation, unit-test task execution, assembly, dependency reports, and `git diff --check` are broad checks unless a selected slice defines a narrower reason.
 
+Raw build/test output may remain ignored under `.codex/test-artifacts/`, but evidence required for roadmap, release-gate, or readiness claims must either be reproducible through CI or retained in a reviewable project artifact. Do not require every cycle log to be committed.
+
 ## UI Rule
 
 Every user-facing active slice must carry the relevant UI specification with it. Do not defer UI obligations into a separate polish phase when they are part of the behavior being implemented.
@@ -53,6 +55,21 @@ For the current specification, release verification must prove:
 - Provider provenance is visible for whichever forecast provider served the displayed forecast.
 - Data Sources lists active providers only when their production paths can fetch or serve data.
 - Forecast provider preference does not disable official alert lookup.
+
+## Repository Engineering Gate
+
+Status: specified
+
+Release intent: Repository hygiene and durable verification are established before major persistence work and before any release, beta, contributor-readiness, or MVP-complete claim.
+
+Must prove:
+- The repository license contradiction is resolved by the project owner: either Apache-2.0 remains the intended source license and `LICENSE-TODO.md`/notices are updated accordingly, or the intended license replaces the current root `LICENSE` and related notices.
+- A baseline GitHub CI workflow runs Android checks through `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`, `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`, `. scripts/android-env.sh && ./gradlew :app:assembleDebug`, and `git diff --check`, or provides an equivalent hosted Android/JDK/Gradle setup and documents any hosted-run blocker with an explicit follow-up gate.
+- At least one hosted CI run passes before CI is cited as durable evidence.
+- `main` branch protection requires the baseline CI checks, blocks force pushes and deletion, and uses pull requests before merge; second-party review may remain optional for solo maintenance.
+- README project maturity/status is corrected without implying MVP, beta, release-candidate, offline, saved-location, alert, unit, or installed-app fallback completion.
+- Evidence-retention expectations distinguish ephemeral local logs from reviewable artifacts and CI-reproducible verification.
+- This gate does not add app behavior, provider behavior, persistence, settings, alerts, or release readiness.
 
 ## Slice 1: Open-Meteo Provider Contract
 
@@ -374,6 +391,9 @@ Must prove:
 
 Status: specified
 
+Prerequisites:
+- Repository Engineering Gate, unless the active cycle explicitly records why this user-facing Home slice must proceed first.
+
 Release intent: Fresh and stale Home dashboards expose an explicit refresh action for the selected location without recomposition-driven refresh loops.
 
 Must prove:
@@ -388,6 +408,9 @@ Must prove:
 
 Status: specified
 
+Prerequisites:
+- Repository Engineering Gate, unless the active cycle explicitly records why this Home evidence slice must proceed first.
+
 Release intent: Home presentation slices have Compose or Android-boundary evidence for layout, semantics, and accessibility-oriented conditions before offline launch relies on the same UI.
 
 Must prove:
@@ -398,9 +421,33 @@ Must prove:
 - Evidence is saved as screenshots, hierarchy dumps, Compose test logs, or equivalent Android-boundary artifacts under the active cycle artifact directory.
 - This slice does not add new forecast behavior, offline launch, saved-location persistence, unit preferences, appearance persistence, alert lookup, air-quality lookup, radar, background refresh, or release-candidate claims.
 
+## Persistence Architecture Gate
+
+Status: specified
+
+Prerequisites:
+- Repository Engineering Gate.
+- Slice 17B and Slice 17C, unless the active cycle records a narrower reason to move persistence first without relying on unverified Home refresh/accessibility behavior.
+
+Release intent: Production persistence and lifecycle architecture are settled before offline launch, saved locations, unit preferences, installed-app fallback caching, and persisted presentation settings depend on local state.
+
+Must prove:
+- Room is introduced as the production source of truth for normalized forecast/location data, or `docs/OXYGEN_FULL_SPECIFICATION.md` is explicitly amended to approve a different production persistence architecture before implementation claims proceed.
+- DataStore is introduced for small persistent application state and preferences such as selected location ID, units, theme, layout density, and effects settings; DataStore is not used as the canonical forecast database.
+- Provider-neutral repository boundaries remain intact and provider DTOs stay isolated from app/UI, Room consumers, and presentation mappers.
+- Forecast persistence preserves location identity, current/hourly/daily rows, provider provenance, cache metadata needed by Open-Meteo and MET Norway, timestamps, timezone, canonical units, and null/missing values.
+- Installed-app state establishes a lifecycle-aware boundary suitable for Room/DataStore collection, cancellation, process recreation, and repository refresh, using ViewModel/coroutines/Flow where persistence behavior requires it.
+- The role, migration path, or removal plan for `FileForecastCacheStorage` is explicit before installed-app offline behavior relies on production persistence.
+- Focused persistence tests cover read/write, transaction replacement, same-location scoping, missing/null preservation, provenance preservation, and local failure mapping.
+- Broad Android verification passes.
+- This gate does not claim offline launch, saved-location switching, unit conversion, alert lookup, installed-app fallback, background refresh, or release readiness.
+
 ## Slice 18: Offline Launch From Last Forecast
 
 Status: specified
+
+Prerequisites:
+- Persistence Architecture Gate.
 
 Release intent: Relaunching without network displays the last cached forecast for the selected location.
 
@@ -408,11 +455,17 @@ Must prove:
 - Last selected location and forecast load from local storage.
 - Home shows cached current/hourly/daily data and explicit stale age when network is unavailable.
 - No-cache launch shows a retryable error.
+- Startup restores selected location, reads persisted forecast, renders Home, attempts refresh, replaces persisted data on success, and retains stale data on refresh failure.
+- Online launch with no cache, online launch with cache, offline launch with useful cache, offline launch without cache, failed foreground refresh with cache, and failed foreground refresh without cache are observable in the installed app or an explicitly labeled Android-boundary harness.
 - Offline claims are limited to the selected-location forecast path verified by this slice.
 
 ## Slice 19: Saved Locations Persistence
 
 Status: specified
+
+Prerequisites:
+- Persistence Architecture Gate.
+- Slice 18.
 
 Release intent: Users can save, list, select, and remove multiple forecast locations.
 
@@ -421,10 +474,15 @@ Must prove:
 - Removing a location updates selection predictably.
 - Manual location functionality remains full-featured without location permission.
 - Saved-location UI disambiguates similar names and provides visible select/remove controls.
+- Saved locations reuse the production Room location model and persisted selected local `LocationId`; provider IDs do not become user-facing location identity.
 
 ## Slice 20: Unit Preferences and Conversion
 
 Status: specified
+
+Prerequisites:
+- Persistence Architecture Gate DataStore behavior.
+- Slice 19.
 
 Release intent: Users can switch Metric, US, UK, and custom unit presentation without changing canonical stored values.
 
@@ -439,17 +497,26 @@ Must prove:
 
 Status: specified
 
+Prerequisites:
+- Slice 19.
+
 Release intent: Users may explicitly request device location while manual location remains fully functional.
 
 Must prove:
 - Location permission is requested only after explicit user action.
 - Permission denied returns to manual search without blocking forecast functionality.
 - Granted coarse/fine location resolves to a `WeatherLocation` or coordinates usable by the forecast path.
+- Resolved device location flows through the same production persistence and forecast paths as manual/saved locations.
 - No background location is introduced.
 
 ## Slice 22: NWS Alert Provider Contract
 
 Status: specified
+
+Prerequisites:
+- Persistence Architecture Gate.
+- Slice 19.
+- Forecast fallback foundation remains independent from alert lookup.
 
 Release intent: Specify United States official alert integration before code is added.
 
@@ -519,6 +586,9 @@ Must prove:
 
 Status: specified
 
+Prerequisites:
+- Repository Engineering Gate.
+
 Release intent: Before alert, appearance, and release-candidate work, confirm the disclosure baseline created before network provider work still matches implemented behavior.
 
 Must prove:
@@ -530,6 +600,9 @@ Must prove:
 ## Slice 26: Effects Off Preference Baseline
 
 Status: specified
+
+Prerequisites:
+- Persistence Architecture Gate DataStore behavior.
 
 Release intent: Users can persist weather-effects settings, including effects Off.
 
@@ -544,6 +617,9 @@ Must prove:
 
 Status: specified
 
+Prerequisites:
+- Persistence Architecture Gate DataStore behavior.
+
 Release intent: Users can switch Simple/Standard presentation without losing required MVP weather information.
 
 Must prove:
@@ -557,6 +633,9 @@ Must prove:
 
 Status: specified
 
+Prerequisites:
+- Persistence Architecture Gate DataStore behavior.
+
 Release intent: Users can persist theme selection without changing weather semantics.
 
 Must prove:
@@ -569,6 +648,9 @@ Must prove:
 ## Slice 29: High-Contrast Presentation Baseline
 
 Status: specified
+
+Prerequisites:
+- Persistence Architecture Gate DataStore behavior.
 
 Release intent: Users can select at least one high-contrast/accessibility-oriented presentation without changing weather semantics.
 
@@ -594,6 +676,11 @@ Must prove:
 
 Status: specified
 
+Prerequisites:
+- Persistence Architecture Gate.
+- Slice 18.
+- Slice 19.
+
 Release intent: Cache metadata remains truthful for Open-Meteo and MET Norway fallback forecasts.
 
 Must prove:
@@ -605,6 +692,12 @@ Must prove:
 ## Slice 32: Fallback Real-Path Verification
 
 Status: specified
+
+Prerequisites:
+- Persistence Architecture Gate.
+- Slice 18.
+- Slice 19.
+- Slice 31.
 
 Release intent: The installed app demonstrates default forecast and fallback forecast behavior at an Android boundary before release-candidate verification.
 
@@ -688,6 +781,8 @@ Broad verification:
 
 ## Next Candidate Slice
 
-Candidate: Slice 1: Open-Meteo Provider Contract.
+Candidate: Repository Engineering Gate.
 
-To start work, update `.codex/plans/current.md` from `none` to this single bounded slice. Do not treat later roadmap entries as planned active work.
+Recommended sequence after the review integration: Repository Engineering Gate, Slice 17B, Slice 17C, Persistence Architecture Gate, Slice 18, Slice 19, installed-app fallback completion, Slice 20, optional device location, official alerts, persisted presentation settings, and release gates.
+
+To start work, update `.codex/plans/current.md` to one single bounded gate or slice. Do not treat later roadmap entries as planned active work.

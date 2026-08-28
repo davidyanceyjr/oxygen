@@ -1,101 +1,49 @@
 # Active Cycle
 
 Status: planned
-Cycle ID: 2026-08-28-home-dashboard-presentation-alignment
-Mode: feature
-Goal: Implement Slice 17A by aligning the provider-backed Home success and stale-success dashboard with the specified Home hierarchy, stable readable Compose structure, and UI-boundary evidence before offline launch work depends on this surface.
-Roadmap slice: Slice 17A: Home Dashboard Presentation Alignment.
-Branch or work context: local `oxygen` Android scaffold on top of committed Slice 17 review repair.
+Cycle ID: 2026-08-28-repository-engineering-gate
+Mode: documentation-and-repository-maintenance
+Goal: Complete the Repository Engineering Gate before major persistence work.
+Roadmap slice: Repository Engineering Gate.
+Branch or work context: local `oxygen` Android scaffold after project-review roadmap integration.
+
 Specification anchors:
 - `AGENTS.md`
 - `README.md`
-- `docs/OXYGEN_FULL_SPECIFICATION.md` sections 20, 24, 25, 26, 31, 35, 37, 39, 40, 44, and 48
-- `.codex/plans/mvp-roadmap.md` Slice 17A, UI Rule, MVP Acceptance Boundary, Cache/Offline/Stale gates, and Release Gate
-- Existing `HomeForecastPresentationState`, `HomeSuccessPresentation`, `HomeSuccessSection`, `HomeForecastFreshness`, `OxygenAppStateHolder`, `HomeLoadingScreen`, `HomeScreen`, `WeatherConditionMark`, and `WeatherScene`
+- `.codex/plans/mvp-roadmap.md`
+- `.codex/cycles/history.md`
+- `.codex/review/findings.md`
+- `LICENSE`
+- `LICENSE-TODO.md`
+- `NOTICE`
+- `THIRD_PARTY_LICENSES.md`
+- `.gitignore`
+- `.github/workflows/`
 
 Acceptance criteria:
-- Provider-backed Home success and stale-success render as a vertically scrolling weather dashboard in the specified order: location header, active alert area when present, current-condition hero, near-term precipitation, horizontally scrollable hourly forecast, daily forecast, metric grid, sun/update/source information, and provenance/disclosure footer.
-- Rendered values must continue to come from provider-neutral `WeatherRepositoryResult.Success`, `WeatherBundle`, and presentation state. No `SampleWeather.bundle`, provider DTOs, provider client result classes, WMO/weather-code literals, MET Norway symbols, raw JSON, provider-specific error bodies, or fabricated fallback values may cross into the production Home UI path.
-- The current-condition hero must show temperature, condition, feels-like, optional high/low presentation fields derived from daily data, update/source/provenance status, and a provider-neutral weather identity element such as `WeatherConditionMark` or the existing procedural weather scene. Hero high/low values must be omitted when unavailable rather than parsed from daily-row display strings or filled with fabricated fallback text. The text must remain meaningful if decorative effects, gradients, transparency, and animation are visually unavailable.
-- Fresh, stale-after-failed-refresh, refresh-in-progress, no-cache error, and retry states must remain observable and provider-neutral after presentation alignment. A stale dashboard must keep forecast content visible while showing stale age, source/update status, refresh-failed metadata, and retry.
-- Hourly rows, daily rows, metric cells, source/provenance text, stale/refresh-failed text, and retry/about controls must use stable dimensions or responsive constraints that avoid layout shift and text overlap on compact phone width and large font settings.
-- Slice 17A proves compact-width, large-font, visible weather text, readable controls, and logical dashboard section order for the changed Home surface. Full RTL verification, TalkBack traversal, every built-in theme, and the full effects-disabled matrix remain Slice 17C unless this cycle implements and verifies them explicitly.
-- Existing loading, no-cache error, retry, provider disclosure, in-app About reachability, and Home state-holder behavior must not regress.
-- This slice may extract or rename Home Composables only where it supports the verified Home dashboard behavior. It must not introduce generic design-system ceremony, dormant settings, placeholder screens, broad refactors, or new modules.
-- This slice does not add offline launch, installed-app durable cache wiring, saved-location persistence, unit preferences, appearance/effects persistence, alert lookup, air-quality lookup, radar/maps, background work, dependency license generation, release behavior, or new forecast/geocoding/provider behavior.
+- The repository license contradiction is resolved by explicit project-owner decision: GPL-3.0-or-later is the intended source license, the current root `LICENSE` contains GPL-3.0-or-later text, and related notices distinguish Oxygen source licensing from weather-data/provider attribution.
+- A baseline GitHub CI workflow is added for compile, unit tests, assemble, and whitespace checks using the repo-local Android environment wrapper or an equivalent hosted Android/JDK/Gradle setup.
+- At least one hosted CI run passes before CI is cited as durable verification evidence.
+- `main` branch protection is configured after CI exists, requiring baseline CI checks, blocking force pushes and deletion, and using pull requests before merge. Mandatory second-party review remains optional for solo maintenance.
+- README maturity/status remains accurate and does not imply MVP, beta, release-candidate, offline, saved-location, alert, unit, or installed-app fallback completion.
+- Evidence-retention expectations remain documented: raw local logs can stay ignored, but roadmap/release/readiness claims must be reproducible through CI or retained in reviewable project artifacts.
 
-Acceptance boundary: Slice 17A is complete when focused tests prove the production Home presentation state contains the required dashboard hierarchy and semantic text for fresh and stale success without sample/provider leakage; focused rendered-UI evidence proves the production Home Composables expose the required fresh success, stale-success, alert-present success, loading, no-cache error, retry, source/provenance, disclosure, and About-entry states; compact-width/large-font Android or Compose evidence shows no obvious text overlap or unreadable controls for long location/provider names; static leakage and claim checks pass; broad Android verification passes. Slice 17A does not prove offline app relaunch, selected-location persistence, saved-location switch/remove behavior, unit conversion preferences, effects/theme persistence, official alert network lookup, air-quality/radar behavior, active installed-app MET Norway fallback, or release readiness.
-
-Boundary decisions:
-- Treat this as a UI behavior slice, not a new data or provider slice. Production changes should stay in `app/src/main/kotlin/com/oxygen/weather/app/ui/home`, `HomeForecastPresentationMapper`, and narrowly related Home presentation state only if the UI requires additional provider-neutral fields.
-- Prefer extracting `HomeDashboardScreen`/section Composables from the current loading-era `HomeLoadingScreen` file over changing repository behavior.
-- Keep `SampleWeather` limited to scaffold/preview code. If previews or scaffold use sample data, keep that path clearly outside production `OxygenApp`.
-- Use state-holder/JVM tests for presentation contract coverage already supported by current dependencies. Before UI edits, resolve and preflight the rendered UI evidence path: either add the smallest focused Compose UI/androidTest dependency set needed to render production Home Composables, including any required instrumentation runner, or confirm emulator/UIAutomator launch, input, screenshot, and hierarchy capture can cover the selected states. Do not add screenshot libraries, golden-test infrastructure, broad AndroidX dependency churn, or unrelated test frameworks unless simple Compose UI assertions and emulator evidence cannot prove the selected behavior. Do not claim `covered` or `verified` until this rendered UI path has produced usable evidence.
-- For visual evidence, prefer installed-app emulator screenshots/hierarchy dumps of the real manual-search/Open-Meteo Home path for fresh success. Use controlled UI state only for states that the installed app cannot naturally produce in this slice, such as stale-success and alert-present success; controlled evidence must drive production Home Composables from provider-neutral `ForecastReady` state and must be labeled as controlled UI evidence, not live provider evidence.
-- If emulator automation is blocked, record the exact blocker and use rendered Compose UI assertions or captured rendered Compose artifacts only for the states they can honestly prove. Plain state-holder, mapper, source-text, or log-only evidence does not count as UI-boundary proof. UI hierarchy dumps may support presence, order, and semantics claims, but compact-width/large-font no-overlap and readability claims require screenshots with inspection notes or explicit rendered-bounds assertions.
-- Add a debug-only or test-only controlled Home state harness only if the emulator/manual path or Compose UI tests cannot reasonably exercise stale-success or alert-present rendering. Any harness must be excluded from release behavior, must not use `SampleWeather.bundle`, provider DTOs, fake production repositories, provider client result classes, raw JSON, provider-specific error bodies, or fabricated provider success, and artifact names must clearly identify controlled states such as `controlled-stale-ui` or `controlled-alert-ui`.
-- Do not update README, DATA_SOURCES, PRIVACY, or in-app disclosure unless verified behavior changes require wording. If wording changes are made, they must not imply offline launch, installed-app durable cache behavior, saved-location persistence, or release readiness.
-
-Focused evidence to produce:
-- Focused pre-change baseline or red log for rendered Home UI tests or emulator/UIAutomator evidence showing the current gap in dashboard alignment, rendered section order, stable hierarchy, horizontal hourly rendering, stale-success rendering, alert-present rendering, or hero high/low rendering. The log must come from a compiled behavioral assertion against production Home Composables or captured Android UI evidence, not a source-text existence test or mapper/state-only assertion.
-- Focused app tests proving `HomeSuccessPresentation.sectionOrder` and mapped fields support the specified dashboard order for a provider-backed fresh success with current/hourly/daily/metrics/sun/source/provenance data.
-- Focused app tests proving stale-after-failed-refresh keeps the same dashboard content visible and exposes stale age, refresh-failed message, source/update/provenance, and retry.
-- Focused app tests proving the current-condition hero derives optional high/low text from daily data into provider-neutral presentation fields, renders that text in the hero, and omits it without fabricated fallback values when daily high/low data is unavailable.
-- Focused app tests proving missing current/hourly/daily values remain unavailable/omitted instead of fabricated, and long location/provider names remain present in presentation state.
-- Rendered UI-boundary evidence for fresh success, stale success, controlled provider-neutral alert-present success, loading, no-cache error, retry, provider disclosure, About entry, and rendered dashboard section order. Save screenshots, hierarchy dumps, Compose UI assertion logs, or equivalent Android/rendered-Compose artifacts under `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/`. Plain Compose logs, state-holder logs, mapper logs, source-text logs, or JVM logs may support focused behavior coverage but do not prove rendered UI behavior.
-- Compact-width/large-font evidence for at least one fresh success and one stale-success dashboard with long location/provider names. Record exact device/emulator dimensions and font-scale settings used. Minimum target shape: compact phone width such as `360x800`, large font scale such as `1.3` or higher, long selected-location display name, long provider/source or license text, and fresh plus stale rendered screenshots with inspection notes or explicit rendered-bounds assertions. Hierarchy dumps alone do not prove no-overlap/readability claims.
-- Static production sample-data check: `rg -n "SampleWeather|SampleWeather\\.bundle" app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt app/src/main/kotlin/com/oxygen/weather/app/ui app/src/main/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapper.kt app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt`.
-- Static provider-detail leak check: `rg -n "OpenMeteoForecastResponse|OpenMeteoCurrent|OpenMeteoHourly|OpenMeteoDaily|OpenMeteoForecastClientResult|OpenMeteoForecastClientError|OpenMeteoGeocodingDto|OpenMeteoGeocodingResult|MetNoForecastResponse|MetNoGeometry|MetNoMeta|MetNoTimeStep|MetNoInstant|MetNoPeriod|MetNoForecastClientResult|MetNoForecastClientError|X-ErrorClass|symbolCode|weather_code" app/src/main/kotlin/com/oxygen/weather/app app/src/main/kotlin/com/oxygen/weather/app/ui`.
-- Static cache/offline/claim check: `rg -n "offline|stale|failed refresh|failed-refresh|saved location|saved-location|cache|cached|fallback|release-ready|MVP-complete" README.md DATA_SOURCES.md PRIVACY.md app/src/main/kotlin .codex/plans/current.md`.
-
-Real-path command or procedure:
-- Install and launch the debug app on the repo-local emulator, then exercise a production Home path far enough to capture Home dashboard evidence. Preferred path: use the existing manual search/Open-Meteo flow for a real location and capture the provider-backed fresh dashboard. For stale-success and alert-present dashboard evidence, use a controlled state-holder or debug/test harness only if it drives production Home Composables from provider-neutral `ForecastReady` state. Any harness must be test-only or debug-only, excluded from production release behavior, and labeled as controlled stale or alert UI evidence. Do not fabricate provider success in the installed production path and call it a live provider result.
-- Save screenshots, hierarchy dumps, and command logs under `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/`.
-- If emulator startup, input, or screenshot capture fails, save the command log and name the exact blocker. Do not replace missing Android-boundary evidence with a release or offline claim.
-
-Broad verification commands:
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-- `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
-- `git diff --check`
-- Save broad verification logs under `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/` and record project-local paths in Phase Results before reporting the slice ready.
-
-Current gate: committed
-Current phase: ready
-Last result: Slice 17A Home dashboard presentation alignment is implemented, verified, and recorded for this commit with focused state-holder coverage, controlled Compose UI-boundary assertions, static leakage checks, and broad Android checks. Debug app install/launch succeeded, but installed-app screenshot/hierarchy capture of the live manual-search/Home path was blocked by emulator system ANR dialogs: first `System UI isn't responding`, then `Pixel Launcher isn't responding`.
-Blocker: none for Slice 17A completion. Residual evidence gap: no live installed-app provider-backed Home screenshot is claimed because emulator capture was blocked by the recorded system ANR dialogs.
+Acceptance boundary: The Repository Engineering Gate is complete when license status, baseline CI, hosted CI evidence, branch protection, README status, and evidence-retention policy are all resolved and recorded. This gate does not add app behavior, provider behavior, Room, DataStore, offline launch, saved locations, unit preferences, alerts, installed-app fallback, presentation settings, or release readiness.
 
 ## Implementation Plan
 
-1. Inspect current Home production Composables, presentation mapper, state-holder tests, and any existing screenshot/manual verification scripts.
-2. Resolve and preflight the rendered UI evidence path before UI edits: add the smallest focused Compose UI/androidTest dependencies needed for production Home Composable assertions, including any required instrumentation runner, or confirm emulator/UIAutomator launch, input, screenshot, and hierarchy capture can cover the selected states. Keep any dependency or harness change narrowly scoped to this slice.
-3. Add focused Home presentation tests that encode the Slice 17A dashboard order, fresh/stale semantics, no-fabrication rules, long text preservation, optional hero high/low presentation fields derived from daily data, horizontal hourly expectations, and retry/source/provenance visibility.
-4. Save a red or baseline focused-test/UI evidence log under `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/` before production UI edits.
-5. Refactor the current Home UI from the loading-era structure into explicit dashboard sections with stable, responsive dimensions, horizontally scrollable hourly forecast, and weather identity, keeping behavior provider-neutral.
-6. Update presentation mapping only for provider-neutral fields required by the dashboard, such as current hero high/low or section labels; do not add placeholder settings, provider-specific data, or parse display strings from other presentation rows.
-7. Run focused app tests and save logs.
-8. Produce UI-boundary evidence for fresh success, stale success, controlled provider-neutral alert-present success, loading, no-cache error/retry, provider disclosure, About entry, rendered dashboard order, and compact-width/large-font long-text cases. Use emulator screenshots/hierarchy dumps where feasible, but require screenshots with inspection notes or rendered-bounds assertions for no-overlap/readability claims; record blockers exactly if not.
-9. Run static sample-data, provider-detail, and cache/offline/claim checks and save logs.
-10. Run broad Android verification commands and `git diff --check`, saving logs.
-11. Review the diff for SLOP: remove unused abstractions, dead previews in production paths, unexercised controls, placeholder TODOs, fabricated data, debug/test harness leakage into release behavior, broad dependency churn, and unverified offline/saved-location/release claims.
-12. Append `.codex/cycles/history.md` only when Slice 17A is actually verified or committed.
-
-## Known Starting Conditions
-
-- `HomeForecastPresentationState.ForecastReady` already carries provider-neutral dashboard content, freshness, refresh-in-progress text, retry availability, forecast disclosure, and privacy note.
-- `HomeForecastPresentationMapper` already maps current, hourly, daily, metrics, sun, alerts, source/provenance, precipitation summary, and section order from `WeatherBundle`.
-- `HomeLoadingScreen` currently renders loading, error, and ready states, but the ready dashboard is still structurally simple and lives in a loading-era file.
-- `HomeScreen` currently delegates directly to `HomeLoadingScreen` and does not use its theme-selection parameters.
-- App unit tests cover state-holder and presentation mapping behavior, but there is not yet explicit UI-boundary evidence for Slice 17A dashboard alignment, compact-width/large-font readability, or stale-success dashboard rendering.
-- App default durable cache wiring, installed-app offline cache behavior, offline launch, saved-location persistence, unit preferences, alert lookup, air-quality/radar behavior, background work, release behavior, and active installed-app MET Norway fallback remain unimplemented.
+1. Resolve the source-license contradiction with an explicit project-owner decision before editing license files.
+2. Add the smallest baseline GitHub CI workflow that can run the required Android checks in hosted CI.
+3. Run local broad verification for the CI/documentation changes.
+4. Record hosted CI outcome or the exact hosted-run blocker.
+5. Configure or document `main` branch protection once CI status checks exist.
+6. Review README/status language and evidence-retention wording for unsupported claims.
+7. Append completion evidence to `.codex/cycles/history.md` only when the gate is actually verified or committed.
 
 ## Phase Results
 
-- planned: Selected Slice 17A as the next roadmap slice because Slice 17 is committed and offline launch should not build on an under-verified Home dashboard surface. The selected behavior is Home dashboard presentation alignment and evidence only.
-- red-or-baseline: Added a focused presentation contract assertion for hero high/low fields before production mapper changes. `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest*'` failed as expected on missing `highTemperature`/`lowTemperature`; log: `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/pre-change-red-home-presentation.log`.
-- covered: `HomeForecastStateHolderTest` now covers provider-neutral hero high/low derived from daily data and omitted when unavailable. Log: `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/focused-home-state-tests.log`.
-- implemented: `HomeForecastPresentationMapper` now carries provider-neutral `conditionIdentity`, optional hero high/low fields, and no fabricated hero range fallback. `HomeLoadingScreen` now renders ready states as tagged dashboard sections with location header, stale banner/retry, alert area, current-condition hero with `WeatherConditionMark`, near-term precipitation, horizontally scrollable hourly row, daily rows, metric grid, sun/source, About entry, and provenance footer. Added focused `androidTest` Compose UI coverage and narrow AndroidX test dependencies.
-- verified: `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest` passed 5 tests on `oxygen_starter(AVD) - 17`; log: `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/focused-home-dashboard-ui-tests.log`. Controlled UI evidence covers fresh success, stale success, provider-neutral alert-present success, loading, no-cache error/retry, provider disclosure, About entry, rendered section order, horizontal hourly row, and compact `360dp` width with `fontScale = 1.3f` long location/provider rendered-bounds assertions.
-- real-path-exercise: `scripts/start-emulator.sh` booted `emulator-5554`; `scripts/install-debug.sh` assembled, installed, and launched `com.oxygen.weather/.MainActivity`. Screenshot/hierarchy capture did not produce usable app evidence because the emulator showed system ANR dialogs. Captured blocker artifacts: `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/installed-first-run.png`, `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/installed-first-run.xml`, `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/installed-relaunch-after-systemui-wait.png`, `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/installed-relaunch-after-systemui-wait.xml`, `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/install-debug.log`, `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/start-emulator.log`, and `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/emulator-boot-wait.log`.
-- static-checks: Sample-data and provider-detail leak checks returned no matches; logs: `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/static-sample-data-check.log` and `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/static-provider-detail-leak-check.log`. Cache/offline/claim check log reviewed existing bounded disclaimers and no new offline, saved-location, fallback-release, or MVP-complete claim was added; log: `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/static-cache-offline-claim-check.log`.
-- broad-checks: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed; `git diff --check` passed. Logs: `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/broad-compile-debug-kotlin.log`, `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/broad-unit-tests.log`, `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/broad-assemble-debug.log`, and `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/git-diff-check.log`.
+- planned: Selected Repository Engineering Gate as the next roadmap item after project-review integration. No CI, branch protection, hosted CI evidence, or full gate completion has been completed yet.
+- implemented: Project owner selected GPL-3.0-or-later for Oxygen source code on 2026-08-28. Root `LICENSE`, `LICENSE-TODO.md`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, and `README.md` now record the license decision while keeping weather-data/provider attribution separate.
+- implemented: Added baseline GitHub Actions workflow at `.github/workflows/android-ci.yml` with hosted Android/JDK/Gradle setup and separate compile, debug unit test, assemble, and whitespace steps.
+- verified: Local broad checks passed on 2026-08-28 through the repo-local Android environment wrapper. Evidence saved under `.codex/test-artifacts/2026-08-28-repository-engineering-gate/`: `compile-debug-kotlin.log`, `debug-unit-tests.log`, `assemble-debug.log`, and `git-diff-check.log`.
+- pending: Hosted CI pass evidence and `main` branch protection are not verified yet. They require the workflow to be committed/pushed and a GitHub Actions run to complete successfully before branch protection can require the new check.

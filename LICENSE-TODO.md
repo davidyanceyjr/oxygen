@@ -1,5 +1,8 @@
-# License decision required before public release
+# License decision record
 
-The product specification recommends GPL-3.0-or-later if the project goal is to preserve software freedom in downstream redistribution.
+The project owner selected GPL-3.0-or-later for Oxygen source code on
+2026-08-28.
 
-Do not accept external contributions or publish a release until the project owner has selected and committed the intended license text.
+The repository root `LICENSE` contains the GPL-3.0-or-later license text.
+Weather-data licenses, provider attribution, third-party dependency licenses,
+and asset notices remain separate from the Oxygen source-code license.

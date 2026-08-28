@@ -1,21 +1,49 @@
-# Oxygen Weather — Android Scaffold
+# Oxygen Weather
 
 Oxygen is a free, open-source, no-ads Android weather application built with Kotlin and Jetpack Compose.
 
-This scaffold was derived from an Android/Kotlin/Compose build structure while
-intentionally excluding unrelated application code and generated build outputs.
+This repository is an early Android app, not an MVP, beta, release candidate,
+or finished weather product.
 
-## What is included
+Oxygen source code is licensed under GPL-3.0-or-later. Weather data,
+geocoding data, third-party dependency licenses, and provider attribution are
+tracked separately in `DATA_SOURCES.md`, `THIRD_PARTY_LICENSES.md`, `NOTICE`,
+and `docs/data-sources/`.
 
-- The same baseline Android/Compose build-version family as the source scaffold.
-- `:app` + `:core` project structure.
-- Oxygen package/application identity.
-- Provider-neutral weather domain models.
-- Forecast, alert, air-quality, geocoding, radar, and repository interfaces.
-- An Oxygen theme engine with three initial visual directions: Oxygen, Paper, and Terminal.
-- A procedural Compose weather scene proof of concept.
-- A polished sample home screen using explicitly synthetic weather data.
-- `docs/OXYGEN_FULL_SPECIFICATION.md` as the implementation authority.
+## Implemented in the installed app
+
+- Manual location search through the Open-Meteo geocoding path.
+- Explicit selected-location Open-Meteo forecast retrieval.
+- Provider-neutral Home loading, error/retry, success, source, update,
+  provenance, and disclosure presentation.
+- Settings/About surfaces for Data Sources, Privacy, and Open Source Licenses.
+- Oxygen package/application identity, theme foundation, and Compose Home UI.
+
+## Implemented but not active in the installed app
+
+- MET Norway forecast provider path and core fallback-selection behavior.
+- Repository-level forecast cache/stale behavior through
+  `FileForecastCacheStorage`.
+- Provider-neutral Home stale-success presentation coverage for cached
+  refresh-failure states.
+
+## Not implemented yet
+
+- Installed-app offline forecast restoration.
+- Saved-location persistence.
+- Unit preferences.
+- Official weather alert lookup.
+- Persisted appearance/effects/layout settings.
+- Installed-app MET Norway fallback wiring.
+- Release-candidate verification.
+
+## Repository structure
+
+- `:app` Android application, Compose UI, Home surface, About surfaces, theme,
+  and sample/scaffold preview path.
+- `:core` provider-neutral domain models, provider interfaces, Open-Meteo and
+  MET Norway provider paths, fallback selection, and cache infrastructure.
+- `docs/OXYGEN_FULL_SPECIFICATION.md` is the implementation authority.
 
 ## Build
 
