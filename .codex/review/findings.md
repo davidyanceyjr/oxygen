@@ -1,125 +1,68 @@
-# Slice 17 Diff Review Solutions
+UI Design Findings
 
-## Review Metadata
+1. Home does not yet match the specified visual/interaction model.
 
-- Review date: 2026-08-27
-- Reviewer: Codex
-- Repository: `/home/opsman/project_git/oxygen`
-- Reviewed commit: `bc7834c` (`Retain cached forecast after failed refresh`)
-- Scope: Diff review for gaps, blockers, and LLM slop in the last commit
-- Build/test commands run during review: `git diff --check HEAD~1 HEAD`
+The spec calls for a current-condition hero, horizontal hourly forecast, weather marks, and a dashboard hierarchy. Current Home is a single vertical stack of generic cards, and hourly rows are rendered vertically inside one card. This is the biggest UI design gap for the next Home slice.
 
-## Recommended Solutions
+References:
+- docs/OXYGEN_FULL_SPECIFICATION.md:929
+- app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt:166
+- app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt:192
 
-1. Fix stale-cache copy so the UI does not contradict itself.
+2. Explicit refresh UI is not present for fresh Home data.
 
-   Problem: `HomeForecastMessage.NetworkUnavailable` includes no-cache wording:
-   "No cached forecast is available yet." The stale cached forecast card renders
-   that same message after a cache was successfully retained, so the UI can show
-   both "Cached forecast" and "No cached forecast is available yet."
+Roadmap Slice 11A requires pull-to-refresh or a visible refresh control. Current Home exposes retry only in error/stale paths, while fresh success has no visible refresh action.
 
-   Recommended solution: split no-cache error copy from stale-refresh failure
-   copy.
+References:
+- .codex/plans/mvp-roadmap.md:227
+- app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt:140
 
-   - Keep `HomeForecastMessage` for terminal `NoCacheError` states.
-   - Add a separate provider-neutral stale refresh message enum or text mapper
-     for `HomeForecastFreshness.StaleAfterFailedRefresh`.
-   - For `ForecastError.NetworkUnavailable` in stale mode, use copy like:
-     `Refresh could not reach the weather service or network.`
-   - Keep the existing no-cache message for
-     `HomeForecastPresentationState.NoCacheError`.
-   - Add a focused test that fails if stale cached state contains
-     `No cached forecast is available yet`.
+3. Appearance settings are modeled but not reachable or persisted.
 
-   Minimal implementation shape:
+OxygenAppearance defines theme/layout/effects/icon-pack choices, but production app state only keeps a remembered, non-persisted themeId and no UI control reaches it. This leaves Slices 26-29 as real UI work, not just settings plumbing.
 
-   ```kotlin
-   enum class HomeRefreshFailureMessage(val text: String) {
-       NetworkUnavailable("Refresh could not reach the weather service or network."),
-       RateLimited("Weather refresh is temporarily rate-limited. Try again shortly."),
-       ProviderUnavailable("Weather refresh is temporarily unavailable. Try again shortly."),
-       InvalidResponse("Weather refresh returned data Oxygen could not read. Try again later."),
-       UnexpectedFailure("Weather refresh failed unexpectedly. Try again."),
-   }
-   ```
+References:
+- app/src/main/kotlin/com/oxygen/weather/app/ui/theme/OxygenAppearance.kt:3
+- app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt:23
 
-   Then have `ForecastFreshness.StaleAfterFailedRefresh` map to this
-   stale-specific message instead of reusing `HomeForecastMessage`.
+4. The procedural weather scene and weather mark are not integrated into production Home.
 
-2. Broaden and test local cache failure handling for non-runtime storage
-   failures.
+The spec's core experience is "weather as artwork" with readable data independent of decoration. WeatherScene and WeatherConditionMark exist, but Home does not use them. The current default screen therefore reads more like a functional data list than Oxygen's intended identity.
 
-   Problem: `CachedWeatherRepository` catches only `RuntimeException` around
-   `ForecastCacheStorage` reads/writes. The file-backed storage can fail with
-   non-runtime I/O exceptions from stream creation, serialization, or
-   `readObject`. Those failures can escape the repository sequence instead of
-   becoming `WeatherRepositoryResult.Failure(ForecastError.LocalCacheFailure)`,
-   despite the Slice 17 contract claiming local cache read failure mapping.
+References:
+- docs/OXYGEN_FULL_SPECIFICATION.md:40
+- app/src/main/kotlin/com/oxygen/weather/app/ui/weather/WeatherScene.kt:16
+- app/src/main/kotlin/com/oxygen/weather/app/ui/components/WeatherConditionMark.kt:14
 
-   Recommended solution: make storage failure handling match the repository
-   contract.
+5. Layout stability and large-font risk are not yet designed through.
 
-   - Catch `Exception` around `storage.replaceBundle(...)` and
-     `storage.readBundle(...)`, not only `RuntimeException`.
-   - Do not catch `Error`.
-   - On success write/readback failure, emit `Failure(LocalCacheFailure)` as
-     today.
-   - On failed-refresh retention read failure, emit `Failure(LocalCacheFailure)`.
-   - Keep null readback as the missing-cache signal that preserves the original
-     provider failure.
-   - Add focused tests using storage test doubles that throw a non-runtime
-     `IOException`.
+Forecast rows use a weighted text column plus an unconstrained trailing value, and metric rows are two flexible columns with no minimum/stable sizing. That is likely to become brittle with long provider names, converted units, large font, and narrow screens, all explicitly called out by the roadmap.
 
-   Suggested explicit handling:
+References:
+- app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt:267
+- app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt:288
+- .codex/plans/mvp-roadmap.md:26
 
-   ```kotlin
-   val cachedBundle = try {
-       storage.readBundle(location.id)
-   } catch (_: Exception) {
-       return WeatherRepositoryResult.Failure(ForecastError.LocalCacheFailure)
-   } ?: return failure
-   ```
+6. Accessibility evidence is mostly state/text level, not Compose/UI level.
 
-3. Tighten the tests around the two edge cases.
+State-holder tests cover visible text and mapping, but there is no app/src/androidTest tree and no Compose semantics/layout test coverage found. The spec requires meaningful semantics, TalkBack order, large font, RTL, touch targets, reduced motion, and high contrast. This should become a gate before claiming presentation slices verified.
 
-   Recommended test additions:
+References:
+- docs/OXYGEN_FULL_SPECIFICATION.md:1146
+- docs/OXYGEN_FULL_SPECIFICATION.md:1388
 
-   - App state test: stale cache after `ForecastError.NetworkUnavailable`
-     exposes refresh-failed copy but does not expose
-     `No cached forecast is available yet`.
-   - Compose or visible text test if Compose test infrastructure is already
-     available: render `HomeLoadingScreen` with stale freshness and assert the
-     visible stale card text is internally consistent.
-   - Core repository test: failed-refresh retention read throws a non-runtime
-     `IOException` and returns `Failure(LocalCacheFailure)`.
-   - Core repository test: provider success write/readback throws a non-runtime
-     `IOException` and returns `Failure(LocalCacheFailure)`.
+7. Units are hardcoded/mixed in presentation.
 
-4. Keep documentation claims scoped after the fix.
+Temperature is always formatted as Fahrenheit, while wind is km/h and precipitation remains mm. That is acceptable as current scaffold behavior, but it is a UI design dependency for Slice 20 because every forecast row/card needs to survive unit changes.
 
-   Existing README, DATA_SOURCES, PRIVACY, and About wording is mostly scoped
-   correctly: it says repository/app-state foreground stale retention exists and
-   installed-app durable cache/offline launch remains unimplemented. After
-   changing behavior, update docs only if the user-visible copy or contract terms
-   change.
+References:
+- app/src/main/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapper.kt:155
+- app/src/main/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapper.kt:183
 
-## Blocker Status
+Roadmap Gap Summary
 
-Blocker until fixed: the stale-cache UI copy contradiction is user-visible and
-violates the no-SLOP rule.
+The roadmap has the right major UI slices: Home success, explicit refresh, saved locations, units, effects, layout density, theme selection, high contrast, accessibility verification, alerts, and release gates. The main gap is sequencing pressure: Home's current implementation is so generic that appearance, accessibility, refresh, and saved-location navigation will all touch the same screen. Treat the next UI design work as a dedicated Home component extraction slice: WeatherHero, horizontal hourly strip, daily row, metric card, source/stale banner, and accessibility semantics, with screenshots or Compose tests for narrow and large-font states.
 
-Blocker until fixed or explicitly narrowed: non-runtime local storage failures
-are not mapped as claimed. Either broaden the catch/test behavior or narrow the
-Slice 17 claim to runtime storage failures only. Broadening is the better fit
-for the repository contract.
+Review Evidence
 
-## Verification To Run After Fix
-
-```bash
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest'
-. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*CachedWeatherRepositoryTest'
-. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
-. scripts/android-env.sh && ./gradlew :app:assembleDebug
-git diff --check
-```
+Reviewed with git status --short, rg, sed, and nl. Gradle tests were not run because this was a no-change design review before writing this findings file.

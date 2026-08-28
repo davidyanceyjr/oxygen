@@ -356,6 +356,48 @@ Must prove:
 - Retry remains available.
 - Refresh failure without cache produces retryable no-cache error.
 
+## Slice 17A: Home Dashboard Presentation Alignment
+
+Status: specified
+
+Release intent: Home's provider-backed success and stale-success states match the specified dashboard hierarchy before offline launch builds on the same surface.
+
+Must prove:
+- Home success renders as a vertically scrolling dashboard with location header, current-condition hero, horizontal hourly forecast, daily forecast, metric grid, sun/update/source information, stale/refresh-failed status where present, and provenance footer.
+- Rendered dashboard values still come from provider-neutral repository results and presentation state, not `SampleWeather.bundle`, provider DTOs, or fabricated fallback values.
+- The current-condition hero integrates Oxygen weather identity, such as the weather mark or procedural scene, while keeping temperature, condition, feels-like, high/low, update, source, and stale status readable when decorative effects are disabled.
+- Hourly, daily, metric, source, stale, and retry surfaces use stable dimensions and remain readable with long location names, narrow screens, and large font settings.
+- Existing loading, no-cache error, retry, stale-cache, source/provenance, and disclosure behavior remains observable after component extraction.
+- This slice does not add offline launch, saved-location persistence, unit preferences, appearance persistence, alert lookup, air-quality lookup, radar, background refresh, or new provider behavior.
+
+## Slice 17B: Explicit Home Refresh Control
+
+Status: specified
+
+Release intent: Fresh and stale Home dashboards expose an explicit refresh action for the selected location without recomposition-driven refresh loops.
+
+Must prove:
+- A visible refresh control is reachable on provider-backed Home success and stale-success states.
+- Refresh invokes the repository path for the exact selected `WeatherLocation` and does not substitute a default, sample, or stale previous location.
+- Refresh is caused only by explicit user action or a controlled state-holder trigger, not by every recomposition.
+- Refresh-in-progress, successful refresh replacement, failed-refresh stale retention, no-cache failure, and retry remain provider-neutral and observable.
+- The refresh control has an adequate touch target, meaningful text or accessibility label, stable layout, and remains readable on narrow screens and large font settings.
+- This slice does not add offline launch, saved-location persistence, background refresh, unit preferences, appearance persistence, alert lookup, air-quality lookup, radar, or new provider behavior.
+
+## Slice 17C: Home Presentation Accessibility Evidence Baseline
+
+Status: specified
+
+Release intent: Home presentation slices have Compose or Android-boundary evidence for layout, semantics, and accessibility-oriented conditions before offline launch relies on the same UI.
+
+Must prove:
+- Home success, stale-success, loading, no-cache error, source/provenance, stale/refresh-failed, and refresh-control states are exercised at a Compose or Android UI boundary.
+- Important weather semantics have meaningful text alternatives or semantics and preserve logical reading order.
+- Long location names, provider names, timestamps, stale text, retry/refresh controls, hourly items, daily rows, metrics, and source/provenance text do not overlap at compact phone width and large font settings.
+- The Home dashboard remains understandable with decorative effects disabled and without relying on color alone.
+- Evidence is saved as screenshots, hierarchy dumps, Compose test logs, or equivalent Android-boundary artifacts under the active cycle artifact directory.
+- This slice does not add new forecast behavior, offline launch, saved-location persistence, unit preferences, appearance persistence, alert lookup, air-quality lookup, radar, background refresh, or release-candidate claims.
+
 ## Slice 18: Offline Launch From Last Forecast
 
 Status: specified
@@ -391,6 +433,7 @@ Must prove:
 - Temperature, wind, pressure, precipitation, and visibility convert only for presentation.
 - Missing values remain unknown/unavailable instead of becoming zero after conversion.
 - Converted values fit current hero, hourly items, daily rows, and metric cards at large font sizes.
+- Converted values preserve stable Home layout, source/update/stale text, refresh controls, and provenance visibility.
 
 ## Slice 21: Optional Device Location
 
@@ -491,6 +534,7 @@ Status: specified
 Release intent: Users can persist weather-effects settings, including effects Off.
 
 Must prove:
+- Production appearance settings are reachable from Settings/About or the app settings entry point without requiring hidden gestures.
 - Effects Off removes continuous decorative animation while preserving weather information.
 - Reduced-motion/accessibility preferences are respected where available.
 - Weather semantics, alerts, source/update/stale text, and provenance remain visible with effects Off.
@@ -503,6 +547,7 @@ Status: specified
 Release intent: Users can switch Simple/Standard presentation without losing required MVP weather information.
 
 Must prove:
+- Production layout settings are reachable from Settings/About or the app settings entry point without requiring hidden gestures.
 - Layout preference persists and Standard remains default.
 - Simple and Standard preserve required weather fields, visible source/update/stale information, and alert visibility.
 - Layout preference remains independent from theme and effects preferences.
@@ -515,6 +560,7 @@ Status: specified
 Release intent: Users can persist theme selection without changing weather semantics.
 
 Must prove:
+- Production theme settings are reachable from Settings/About or the app settings entry point without requiring hidden gestures.
 - Theme selection persists across restart.
 - Theme changes do not alter weather semantics, provider interpretation, alert severity meaning, source/update/stale text, or accessibility minimums.
 - Theme, layout, and effects controls remain independent.
