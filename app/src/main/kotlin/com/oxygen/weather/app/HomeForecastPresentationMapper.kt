@@ -25,7 +25,11 @@ private val FETCHED_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM
 
 fun WeatherBundle.toHomeSuccessPresentation(selectedLocation: WeatherLocation): HomeSuccessPresentation {
     val zoneId = selectedLocation.zoneId
-    val currentPresentation = current?.toCurrentPresentation(zoneId)
+    val heroRange = daily.firstOrNull { it.highC != null || it.lowC != null }?.toHeroRangePresentation()
+    val currentPresentation = current?.toCurrentPresentation(
+        zoneId = zoneId,
+        heroRange = heroRange,
+    )
     val hourlyRows = hourly.take(12).map { it.toHourlyPresentation(zoneId) }
     val dailyRows = daily.take(10).map { it.toDailyPresentation(zoneId) }
     val metricRows = current?.toMetricRows().orEmpty()
@@ -112,7 +116,10 @@ data class HomeAlertPresentation(
 data class HomeCurrentPresentation(
     val temperature: String,
     val condition: String,
+    val conditionIdentity: WeatherCondition,
     val apparentTemperature: String,
+    val highTemperature: String?,
+    val lowTemperature: String?,
     val updatedTime: String,
     val dataTypeLabel: String,
 )
@@ -152,13 +159,30 @@ data class HomeSourcePresentation(
     val license: String?,
 )
 
-private fun CurrentConditions.toCurrentPresentation(zoneId: ZoneId): HomeCurrentPresentation =
+private data class HomeHeroRangePresentation(
+    val highTemperature: String?,
+    val lowTemperature: String?,
+)
+
+private fun CurrentConditions.toCurrentPresentation(
+    zoneId: ZoneId,
+    heroRange: HomeHeroRangePresentation?,
+): HomeCurrentPresentation =
     HomeCurrentPresentation(
         temperature = temperatureC.formatFahrenheit(),
         condition = condition.displayName(),
+        conditionIdentity = condition,
         apparentTemperature = apparentTemperatureC?.let { "Feels like ${it.formatFahrenheit()}" } ?: "Feels like unavailable",
+        highTemperature = heroRange?.highTemperature,
+        lowTemperature = heroRange?.lowTemperature,
         updatedTime = "Updated ${time.formatLocalTime(zoneId)}",
         dataTypeLabel = provenance.type.displayLabel(),
+    )
+
+private fun DailyForecast.toHeroRangePresentation(): HomeHeroRangePresentation =
+    HomeHeroRangePresentation(
+        highTemperature = highC?.let { "H ${it.formatFahrenheit()}" },
+        lowTemperature = lowC?.let { "L ${it.formatFahrenheit()}" },
     )
 
 private fun HourlyForecast.toHourlyPresentation(zoneId: ZoneId): HomeHourlyPresentation =

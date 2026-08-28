@@ -101,6 +101,8 @@ class HomeForecastStateHolderTest {
         assertEquals("65 deg F", ready.dashboard.current?.temperature)
         assertEquals("Rain showers", ready.dashboard.current?.condition)
         assertEquals("Feels like 63 deg F", ready.dashboard.current?.apparentTemperature)
+        assertEquals("H 73 deg F", ready.dashboard.current?.highTemperature)
+        assertEquals("L 54 deg F", ready.dashboard.current?.lowTemperature)
         assertEquals("Updated 5:30 AM", ready.dashboard.current?.updatedTime)
         assertEquals("Model estimate", ready.dashboard.current?.dataTypeLabel)
         assertEquals("Up to 60% precipitation chance in the next 6 hours; 1.2 mm possible in the next 6 hours", ready.dashboard.precipitationSummary)
@@ -138,6 +140,43 @@ class HomeForecastStateHolderTest {
             ),
             ready.dashboard.sectionOrder,
         )
+    }
+
+    @Test
+    fun `current hero omits high and low when daily range values are unavailable`() {
+        val location = weatherLocation("manual-no-range", "No Range City")
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(
+                    WeatherRepositoryResult.Success(
+                        fullWeatherBundle(location).copy(
+                            daily = listOf(
+                                DailyForecast(
+                                    dateEpochDay = java.time.LocalDate.parse("2026-08-22").toEpochDay(),
+                                    highC = null,
+                                    lowC = null,
+                                    precipitationProbabilityPercent = 40,
+                                    condition = WeatherCondition.RAIN_SHOWERS,
+                                    sunrise = Instant.parse("2026-08-22T10:15:00Z"),
+                                    sunset = Instant.parse("2026-08-23T01:01:00Z"),
+                                    provenance = forecastProvenance(type = DataType.FORECAST),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        assertEquals(null, ready.dashboard.current?.highTemperature)
+        assertEquals(null, ready.dashboard.current?.lowTemperature)
+        assertFalse(ready.dashboard.visibleText().contains("H unavailable"))
+        assertFalse(ready.dashboard.visibleText().contains("L unavailable"))
     }
 
     @Test
@@ -681,7 +720,19 @@ private fun HomeSuccessPresentation.visibleText(): String =
         append(locationName).append('\n')
         append(locationSubtitle).append('\n')
         alerts.forEach { append(listOfNotNull(it.event, it.headline, it.severity, it.issuer, it.effective, it.expires).joinToString(" ")).append('\n') }
-        current?.let { append(listOf(it.temperature, it.condition, it.apparentTemperature, it.updatedTime, it.dataTypeLabel).joinToString(" ")).append('\n') }
+        current?.let {
+            append(
+                listOfNotNull(
+                    it.temperature,
+                    it.condition,
+                    it.apparentTemperature,
+                    it.highTemperature,
+                    it.lowTemperature,
+                    it.updatedTime,
+                    it.dataTypeLabel,
+                ).joinToString(" "),
+            ).append('\n')
+        }
         append(currentUnavailableText.orEmpty()).append('\n')
         append(precipitationSummary.orEmpty()).append('\n')
         hourly.forEach { append(listOfNotNull(it.time, it.condition, it.temperature, it.precipitationProbability).joinToString(" ")).append('\n') }
