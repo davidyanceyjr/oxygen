@@ -1,6 +1,6 @@
 # Active Cycle
 
-Status: planned
+Status: committed
 Cycle ID: 2026-08-28-repository-engineering-gate
 Mode: documentation-and-repository-maintenance
 Goal: Complete the Repository Engineering Gate before major persistence work.
@@ -46,4 +46,6 @@ Acceptance boundary: The Repository Engineering Gate is complete when license st
 - implemented: Project owner selected GPL-3.0-or-later for Oxygen source code on 2026-08-28. Root `LICENSE`, `LICENSE-TODO.md`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, and `README.md` now record the license decision while keeping weather-data/provider attribution separate.
 - implemented: Added baseline GitHub Actions workflow at `.github/workflows/android-ci.yml` with hosted Android/JDK/Gradle setup and separate compile, debug unit test, assemble, and whitespace steps.
 - verified: Local broad checks passed on 2026-08-28 through the repo-local Android environment wrapper. Evidence saved under `.codex/test-artifacts/2026-08-28-repository-engineering-gate/`: `compile-debug-kotlin.log`, `debug-unit-tests.log`, `assemble-debug.log`, and `git-diff-check.log`.
-- pending: Hosted CI pass evidence and `main` branch protection are not verified yet. They require the workflow to be committed/pushed and a GitHub Actions run to complete successfully before branch protection can require the new check.
+- verified: Hosted GitHub Actions run `33175936627` passed on commit `e7dbc75a9b2113f43b6fa0a3ab0c10c6b3f37535`; job `Android checks` passed compile, debug unit tests, assemble, and whitespace steps. Run URL: `https://github.com/davidyanceyjr/oxygen/actions/runs/33175936627`.
+- implemented: `main` branch protection was configured after hosted CI passed. Protection requires strict status check `Android checks`, blocks force pushes, blocks deletion, enforces protection for administrators, and requires pull-request review settings with `required_approving_review_count` set to `0` for solo maintenance.
+- committed: Repository Engineering Gate evidence was committed and pushed through `main` history. Final record updates are being merged through protected-branch PR workflow.
