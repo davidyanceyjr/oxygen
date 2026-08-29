@@ -16,6 +16,18 @@ class OxygenAppContractTest {
     }
 
     @Test
+    fun `main activity wires DataStore selected location and Room cached forecast repository`() {
+        val source = Files.readString(Path.of("src/main/kotlin/com/oxygen/weather/MainActivity.kt"))
+
+        assertTrue(source.contains("DataStoreSelectedLocationStorage"))
+        assertTrue(source.contains("RoomForecastCacheStorageFactory"))
+        assertTrue(source.contains("CachedWeatherRepository"))
+        assertTrue(source.contains("OpenMeteoWeatherRepository"))
+        assertFalse(source.contains("FileForecastCacheStorage"))
+        assertFalse(source.contains("SampleWeather"))
+    }
+
+    @Test
     fun `default production app state has first-run copy for manual search and location action`() {
         val firstRun = OxygenAppStateHolder().presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
 

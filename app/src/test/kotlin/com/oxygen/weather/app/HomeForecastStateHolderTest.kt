@@ -19,6 +19,7 @@ import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
+import com.oxygen.weather.core.provider.cache.ForecastCacheStorage
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -78,6 +79,146 @@ class HomeForecastStateHolderTest {
     }
 
     @Test
+    fun `manual candidate selection persists selected location before routing home`() {
+        val location = weatherLocation("manual-persisted", "Persisted City")
+        val storage = RecordingSelectedLocationStorage()
+        val weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Loading))
+        val stateHolder = OxygenAppStateHolder(
+            geocodingRepository = StaticGeocodingRepository(location),
+            weatherRepository = weatherRepository,
+            selectedLocationStorage = storage,
+            searchExecutor = DirectForecastExecutor,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onManualLocationQueryChanged("Persisted City")
+        stateHolder.onManualLocationSearchSubmitted()
+        val result = ((stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry)
+            .searchState as ManualLocationSearchState.Results).candidates.single()
+        stateHolder.onManualLocationCandidateSelected(result.id)
+
+        assertEquals(listOf(location), storage.writes)
+        assertEquals(listOf(location), weatherRepository.locations)
+        assertEquals(location, stateHolder.presentationState.selectedLocation)
+        assertTrue(stateHolder.presentationState.screen is OxygenAppScreen.Home)
+    }
+
+    @Test
+    fun `selected-location persistence failure blocks manual home handoff`() {
+        val location = weatherLocation("manual-write-fails", "Write Fails City")
+        val weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Loading))
+        val stateHolder = OxygenAppStateHolder(
+            geocodingRepository = StaticGeocodingRepository(location),
+            weatherRepository = weatherRepository,
+            selectedLocationStorage = FailingSelectedLocationStorage(writeFails = true),
+            searchExecutor = DirectForecastExecutor,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onManualLocationQueryChanged("Write Fails City")
+        stateHolder.onManualLocationSearchSubmitted()
+        val result = ((stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry)
+            .searchState as ManualLocationSearchState.Results).candidates.single()
+        stateHolder.onManualLocationCandidateSelected(result.id)
+
+        val firstRun = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
+        val failure = firstRun.searchState as ManualLocationSearchState.Failure
+        assertEquals(FirstRunLocationMessage.LocalStateUnavailable, firstRun.message)
+        assertEquals(FirstRunLocationMessage.LocalStateUnavailable, failure.message)
+        assertEquals(emptyList<WeatherLocation>(), weatherRepository.locations)
+        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertFalse(stateHolder.presentationState.isShowingHome)
+    }
+
+    @Test
+    fun `startup restores selected location and matching useful cache before refresh completes`() {
+        val location = weatherLocation("manual-cached-startup", "Cached Startup City")
+        val cachedBundle = fullWeatherBundle(location)
+        val weatherRepository = ControlledWeatherRepository()
+        val executor = Executors.newSingleThreadExecutor()
+        val stateHolder = OxygenAppStateHolder(
+            weatherRepository = weatherRepository,
+            selectedLocationStorage = RecordingSelectedLocationStorage(readLocation = location),
+            forecastCacheStorage = RecordingForecastCacheStorage(storedReads = mapOf(location.id to cachedBundle)),
+            forecastExecutor = executor,
+            clock = java.time.Clock.fixed(Instant.parse("2026-08-22T12:45:00Z"), ZoneId.of("UTC")),
+        )
+
+        try {
+            weatherRepository.awaitCall(0)
+            val ready = stateHolder.presentationState.screen.let { it as OxygenAppScreen.Home }
+                .forecast as HomeForecastPresentationState.ForecastReady
+            val restored = ready.freshness as HomeForecastFreshness.RestoredFromCache
+            assertSame(location, stateHolder.presentationState.selectedLocation)
+            assertSame(location, ready.location)
+            assertEquals("65 deg F", ready.dashboard.current?.temperature)
+            assertEquals("45 minutes", restored.staleAgeText)
+            assertTrue(restored.statusText.contains("while Oxygen refreshes this location"))
+            assertTrue(ready.isRefreshInProgress)
+            assertEquals(listOf(location), weatherRepository.locations)
+        } finally {
+            weatherRepository.finishAll()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `startup with selected location and no cache renders retryable no-cache error after offline refresh`() {
+        val location = weatherLocation("manual-no-cache-startup", "No Cache Startup City")
+        val stateHolder = OxygenAppStateHolder(
+            weatherRepository = RecordingWeatherRepository(
+                listOf(
+                    WeatherRepositoryResult.Loading,
+                    WeatherRepositoryResult.Failure(ForecastError.NetworkUnavailable),
+                ),
+            ),
+            selectedLocationStorage = RecordingSelectedLocationStorage(readLocation = location),
+            forecastCacheStorage = RecordingForecastCacheStorage(),
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val error = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.NoCacheError
+        assertSame(location, stateHolder.presentationState.selectedLocation)
+        assertSame(location, error.location)
+        assertEquals(HomeForecastMessage.NetworkUnavailable, error.message)
+        assertTrue(error.canRetry)
+    }
+
+    @Test
+    fun `startup ignores wrong-location cache for restored selected location`() {
+        val selected = weatherLocation("manual-selected-cache-scope", "Selected Cache Scope City")
+        val other = weatherLocation("manual-other-cache-scope", "Other Cache Scope City")
+        val stateHolder = OxygenAppStateHolder(
+            weatherRepository = RecordingWeatherRepository(
+                listOf(WeatherRepositoryResult.Failure(ForecastError.NetworkUnavailable)),
+            ),
+            selectedLocationStorage = RecordingSelectedLocationStorage(readLocation = selected),
+            forecastCacheStorage = RecordingForecastCacheStorage(storedReads = mapOf(other.id to fullWeatherBundle(other))),
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val error = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.NoCacheError
+        assertSame(selected, error.location)
+        assertEquals(HomeForecastMessage.NetworkUnavailable, error.message)
+        assertFalse(stateHolder.presentationState.toString().contains("Other Cache Scope City"))
+    }
+
+    @Test
+    fun `stored selected-location read failure stays at manual entry with local-state message`() {
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocationStorage = FailingSelectedLocationStorage(readFails = true),
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val firstRun = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
+        assertEquals(FirstRunLocationMessage.LocalStateUnavailable, firstRun.message)
+        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertFalse(stateHolder.presentationState.isShowingHome)
+    }
+
+    @Test
     fun `repository success becomes visible non-loading terminal home state`() {
         val location = weatherLocation("manual-chicago", "Chicago")
         val bundle = fullWeatherBundle(location)
@@ -125,6 +266,9 @@ class HomeForecastStateHolderTest {
         assertEquals("CC BY 4.0", ready.dashboard.source.license)
         assertEquals("Flood Watch", ready.dashboard.alerts.single().event)
         assertFalse(ready.dashboard.visibleText().contains("internal-open-meteo-id"))
+        assertEquals("Refresh", ready.refreshLabel)
+        assertTrue(ready.canRefresh)
+        assertFalse(ready.canRetry)
         assertEquals(
             listOf(
                 HomeSuccessSection.LocationHeader,
@@ -362,7 +506,7 @@ class HomeForecastStateHolderTest {
     }
 
     @Test
-    fun `stale success after failed refresh keeps dashboard visible with retry metadata`() {
+    fun `stale success after failed refresh keeps dashboard visible with refresh metadata`() {
         val location = weatherLocation("manual-stale-cache", "Stale Cache City")
         val bundle = fullWeatherBundle(location)
         val stateHolder = OxygenAppStateHolder(
@@ -396,13 +540,14 @@ class HomeForecastStateHolderTest {
         assertFalse(stale.refreshFailureMessage.text.contains("No cached forecast is available yet"))
         assertTrue(stale.statusText.contains("cached forecast"))
         assertTrue(stale.statusText.contains("45 minutes"))
-        assertTrue(ready.canRetry)
-        assertEquals("Retry", ready.retryLabel)
+        assertTrue(ready.canRefresh)
+        assertEquals("Refresh", ready.refreshLabel)
+        assertFalse(ready.canRetry)
         assertFalse(ready.isRefreshInProgress)
     }
 
     @Test
-    fun `same-location loading while ready keeps previous dashboard visible`() {
+    fun `explicit home refresh while ready keeps previous dashboard visible`() {
         val location = weatherLocation("manual-refresh-ready", "Refresh Ready City")
         val weatherRepository = ControlledWeatherRepository()
         val executor = Executors.newFixedThreadPool(2)
@@ -418,7 +563,7 @@ class HomeForecastStateHolderTest {
             val initialReady = awaitHomeState<HomeForecastPresentationState.ForecastReady>(stateHolder)
             assertEquals("65 deg F", initialReady.dashboard.current?.temperature)
 
-            stateHolder.onHomeForecastRetry()
+            stateHolder.onHomeForecastRefresh()
             val second = weatherRepository.awaitCall(1)
             second.emit(WeatherRepositoryResult.Loading)
             val refreshing = awaitHomeState<HomeForecastPresentationState.ForecastReady>(stateHolder)
@@ -427,10 +572,85 @@ class HomeForecastStateHolderTest {
             assertEquals("65 deg F", refreshing.dashboard.current?.temperature)
             assertTrue(refreshing.isRefreshInProgress)
             assertEquals("Refreshing weather for Refresh Ready City", refreshing.refreshInProgressText)
+            assertEquals(listOf(location, location), weatherRepository.locations)
         } finally {
             weatherRepository.finishAll()
             executor.shutdownNow()
         }
+    }
+
+    @Test
+    fun `explicit home refresh success replaces dashboard and clears stale metadata`() {
+        val location = weatherLocation("manual-refresh-success", "Refresh Success City")
+        val firstBundle = fullWeatherBundle(location)
+        val refreshedBundle = fullWeatherBundle(location).copy(
+            current = fullWeatherBundle(location).current?.copy(temperatureC = 24.0),
+            fetchedAt = Instant.parse("2026-08-22T13:00:00Z"),
+        )
+        val weatherRepository = ControlledWeatherRepository()
+        val executor = Executors.newFixedThreadPool(2)
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = weatherRepository,
+            forecastExecutor = executor,
+        )
+
+        try {
+            val first = weatherRepository.awaitCall(0)
+            first.emit(
+                WeatherRepositoryResult.Success(
+                    weather = firstBundle,
+                    freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                        staleAge = Duration.ofMinutes(30),
+                        refreshFailure = ForecastError.NetworkUnavailable,
+                    ),
+                ),
+            )
+            val stale = awaitHomeState<HomeForecastPresentationState.ForecastReady>(stateHolder)
+            assertTrue(stale.freshness is HomeForecastFreshness.StaleAfterFailedRefresh)
+
+            stateHolder.onHomeForecastRefresh()
+            val second = weatherRepository.awaitCall(1)
+            second.emit(WeatherRepositoryResult.Loading)
+            assertTrue(awaitHomeState<HomeForecastPresentationState.ForecastReady>(stateHolder).isRefreshInProgress)
+            second.emit(WeatherRepositoryResult.Success(refreshedBundle))
+
+            val refreshed = awaitReadyState(stateHolder) { it.dashboard.current?.temperature == "75 deg F" }
+            assertSame(location, refreshed.location)
+            assertEquals("75 deg F", refreshed.dashboard.current?.temperature)
+            assertEquals(HomeForecastFreshness.Fresh, refreshed.freshness)
+            assertFalse(refreshed.isRefreshInProgress)
+            assertEquals(null, refreshed.refreshInProgressText)
+            assertEquals(listOf(location, location), weatherRepository.locations)
+        } finally {
+            weatherRepository.finishAll()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `explicit home refresh failure without cache becomes no-cache error`() {
+        val location = weatherLocation("manual-refresh-no-cache", "Refresh No Cache City")
+        val weatherRepository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+            listOf(
+                WeatherRepositoryResult.Loading,
+                WeatherRepositoryResult.Failure(ForecastError.NetworkUnavailable),
+            ),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = weatherRepository,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onHomeForecastRefresh()
+
+        val error = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.NoCacheError
+        assertSame(location, error.location)
+        assertEquals(HomeForecastMessage.NetworkUnavailable, error.message)
+        assertEquals(listOf(location, location), weatherRepository.locations)
     }
 
     @Test
@@ -541,6 +761,48 @@ private class RecordingWeatherRepository(
     }
 }
 
+private class RecordingSelectedLocationStorage(
+    private val readLocation: WeatherLocation? = null,
+) : SelectedLocationStorage {
+    val writes = mutableListOf<WeatherLocation>()
+
+    override fun readSelectedLocation(): WeatherLocation? = readLocation
+
+    override fun writeSelectedLocation(location: WeatherLocation) {
+        writes += location
+    }
+}
+
+private class FailingSelectedLocationStorage(
+    private val readFails: Boolean = false,
+    private val writeFails: Boolean = false,
+) : SelectedLocationStorage {
+    override fun readSelectedLocation(): WeatherLocation? {
+        if (readFails) error("selected-location read failed")
+        return null
+    }
+
+    override fun writeSelectedLocation(location: WeatherLocation) {
+        if (writeFails) error("selected-location write failed")
+    }
+}
+
+private class RecordingForecastCacheStorage(
+    private val storedReads: Map<LocationId, WeatherBundle> = emptyMap(),
+) : ForecastCacheStorage {
+    val readLocationIds = mutableListOf<LocationId>()
+    val replacements = mutableListOf<WeatherBundle>()
+
+    override fun replaceBundle(bundle: WeatherBundle) {
+        replacements += bundle
+    }
+
+    override fun readBundle(locationId: LocationId): WeatherBundle? {
+        readLocationIds += locationId
+        return storedReads[locationId]
+    }
+}
+
 private class ControlledWeatherRepository : WeatherRepository {
     val locations = mutableListOf<WeatherLocation>()
     private val calls = mutableListOf<ControlledWeatherCall>()
@@ -611,6 +873,19 @@ private inline fun <reified T : HomeForecastPresentationState> awaitHomeState(
         Thread.sleep(10)
     }
     error("Timed out waiting for Home forecast state ${T::class.java.simpleName}")
+}
+
+private fun awaitReadyState(
+    stateHolder: OxygenAppStateHolder,
+    predicate: (HomeForecastPresentationState.ForecastReady) -> Boolean,
+): HomeForecastPresentationState.ForecastReady {
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+    while (System.nanoTime() < deadline) {
+        val forecast = (stateHolder.presentationState.screen as? OxygenAppScreen.Home)?.forecast
+        if (forecast is HomeForecastPresentationState.ForecastReady && predicate(forecast)) return forecast
+        Thread.sleep(10)
+    }
+    error("Timed out waiting for matching Home ready state")
 }
 
 private fun weatherLocation(

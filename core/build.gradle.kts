@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -13,7 +14,14 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.room.runtime)
     implementation(libs.kotlinx.serialization.json)
 
+    ksp(libs.androidx.room.compiler)
+
     testImplementation(libs.junit)
+
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.junit)
 }

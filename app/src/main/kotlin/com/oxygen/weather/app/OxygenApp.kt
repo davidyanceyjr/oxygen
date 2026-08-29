@@ -77,6 +77,10 @@ fun OxygenApp(
                     stateHolder.onHomeForecastRetry()
                     appState = stateHolder.presentationState
                 },
+                onRefresh = {
+                    stateHolder.onHomeForecastRefresh()
+                    appState = stateHolder.presentationState
+                },
                 onOpenAbout = {
                     stateHolder.onOpenAbout()
                     appState = stateHolder.presentationState
