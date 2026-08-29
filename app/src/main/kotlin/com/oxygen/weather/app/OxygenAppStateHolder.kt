@@ -11,8 +11,10 @@ import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
+import com.oxygen.weather.core.provider.cache.ForecastCacheStorage
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoGeocodingRepository
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoWeatherRepository
+import java.time.Clock
 import java.time.Duration
 import java.util.Locale
 import java.util.concurrent.Executor
@@ -22,6 +24,9 @@ class OxygenAppStateHolder(
     selectedLocation: WeatherLocation? = null,
     private val geocodingRepository: GeocodingRepository = OpenMeteoGeocodingRepository(),
     private val weatherRepository: WeatherRepository = OpenMeteoWeatherRepository(),
+    private val selectedLocationStorage: SelectedLocationStorage = EmptySelectedLocationStorage,
+    private val forecastCacheStorage: ForecastCacheStorage? = null,
+    private val clock: Clock = Clock.systemUTC(),
     private val searchExecutor: Executor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "oxygen-geocoding-search").apply { isDaemon = true }
     },
@@ -29,8 +34,11 @@ class OxygenAppStateHolder(
         Thread(runnable, "oxygen-forecast-refresh").apply { isDaemon = true }
     },
 ) {
+    private var startupLocationReadFailed = false
+    private val initialSelectedLocation: WeatherLocation? = selectedLocation
+
     @Volatile
-    var presentationState: OxygenAppPresentationState = if (selectedLocation == null) {
+    var presentationState: OxygenAppPresentationState = if (initialSelectedLocation == null) {
         OxygenAppPresentationState(
             screen = OxygenAppScreen.FirstRunLocationEntry(),
             selectedLocation = null,
@@ -38,9 +46,9 @@ class OxygenAppStateHolder(
     } else {
         OxygenAppPresentationState(
             screen = OxygenAppScreen.Home(
-                forecast = HomeForecastPresentationState.Loading.from(selectedLocation),
+                forecast = HomeForecastPresentationState.Loading.from(initialSelectedLocation),
             ),
-            selectedLocation = selectedLocation,
+            selectedLocation = initialSelectedLocation,
         )
     }
         private set
@@ -50,7 +58,34 @@ class OxygenAppStateHolder(
     private var activeForecastRequestId = 0L
 
     init {
-        selectedLocation?.let(::startHomeForecastLoad)
+        if (initialSelectedLocation == null) {
+            if (selectedLocationStorage !== EmptySelectedLocationStorage) {
+                forecastExecutor.execute {
+                    val restoredLocation = readStoredSelectedLocation()
+                    when {
+                        restoredLocation != null -> {
+                            setHomeLoading(restoredLocation)
+                            restoreCachedHomeForecast(restoredLocation)
+                            startHomeForecastLoad(restoredLocation)
+                        }
+                        startupLocationReadFailed -> {
+                            presentationState = OxygenAppPresentationState(
+                                screen = OxygenAppScreen.FirstRunLocationEntry(
+                                    message = FirstRunLocationMessage.LocalStateUnavailable,
+                                ),
+                                selectedLocation = null,
+                            )
+                            publishState()
+                        }
+                    }
+                }
+            }
+        } else {
+            forecastExecutor.execute {
+                restoreCachedHomeForecast(initialSelectedLocation)
+                startHomeForecastLoad(initialSelectedLocation)
+            }
+        }
     }
 
     fun setOnStateChanged(listener: (OxygenAppPresentationState) -> Unit) {
@@ -82,6 +117,21 @@ class OxygenAppStateHolder(
         val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
         val results = firstRun.searchState as? ManualLocationSearchState.Results ?: return
         val selected = results.candidates.firstOrNull { it.id == candidateId } ?: return
+        try {
+            selectedLocationStorage.writeSelectedLocation(selected.location)
+        } catch (_: Exception) {
+            updateFirstRunState {
+                it.copy(
+                    message = FirstRunLocationMessage.LocalStateUnavailable,
+                    searchState = ManualLocationSearchState.Failure(
+                        query = firstRun.submittedQuery.orEmpty(),
+                        message = FirstRunLocationMessage.LocalStateUnavailable,
+                        canRetry = true,
+                    ),
+                )
+            }
+            return
+        }
         startHomeForecastLoad(selected.location)
     }
 
@@ -276,6 +326,58 @@ class OxygenAppStateHolder(
         onStateChanged?.invoke(presentationState)
     }
 
+    private fun readStoredSelectedLocation(): WeatherLocation? =
+        try {
+            selectedLocationStorage.readSelectedLocation()
+        } catch (_: Exception) {
+            startupLocationReadFailed = true
+            null
+        }
+
+    @Synchronized
+    private fun setHomeLoading(location: WeatherLocation) {
+        presentationState = OxygenAppPresentationState(
+            screen = OxygenAppScreen.Home(
+                forecast = HomeForecastPresentationState.Loading.from(location),
+            ),
+            selectedLocation = location,
+        )
+        publishState()
+    }
+
+    @Synchronized
+    private fun restoreCachedHomeForecast(location: WeatherLocation) {
+        val storage = forecastCacheStorage ?: return
+        val cached = try {
+            storage.readBundle(location.id)
+        } catch (_: Exception) {
+            presentationState = OxygenAppPresentationState(
+                screen = OxygenAppScreen.Home(
+                    forecast = HomeForecastPresentationState.NoCacheError.from(
+                        location = location,
+                        message = HomeForecastMessage.LocalCacheFailure,
+                    ),
+                ),
+                selectedLocation = location,
+            )
+            publishState()
+            return
+        }
+        if (cached == null || !cached.isUsefulCacheFor(location)) return
+
+        presentationState = OxygenAppPresentationState(
+            screen = OxygenAppScreen.Home(
+                forecast = HomeForecastPresentationState.ForecastReady.fromRestoredCache(
+                    location = location,
+                    weather = cached,
+                    staleAge = Duration.between(cached.fetchedAt, clock.instant()).coerceAtLeast(Duration.ZERO),
+                ),
+            ),
+            selectedLocation = location,
+        )
+        publishState()
+    }
+
     @Synchronized
     private fun nextForecastRequestId(): Long {
         activeForecastRequestId += 1
@@ -419,12 +521,42 @@ sealed interface HomeForecastPresentationState {
                     forecastPrivacyNote = dashboard.source.toForecastPrivacyNote(),
                 )
             }
+
+            fun fromRestoredCache(
+                location: WeatherLocation,
+                weather: WeatherBundle,
+                staleAge: Duration,
+            ): ForecastReady {
+                val dashboard = weather.toHomeSuccessPresentation(selectedLocation = location)
+                val ageText = staleAge.toStaleAgeText()
+                return ForecastReady(
+                    location = location,
+                    title = location.displayName,
+                    subtitle = location.forecastSubtitle(),
+                    dashboard = dashboard,
+                    freshness = HomeForecastFreshness.RestoredFromCache(
+                        staleAgeText = ageText,
+                        statusText = "Showing cached forecast from $ageText ago while Oxygen refreshes this location.",
+                    ),
+                    isRefreshInProgress = false,
+                    refreshInProgressText = null,
+                    canRefresh = true,
+                    canRetry = false,
+                    forecastDisclosure = dashboard.source.toForecastDisclosure(),
+                    forecastPrivacyNote = dashboard.source.toForecastPrivacyNote(),
+                )
+            }
         }
     }
 }
 
 sealed interface HomeForecastFreshness {
     data object Fresh : HomeForecastFreshness
+
+    data class RestoredFromCache(
+        val staleAgeText: String,
+        val statusText: String,
+    ) : HomeForecastFreshness
 
     data class StaleAfterFailedRefresh(
         val staleAgeText: String,
@@ -624,6 +756,7 @@ enum class FirstRunLocationMessage(
     SearchUnexpectedFailure("Location search failed unexpectedly. Try again."),
     LocationPermissionOptional("Location permission is optional. You can search for a place instead."),
     LocationLookupNotConnected("Device location lookup is not connected yet in this slice."),
+    LocalStateUnavailable("Oxygen could not save or read the selected location on this device. Select the location again."),
 }
 
 enum class LocationPermissionResult {
@@ -660,3 +793,20 @@ private fun GeocodingError.toFirstRunLocationMessage(): FirstRunLocationMessage 
     }
 
 private fun Double.formatCoordinate(): String = String.format(Locale.US, "%.4f", this)
+
+private fun WeatherBundle.isUsefulCacheFor(location: WeatherLocation): Boolean =
+    this.location.id == location.id &&
+        current != null &&
+        hourly.isNotEmpty() &&
+        daily.isNotEmpty() &&
+        hasRenderableDisclosure() &&
+        fetchedAt.toString().isNotBlank()
+
+private fun WeatherBundle.hasRenderableDisclosure(): Boolean {
+    val provenances = listOfNotNull(current?.provenance) +
+        hourly.map { it.provenance } +
+        daily.map { it.provenance }
+    return provenances.any { provenance ->
+        provenance.sourceName.isNotBlank() && provenance.fetchedAt.toString().isNotBlank()
+    }
+}

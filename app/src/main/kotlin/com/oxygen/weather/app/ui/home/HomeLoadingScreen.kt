@@ -197,6 +197,12 @@ private fun ReadyContent(
         }
         when (val freshness = state.freshness) {
             HomeForecastFreshness.Fresh -> Unit
+            is HomeForecastFreshness.RestoredFromCache -> {
+                DashboardCard(tag = "home-section-stale") {
+                    Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
             is HomeForecastFreshness.StaleAfterFailedRefresh -> {
                 DashboardCard(tag = "home-section-stale") {
                     Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)

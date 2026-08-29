@@ -1,11 +1,11 @@
 # Active Cycle
 
 Status: committed
-Cycle ID: 2026-08-28-persistence-architecture-gate
+Cycle ID: 2026-08-29-offline-launch-from-last-forecast
 Mode: feature
-Goal: Establish the first production Room-backed forecast persistence boundary before offline launch depends on local forecast data.
-Roadmap gate: Persistence Architecture Gate.
-Branch or work context: local `oxygen` Android scaffold after committed Slice 17C Home Presentation Accessibility Evidence Baseline.
+Goal: Restore the selected location's last persisted forecast on installed-app launch and keep useful cached Home data visible when refresh fails.
+Roadmap slice: Slice 18: Offline Launch From Last Forecast.
+Branch or work context: local `oxygen` Android scaffold after committed Persistence Architecture Gate (`afda71a Add Room forecast persistence boundary`).
 
 Specification anchors:
 - `AGENTS.md`
@@ -23,132 +23,134 @@ Specification anchors:
 - `app/src/androidTest/`
 - `core/src/main/`
 - `core/src/test/`
+- `core/src/androidTest/`
 
 Prerequisites:
 - Repository Engineering Gate is committed.
 - Slice 17B Explicit Home Refresh Control is committed.
 - Slice 17C Home Presentation Accessibility Evidence Baseline is committed.
-- Repository-level file-backed forecast cache and failed-refresh stale retention exist but are not wired as installed-app offline launch behavior.
+- Persistence Architecture Gate is committed and introduced `RoomForecastCacheStorage`, `RoomForecastCacheStorageFactory`, and the production Room-backed `ForecastCacheStorage` construction path.
+- Repository-level stale retention exists through `CachedWeatherRepository`, but the installed app still does not wire durable forecast cache restoration on launch.
 
 Selected behavior:
-- Oxygen has a first production Room-backed persistence boundary for one selected location's Home forecast data.
-- Room is introduced as the production forecast persistence boundary for normalized forecast/location data, unless the specification is explicitly amended before implementation to approve a different architecture. This gate prepares the later Room source-of-truth path but does not claim source-of-truth behavior until Slice 18 wires lifecycle-aware Room/Home startup behavior.
-- Production code exposes a Room-backed `ForecastCacheStorage` construction path using an Android `Context`; focused tests may use an in-memory database, but the Room boundary must not be test-only.
-- Provider success data can be written transactionally to Room, read back through a Room-backed `ForecastCacheStorage` implementation, and emitted through `CachedWeatherRepository` as provider-neutral forecast data.
-- The role, migration path, or removal plan for `FileForecastCacheStorage` is explicit before Slice 18 offline launch depends on production persistence.
+- Oxygen persists the last selected provider-neutral `WeatherLocation` snapshot through DataStore or an equivalent Android small-state persistence boundary. The snapshot includes the local `LocationId`, display name, latitude, longitude, IANA timezone, and optional elevation.
+- On installed-app startup, Oxygen restores the last selected `WeatherLocation` snapshot, reads the matching Room-backed forecast cache, renders Home with cached current/hourly/daily forecast data when available, shows explicit stale age/source/update metadata, and starts a refresh for the same selected location.
+- If startup or foreground refresh fails while useful same-location cached data exists, Home keeps the stale forecast visible with retry/refresh-failure metadata.
+- If no selected location or no useful same-location forecast cache exists, Home does not fabricate a default forecast: no selected location routes to first-run manual selection, and selected-location/no-cache launch shows a provider-neutral retryable error.
+- On successful refresh, the installed app replaces the persisted Room forecast data and renders the fresh provider result for the selected location.
+- Installed-app Home state uses a lifecycle-aware boundary suitable for Room/DataStore collection, cancellation, process recreation, and repository refresh. If ViewModel, Flow, or new coroutine scopes are introduced, this cycle verifies the lifecycle behavior it claims.
 
 Acceptance criteria:
-- Room dependency/setup exists in the appropriate Android module and includes a first production database boundary for normalized forecast/location persistence.
-- A production factory or equivalent production integration point creates the Room database/store and returns `ForecastCacheStorage` without requiring test-only code paths; this does not wire installed-app offline launch or Home startup yet.
-- The module placement decision is explicit and preserves the current provider-neutral `:core` boundary; Android Room types do not leak into provider DTOs, provider clients, or Home presentation mappers.
-- Forecast persistence preserves selected local `LocationId`, display name, coordinates, timezone, optional elevation where available, current conditions, hourly forecast rows, daily forecast rows, provider provenance, fetched/issued/update timestamps, canonical units, and null/missing values.
-- Country, administrative areas, postcode, feature code, population, and selected-location app state are not required in this gate because they are not part of the current selected `WeatherLocation` forecast boundary; saved-location metadata and last-selected-location persistence remain deferred.
-- Provider cache headers and provider-specific cache metadata are not required in this gate unless a provider-neutral cache metadata model is added and consumed by repository behavior in this same cycle. Without that production behavior, this gate preserves existing freshness/provenance fields only: `ForecastFreshness`, `WeatherBundle.fetchedAt`, `DataProvenance.issuedAt`, `DataProvenance.fetchedAt`, provider ID, source name, data type, and license ID.
-- Persistence writes provider success data with transaction replacement semantics so a partial replacement cannot become visible as a valid forecast.
-- Same-location scoping is enforced; persisted forecast data for one selected location must not satisfy another selected location.
-- Provider-neutral boundaries remain intact: Open-Meteo DTOs, MET Norway DTOs, provider IDs as user-facing location identity, and provider-specific errors do not cross into app UI, Room consumers, or presentation mappers.
-- Local persistence failures map to provider-neutral app/domain failure states and do not fabricate success.
-- `FileForecastCacheStorage` has an explicit documented disposition: retained only as a temporary repository test/support path, migrated behind the new Room-backed store, or removed.
-- Focused tests cover Room forecast read/write through the `ForecastCacheStorage` boundary, `CachedWeatherRepository` success emission from Room readback, transaction replacement, same-location scoping, missing/null preservation, provenance/freshness preservation, provider-neutral readback, and local failure mapping.
-- Focused Room tests run as real `:core:connectedDebugAndroidTest` instrumentation tests against an in-memory Room database on the repo-local emulator unless implementation discovers a lower-risk explicit JVM Android runtime strategy and records that strategy before coding. A passing `connectedDebugAndroidTest` task with `NO-SOURCE` test compilation is only runner plumbing evidence, not coverage.
-- `WeatherBundle.alerts` and `WeatherBundle.airQuality` handling is explicit: this forecast gate either preserves empty/default values only and rejects or ignores non-empty alert/air-quality payloads with tests documenting the behavior, or it preserves those fields intentionally without claiming official alert or air-quality lookup/cache behavior.
+- Production startup has an explicit cache-first boundary. Startup cache restoration must not depend on a provider refresh failing first. The app either introduces an app-layer coordinator that composes selected-location storage, `ForecastCacheStorage`, and `WeatherRepository`, or extends the repository boundary with an explicit startup/read-through API before implementation claims cache-first launch.
+- A production Android small-state persistence boundary stores and restores the last selected provider-neutral `WeatherLocation` snapshot; DataStore is preferred because it is named in the specification, but an alternative must be explicitly justified before implementation.
+- The persisted selected-location snapshot preserves exactly the fields needed to render Home context, scope Room cache lookup, and refresh forecasts without a geocoding network lookup: local `LocationId`, display name, latitude, longitude, IANA timezone, and optional elevation.
+- The selected-location small state is not used as the canonical forecast database, does not duplicate normalized forecast payloads already owned by Room, and does not persist provider geocoding IDs, provider DTO fields, country/admin/postcode metadata, feature code, population, or saved-location list state.
+- Manual selection persists the selected-location snapshot before claiming a durable Home handoff. If selected-location persistence fails, the app remains on the manual-selection boundary with a provider-neutral local-state error and does not route to Home as though offline launch is established.
+- Production app wiring constructs the Room-backed forecast cache through the existing production factory or an equivalent production path, not a test-only or file-backed cache path.
+- The installed app's default forecast repository path uses durable Room cache behavior for selected-location Home startup and refresh.
+- Startup restores the selected `WeatherLocation` snapshot before reading Room forecast cache or attempting refresh. The restored location is the single selected-location identity used for the Home header, same-location Room cache lookup, no-cache error context, and provider refresh.
+- Startup restores the matching persisted forecast cache for the restored local `LocationId` only; cached data for another location must not satisfy Home.
+- Startup attempts a provider refresh after local restoration. Refresh success replaces persisted forecast data; refresh failure retains useful cached data with stale age and refresh-failure metadata.
+- A useful cache for this slice is a provider-neutral `WeatherBundle` whose location id matches the restored selected `LocationId`, contains renderable current conditions, at least one hourly row, at least one daily row, source/provenance sufficient for disclosure, and timestamps sufficient for update/stale-age display. Missing, corrupt, wrong-location, or display-incomplete cache data is treated as no cache.
+- Offline/network failure with useful cache renders Home cached current/hourly/daily data, source/provenance/update text, and explicit stale age.
+- Offline/network failure without cache renders a retryable provider-neutral error and does not show sample/scaffold data or fabricated weather.
+- First-run behavior remains intact when no selected location is stored.
+- Manual search and selected-location handoff update the persisted selected `WeatherLocation` snapshot at the production app boundary.
+- Local DataStore or Room failures map to provider-neutral error states and do not fabricate success.
+- Lifecycle behavior is observable: startup restoration, cancellation/obsolete refresh isolation, and process/activity recreation behavior are covered at the Android state, Compose, or instrumentation boundary.
+- Provider-neutral boundaries remain intact: Open-Meteo DTOs, MET Norway DTOs, provider IDs as user-facing location identity, provider-specific errors, Room entities, and DataStore implementation details do not cross into Composables.
+- `SampleWeather.bundle` remains scaffold/preview-only and is not used by the production startup, cache, or Home success path.
+- UI obligations travel with the behavior: cached and stale Home states remain readable at compact width and large font, expose meaningful semantics, and keep refresh/retry controls stable.
+- Focused tests cover online launch with no cache, online launch with cache, offline launch with useful cache, offline launch without cache, failed foreground refresh with cache, failed foreground refresh without cache, selected `WeatherLocation` snapshot persistence/readback, same-location cache scoping, persisted selected-location handoff, lifecycle/obsolete-refresh isolation, local persistence failure mapping, and no sample/provider-detail leakage.
+- Required completion tests cover selected-location snapshot write/read/default-empty behavior; corrupt/incomplete snapshot handling; manual selection persistence before Home route; selected-location write failure blocking durable Home route; startup with selected location plus matching cache rendering stale cached Home before or while refresh starts; startup with selected location plus wrong/no cache rendering retryable no-cache state; refresh success replacing persisted Room cache and UI; refresh failure with cache retaining stale UI; refresh failure without cache remaining retryable; obsolete refresh isolation; and `SampleWeather` absence from production startup/Home success paths. Supporting regression tests cover compact width, large font, sibling non-overlap, provider DTO/DataStore/Room leak checks, and existing first-run/search/retry behavior.
+- Real-path evidence exercises the installed app or an explicitly labeled Android-boundary harness for restored cached Home rendering and no-cache retryable launch behavior. Offline evidence must be deterministic: either emulator network control with recorded commands/logs or an Android-boundary harness that uses real Room/DataStore storage and a fake weather repository returning `ForecastError.NetworkUnavailable`. A provider mock alone is not evidence of persistence unless the production persistence path is exercised.
 - Broad Android verification passes.
 
 Acceptance boundary:
-- The Persistence Architecture Gate is complete when a production Room-backed forecast persistence boundary exists, production code can construct a Room-backed `ForecastCacheStorage` through an Android `Context`, provider success data writes transactionally to Room, reads back through a Room-backed `ForecastCacheStorage`, and is emitted by `CachedWeatherRepository` as provider-neutral forecast data; same-location scoping and null/provenance/freshness preservation are verified by real focused tests; unsupported selected-location metadata and provider-specific cache metadata are either explicitly deferred or backed by new consumed domain behavior; `WeatherBundle.alerts` and `WeatherBundle.airQuality` handling is explicit; the `FileForecastCacheStorage` disposition is explicit; provider-neutral isolation is verified; and broad Android checks pass. This gate proves repository storage/readback behavior and production Room store construction, not installed-app Room Flow, source-of-truth, or UI startup behavior. This gate does not claim DataStore app-state persistence, lifecycle/ViewModel conversion, offline launch, installed-app stale restoration after process death, saved-location switching, unit conversion, alert lookup, air-quality lookup/cache behavior, installed-app MET Norway fallback, provider-specific fallback cache behavior, background refresh, persisted presentation settings, release readiness, or MVP readiness.
+- Slice 18 is complete when the production installed-app path persists the last selected provider-neutral `WeatherLocation` snapshot, restores that selected location and its matching Room-backed forecast cache on launch, renders cached Home data with stale/source/update metadata when network refresh fails, renders retryable no-cache errors for the restored selected location without fabrication, refreshes with the restored location and replaces persisted data on success, preserves first-run manual selection when no selected location exists, and verifies lifecycle-aware startup/refresh behavior at an Android-observable boundary. This slice proves offline launch only for the selected-location current/hourly/daily forecast path. It does not claim saved-location list switching, unit preferences, official alert lookup/cache behavior, air-quality lookup/cache behavior, radar, background refresh, installed-app MET Norway fallback activation, provider-specific fallback cache metadata, persisted presentation settings, release readiness, or MVP readiness.
 
 Evidence plan:
-- Save focused persistence test logs under `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/`.
-- Save any dependency/module-placement decision notes, schema inspection output, static boundary checks, and broad verification logs under the same artifact directory.
-- Append completed cycle evidence to `.codex/cycles/history.md` only when the gate is ready or committed.
+- Save focused state/repository/DataStore/Room test logs under `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/`.
+- Save Android-boundary or emulator logs, screenshots, semantics dumps, and any offline/network-control notes under the same artifact directory.
+- Save broad verification logs under the same artifact directory.
+- Append completed cycle evidence to `.codex/cycles/history.md` only when the slice is ready or committed.
 
 ## Implementation Plan
 
 ### Planning Decisions
 
-- Room placement: add Room to `:core` for this gate, under a persistence/database package, because `:core` is already an Android library and currently owns provider-neutral domain models, provider repository interfaces, fallback selection, and the file-backed forecast cache wrapper. Do not create new Gradle modules for this gate.
-- Boundary shape: implement a Room-backed `ForecastCacheStorage` in `:core` that accepts and returns current provider-neutral `WeatherBundle` data keyed by selected local `LocationId`. Keep Room entities, DAOs, database classes, converters, and transaction helpers internal to the persistence package.
-- Production construction path: add a production factory or equivalent integration point in `:core` that accepts an Android `Context`, creates the Room database/store, and returns `ForecastCacheStorage`. Do not wire this factory into `OxygenApp` or Home startup in this gate.
-- Production path for this gate: provider success data is normalized into Room in one transaction, read back through `ForecastCacheStorage.readBundle`, and emitted by `CachedWeatherRepository` as provider-neutral forecast data. This proves only the Room-backed repository persistence boundary without wiring Room Flow, installed-app startup, source-of-truth collection, or offline launch.
-- Metadata boundary: preserve the current selected `WeatherLocation` and forecast/provenance/freshness fields that exist in production domain models. Defer country/admin/postcode/feature/population persistence to saved-location work, and defer provider-specific cache headers and generic provider cache metadata unless a provider-neutral cache metadata type is added and consumed by repository behavior in this cycle.
-- `FileForecastCacheStorage` disposition: retain it temporarily as repository test/support infrastructure for the already-verified cache slices, but do not extend it as the production forecast persistence path. Future offline launch work must move installed-app cache behavior to the Room-backed store.
+- Startup/cache coordinator: introduce or identify one production app-layer boundary responsible for selected-location restore, Room cache read, refresh launch, refresh replacement, and no-cache error emission. The initial cached Home state must come from local storage, not from waiting for `CachedWeatherRepository.refresh()` to fail.
+- Small-state persistence: use DataStore in `:app` for the last selected provider-neutral `WeatherLocation` snapshot: local `LocationId`, display name, latitude, longitude, IANA timezone, and optional elevation. Do not store forecast rows, provider geocoding IDs, provider DTO fields, country/admin/postcode metadata, feature code, population, or saved-location list state in this slice.
+- Forecast persistence: use the Room-backed `ForecastCacheStorage` from the Persistence Architecture Gate as the installed-app durable forecast cache. Do not extend `FileForecastCacheStorage` for production offline launch.
+- Startup model: keep no-selected-location startup routed to first-run manual selection. When a selected location is restored, Home should render cached same-location data first if available, then attempt a refresh for the same selected location.
+- Lifecycle boundary: settle one concrete owner before behavior coding. Preferred implementation is an `OxygenAppViewModel` in `:app` that owns startup restore, manual selection persistence, refresh jobs, obsolete-result isolation, and lifecycle cancellation. If a smaller state-holder boundary is retained instead, the plan must record how activity recreation, process recreation inputs, and in-flight refresh isolation are observed without overstating lifecycle guarantees.
+- Dependency gate: add only dependencies needed for this slice's real behavior. Expected candidates are `androidx.datastore:datastore-preferences` for selected-location small state, `androidx.lifecycle:lifecycle-viewmodel-compose` if Compose obtains a ViewModel, and coroutine dependencies only if the chosen lifecycle owner uses coroutine jobs. Do not add dependencies for future saved locations, unit preferences, alerts, background refresh, or persisted presentation settings.
+- Persistence failure UX: selected-location write failure during manual candidate selection keeps the user at the manual-selection boundary with a provider-neutral local-state error and retry/select-again behavior. It does not route to Home or claim durable offline launch.
+- Useful-cache rule: a cache hit is renderable only when the restored local `LocationId` matches and cached provider-neutral data can render current conditions, at least one hourly row, at least one daily row, source/provenance disclosure, and update/stale-age text without fabrication. All other local-cache read outcomes are no-cache or local-persistence errors.
+- Offline scope: prove selected-location forecast restoration only. Saved-location lists, switching between multiple saved places, provider fallback metadata, alerts, air quality, and background work remain deferred.
+- UI scope: reuse the existing Home dashboard/stale/error presentation where possible. Add UI changes only when needed to make launch restoration, stale age, refresh-failure metadata, or retryable no-cache behavior observable and accessible.
 
 ### Phase Plan
 
-0. Room test runtime feasibility gate
-   - Run `scripts/list-avds.sh` and `. scripts/android-env.sh && ./gradlew :core:connectedDebugAndroidTest` before Room dependency/schema work.
-   - Save the exact logs under `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/`.
-   - If `:core:connectedDebugAndroidTest` is absent, empty, or currently passes with `NO-SOURCE` test compilation because `core/src/androidTest` has no tests/runtime setup yet, the first implementation step is to add the minimum core Android test dependencies and a minimal instrumented runtime smoke test before adding the Room store.
-   - Record the smoke test log separately. Do not use a no-source instrumentation pass as evidence for `covered`, `implemented`, or `verified` Room persistence behavior.
-   - If no emulator/device can run locally, stop before Room production implementation and either select an explicit lower-risk JVM Room test strategy before coding or record the emulator blocker. Do not report `implemented` or `verified` Room persistence while this gate is unresolved.
-   - If Gradle, KSP, or Android test dependency setup fails, report that setup failure as the blocker instead of claiming persistence behavior.
+0. Discovery and baseline
+   - Inspect the installed-app wiring around `OxygenApp`, app state holder construction, manual selection, Home refresh, current `WeatherRepository` construction, Room cache factory, and existing cache/stale tests.
+   - Inspect whether DataStore, lifecycle ViewModel, and coroutine dependencies already exist; if not, identify exact minimal dependency placement and the behavior each dependency enables before editing Gradle files.
+   - Decide and record the startup/cache coordinator boundary and lifecycle owner before implementation. Resolve whether `OxygenAppStateHolder` remains a pure reducer behind a ViewModel, is replaced by a ViewModel-owned state stream, or is retained with a narrower explicitly tested lifecycle claim.
+   - Run baseline focused checks before behavior changes:
+     - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRun*' --tests '*HomeHandoff*' --tests '*HomeForecast*' --tests '*OxygenApp*'`
+     - `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*CachedWeatherRepositoryTest'`
+     - `. scripts/android-env.sh && ./gradlew :core:connectedDebugAndroidTest`
+   - Save logs under `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/`.
 
-1. Discovery and baseline
-   - Inspect `WeatherModels.kt`, `WeatherProviders.kt`, `CachedWeatherRepository.kt`, `FileForecastCacheStorage.kt`, provider repository tests, and Home state tests.
-   - Run baseline focused checks before dependency/schema changes:
-     - `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*CachedWeatherRepositoryTest' --tests '*FileForecastCacheStorageTest'`
-     - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest'`
-   - Save logs under `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/`.
+1. Contract tests for selected-location small state
+   - Add focused tests for default no-selected-location state, persisted selected `WeatherLocation` snapshot write on manual candidate selection, persisted selected-location read on app startup, invalid/corrupt/incomplete stored snapshot handling, and local persistence failure mapping.
+   - Ensure persisted snapshot tests prove exact local `LocationId`, display name, coordinates, timezone, and optional elevation read back, and that provider IDs are not used as the user-facing selected `LocationId`.
+   - Add tests proving manual candidate selection persists the selected-location snapshot before routing Home and that selected-location persistence failure leaves the user at the manual-selection boundary with a provider-neutral local-state error.
+   - Ensure online launch with selected location and no cache attempts refresh using the restored coordinates/timezone, not a default location.
+   - Ensure offline/no-cache launch shows retryable error for the restored selected location without fabricated weather.
+   - Capture an intentional red log when practical before implementation.
 
-2. Dependency and build setup
-   - Add Room runtime, Room Kotlin extensions if needed by the selected API, Room compiler/KSP setup, and AndroidX test dependencies only where required.
-   - Add and configure the selected Room test runtime explicitly. Default strategy: `core/src/androidTest/` instrumentation tests using an in-memory Room database, run by `. scripts/android-env.sh && ./gradlew :core:connectedDebugAndroidTest`.
-   - Configure Room schema export or record an explicit reason it is deferred for this first database gate; if schemas are exported, keep schema artifacts reviewable without introducing generated build outputs into source control accidentally.
-   - Keep Room dependencies scoped to `:core`; do not add Room references to `:app` production code in this gate.
-   - Run a compile check after dependency setup before schema work.
+2. Installed-app Room cache wiring
+   - Wire the production app forecast path to construct `RoomForecastCacheStorage` through Android `Context`.
+   - Wrap the active forecast repository in `CachedWeatherRepository` for installed-app selected-location Home refresh.
+   - Keep provider fallback activation unchanged unless already active before this slice; do not introduce MET Norway installed-app fallback behavior here.
+   - Add tests that prove the installed-app path no longer uses the file-backed cache or scaffold data for Home startup.
 
-3. Schema and database boundary
-   - Add normalized Room tables for:
-     - forecast location row keyed by local `LocationId`, with display fields needed for one Home forecast;
-     - forecast metadata/provenance;
-     - current conditions;
-     - hourly rows;
-     - daily rows.
-   - Preserve location ID, display name, coordinates, timezone, optional elevation where available, provider provenance, source/license fields, fetched/issued/update timestamps, data type, canonical units, and nullable weather values.
-   - Do not add schema columns solely for geocoding candidate metadata or provider cache headers unless corresponding provider-neutral production domain behavior is added in this cycle.
-   - Store timestamps and zone identifiers deterministically with converters or scalar columns; avoid lossy formatted presentation strings.
+3. Startup restoration flow
+   - Implement startup behavior through the selected cache-first coordinator: restore the persisted selected `WeatherLocation` snapshot, read same-location forecast cache directly from the production Room-backed `ForecastCacheStorage`, and emit Home cached/stale state before or while refresh is attempted.
+   - Preserve first-run manual selection when no selected location exists.
+   - Ensure cache miss for a restored selected location produces a retryable no-cache state instead of sample/default weather.
+   - Ensure wrong-location, corrupt, or display-incomplete cache rows are ignored or mapped to provider-neutral local-persistence errors according to the useful-cache rule.
 
-4. DAO transaction behavior
-   - Implement replace-for-location semantics with a single Room transaction.
-   - Delete/replace rows for the target location only.
-   - Ensure failed writes cannot leave a partially visible valid forecast.
-   - Ensure reads are scoped by local `LocationId`; a cache for one selected location cannot satisfy another selected location.
+4. Refresh replacement and stale retention
+   - Verify refresh success writes replacement forecast data to Room and renders fresh Home state.
+   - Verify network/provider refresh failure with cache retains stale cached Home data with explicit stale age and refresh-failure metadata.
+   - Verify refresh failure without cache remains a retryable provider-neutral error.
+   - Verify obsolete refresh results cannot replace a newer selected-location state.
 
-5. Provider-neutral adapter
-   - Add a Room-backed `ForecastCacheStorage` implementation that maps domain forecast bundles to Room entities and maps Room rows back to domain forecast bundles.
-   - Add the production Android `Context` construction path for the Room-backed store; focused tests may instantiate an in-memory database directly, but production code must have a non-test factory/integration point.
-   - Exercise the Room store through `CachedWeatherRepository`, not only through DAO or adapter tests.
-   - Map local persistence failures to `ForecastError.LocalCacheFailure` or the existing provider-neutral failure path; never fabricate `Success`.
-   - Define and test how non-empty `WeatherBundle.alerts` and `WeatherBundle.airQuality` are handled by this forecast-only persistence boundary.
-   - Keep Open-Meteo DTOs, MET Norway DTOs, provider-specific client errors, and app presentation types out of the Room package boundary.
+5. Lifecycle and process recreation evidence
+   - If `OxygenAppViewModel` is introduced, wire `OxygenApp`/`MainActivity` through the ViewModel and test activity recreation using persisted selected-location and forecast cache inputs. Verify ViewModel-owned jobs isolate obsolete refresh results and cancel on clear where observable.
+   - If a ViewModel is not introduced, record the narrower lifecycle claim before implementation and add Android-boundary coverage for the exact state holder behavior being claimed.
+   - Add focused lifecycle tests or Android-boundary harness coverage for app/activity recreation after selected-location and forecast cache persistence.
+   - Exercise cancellation or obsolete refresh isolation when the restored selected location changes or a new manual selection supersedes startup refresh.
+   - If ViewModel/Flow/coroutine lifecycle changes are introduced, test the specific lifecycle behavior claimed.
 
-6. Focused tests
-   - Add an intentional failing focused test or failing instrumentation test for Room-backed forecast readback before implementing the Room store, and save the red log when practical.
-   - Add Room-backed tests for:
-     - provider success write followed by provider-neutral readback through `ForecastCacheStorage`;
-     - `CachedWeatherRepository` emitting success from Room readback after an upstream provider success;
-     - transaction replacement and failed replacement atomicity;
-     - same-location scoping and wrong-location miss;
-     - null/missing value preservation;
-     - current/hourly/daily row ordering preservation;
-     - provenance, fetched/issued/update timestamp, source/license, and existing freshness/provenance preservation;
-     - explicit alert/air-quality preservation, rejection, or omission behavior for this forecast-only boundary;
-     - local Room/adapter failure mapping without fabricated success.
-   - Run `. scripts/android-env.sh && ./gradlew :core:connectedDebugAndroidTest` for Room instrumentation coverage unless an explicit JVM Android runtime strategy was selected and recorded.
-   - Re-run existing cache and Home focused tests to prove no regression in stale-refresh behavior.
+6. Compose and accessibility boundary
+   - Add or update Compose tests for cached stale Home launch, no-cache retryable launch, refresh-in-progress cached state, refresh success replacement, compact width, large font, stable refresh/retry controls, semantics labels, and sibling non-overlap.
+   - Keep provider DTOs, Room entities, DataStore keys, and provider-specific errors out of Composables and presentation state.
 
-7. Static boundary checks
-   - Check that Room classes do not appear in `app/src/main`, Home presentation mappers, provider DTO packages, or provider clients.
-   - Check that provider DTO/client error types do not appear in Room-facing consumers or app UI.
-   - Check that `SampleWeather` remains scaffold/preview-only and is not used by the production persistence path.
+7. Real-path exercise
+   - Use the repo-local emulator to install and launch the debug app.
+   - Exercise at least one installed-app or Android-boundary flow that persists a selected location and forecast through real DataStore/Room production storage, relaunches/restores Home from cache, and records stale/source/update metadata.
+   - Exercise a no-cache selected-location launch or equivalent Android-boundary harness that uses real selected-location storage with no matching Room cache and shows retryable no-cache behavior.
+   - Make offline behavior deterministic by recording emulator network-control commands/logs or by using an Android-boundary harness with real Room/DataStore storage and a fake weather repository that returns `ForecastError.NetworkUnavailable`.
+   - Save screenshots, semantics dumps, and logs under `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/`.
 
-8. Deferred work confirmation
-   - Confirm these items remain deferred and covered by roadmap slices:
-     - Slice 18: selected-location small-state persistence and lifecycle-aware Home startup/refresh boundary.
-     - Slice 19: lifecycle-safe saved-location switching and obsolete refresh isolation.
-     - Slice 20: unit preference persistence.
-     - Slices 26-29: persisted presentation settings.
-     - Slice 31: provider-specific Open-Meteo/MET Norway fallback cache metadata and provenance behavior.
+8. Static boundary checks
+   - Check that `SampleWeather` remains preview/scaffold-only and is absent from production startup/cache/Home success paths.
+   - Check that DataStore and Room implementation details do not leak into Composables.
+   - Check that Open-Meteo/MET Norway DTOs and provider-specific errors do not leak into app UI, DataStore small state, or Home presentation.
+   - Check that `FileForecastCacheStorage` is not used for installed-app offline launch.
 
 9. Broad verification
    - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
@@ -157,23 +159,25 @@ Evidence plan:
    - `git diff --check`
 
 10. Review and ready state
-    - Review the diff for scope and provider-neutral boundary preservation.
-    - Update Phase Results with commands actually run and artifact paths.
-    - Append completed cycle evidence to `.codex/cycles/history.md` only when the gate is ready or committed.
+   - Review the diff for scope, lifecycle behavior, provider-neutral boundary preservation, persistence failure handling, UI accessibility, and claim discipline.
+   - Update Phase Results with commands actually run and artifact paths.
+   - Append completed cycle evidence to `.codex/cycles/history.md` only when the slice is ready or committed.
 
 ## Phase Results
 
-- planned: Selected Persistence Architecture Gate after committed Repository Engineering Gate, Slice 17B, and Slice 17C.
-- covered: Added real `:core:connectedDebugAndroidTest` instrumentation coverage in `core/src/androidTest/kotlin/com/oxygen/weather/core/provider/cache/room/RoomForecastCacheStorageInstrumentedTest.kt`. The tests cover production factory construction from Android `Context`, Room-backed `ForecastCacheStorage` write/readback, `CachedWeatherRepository` success emission from Room readback, transaction rollback for existing and empty locations, same-location scoping and wrong-location miss, null/missing preservation, current/hourly/daily row ordering, location/provenance/fetched/issued timestamp preservation, explicit rejection of non-empty alert and air-quality payloads for this forecast-only boundary, and local Room transaction failure mapping to `ForecastError.LocalCacheFailure`.
-- implemented: Added Room runtime/compiler/KSP setup in `gradle/libs.versions.toml`, root `build.gradle.kts`, and `core/build.gradle.kts`. Added `RoomForecastCacheStorage`, `RoomForecastCacheStorageFactory`, `OxygenForecastCacheDatabase`, Room DAO, and normalized location/metadata/current/hourly/daily entities under `core/src/main/kotlin/com/oxygen/weather/core/provider/cache/room/`. The production factory returns the existing provider-neutral `ForecastCacheStorage` interface from an Android `Context`; installed-app Home startup and offline launch wiring remain deferred.
-- implemented: `FileForecastCacheStorage` disposition remains temporary repository test/support infrastructure for already verified cache slices. Future installed-app offline launch work must use the Room-backed store as the production forecast persistence boundary rather than extending the file-backed path.
-- implemented: Room schema export is deferred for this first gate with `exportSchema = false` to avoid committing generated schema/build output before migration policy is needed. The first database version is covered by instrumentation tests; future migration work must enable reviewable schema history before versioned migrations are claimed.
-- verified: Phase 0 runner plumbing check found `:core:connectedDebugAndroidTest` passing with `compileDebugAndroidTestKotlin NO-SOURCE`; log saved at `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/phase0-connected-no-source.log`. This was not used as persistence coverage.
-- verified: Baseline focused checks passed before Room behavior changes: `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*CachedWeatherRepositoryTest' --tests '*FileForecastCacheStorageTest'` and `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest'`; logs saved at `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/baseline-core-cache-tests.log` and `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/baseline-home-state-tests.log`.
-- verified: First Room compile attempt failed on a KSP generated-code visibility issue for a private DAO record type; log saved at `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/post-room-core-compile.log`. The corrected compile passed; log saved at `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/post-room-core-compile-r2.log`.
-- verified: Focused Room instrumentation first failed with no connected device, then failed once for an incorrect failure-path test expectation, then passed 10 tests on `oxygen_starter(AVD) - 17`: `. scripts/android-env.sh && ./gradlew :core:connectedDebugAndroidTest`; logs saved at `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/focused-room-connected-tests.log`, `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/focused-room-connected-tests-r2.log`, and `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/focused-room-connected-tests-r3.log`.
-- verified: Existing cache and Home focused regression checks passed after Room implementation: `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*CachedWeatherRepositoryTest' --tests '*FileForecastCacheStorageTest'` and `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest'`; logs saved at `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/focused-existing-core-cache-tests.log` and `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/focused-existing-home-state-tests.log`.
-- verified: Static boundary checks passed: no Room classes in `app/src/main` or provider client packages; no provider DTO/client package leakage into the Room cache package; no `SampleWeather` in the production cache path. Logs saved at `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/static-room-boundary-check.log`, `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/static-provider-package-boundary-check.log`, and `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/static-sample-production-check.log`. A broader provider-name search found expected active app wiring to Open-Meteo repositories; log saved at `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/static-provider-detail-leak-check.log`.
-- verified: Broad checks passed: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`, `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`, `. scripts/android-env.sh && ./gradlew :app:assembleDebug`, and `git diff --check`; logs saved under `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/`.
-- verified: Pre-commit diff review found no blocking findings. Reviewed scope, provider-neutral boundary isolation, Room/app/provider leakage checks, Room read/write mapping, transaction tests, repository failure mapping, build-file drift, generated-output risk, and saved verification logs. Non-blocking residual risks recorded for future slices: alert/air-quality payloads are intentionally rejected by this forecast-only boundary, and Slice 18 should own the app-lifetime Room construction path.
-- verified: This gate does not claim DataStore app-state persistence, lifecycle/ViewModel conversion, offline launch, installed-app Room/Home startup wiring, installed-app stale restoration after process death, saved-location switching, unit conversion, official alert lookup/cache behavior, air-quality lookup/cache behavior, installed-app MET Norway fallback, provider-specific fallback cache metadata behavior, background refresh, persisted presentation settings, release readiness, or MVP readiness.
+- planned: Selected Slice 18 after committed Persistence Architecture Gate.
+- specified: Roadmap Slice 18 requires selected-location small-state persistence, last selected location and forecast load from local storage, stale cached Home rendering on network failure, retryable no-cache launch, startup refresh/replacement behavior, and lifecycle-aware installed-app Home state.
+- implemented: Added DataStore-backed selected-location snapshot persistence in `:app` for local `LocationId`, display name, latitude, longitude, IANA timezone, and optional elevation. Manual candidate selection writes this snapshot before routing Home; write failure keeps the app at manual selection with a provider-neutral local-state error.
+- implemented: Wired installed-app startup in `MainActivity` to construct `DataStoreSelectedLocationStorage`, production `RoomForecastCacheStorageFactory`, and `CachedWeatherRepository(OpenMeteoWeatherRepository, RoomForecastCacheStorage)`. MET Norway installed-app fallback remains inactive.
+- implemented: `OxygenAppStateHolder` now restores selected-location state on its forecast executor, reads same-location Room cache before refresh, renders useful cached current/hourly/daily Home data with cache age/source/update metadata, starts refresh for the restored location, maps no-cache/offline launch to a retryable Home error, and preserves obsolete refresh isolation.
+- covered: Focused JVM state-holder and static contract tests cover manual selected-location persistence before Home route, selected-location write/read failure mapping, startup selected-location restore with matching useful cache, no-cache offline launch, wrong-location cache isolation, production DataStore/Room cache wiring, and no sample/file-cache production path.
+- covered: Android-boundary instrumentation `OfflineLaunchPersistenceInstrumentedTest` uses real production DataStore selected-location storage and Room forecast cache storage with deterministic `ForecastError.NetworkUnavailable` to cover selected-location snapshot write/read, cached offline launch with stale Home, and selected-location/no-cache retryable launch.
+- verified: Baseline app focused tests passed; log saved at `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/baseline-app-focused.log`.
+- verified: Baseline core cache tests passed; log saved at `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/baseline-core-cache.log`.
+- verified: Baseline core Room instrumentation passed on `oxygen_starter(AVD) - 17`; log saved at `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/baseline-core-room-instrumentation.log`.
+- verified: Focused app unit tests passed from final source state; log saved at `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/focused-app-final.log`.
+- verified: Focused app offline-launch instrumentation passed on `oxygen_starter(AVD) - 17`; log saved at `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/focused-app-offline-launch-instrumentation-r3.log`.
+- verified: Existing Home Compose instrumentation passed on `oxygen_starter(AVD) - 17`; log saved at `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/home-compose-instrumentation.log`.
+- verified: Static production-boundary checks for `SampleWeather`, provider DTO/details, Room/DataStore UI leakage, and `FileForecastCacheStorage` usage returned no production matches; logs saved under `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/static-*.log`.
+- verified: Required broad checks passed from final source state: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`, `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`, `. scripts/android-env.sh && ./gradlew :app:assembleDebug`, and `git diff --check`. Final logs saved as `broad-compile-debug-kotlin-final.log`, `broad-debug-unit-tests-final.log`, `broad-assemble-debug-final.log`, and `git-diff-check-final.log`.
+- not claimed: Saved-location list switching, unit preferences, official alerts, air quality, radar, background refresh, installed-app MET Norway fallback activation, provider-specific fallback cache metadata, persisted presentation settings, release readiness, and MVP readiness remain outside this slice.
