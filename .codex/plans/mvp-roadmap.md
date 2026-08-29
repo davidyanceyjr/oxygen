@@ -429,18 +429,18 @@ Prerequisites:
 - Repository Engineering Gate.
 - Slice 17B and Slice 17C, unless the active cycle records a narrower reason to move persistence first without relying on unverified Home refresh/accessibility behavior.
 
-Release intent: Production persistence and lifecycle architecture are settled before offline launch, saved locations, unit preferences, installed-app fallback caching, and persisted presentation settings depend on local state.
+Release intent: Production forecast persistence architecture is settled before offline launch, saved locations, unit preferences, installed-app fallback caching, and persisted presentation settings depend on local state.
 
 Must prove:
-- Room is introduced as the production source of truth for normalized forecast/location data, or `docs/OXYGEN_FULL_SPECIFICATION.md` is explicitly amended to approve a different production persistence architecture before implementation claims proceed.
-- DataStore is introduced for small persistent application state and preferences such as selected location ID, units, theme, layout density, and effects settings; DataStore is not used as the canonical forecast database.
+- Room is introduced as the production forecast persistence boundary for normalized forecast/location data, or `docs/OXYGEN_FULL_SPECIFICATION.md` is explicitly amended to approve a different production persistence architecture before implementation claims proceed. This gate prepares the later Room source-of-truth path but does not claim source-of-truth behavior until lifecycle-aware Room/Home startup behavior is wired and verified.
 - Provider-neutral repository boundaries remain intact and provider DTOs stay isolated from app/UI, Room consumers, and presentation mappers.
-- Forecast persistence preserves location identity, current/hourly/daily rows, provider provenance, cache metadata needed by Open-Meteo and MET Norway, timestamps, timezone, canonical units, and null/missing values.
-- Installed-app state establishes a lifecycle-aware boundary suitable for Room/DataStore collection, cancellation, process recreation, and repository refresh, using ViewModel/coroutines/Flow where persistence behavior requires it.
+- Forecast persistence preserves location identity, current/hourly/daily rows, provider provenance, fetched/issued/update timestamps, timezone, canonical units, and null/missing values. Provider-specific cache headers and generic provider cache metadata remain deferred to Slice 31 unless a consumed provider-neutral cache metadata model is added in this gate.
+- Provider success data writes through transaction replacement semantics and is read back through a production repository/storage adapter as provider-neutral forecast data.
+- Same-location scoping prevents persisted forecast data for one selected location from satisfying another selected location.
 - The role, migration path, or removal plan for `FileForecastCacheStorage` is explicit before installed-app offline behavior relies on production persistence.
-- Focused persistence tests cover read/write, transaction replacement, same-location scoping, missing/null preservation, provenance preservation, and local failure mapping.
+- Focused persistence tests cover read/write, transaction replacement, same-location scoping, missing/null preservation, provenance preservation, and local failure mapping. A passing connected Android test task with `NO-SOURCE` test compilation is runner plumbing evidence only, not persistence coverage.
 - Broad Android verification passes.
-- This gate does not claim offline launch, saved-location switching, unit conversion, alert lookup, installed-app fallback, background refresh, or release readiness.
+- This gate does not claim DataStore app-state persistence, lifecycle/ViewModel conversion, offline launch, saved-location switching, unit conversion, alert lookup, installed-app fallback, background refresh, persisted presentation settings, or release readiness.
 
 ## Slice 18: Offline Launch From Last Forecast
 
@@ -452,10 +452,12 @@ Prerequisites:
 Release intent: Relaunching without network displays the last cached forecast for the selected location.
 
 Must prove:
+- DataStore or an equivalent small-state persistence boundary stores the last selected local `LocationId`; DataStore is not used as the canonical forecast database.
 - Last selected location and forecast load from local storage.
 - Home shows cached current/hourly/daily data and explicit stale age when network is unavailable.
 - No-cache launch shows a retryable error.
 - Startup restores selected location, reads persisted forecast, renders Home, attempts refresh, replaces persisted data on success, and retains stale data on refresh failure.
+- Installed-app Home state uses a lifecycle-aware boundary suitable for Room/DataStore collection, cancellation, process recreation, and repository refresh; if ViewModel/coroutines/Flow are introduced here, focused tests or Android-boundary evidence exercise the lifecycle behavior being claimed.
 - Online launch with no cache, online launch with cache, offline launch with useful cache, offline launch without cache, failed foreground refresh with cache, and failed foreground refresh without cache are observable in the installed app or an explicitly labeled Android-boundary harness.
 - Offline claims are limited to the selected-location forecast path verified by this slice.
 
@@ -475,19 +477,21 @@ Must prove:
 - Manual location functionality remains full-featured without location permission.
 - Saved-location UI disambiguates similar names and provides visible select/remove controls.
 - Saved locations reuse the production Room location model and persisted selected local `LocationId`; provider IDs do not become user-facing location identity.
+- Saved-location state flows through the same lifecycle-aware app boundary introduced for offline launch; switching locations cancels or isolates obsolete forecast refreshes so stale emissions cannot update the wrong Home.
 
 ## Slice 20: Unit Preferences and Conversion
 
 Status: specified
 
 Prerequisites:
-- Persistence Architecture Gate DataStore behavior.
+- Slice 18 selected-location small-state persistence.
 - Slice 19.
 
 Release intent: Users can switch Metric, US, UK, and custom unit presentation without changing canonical stored values.
 
 Must prove:
 - Unit preferences persist locally.
+- Unit preferences use small-state persistence, not the canonical forecast database.
 - Temperature, wind, pressure, precipitation, and visibility convert only for presentation.
 - Missing values remain unknown/unavailable instead of becoming zero after conversion.
 - Converted values fit current hero, hourly items, daily rows, and metric cards at large font sizes.
@@ -602,7 +606,7 @@ Must prove:
 Status: specified
 
 Prerequisites:
-- Persistence Architecture Gate DataStore behavior.
+- Slice 18 selected-location small-state persistence.
 
 Release intent: Users can persist weather-effects settings, including effects Off.
 
@@ -611,20 +615,20 @@ Must prove:
 - Effects Off removes continuous decorative animation while preserving weather information.
 - Reduced-motion/accessibility preferences are respected where available.
 - Weather semantics, alerts, source/update/stale text, and provenance remain visible with effects Off.
-- Effects preference persists across restart and remains independent from theme and layout preferences.
+- Effects preference persists through small-state persistence across restart and remains independent from theme and layout preferences.
 
 ## Slice 27: Layout Density Preference Baseline
 
 Status: specified
 
 Prerequisites:
-- Persistence Architecture Gate DataStore behavior.
+- Slice 18 selected-location small-state persistence.
 
 Release intent: Users can switch Simple/Standard presentation without losing required MVP weather information.
 
 Must prove:
 - Production layout settings are reachable from Settings/About or the app settings entry point without requiring hidden gestures.
-- Layout preference persists and Standard remains default.
+- Layout preference persists through small-state persistence and Standard remains default.
 - Simple and Standard preserve required weather fields, visible source/update/stale information, and alert visibility.
 - Layout preference remains independent from theme and effects preferences.
 - Long location names, alert names, and source/update/stale text fit without overlap in both layouts.
@@ -634,13 +638,13 @@ Must prove:
 Status: specified
 
 Prerequisites:
-- Persistence Architecture Gate DataStore behavior.
+- Slice 18 selected-location small-state persistence.
 
 Release intent: Users can persist theme selection without changing weather semantics.
 
 Must prove:
 - Production theme settings are reachable from Settings/About or the app settings entry point without requiring hidden gestures.
-- Theme selection persists across restart.
+- Theme selection persists through small-state persistence across restart.
 - Theme changes do not alter weather semantics, provider interpretation, alert severity meaning, source/update/stale text, or accessibility minimums.
 - Theme, layout, and effects controls remain independent.
 - Each implemented theme remains readable for Home success, Home error, alert, source/update/stale, and provenance states.
@@ -650,12 +654,13 @@ Must prove:
 Status: specified
 
 Prerequisites:
-- Persistence Architecture Gate DataStore behavior.
+- Slice 18 selected-location small-state persistence.
 
 Release intent: Users can select at least one high-contrast/accessibility-oriented presentation without changing weather semantics.
 
 Must prove:
 - High-contrast presentation is reachable through production appearance settings.
+- High-contrast preference persists through small-state persistence across restart.
 - Required Home, alert, source/update/stale, and provenance information remains visible and understandable without relying on color alone.
 - Theme changes do not alter weather semantics, provider interpretation, alert severity meaning, or accessibility minimums.
 - Compact phone, large font, effects Off, and high-contrast mode remain readable without overlap.
@@ -688,6 +693,7 @@ Must prove:
 - A MET Norway fallback forecast is cached and later emitted with MET Norway provenance.
 - Later Open-Meteo refresh replaces fallback data only through the normal verified refresh transaction.
 - Failed refresh/offline state keeps cached fallback data visible with explicit stale/source metadata.
+- This slice proves provider-specific and generic provider cache metadata behavior for Open-Meteo and MET Norway unless the Persistence Architecture Gate explicitly added and consumed a provider-neutral cache metadata model first.
 
 ## Slice 32: Fallback Real-Path Verification
 
@@ -781,8 +787,8 @@ Broad verification:
 
 ## Next Candidate Slice
 
-Candidate: Repository Engineering Gate.
+Candidate: Persistence Architecture Gate.
 
-Recommended sequence after the review integration: Repository Engineering Gate, Slice 17B, Slice 17C, Persistence Architecture Gate, Slice 18, Slice 19, installed-app fallback completion, Slice 20, optional device location, official alerts, persisted presentation settings, and release gates.
+Recommended sequence after the review integration: Repository Engineering Gate, Slice 17B, Slice 17C, Persistence Architecture Gate, Slice 18 with selected-location small-state persistence and lifecycle-aware Home state, Slice 19, installed-app fallback completion, Slice 20, optional device location, official alerts, persisted presentation settings, and release gates.
 
 To start work, update `.codex/plans/current.md` to one single bounded gate or slice. Do not treat later roadmap entries as planned active work.
