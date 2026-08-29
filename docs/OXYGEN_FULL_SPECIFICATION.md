@@ -632,6 +632,21 @@ Content, layout, theme, and effects are independent concerns.
 
 A theme never owns business logic.
 
+Themes control presentation; Oxygen controls semantics. Home semantic pages,
+provider/weather meaning, alert meaning, source/provenance, refresh/retry
+behavior, stale/offline behavior, and selected-location identity must not depend
+on a specific visual theme.
+
+Themes may change colors, typography, surfaces, weather symbols, atmospheric
+presentation, motion, shapes, and decorative effects. Themes must not change
+provider interpretation, forecast values, weather condition identity, alert
+severity meaning, source/update/provenance requirements, or accessibility
+minimums.
+
+Decorative effects remain optional. Required weather semantics may not exist
+only inside animation, gradients, transparency, atmospheric scenes, or
+decorative Canvas effects.
+
 ---
 
 ## 21. Canonical Visual Identity
@@ -738,22 +753,39 @@ Layout: Simple
 Initial presets:
 
 ### Simple
-- current temperature;
-- condition;
-- high/low;
-- precipitation;
-- hourly;
-- daily;
-- alerts.
+Conceptually:
+
+```text
+Now -> Forecast
+```
+
+Simple may combine current conditions and forecast into fewer semantic pages
+while preserving required weather fields, alerts, source/update/stale
+information, and accessibility.
 
 ### Standard
 Oxygen default.
 
+Conceptually:
+
+```text
+Now -> Hourly -> Daily -> Details
+```
+
+These names are semantic responsibilities, not frozen class names or mandatory
+numeric page indexes.
+
 ### Detailed
 Adds common meteorological cards and chart access.
 
+Detailed may expose additional focused weather pages where that improves
+scanning and comparison.
+
 ### Meteorologist
 Dense presentation with dew point, pressure, gusts, visibility, provider timestamps, quantities, charts, and source details.
+
+Meteorologist may expose denser analytical or scientific pages without changing
+provider-neutral weather meaning.
 
 ---
 
@@ -928,22 +960,121 @@ On larger screens, navigation and pane structure adapt to available space rather
 
 ## 31. Home Screen Specification
 
-The home screen is a vertically scrolling weather dashboard.
+Oxygen Home presents ordinary weather information through a small set of
+semantic, viewport-oriented weather pages.
 
-Recommended order:
+The normal Home interaction should be:
 
-1. Location header.
-2. Active official alert banner.
-3. Current-condition hero.
-4. Near-term precipitation summary.
-5. Hourly forecast.
-6. Daily forecast.
-7. Condition metric grid.
-8. Sun card.
-9. Air-quality card when enabled.
-10. Source/provenance footer.
+```text
+view one complete useful weather composition
+-> touch or swipe
+-> view another complete useful weather composition
+-> continue through the forecast
+```
 
-### 31.1 Current hero
+without traversing one long vertical weather document. Primary weather
+navigation is discrete-page navigation.
+
+Primary weather information uses discrete viewport-oriented pages. Vertical
+scrolling is reserved for content whose length or reading nature genuinely
+requires continuous scrolling, such as long severe-weather bulletins, forecast
+discussions, licenses/privacy/legal text, long settings content, unusually long
+lists, or accessibility/content overflow that cannot fit safely in one
+viewport.
+
+This is not an absolute prohibition against every local scroll container.
+Accessibility and information completeness take priority over forcing
+everything into one fixed viewport. At normal supported display and font
+configurations, Standard Home pages should be intentionally composed without
+page-level vertical scrolling. At large accessibility font settings or
+exceptional content lengths, localized vertical overflow is acceptable when
+needed to avoid clipping, overlap, hidden information, or excessively reduced
+text. Scrolling is therefore a fallback for content/accessibility pressure, not
+the normal Home navigation model.
+
+### 31.1 Standard semantic pages
+
+The canonical initial Standard Home layout contains semantic equivalents of:
+
+```text
+Now
+-> Hourly
+-> Daily
+-> Details
+```
+
+These are semantic responsibilities, not frozen class names. Do not mandate
+numeric page indexes as the architecture, and do not freeze the exact future
+page count for other layout presets.
+
+Weather information may move between semantic Home pages. Moving information is
+not dropping it if the information remains readily accessible through the
+normal Home interaction model.
+
+### 31.2 Now
+
+The Now page is the current-weather composition. It may contain:
+
+- selected location/context;
+- current temperature;
+- condition identity;
+- feels-like;
+- high/low;
+- immediately relevant precipitation;
+- wind summary;
+- important update/stale state.
+
+Current weather should be the visual identity and dominant information of this
+page.
+
+### 31.3 Hourly
+
+The Hourly page is the near-term forecast progression. It may contain:
+
+- hourly conditions;
+- temperatures;
+- precipitation probability/intensity;
+- near-term trends;
+- justified programmatic weather visualization.
+
+It should quickly answer:
+
+> What happens next?
+
+### 31.4 Daily
+
+The Daily page is the multi-day comparison view. It may contain:
+
+- condition identity;
+- high/low;
+- precipitation;
+- daily range visualization;
+- sun information where appropriate.
+
+It should optimize comparison between days rather than verbose reading.
+
+### 31.5 Details
+
+The Details page contains secondary weather measurements and provenance. It may
+contain:
+
+- humidity;
+- wind details;
+- pressure;
+- visibility;
+- UV;
+- dew point;
+- sun information;
+- other available metrics;
+- source/update/provenance.
+
+Source/provenance remains accessible but normally has tertiary visual weight
+when data is fresh and functioning normally. Stale, fallback, or failure
+provenance may become more prominent.
+
+Do not fabricate values merely to fill visual space.
+
+### 31.6 Current hero
 
 The hero is a summary, not a data dump.
 
@@ -959,9 +1090,11 @@ The hero is a summary, not a data dump.
        Updated 8 min ago
 ```
 
-### 31.2 Hourly
+### 31.7 Hourly forecast content
 
-Horizontally scrollable.
+Hourly content may use horizontal local scrolling or another scannable
+presentation where it remains reachable and accessible. It must not require the
+user to traverse a single long Home dashboard.
 
 Each hour includes:
 
@@ -970,7 +1103,7 @@ Each hour includes:
 - temperature;
 - precipitation probability.
 
-### 31.3 Daily
+### 31.8 Daily forecast content
 
 Rows include:
 
@@ -980,7 +1113,7 @@ Rows include:
 - low/high;
 - optional range bar.
 
-### 31.4 Metric grid
+### 31.9 Details and metric content
 
 Examples:
 
@@ -992,6 +1125,31 @@ UV Index        Cloud Cover
 ```
 
 Each card should open contextual explanation/history when detail screens are implemented.
+
+### 31.10 Home page interaction
+
+A tap on appropriate non-interactive page or background space may advance to
+the next Home page. Implementation does not need to wrap from the final page to
+the first page unless that behavior is deliberately selected and verified later.
+
+Horizontal swipe may navigate forward and backward. Swipe must not be the only
+way to reach information.
+
+The user must have a visible indication that multiple Home pages exist and
+which page is active. A page indicator or equivalent compact navigation
+mechanism is expected. Direct page selection should be supported where
+practical.
+
+Interactive controls must retain their own behavior. Refresh, retry, settings,
+alerts, chart interactions, links, buttons, and other controls must not
+accidentally trigger Home page advancement. Avoid a naive full-screen clickable
+wrapper that steals child input.
+
+Accessibility users must be able to determine the current semantic Home page,
+position among available pages, how to move forward, and how to move backward
+when applicable. Provide meaningful semantic navigation actions or equivalent
+accessible controls. Important weather information must not require
+discovering an unlabeled hidden gesture.
 
 ---
 
@@ -1061,14 +1219,20 @@ Do not abbreviate or paraphrase critical official instructions in a way that cha
 ## 34. Interaction Rules
 
 - Tap: inspect.
-- Horizontal swipe on Home: switch saved location, with visible alternative controls.
-- Horizontal scroll: hourly forecast.
-- Vertical scroll: dashboard.
+- Home page/background tap: may advance to the next semantic Home page when the
+  target is deliberately non-interactive.
+- Horizontal swipe on Home: move between semantic Home pages, with visible
+  alternative controls.
+- Horizontal local scroll: allowed for scoped content such as hourly forecast
+  when accessible and not confused with page navigation.
+- Vertical scroll: reserved primarily for long reading content, unusually long
+  lists, and localized accessibility/content overflow.
 - Pull to refresh: explicit foreground refresh.
 - Long press saved location: reorder/remove context action.
 - Pinch: maps and only charts where zoom materially helps.
 
 Safety information must not require hidden gestures.
+Home weather information must not require hidden gestures.
 
 ---
 
