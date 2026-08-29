@@ -26,12 +26,33 @@ Raw build/test output may remain ignored under `.codex/test-artifacts/`, but evi
 Every user-facing active slice must carry the relevant UI specification with it. Do not defer UI obligations into a separate polish phase when they are part of the behavior being implemented.
 
 For MVP user-facing slices:
-- home remains a vertically scrolling weather dashboard with location header, alert area when present, current-condition hero, hourly forecast, daily forecast, metric grid, sun/update/source information where data exists, and provenance footer;
+- primary Home weather navigation uses semantic, viewport-oriented pages rather than one continuous vertical dashboard;
+- the initial Standard Home semantic page model is Now -> Hourly -> Daily -> Details, with page identities represented as semantic concepts rather than unexplained numeric indexes;
+- vertical scrolling is reserved for content whose length, reading nature, or accessibility/content overflow genuinely requires it; at ordinary supported display/font configurations, Standard Home should not require page-level vertical traversal of the entire forecast;
 - important weather semantics remain readable with decorative effects, gradients, transparency, and animation disabled;
 - safety information is visible text, not color alone, and does not require hidden gestures;
 - UI supports large font, RTL where applicable, meaningful accessibility semantics, adequate touch targets, and logical TalkBack order;
 - fixed-format elements such as forecast rows, metric cards, controls, weather marks, and scene containers use stable dimensions to avoid layout shifts;
 - provider DTOs never reach Composables; UI receives presentation-ready state derived from domain models.
+
+Home visual work must be sliced into bounded cycles. Slices 18A through 18H
+establish the canonical Standard Home interaction, visual language, components,
+and verification baseline. Later Effects/Layout/Theme/Contrast slices expose
+user-facing appearance choices and variants using that established
+architecture. There must not be a future generic "make the UI good" polish
+phase; after 18H, each new user-facing feature continues to carry its own
+finished UI obligations in its own roadmap slice.
+
+Across Home interaction and visual slices, presentation must not alter weather
+semantics for convenience. Provider-neutral forecast meaning, selected location
+identity, current/hourly/daily values, condition identity, refresh/retry
+behavior, stale/offline behavior, source/provenance accessibility, Slice 18
+selected-location and forecast persistence, provider/repository/domain
+boundaries, first-run/manual selection behavior, unrelated navigation, absence
+of `SampleWeather` from production Home success, and existing provider fallback
+behavior must be preserved. Weather information may move between semantic Home
+pages; moving information is not dropping it if the information remains readily
+accessible through the normal Home interaction model.
 
 ## MVP Acceptance Boundary
 
@@ -229,11 +250,11 @@ Must prove:
 - Loading, error, and retry states are visible, accessible, tied to the selected location, and provider-neutral.
 - Retry uses the same selected location and does not substitute a default location.
 
-## Slice 11: Provider-Backed Home Success Dashboard
+## Slice 11: Provider-Backed Home Success Presentation
 
 Status: specified
 
-Release intent: Home renders real provider-neutral forecast success data in MVP dashboard order.
+Release intent: Home renders real provider-neutral forecast success data in the initial MVP presentation order. This slice established the provider-backed content baseline before the later semantic paging work.
 
 Must prove:
 - Success renders location header, current hero, hourly forecast, daily forecast, metrics, sun/update/source, and provenance where data exists.
@@ -373,14 +394,14 @@ Must prove:
 - Retry remains available.
 - Refresh failure without cache produces retryable no-cache error.
 
-## Slice 17A: Home Dashboard Presentation Alignment
+## Slice 17A: Home Presentation Alignment
 
 Status: specified
 
-Release intent: Home's provider-backed success and stale-success states match the specified dashboard hierarchy before offline launch builds on the same surface.
+Release intent: Home's provider-backed success and stale-success states match the then-current presentation hierarchy before offline launch builds on the same surface. This slice is historical baseline work; it is superseded for future Home interaction architecture by Slice 18A.
 
 Must prove:
-- Home success renders as a vertically scrolling dashboard with location header, current-condition hero, horizontal hourly forecast, daily forecast, metric grid, sun/update/source information, stale/refresh-failed status where present, and provenance footer.
+- Home success renders the existing pre-18A Home content baseline with location header, current-condition hero, hourly forecast, daily forecast, metric grid, sun/update/source information, stale/refresh-failed status where present, and provenance footer.
 - Rendered dashboard values still come from provider-neutral repository results and presentation state, not `SampleWeather.bundle`, provider DTOs, or fabricated fallback values.
 - The current-condition hero integrates Oxygen weather identity, such as the weather mark or procedural scene, while keeping temperature, condition, feels-like, high/low, update, source, and stale status readable when decorative effects are disabled.
 - Hourly, daily, metric, source, stale, and retry surfaces use stable dimensions and remain readable with long location names, narrow screens, and large font settings.
@@ -394,7 +415,7 @@ Status: specified
 Prerequisites:
 - Repository Engineering Gate, unless the active cycle explicitly records why this user-facing Home slice must proceed first.
 
-Release intent: Fresh and stale Home dashboards expose an explicit refresh action for the selected location without recomposition-driven refresh loops.
+Release intent: Fresh and stale Home presentations expose an explicit refresh action for the selected location without recomposition-driven refresh loops.
 
 Must prove:
 - A visible refresh control is reachable on provider-backed Home success and stale-success states.
@@ -417,7 +438,7 @@ Must prove:
 - Home success, stale-success, loading, no-cache error, source/provenance, stale/refresh-failed, and refresh-control states are exercised at a Compose or Android UI boundary.
 - Important weather semantics have meaningful text alternatives or semantics and preserve logical reading order.
 - Long location names, provider names, timestamps, stale text, retry/refresh controls, hourly items, daily rows, metrics, and source/provenance text do not overlap at compact phone width and large font settings.
-- The Home dashboard remains understandable with decorative effects disabled and without relying on color alone.
+- The Home presentation remains understandable with decorative effects disabled and without relying on color alone.
 - Evidence is saved as screenshots, hierarchy dumps, Compose test logs, or equivalent Android-boundary artifacts under the active cycle artifact directory.
 - This slice does not add new forecast behavior, offline launch, saved-location persistence, unit preferences, appearance persistence, alert lookup, air-quality lookup, radar, background refresh, or release-candidate claims.
 
@@ -460,6 +481,228 @@ Must prove:
 - Installed-app Home state uses a lifecycle-aware boundary suitable for Room/DataStore collection, cancellation, process recreation, and repository refresh; if ViewModel/coroutines/Flow are introduced here, focused tests or Android-boundary evidence exercise the lifecycle behavior being claimed.
 - Online launch with no cache, online launch with cache, offline launch with useful cache, offline launch without cache, failed foreground refresh with cache, and failed foreground refresh without cache are observable in the installed app or an explicitly labeled Android-boundary harness.
 - Offline claims are limited to the selected-location forecast path verified by this slice.
+
+## Slice 18A: Home Paged Interaction Foundation
+
+Status: specified
+
+Prerequisites:
+- Slice 18.
+- Screenshot feedback workflow established.
+
+Release intent: Replace the continuous vertically scrolling Home dashboard with the Standard semantic Home page container and navigation model while preserving the existing provider-backed Home presentation content and behavior.
+
+This slice establishes interaction architecture only. It is not the visual redesign of every page.
+
+Must prove:
+- Production Home has semantic equivalents of Now, Hourly, Daily, and Details.
+- Page identities are explicit semantic concepts rather than unexplained numeric indexes spread through UI code.
+- User can navigate between pages without vertically traversing the entire forecast.
+- Horizontal previous/next page navigation works.
+- Appropriate non-interactive touch regions may advance pages.
+- Visible page-state/navigation indication exists.
+- Interactive children retain their own touch behavior and do not accidentally change pages.
+- Accessibility exposes page identity and deliberate forward/backward navigation.
+- All existing Home information remains reachable through the new page architecture.
+- Existing current/hourly/daily/metrics/sun/source/stale/refresh/retry behavior remains functionally intact.
+- Normal Standard Home navigation no longer depends on one page-level vertical scrolling dashboard.
+- Installed-app screenshot evidence proves the new interaction structure.
+- Provider/domain/repository/persistence behavior is not redesigned.
+
+Explicitly out of scope:
+- substantial Now visual redesign;
+- substantial Hourly redesign;
+- substantial Daily redesign;
+- substantial Details redesign;
+- full design-token consolidation;
+- theme engine implementation;
+- layout preferences;
+- effects preferences;
+- new visual analytics;
+- new providers;
+- foldable behavior.
+
+This slice may make only the minimum presentation changes needed to create a coherent paged foundation.
+
+## Slice 18B: Now Page Visual Baseline
+
+Status: specified
+
+Prerequisite:
+- Slice 18A committed.
+
+Release intent: Establish the canonical Oxygen current-conditions experience on the Now page.
+
+Must prove:
+- Current temperature and weather condition establish the primary visual hierarchy.
+- Location/context is immediately understandable without dominating the page.
+- Feels-like, high/low, and immediately useful current-weather context form a coherent supporting group.
+- Fresh update/source information remains visually tertiary.
+- Stale or operationally important status may become more prominent.
+- Existing refresh/retry behavior remains available.
+- The Now composition behaves like one deliberate viewport, not a generic card stack.
+- Long location names degrade gracefully.
+- Relevant large-font checks pass.
+- Effects-off presentation remains complete.
+- Repeated visual values introduced by this page are promoted into appropriate Oxygen design tokens where justified.
+- Installed-app before/after screenshot evidence is retained.
+
+Out of scope:
+- Hourly visual redesign;
+- Daily visual redesign;
+- Details visual redesign;
+- full theme engine;
+- persisted appearance settings.
+
+## Slice 18C: Hourly Page Visual Baseline
+
+Status: specified
+
+Prerequisite:
+- Slice 18B committed.
+
+Release intent: Make Hourly a dedicated, highly scannable near-term weather composition.
+
+Must prove:
+- Hourly presentation quickly communicates upcoming time, condition, temperature, and precipitation where available.
+- Weather identity is visually recognizable without requiring verbose condition text for every item where accessible iconography can communicate it.
+- The page answers "what happens next?" efficiently.
+- A programmatic temperature/precipitation visualization may be introduced only when useful and supported by semantic presentation data.
+- Composables do not parse formatted display strings back into numbers.
+- If numeric visual data is required, the presentation contract is deliberately evolved alongside display text.
+- No weather data is fabricated.
+- The page does not become a long vertically scrolling hourly document at ordinary supported configuration.
+- Installed-app screenshot evidence validates visual density and hierarchy.
+- Accessibility semantics remain meaningful.
+
+## Slice 18D: Daily Page Visual Baseline
+
+Status: specified
+
+Prerequisite:
+- Slice 18C committed.
+
+Release intent: Make the Daily page optimized for fast multi-day weather comparison.
+
+Must prove:
+- Multiple days can be compared quickly.
+- Each day's condition identity is clear.
+- High/low information has strong comparative structure.
+- Precipitation is visible where available.
+- Temperature-range visualization may be used where supported by semantic numeric data.
+- Formatted strings are not parsed back into numeric values in Composables.
+- Sun information is included where its placement is useful and does not create unnecessary repetition.
+- The page minimizes redundant prose.
+- Normal presentation avoids becoming another long scrolling document.
+- Large-font/accessibility fallback preserves complete information.
+- Installed-app screenshots verify comparison readability.
+
+## Slice 18E: Details Page Visual Baseline
+
+Status: specified
+
+Prerequisite:
+- Slice 18D committed.
+
+Release intent: Create a coherent information-dense secondary weather page for metrics and provenance.
+
+Must prove:
+- Available information such as humidity, wind, pressure, visibility, UV, dew point, sun information, other already-supported metrics, update/source, and provenance is presented meaningfully.
+- Metrics are visually structured rather than dumped as one undifferentiated label/value list.
+- Novelty gauges are avoided where a simpler presentation communicates better.
+- Provenance remains readily accessible.
+- Fresh-data provenance is normally tertiary.
+- Stale/fallback/failure provenance becomes appropriately prominent.
+- Missing values remain missing/unknown/omitted rather than fabricated.
+- Normal page composition avoids unnecessary scrolling.
+- Installed-app screenshots verify density and visual organization.
+- New weather-provider capabilities are not added solely to populate this screen.
+
+## Slice 18F: Home Operational State Integration
+
+Status: specified
+
+Prerequisites:
+- Slices 18A through 18E committed.
+
+Release intent: Verify that the new paged Home architecture works correctly across existing operational states rather than only fresh successful forecasts.
+
+Must prove:
+- The paged architecture correctly handles existing applicable states including loading, refresh-in-progress, fresh success, cached/stale success, refresh failure while cache remains useful, retryable no-cache error, retry, and source/update state.
+- Operational states do not strand the user on meaningless or empty pages.
+- Stale/error communication remains visible at an appropriate semantic location.
+- Retry/refresh controls remain accessible.
+- Slice 18 persistence behavior remains intact.
+- Page state does not corrupt selected-location/weather state.
+- No sample/fabricated production fallback appears.
+- Focused Compose/state tests cover the paged operational-state behavior.
+- Installed-app screenshot evidence covers representative non-happy-path presentation.
+- Providers and persistence are not redesigned.
+
+## Slice 18G: Oxygen Home Design-System Consolidation
+
+Status: specified
+
+Prerequisites:
+- Slices 18B through 18F committed.
+
+Release intent: Consolidate proven visual decisions from the completed Standard Home pages into reusable Oxygen design-system semantics.
+
+This is consolidation, not a deferred polish phase.
+
+Must prove:
+- Repeated spacing values are represented by semantic design tokens where justified.
+- Recurring typography roles are centralized.
+- Recurring shapes/surface roles are centralized.
+- Weather/component presentation roles are understandable.
+- Accidental duplicated magic numbers introduced during visual iteration are removed where reasonable.
+- Generic surface primitives are not allowed to erase semantic distinction between Now, Hourly, Daily, and Details.
+- Home does not assume every future theme must use glass, gradients, atmospheric effects, or the same shape system.
+- Theme-independent semantics remain intact.
+- No speculative full theme engine is built.
+- No persisted theme/layout/effects settings are implemented.
+- Installed-app screenshots verify consolidation did not regress the established page designs.
+
+## Slice 18H: Standard Home Accessibility and Visual Verification Gate
+
+Status: specified
+
+Prerequisites:
+- Slices 18A through 18G committed.
+
+Release intent: Establish the completed Standard Home interaction/visual baseline as a verified foundation for subsequent MVP work.
+
+Must prove:
+- Semantic page navigation works.
+- Current page is identifiable.
+- Next/previous navigation is accessible.
+- Important information does not require hidden gestures.
+- Touch targets are adequate.
+- Child controls do not accidentally page.
+- Long location names remain usable.
+- Large font remains readable.
+- No important clipping occurs.
+- Siblings do not overlap.
+- Ordinary supported presentation does not require page-level vertical Home scrolling.
+- Localized accessibility overflow behaves safely where required.
+- Effects-disabled rendering retains complete weather meaning.
+- Source/stale/error communication remains understandable.
+- Page-to-page typography, spacing, visual weight, and navigation feel coherent.
+- Final installed-app screenshots exist for Now, Hourly, Daily, and Details.
+- Representative operational-state screenshot evidence exists.
+- Applicable focused tests pass.
+- Broad Android verification passes.
+
+Slice 18H is the gate after which Standard Home is considered visually established.
+
+It must not implement:
+- Simple layout;
+- Detailed layout;
+- Meteorologist layout;
+- persisted layout selection;
+- persisted theme selection;
+- persisted effects selection;
+- foldable-specific UI.
 
 ## Slice 19: Saved Locations Persistence
 
@@ -600,6 +843,20 @@ Must prove:
 - No provider appears as active/current unless its production path can fetch or serve data.
 - Weather-data licenses and attribution remain separate from Oxygen source-code licensing.
 - Privacy text still discloses no advertising, no tracking, no account requirement, optional location permission, and request data sent to active providers.
+
+## Appearance Preference Relationship
+
+Status: specified
+
+Slices 18A through 18H establish the canonical Standard Home interaction,
+visual language, components, and verification baseline. Later Effects Off,
+Layout Density, Theme Selection, and High Contrast slices expose user-facing
+appearance choices and variants using that established architecture.
+
+These later appearance slices are not a generic Home polish backlog. They must
+preserve provider/weather meaning, page semantics, accessibility guarantees,
+source/update/stale communication, and the functional behavior already proven
+by the Standard Home slices.
 
 ## Slice 26: Effects Off Preference Baseline
 
