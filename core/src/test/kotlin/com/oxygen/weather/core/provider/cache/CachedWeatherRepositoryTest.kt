@@ -243,58 +243,69 @@ class CachedWeatherRepositoryTest {
     }
 
     @Test
-    fun cacheWriteFailureEmitsProviderNeutralLocalFailure() {
+    fun cacheWriteFailureKeepsProviderSuccessVisible() {
+        val providerBundle = bundle(chicago, "open-meteo", temperatureC = 27.0)
         val storage = RecordingForecastCacheStorage(
             storedReads = emptyMap(),
             replaceFailure = IllegalStateException("disk full"),
         )
 
-        val failure = CachedWeatherRepository(
-            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(bundle(chicago, "open-meteo"))),
+        val success = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(providerBundle)),
             storage = storage,
-        ).refresh(chicago).terminalFailure()
+        ).refresh(chicago).terminalSuccess()
 
-        assertSame(ForecastError.LocalCacheFailure, failure.error)
+        assertSame(providerBundle, success.weather)
+        assertEquals(emptyList<WeatherBundle>(), storage.replacements)
+        assertEquals(emptyList<LocationId>(), storage.reads)
     }
 
     @Test
-    fun cacheWriteIoFailureEmitsProviderNeutralLocalFailure() {
+    fun cacheWriteIoFailureKeepsProviderSuccessVisible() {
+        val providerBundle = bundle(chicago, "open-meteo", temperatureC = 28.0)
         val storage = RecordingForecastCacheStorage(
             storedReads = mapOf(chicago.id to bundle(chicago, "open-meteo")),
             replaceFailure = IOException("disk failed"),
         )
 
-        val failure = CachedWeatherRepository(
-            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(bundle(chicago, "open-meteo"))),
+        val success = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(providerBundle)),
             storage = storage,
-        ).refresh(chicago).terminalFailure()
+        ).refresh(chicago).terminalSuccess()
 
-        assertSame(ForecastError.LocalCacheFailure, failure.error)
+        assertSame(providerBundle, success.weather)
+        assertEquals(emptyList<WeatherBundle>(), storage.replacements)
+        assertEquals(emptyList<LocationId>(), storage.reads)
     }
 
     @Test
-    fun cacheReadbackIoFailureAfterWriteEmitsProviderNeutralLocalFailure() {
+    fun cacheReadbackIoFailureAfterWriteKeepsProviderSuccessVisible() {
+        val providerBundle = bundle(chicago, "open-meteo", temperatureC = 29.0)
         val storage = RecordingForecastCacheStorage(
             storedReads = mapOf(chicago.id to bundle(chicago, "open-meteo")),
             readFailure = IOException("readback failed"),
         )
 
-        val failure = CachedWeatherRepository(
-            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(bundle(chicago, "open-meteo"))),
+        val success = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(providerBundle)),
             storage = storage,
-        ).refresh(chicago).terminalFailure()
+        ).refresh(chicago).terminalSuccess()
 
-        assertSame(ForecastError.LocalCacheFailure, failure.error)
+        assertSame(providerBundle, success.weather)
+        assertEquals(listOf(providerBundle), storage.replacements)
+        assertEquals(emptyList<LocationId>(), storage.reads)
     }
 
     @Test
-    fun missingReadbackAfterWriteEmitsProviderNeutralLocalFailure() {
-        val failure = CachedWeatherRepository(
-            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(bundle(chicago, "open-meteo"))),
-            storage = RecordingForecastCacheStorage(storedReads = emptyMap()),
-        ).refresh(chicago).terminalFailure()
+    fun missingReadbackAfterWriteKeepsProviderSuccessVisible() {
+        val providerBundle = bundle(chicago, "open-meteo", temperatureC = 30.0)
 
-        assertSame(ForecastError.LocalCacheFailure, failure.error)
+        val success = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(providerBundle)),
+            storage = RecordingForecastCacheStorage(storedReads = emptyMap()),
+        ).refresh(chicago).terminalSuccess()
+
+        assertSame(providerBundle, success.weather)
     }
 
     private fun bundle(

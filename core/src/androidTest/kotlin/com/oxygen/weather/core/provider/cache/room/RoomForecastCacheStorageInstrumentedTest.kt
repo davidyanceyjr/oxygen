@@ -181,17 +181,18 @@ class RoomForecastCacheStorageInstrumentedTest {
     }
 
     @Test
-    fun roomFailureMapsToProviderNeutralLocalCacheFailureThroughRepository() {
+    fun roomFailureAfterProviderSuccessKeepsProviderWeatherVisible() {
         val failingStorage = RoomForecastCacheStorage(database) {
             error("injected local Room transaction failure")
         }
+        val providerBundle = fullBundle(chicago, "open-meteo")
 
-        val failure = CachedWeatherRepository(
-            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(fullBundle(chicago, "open-meteo"))),
+        val success = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(providerBundle)),
             storage = failingStorage,
-        ).refresh(chicago).terminalFailure()
+        ).refresh(chicago).terminalSuccess()
 
-        assertSame(ForecastError.LocalCacheFailure, failure.error)
+        assertEquals(providerBundle, success.weather)
     }
 
     private fun inMemoryDatabase(): OxygenForecastCacheDatabase =
