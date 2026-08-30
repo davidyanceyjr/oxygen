@@ -33,11 +33,7 @@ class CachedWeatherRepository(
                         null
                     }
 
-                    if (readback == null) {
-                        yield(WeatherRepositoryResult.Failure(ForecastError.LocalCacheFailure))
-                    } else {
-                        yield(WeatherRepositoryResult.Success(readback))
-                    }
+                    yield(WeatherRepositoryResult.Success(readback ?: result.weather))
                 }
             }
         }
