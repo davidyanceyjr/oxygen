@@ -7,8 +7,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -20,7 +22,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.printToString
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
@@ -63,7 +68,7 @@ class HomeDashboardUiTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun freshSuccessRendersDashboardSectionsInOrder() {
+    fun freshSuccessRendersSemanticHomePagesAndPreservesDashboardContent() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
             weather = fullWeatherBundle(weatherLocation()),
@@ -72,16 +77,14 @@ class HomeDashboardUiTest {
         composeRule.setHomeContent(state)
 
         listOf(
+            "home-page-tab-now",
+            "home-page-tab-hourly",
+            "home-page-tab-daily",
+            "home-page-tab-details",
             "home-section-location",
             "home-section-alert",
             "home-section-current",
             "home-section-precipitation",
-            "home-section-hourly",
-            "home-section-daily",
-            "home-section-metrics",
-            "home-section-sun",
-            "home-section-source",
-            "home-section-provenance-footer",
         ).forEach { composeRule.onNodeWithTag(it).assertExists() }
 
         composeRule.assertVerticalOrder(
@@ -89,26 +92,42 @@ class HomeDashboardUiTest {
             "home-section-alert",
             "home-section-current",
             "home-section-precipitation",
-            "home-section-hourly",
-            "home-section-daily",
-            "home-section-metrics",
-            "home-section-sun",
-            "home-section-source",
-            "home-section-provenance-footer",
         )
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.onNodeWithTag("home-page-previous").assertIsNotEnabled()
+        composeRule.onNodeWithTag("home-page-next").assertIsEnabled()
         composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
         composeRule.onNodeWithText("Rain showers").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Rain showers").assertExists()
         composeRule.onNodeWithText("Feels like 63 deg F").assertIsDisplayed()
         composeRule.onNodeWithText("H 73 deg F   L 54 deg F").assertIsDisplayed()
         composeRule.onNodeWithText("Updated 5:30 AM | Model estimate").assertExists()
-        composeRule.onNodeWithText("Fetched Aug 22, 7:00 AM CDT").assertExists()
-        composeRule.onNodeWithText("Issued Aug 22, 6:45 AM CDT").assertExists()
-        composeRule.onNodeWithText("Weather data by Open-Meteo.").assertExists()
-        composeRule.onNodeWithTag("home-hourly-row").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-alert").assertIsDisplayed()
         composeRule.onNodeWithTag("home-refresh").assertIsDisplayed()
         composeRule.onNodeWithText("Refresh").assertIsDisplayed()
         composeRule.onAllNodesWithText("Retry").assertCountEquals(0)
+
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 4")
+        composeRule.onNodeWithTag("home-hourly-row").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-section-daily").assertIsDisplayed()
+        composeRule.onNodeWithText("Sunrise 5:15 AM | Sunset 8:01 PM").assertExists()
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.onNodeWithTag("home-page-next").assertIsNotEnabled()
+        composeRule.onNodeWithText("Fetched Aug 22, 7:00 AM CDT").assertExists()
+        composeRule.onNodeWithText("Issued Aug 22, 6:45 AM CDT").assertExists()
+        composeRule.onNodeWithText("Weather data by Open-Meteo.").assertExists()
+        composeRule.onNodeWithTag("home-section-metrics").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-sun").assertIsDisplayed()
         assertEquals(
             listOf(
                 HomeSuccessSection.LocationHeader,
@@ -125,6 +144,34 @@ class HomeDashboardUiTest {
             state.dashboard.sectionOrder,
         )
         composeRule.writeSemanticsArtifact("fresh-dashboard-semantics.txt")
+    }
+
+    @Test
+    fun homePageNavigationSupportsBoundedButtonsAndHorizontalSwipe() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(state)
+
+        composeRule.onNodeWithTag("home-page-next").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-previous").assertIsEnabled()
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithTag("home-page-next").assertIsNotEnabled()
     }
 
     @Test
@@ -149,15 +196,16 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("Refresh").assertIsDisplayed()
         composeRule.onAllNodesWithText("Retry").assertCountEquals(0)
         composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
-        composeRule.onNodeWithText("Open-Meteo").assertIsDisplayed()
         composeRule.assertVerticalOrder(
             "home-section-location",
             "home-section-stale",
             "home-section-alert",
             "home-section-current",
-            "home-section-hourly",
-            "home-section-source",
         )
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Open-Meteo").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-source").assertIsDisplayed()
         composeRule.writeSemanticsArtifact("stale-dashboard-semantics.txt")
     }
 
@@ -211,24 +259,36 @@ class HomeDashboardUiTest {
         composeRule.setHomeContent(state = state, widthDp = 360, fontScale = 1.3f)
 
         composeRule.onNodeWithText(location.displayName).assertIsDisplayed()
-        composeRule.onNodeWithText("Open-Meteo Long Provider Attribution Name").assertExists()
         composeRule.onNodeWithText("Refresh").assertIsDisplayed()
         composeRule.assertReadableBoundsAfterScroll(
             "home-section-location",
             "home-section-stale",
             "home-section-current",
-            "home-section-hourly",
-            "home-section-daily",
-            "home-section-metrics",
-            "home-section-source",
-            "home-section-provenance-footer",
         )
         composeRule.assertCheckedSiblingSpacing(
             "home-section-location",
             "home-section-stale",
             "home-section-current",
+        )
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        composeRule.assertReadableBoundsAfterScroll(
             "home-section-hourly",
+        )
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+        composeRule.assertReadableBoundsAfterScroll(
             "home-section-daily",
+        )
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Open-Meteo Long Provider Attribution Name").assertExists()
+        composeRule.assertReadableBoundsAfterScroll(
+            "home-section-metrics",
+            "home-section-source",
+            "home-section-provenance-footer",
+        )
+        composeRule.assertCheckedSiblingSpacing(
             "home-section-metrics",
             "home-section-source",
             "home-section-provenance-footer",
@@ -258,8 +318,6 @@ class HomeDashboardUiTest {
             "home-refreshing",
             "home-section-alert",
             "home-section-current",
-            "home-section-hourly",
-            "home-section-source",
         )
         composeRule.writeSemanticsArtifact("refresh-in-progress-semantics.txt")
     }

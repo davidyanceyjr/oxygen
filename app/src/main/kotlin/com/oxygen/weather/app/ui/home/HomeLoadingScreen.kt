@@ -1,6 +1,7 @@
 package com.oxygen.weather.app.ui.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,17 +18,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
@@ -42,6 +47,7 @@ import com.oxygen.weather.app.HomeMetricPresentation
 import com.oxygen.weather.app.HomeForecastFreshness
 import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeLoadingScreen(
@@ -51,6 +57,14 @@ fun HomeLoadingScreen(
     onOpenAbout: () -> Unit = {},
 ) {
     Surface(Modifier.fillMaxSize()) {
+        if (state is HomeForecastPresentationState.ForecastReady) {
+            ReadyContent(
+                state = state,
+                onRefresh = onRefresh,
+                onOpenAbout = onOpenAbout,
+            )
+            return@Surface
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -91,15 +105,9 @@ fun HomeLoadingScreen(
                     state = state,
                     onRetry = onRetry,
                 )
-                is HomeForecastPresentationState.ForecastReady -> ReadyContent(
-                    state = state,
-                    onRefresh = onRefresh,
-                    onOpenAbout = onOpenAbout,
-                )
+                is HomeForecastPresentationState.ForecastReady -> Unit
             }
-            if (state !is HomeForecastPresentationState.ForecastReady) {
-                ProviderDisclosure(state)
-            }
+            ProviderDisclosure(state)
         }
     }
 }
@@ -143,6 +151,7 @@ private fun ErrorContent(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ReadyContent(
     state: HomeForecastPresentationState.ForecastReady,
@@ -150,202 +159,359 @@ private fun ReadyContent(
     onOpenAbout: () -> Unit,
 ) {
     val dashboard = state.dashboard
+    val pages = HomePage.entries
+    val pagerState = rememberPagerState(pageCount = { pages.size })
+    val scope = rememberCoroutineScope()
+    val currentPage = pages[pagerState.currentPage]
+
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
+            .safeDrawingPadding()
+            .padding(horizontal = 20.dp, vertical = 24.dp)
             .testTag("home-dashboard"),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        DashboardSection(tag = "home-section-location") {
-            Text(
-                text = dashboard.locationName,
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = dashboard.locationSubtitle,
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
-            )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "OXYGEN",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = currentPage.title,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("home-page-title")
+                .semantics {
+                    contentDescription = "${currentPage.title}, Page ${pagerState.currentPage + 1} of ${pages.size}"
+                },
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = "Page ${pagerState.currentPage + 1} of ${pages.size}",
+            modifier = Modifier.testTag("home-page-position"),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("home-page-selector"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            pages.forEachIndexed { index, page ->
+                FilterChip(
+                    selected = index == pagerState.currentPage,
+                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                    label = { Text(page.title) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(page.tabTag)
+                        .semantics {
+                            contentDescription = "${page.title} page"
+                        },
+                )
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             OutlinedButton(
-                onClick = onOpenAbout,
+                onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
+                enabled = pagerState.currentPage > 0,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .heightIn(min = 48.dp)
-                    .testTag("home-about-entry"),
+                    .testTag("home-page-previous"),
             ) {
-                Text("Settings / About")
+                Text("Previous page")
             }
             Button(
-                onClick = onRefresh,
-                enabled = state.canRefresh && !state.isRefreshInProgress,
+                onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
+                enabled = pagerState.currentPage < pages.lastIndex,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
+                    .testTag("home-page-next"),
+            ) {
+                Text("Next page")
+            }
+        }
+
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .testTag("home-page-container")
+                .semantics {
+                    contentDescription = "${currentPage.title}, Page ${pagerState.currentPage + 1} of ${pages.size}"
+                },
+        ) { pageIndex ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 16.dp)
+                    .testTag(pages[pageIndex].pageTag),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                when (pages[pageIndex]) {
+                    HomePage.Now -> NowPage(
+                        state = state,
+                        onRefresh = onRefresh,
+                        onOpenAbout = onOpenAbout,
+                    )
+                    HomePage.Hourly -> HourlyPage(state)
+                    HomePage.Daily -> DailyPage(state)
+                    HomePage.Details -> DetailsPage(state)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NowPage(
+    state: HomeForecastPresentationState.ForecastReady,
+    onRefresh: () -> Unit,
+    onOpenAbout: () -> Unit,
+) {
+    val dashboard = state.dashboard
+
+    DashboardSection(tag = "home-section-location") {
+        Text(
+            text = dashboard.locationName,
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = dashboard.locationSubtitle,
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+        )
+        OutlinedButton(
+            onClick = onOpenAbout,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .testTag("home-about-entry"),
+        ) {
+            Text("Settings / About")
+        }
+        Button(
+            onClick = onRefresh,
+            enabled = state.canRefresh && !state.isRefreshInProgress,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .testTag("home-refresh"),
+        ) {
+            Text(text = state.refreshLabel)
+        }
+    }
+
+    state.refreshInProgressText?.let { refreshText ->
+        DashboardCard(tag = "home-refreshing") {
+            Text(refreshText, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+    when (val freshness = state.freshness) {
+        HomeForecastFreshness.Fresh -> Unit
+        is HomeForecastFreshness.RestoredFromCache -> {
+            DashboardCard(tag = "home-section-stale") {
+                Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        is HomeForecastFreshness.StaleAfterFailedRefresh -> {
+            DashboardCard(tag = "home-section-stale") {
+                Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+                Text("Refresh failed: ${freshness.refreshFailureMessage.text}", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+
+    dashboard.alerts.forEach { alert ->
+        DashboardCard(tag = "home-section-alert") {
+            Text(alert.event, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(alert.headline, style = MaterialTheme.typography.bodyMedium)
+            Text("${alert.severity} | ${alert.issuer}", style = MaterialTheme.typography.bodySmall)
+            alert.effective?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            alert.expires?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        }
+    }
+
+    DashboardCard(tag = "home-section-current") {
+        if (dashboard.current == null) {
+            Text("Current conditions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = dashboard.currentUnavailableText ?: dashboard.returnedDataUnavailableText.orEmpty(),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(88.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .semantics {
+                            contentDescription = dashboard.current.condition
+                        },
+                ) {
+                    WeatherConditionMark(
+                        condition = dashboard.current.conditionIdentity,
+                        modifier = Modifier.size(88.dp),
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text("Current conditions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(dashboard.current.condition, style = MaterialTheme.typography.titleLarge)
+                }
+            }
+            Text(
+                text = dashboard.current.temperature,
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Light,
+            )
+            Text(dashboard.current.apparentTemperature, style = MaterialTheme.typography.bodyMedium)
+            val range = listOfNotNull(
+                dashboard.current.highTemperature,
+                dashboard.current.lowTemperature,
+            ).joinToString("   ")
+            if (range.isNotEmpty()) {
+                Text(range, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            }
+            Text("${dashboard.current.updatedTime} | ${dashboard.current.dataTypeLabel}", style = MaterialTheme.typography.bodySmall)
+            Text("${dashboard.source.sourceName} | ${dashboard.source.fetchedAt}", style = MaterialTheme.typography.bodySmall)
+        }
+    }
+
+    dashboard.precipitationSummary?.let {
+        DashboardCard(tag = "home-section-precipitation") {
+            Text("Near-term precipitation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(it, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+private fun HourlyPage(state: HomeForecastPresentationState.ForecastReady) {
+    val dashboard = state.dashboard
+
+    if (dashboard.hourly.isNotEmpty()) {
+        DashboardCard(tag = "home-section-hourly") {
+            Text("Hourly forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .testTag("home-refresh"),
+                    .testTag("home-hourly-row"),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(text = state.refreshLabel)
-            }
-        }
-
-        state.refreshInProgressText?.let { refreshText ->
-            DashboardCard(tag = "home-refreshing") {
-                Text(refreshText, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-        when (val freshness = state.freshness) {
-            HomeForecastFreshness.Fresh -> Unit
-            is HomeForecastFreshness.RestoredFromCache -> {
-                DashboardCard(tag = "home-section-stale") {
-                    Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-            is HomeForecastFreshness.StaleAfterFailedRefresh -> {
-                DashboardCard(tag = "home-section-stale") {
-                    Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
-                    Text("Refresh failed: ${freshness.refreshFailureMessage.text}", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
-
-        dashboard.alerts.forEach { alert ->
-            DashboardCard(tag = "home-section-alert") {
-                Text(alert.event, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(alert.headline, style = MaterialTheme.typography.bodyMedium)
-                Text("${alert.severity} | ${alert.issuer}", style = MaterialTheme.typography.bodySmall)
-                alert.effective?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                alert.expires?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-            }
-        }
-
-        DashboardCard(tag = "home-section-current") {
-            if (dashboard.current == null) {
-                Text("Current conditions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(
-                    text = dashboard.currentUnavailableText ?: dashboard.returnedDataUnavailableText.orEmpty(),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(88.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .semantics {
-                                contentDescription = dashboard.current.condition
-                            },
-                    ) {
-                        WeatherConditionMark(
-                            condition = dashboard.current.conditionIdentity,
-                            modifier = Modifier.size(88.dp),
-                        )
-                    }
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text("Current conditions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text(dashboard.current.condition, style = MaterialTheme.typography.titleLarge)
-                    }
-                }
-                Text(
-                    text = dashboard.current.temperature,
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Light,
-                )
-                Text(dashboard.current.apparentTemperature, style = MaterialTheme.typography.bodyMedium)
-                val range = listOfNotNull(
-                    dashboard.current.highTemperature,
-                    dashboard.current.lowTemperature,
-                ).joinToString("   ")
-                if (range.isNotEmpty()) {
-                    Text(range, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                }
-                Text("${dashboard.current.updatedTime} | ${dashboard.current.dataTypeLabel}", style = MaterialTheme.typography.bodySmall)
-                Text("${dashboard.source.sourceName} | ${dashboard.source.fetchedAt}", style = MaterialTheme.typography.bodySmall)
-            }
-        }
-
-        dashboard.precipitationSummary?.let {
-            DashboardCard(tag = "home-section-precipitation") {
-                Text("Near-term precipitation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(it, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-
-        if (dashboard.hourly.isNotEmpty()) {
-            DashboardCard(tag = "home-section-hourly") {
-                Text("Hourly forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("home-hourly-row"),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    items(dashboard.hourly) { hour ->
-                        HourlyTile(
-                            time = hour.time,
-                            condition = hour.condition,
-                            temperature = hour.temperature,
-                            precipitation = hour.precipitationProbability,
-                        )
-                    }
-                }
-            }
-        }
-
-        if (dashboard.daily.isNotEmpty()) {
-            DashboardCard(tag = "home-section-daily") {
-                Text("Daily forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                dashboard.daily.forEach { day ->
-                    ForecastRow(
-                        primary = day.date,
-                        secondary = listOfNotNull(day.condition, day.precipitationProbability).joinToString(" | "),
-                        value = "${day.low} | ${day.high}",
+                items(dashboard.hourly) { hour ->
+                    HourlyTile(
+                        time = hour.time,
+                        condition = hour.condition,
+                        temperature = hour.temperature,
+                        precipitation = hour.precipitationProbability,
                     )
-                    if (day.sunrise != null || day.sunset != null) {
-                        Text(
-                            text = "Sunrise ${day.sunrise ?: "unavailable"} | Sunset ${day.sunset ?: "unavailable"}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f),
-                        )
-                    }
                 }
             }
         }
+    } else {
+        UnavailablePageCard("Hourly forecast", dashboard.returnedDataUnavailableText)
+    }
+}
 
-        if (dashboard.metrics.isNotEmpty()) {
-            MetricGrid(dashboard.metrics)
-        }
+@Composable
+private fun DailyPage(state: HomeForecastPresentationState.ForecastReady) {
+    val dashboard = state.dashboard
 
-        dashboard.sun?.let {
-            DashboardCard(tag = "home-section-sun") {
-                Text("Sun", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text("Sunrise ${it.sunrise}", style = MaterialTheme.typography.bodyMedium)
-                Text("Sunset ${it.sunset}", style = MaterialTheme.typography.bodyMedium)
+    if (dashboard.daily.isNotEmpty()) {
+        DashboardCard(tag = "home-section-daily") {
+            Text("Daily forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            dashboard.daily.forEach { day ->
+                ForecastRow(
+                    primary = day.date,
+                    secondary = listOfNotNull(day.condition, day.precipitationProbability).joinToString(" | "),
+                    value = "${day.low} | ${day.high}",
+                )
+                if (day.sunrise != null || day.sunset != null) {
+                    Text(
+                        text = "Sunrise ${day.sunrise ?: "unavailable"} | Sunset ${day.sunset ?: "unavailable"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f),
+                    )
+                }
             }
         }
+    } else {
+        UnavailablePageCard("Daily forecast", dashboard.returnedDataUnavailableText)
+    }
+}
 
-        DashboardCard(tag = "home-section-source") {
-            Text("Source", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(dashboard.source.sourceName, style = MaterialTheme.typography.bodyMedium)
-            Text(dashboard.source.dataType, style = MaterialTheme.typography.bodyMedium)
-            Text(dashboard.source.fetchedAt, style = MaterialTheme.typography.bodySmall)
-            dashboard.source.issuedAt?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-            dashboard.source.license?.let { Text("License $it", style = MaterialTheme.typography.bodySmall) }
+@Composable
+private fun DetailsPage(state: HomeForecastPresentationState.ForecastReady) {
+    val dashboard = state.dashboard
+
+    if (dashboard.metrics.isNotEmpty()) {
+        MetricGrid(dashboard.metrics)
+    }
+
+    dashboard.sun?.let {
+        DashboardCard(tag = "home-section-sun") {
+            Text("Sun", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Sunrise ${it.sunrise}", style = MaterialTheme.typography.bodyMedium)
+            Text("Sunset ${it.sunset}", style = MaterialTheme.typography.bodyMedium)
         }
-        ProviderDisclosure(
-            state = state,
-            modifier = Modifier.testTag("home-section-provenance-footer"),
+    }
+
+    DashboardCard(tag = "home-section-source") {
+        Text("Source", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text(dashboard.source.sourceName, style = MaterialTheme.typography.bodyMedium)
+        Text(dashboard.source.dataType, style = MaterialTheme.typography.bodyMedium)
+        Text(dashboard.source.fetchedAt, style = MaterialTheme.typography.bodySmall)
+        dashboard.source.issuedAt?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        dashboard.source.license?.let { Text("License $it", style = MaterialTheme.typography.bodySmall) }
+    }
+    ProviderDisclosure(
+        state = state,
+        modifier = Modifier.testTag("home-section-provenance-footer"),
+    )
+}
+
+@Composable
+private fun UnavailablePageCard(title: String, message: String?) {
+    DashboardCard(tag = "home-section-unavailable") {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = message ?: "This forecast information is unavailable from the selected source.",
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
+}
+
+private enum class HomePage(
+    val title: String,
+    val tabTag: String,
+    val pageTag: String,
+) {
+    Now("Now", "home-page-tab-now", "home-page-now"),
+    Hourly("Hourly", "home-page-tab-hourly", "home-page-hourly"),
+    Daily("Daily", "home-page-tab-daily", "home-page-daily"),
+    Details("Details", "home-page-tab-details", "home-page-details"),
 }
 
 @Composable

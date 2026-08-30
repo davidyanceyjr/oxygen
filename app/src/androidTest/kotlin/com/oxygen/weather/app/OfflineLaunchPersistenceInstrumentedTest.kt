@@ -29,6 +29,24 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class OfflineLaunchPersistenceInstrumentedTest {
     @Test
+    fun seedDeterministicInstalledHomeScreenshotState() {
+        val context = targetContext()
+        val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
+        val forecastCacheStorage = RoomForecastCacheStorageFactory.create(context)
+        val location = weatherLocation(
+            id = "android-installed-screenshot",
+            name = "Android Installed Screenshot City",
+        )
+        val bundle = fullWeatherBundle(location)
+
+        selectedLocationStorage.writeSelectedLocation(location)
+        forecastCacheStorage.replaceBundle(bundle)
+
+        assertEquals(location, selectedLocationStorage.readSelectedLocation())
+        assertEquals(bundle.location, forecastCacheStorage.readBundle(location.id)?.location)
+    }
+
+    @Test
     fun dataStoreSelectedLocationSnapshotWritesAndReadsProviderNeutralFields() {
         val storage = DataStoreSelectedLocationStorage(targetContext())
         val location = weatherLocation(
