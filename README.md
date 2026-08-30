@@ -14,23 +14,27 @@ and `docs/data-sources/`.
 
 - Manual location search through the Open-Meteo geocoding path.
 - Explicit selected-location Open-Meteo forecast retrieval.
+- Last selected location persistence through the local DataStore path.
+- Offline restoration of the last forecast for the selected location through the
+  local Room forecast-cache path.
+- Foreground refresh failure handling that keeps a useful cached forecast
+  visible with stale/source/update context where available.
 - Provider-neutral Home loading, error/retry, success, source, update,
   provenance, and disclosure presentation.
+- Standard Home paged interaction foundation with Now, Hourly, Daily, and
+  Details pages.
 - Settings/About surfaces for Data Sources, Privacy, and Open Source Licenses.
 - Oxygen package/application identity, theme foundation, and Compose Home UI.
 
 ## Implemented but not active in the installed app
 
 - MET Norway forecast provider path and core fallback-selection behavior.
-- Repository-level forecast cache/stale behavior through
-  `FileForecastCacheStorage`.
-- Provider-neutral Home stale-success presentation coverage for cached
-  refresh-failure states.
+- File-backed forecast cache storage retained as a core repository boundary
+  implementation, while the installed app uses Room storage.
 
 ## Not implemented yet
 
-- Installed-app offline forecast restoration.
-- Saved-location persistence.
+- Multiple saved locations and saved-location switching/removal.
 - Unit preferences.
 - Official weather alert lookup.
 - Persisted appearance/effects/layout settings.
@@ -97,15 +101,16 @@ MET Norway is implemented as a forecast provider path with verified core
 fallback-selection behavior, but it is not wired as the active installed-app
 forecast fallback in this build.
 
-Core now includes a repository-level forecast cache wrapper that can persist one
-provider-served forecast bundle and emit the stored current/hourly/daily rows
-back through the repository boundary. When that wrapper is used, a foreground
-refresh failure can retain the same selected location's cached forecast as a
-stale success with explicit refresh-failed metadata. The durable cache wrapper
-is not wired into the installed app yet.
+The installed app persists the last selected location locally and wraps the
+active Open-Meteo forecast path with a Room-backed forecast cache. It can
+restore the selected location's last cached forecast when launched without
+network, and a foreground refresh failure can retain the same selected
+location's cached forecast as a stale success with explicit refresh-failed
+metadata. If a live provider refresh succeeds while local forecast-cache
+persistence fails, the live provider forecast remains displayable.
 
-Saved-location persistence, installed-app offline forecast cache behavior, unit
-preferences, alerts, air quality, and radar are not implemented yet.
+Multiple saved locations, unit preferences, alerts, air quality, radar, and
+installed-app MET Norway fallback behavior are not implemented yet.
 
 ## Specification
 

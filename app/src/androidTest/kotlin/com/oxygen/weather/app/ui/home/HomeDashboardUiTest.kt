@@ -89,10 +89,11 @@ class HomeDashboardUiTest {
 
         composeRule.assertVerticalOrder(
             "home-section-location",
-            "home-section-alert",
             "home-section-current",
+            "home-section-alert",
             "home-section-precipitation",
         )
+        composeRule.assertNowHeroDominatesLocationChrome()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
         composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
         composeRule.onNodeWithTag("home-page-previous").assertIsNotEnabled()
@@ -199,9 +200,10 @@ class HomeDashboardUiTest {
         composeRule.assertVerticalOrder(
             "home-section-location",
             "home-section-stale",
-            "home-section-alert",
             "home-section-current",
+            "home-section-alert",
         )
+        composeRule.assertNowHeroDominatesLocationChrome()
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Open-Meteo").assertIsDisplayed()
@@ -316,9 +318,10 @@ class HomeDashboardUiTest {
         composeRule.assertVerticalOrder(
             "home-section-location",
             "home-refreshing",
-            "home-section-alert",
             "home-section-current",
+            "home-section-alert",
         )
+        composeRule.assertNowHeroDominatesLocationChrome()
         composeRule.writeSemanticsArtifact("refresh-in-progress-semantics.txt")
     }
 
@@ -452,6 +455,16 @@ private fun ComposeTestRule.assertCheckedSiblingSpacing(vararg tags: String) {
         val after = requireNotNull(bounds[afterTag])
         assertTrue("$beforeTag should not overlap $afterTag", before.bottom <= after.top)
     }
+}
+
+private fun ComposeTestRule.assertNowHeroDominatesLocationChrome() {
+    val location = onNodeWithTag("home-section-location").fetchSemanticsNode().boundsInRoot
+    val current = onNodeWithTag("home-section-current").fetchSemanticsNode().boundsInRoot
+    assertTrue("Now current hero should render below location chrome", location.bottom <= current.top)
+    assertTrue(
+        "Now current hero should occupy more vertical space than location chrome",
+        current.height > location.height,
+    )
 }
 
 private fun ComposeTestRule.writeSemanticsArtifact(fileName: String) {

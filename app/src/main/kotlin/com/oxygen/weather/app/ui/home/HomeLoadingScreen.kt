@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -168,32 +169,14 @@ private fun ReadyContent(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
-            .padding(horizontal = 20.dp, vertical = 24.dp)
+            .padding(horizontal = 18.dp, vertical = 18.dp)
             .testTag("home-dashboard"),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "OXYGEN",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = currentPage.title,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("home-page-title")
-                .semantics {
-                    contentDescription = "${currentPage.title}, Page ${pagerState.currentPage + 1} of ${pages.size}"
-                },
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = "Page ${pagerState.currentPage + 1} of ${pages.size}",
-            modifier = Modifier.testTag("home-page-position"),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+        ReadyHeader(
+            currentPage = currentPage,
+            pageIndex = pagerState.currentPage,
+            pageCount = pages.size,
         )
         Row(
             modifier = Modifier
@@ -227,7 +210,7 @@ private fun ReadyContent(
                     .heightIn(min = 48.dp)
                     .testTag("home-page-previous"),
             ) {
-                Text("Previous page")
+                Text("Previous")
             }
             Button(
                 onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
@@ -237,7 +220,7 @@ private fun ReadyContent(
                     .heightIn(min = 48.dp)
                     .testTag("home-page-next"),
             ) {
-                Text("Next page")
+                Text("Next")
             }
         }
 
@@ -275,6 +258,46 @@ private fun ReadyContent(
 }
 
 @Composable
+private fun ReadyHeader(
+    currentPage: HomePage,
+    pageIndex: Int,
+    pageCount: Int,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = "OXYGEN",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = currentPage.title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("home-page-title")
+                    .semantics {
+                        contentDescription = "${currentPage.title}, Page ${pageIndex + 1} of $pageCount"
+                    },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Text(
+            text = "Page ${pageIndex + 1} of $pageCount",
+            modifier = Modifier
+                .widthIn(min = 72.dp)
+                .testTag("home-page-position"),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+            textAlign = TextAlign.End,
+        )
+    }
+}
+
+@Composable
 private fun NowPage(
     state: HomeForecastPresentationState.ForecastReady,
     onRefresh: () -> Unit,
@@ -286,33 +309,38 @@ private fun NowPage(
         Text(
             text = dashboard.locationName,
             modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
             text = dashboard.locationSubtitle,
             modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
         )
-        OutlinedButton(
-            onClick = onOpenAbout,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .testTag("home-about-entry"),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Settings / About")
-        }
-        Button(
-            onClick = onRefresh,
-            enabled = state.canRefresh && !state.isRefreshInProgress,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .testTag("home-refresh"),
-        ) {
-            Text(text = state.refreshLabel)
+            OutlinedButton(
+                onClick = onOpenAbout,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
+                    .testTag("home-about-entry"),
+            ) {
+                Text("Settings / About")
+            }
+            Button(
+                onClick = onRefresh,
+                enabled = state.canRefresh && !state.isRefreshInProgress,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
+                    .testTag("home-refresh"),
+            ) {
+                Text(text = state.refreshLabel)
+            }
         }
     }
 
@@ -338,16 +366,6 @@ private fun NowPage(
         }
     }
 
-    dashboard.alerts.forEach { alert ->
-        DashboardCard(tag = "home-section-alert") {
-            Text(alert.event, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(alert.headline, style = MaterialTheme.typography.bodyMedium)
-            Text("${alert.severity} | ${alert.issuer}", style = MaterialTheme.typography.bodySmall)
-            alert.effective?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-            alert.expires?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        }
-    }
-
     DashboardCard(tag = "home-section-current") {
         if (dashboard.current == null) {
             Text("Current conditions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -358,11 +376,11 @@ private fun NowPage(
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 Box(
                     modifier = Modifier
-                        .size(88.dp)
+                        .size(112.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .semantics {
                             contentDescription = dashboard.current.condition
@@ -370,32 +388,53 @@ private fun NowPage(
                 ) {
                     WeatherConditionMark(
                         condition = dashboard.current.conditionIdentity,
-                        modifier = Modifier.size(88.dp),
+                        modifier = Modifier.size(112.dp),
                     )
                 }
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text("Current conditions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(dashboard.current.condition, style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        text = dashboard.current.condition,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = dashboard.current.temperature,
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Light,
+                    )
                 }
             }
-            Text(
-                text = dashboard.current.temperature,
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Light,
-            )
-            Text(dashboard.current.apparentTemperature, style = MaterialTheme.typography.bodyMedium)
             val range = listOfNotNull(
                 dashboard.current.highTemperature,
                 dashboard.current.lowTemperature,
-            ).joinToString("   ")
-            if (range.isNotEmpty()) {
-                Text(range, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            }
+            ).joinToString("   ").ifEmpty { null }
+            Text(
+                text = dashboard.current.apparentTemperature,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            NowContextGrid(
+                items = listOfNotNull(
+                    range?.let { "Today" to it },
+                    dashboard.metrics.firstOrNull { it.label == "Humidity" }?.let { it.label to it.value },
+                    dashboard.metrics.firstOrNull { it.label == "Wind" }?.let { it.label to it.value },
+                ),
+            )
             Text("${dashboard.current.updatedTime} | ${dashboard.current.dataTypeLabel}", style = MaterialTheme.typography.bodySmall)
             Text("${dashboard.source.sourceName} | ${dashboard.source.fetchedAt}", style = MaterialTheme.typography.bodySmall)
+        }
+    }
+
+    dashboard.alerts.forEach { alert ->
+        DashboardCard(tag = "home-section-alert") {
+            Text(alert.event, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(alert.headline, style = MaterialTheme.typography.bodyMedium)
+            Text("${alert.severity} | ${alert.issuer}", style = MaterialTheme.typography.bodySmall)
+            alert.effective?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            alert.expires?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         }
     }
 
@@ -403,6 +442,43 @@ private fun NowPage(
         DashboardCard(tag = "home-section-precipitation") {
             Text("Near-term precipitation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(it, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+private fun NowContextGrid(items: List<Pair<String, String>>) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items.chunked(2).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                row.forEach { item ->
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 54.dp),
+                    ) {
+                        Text(
+                            text = item.first,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+                        )
+                        Text(
+                            text = item.second,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+                if (row.size == 1) {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
         }
     }
 }
