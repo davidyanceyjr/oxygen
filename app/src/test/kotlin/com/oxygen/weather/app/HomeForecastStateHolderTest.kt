@@ -186,6 +186,72 @@ class HomeForecastStateHolderTest {
     }
 
     @Test
+    fun `change location from home returns to manual search and selected candidate replaces location`() {
+        val oldLocation = weatherLocation("manual-old-location", "Old Location City")
+        val newLocation = weatherLocation("manual-new-location", "New Location City")
+        val weatherRepository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation))),
+            listOf(WeatherRepositoryResult.Loading),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            geocodingRepository = StaticGeocodingRepository(newLocation),
+            weatherRepository = weatherRepository,
+            searchExecutor = DirectForecastExecutor,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onChangeLocation()
+
+        val firstRun = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
+        assertEquals("", firstRun.query)
+        assertEquals(ManualLocationSearchState.Idle, firstRun.searchState)
+        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertFalse(stateHolder.presentationState.isShowingHome)
+
+        stateHolder.onManualLocationQueryChanged("New Location City")
+        stateHolder.onManualLocationSearchSubmitted()
+        val result = ((stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry)
+            .searchState as ManualLocationSearchState.Results).candidates.single()
+        stateHolder.onManualLocationCandidateSelected(result.id)
+
+        val loading = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.Loading
+        assertSame(result.location, loading.location)
+        assertEquals(newLocation, stateHolder.presentationState.selectedLocation)
+        assertEquals(listOf(oldLocation, newLocation), weatherRepository.locations)
+    }
+
+    @Test
+    fun `change location invalidates in-flight forecast result from previous selection`() {
+        val oldLocation = weatherLocation("manual-inflight-old", "Inflight Old City")
+        val repository = ControlledWeatherRepository()
+        val executor = Executors.newSingleThreadExecutor()
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            weatherRepository = repository,
+            forecastExecutor = executor,
+        )
+
+        try {
+            val oldCall = repository.awaitCall(0)
+            stateHolder.onChangeLocation()
+
+            oldCall.emit(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation)))
+            oldCall.finish()
+            executor.shutdown()
+            assertTrue(executor.awaitTermination(2, TimeUnit.SECONDS))
+
+            assertTrue(stateHolder.presentationState.screen is OxygenAppScreen.FirstRunLocationEntry)
+            assertEquals(null, stateHolder.presentationState.selectedLocation)
+            assertFalse(stateHolder.presentationState.isShowingHome)
+        } finally {
+            repository.finishAll()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
     fun `startup ignores wrong-location cache for restored selected location`() {
         val selected = weatherLocation("manual-selected-cache-scope", "Selected Cache Scope City")
         val other = weatherLocation("manual-other-cache-scope", "Other Cache Scope City")

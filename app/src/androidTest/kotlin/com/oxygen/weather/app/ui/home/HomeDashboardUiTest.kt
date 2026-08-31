@@ -22,6 +22,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
@@ -49,6 +50,8 @@ import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.ForecastFreshness
+import com.oxygen.weather.core.provider.GeocodingRepository
+import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import java.io.File
@@ -470,6 +473,42 @@ class HomeDashboardUiTest {
         assertEquals(listOf(location, location), repository.locations)
         composeRule.onAllNodesWithText("Retry").assertCountEquals(0)
     }
+
+    @Test
+    fun oxygenAppChangeLocationReturnsToManualSearchAndSelectsNewResult() {
+        val oldLocation = weatherLocation(id = "manual-old-compose", name = "Old Compose City")
+        val newLocation = weatherLocation(id = "manual-new-compose", name = "New Compose City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation))),
+            listOf(WeatherRepositoryResult.Loading),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            geocodingRepository = StaticGeocodingRepository(newLocation),
+            weatherRepository = repository,
+            searchExecutor = DirectExecutor,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            OxygenApp(stateHolder = stateHolder)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-change-location").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-change-location").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Choose a location").assertIsDisplayed()
+        composeRule.onNodeWithText("Search for a location").performTextInput("New Compose City")
+        composeRule.onNodeWithText("Search").performClick()
+        composeRule.waitForIdle()
+        composeRule.onAllNodesWithText("New Compose City").assertCountEquals(2)
+        composeRule.onNodeWithText("Select").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(oldLocation, newLocation), repository.locations)
+        composeRule.onNodeWithText("Loading weather for New Compose City").assertIsDisplayed()
+    }
 }
 
 private fun ComposeContentTestRule.setHomeContent(
@@ -513,6 +552,31 @@ private class RecordingWeatherRepository(
         callIndex += 1
         return response.asSequence()
     }
+}
+
+private class StaticGeocodingRepository(
+    private val location: WeatherLocation,
+) : GeocodingRepository {
+    override fun search(
+        query: String,
+        count: Int,
+        language: String?,
+        countryCode: String?,
+    ): Sequence<GeocodingRepositoryResult> =
+        sequenceOf(
+            GeocodingRepositoryResult.Success(
+                listOf(
+                    com.oxygen.weather.core.model.GeocodingLocationCandidate(
+                        locationId = location.id,
+                        displayName = location.displayName,
+                        point = location.point,
+                        zoneId = location.zoneId,
+                        country = "United States",
+                        countryCode = "US",
+                    ),
+                ),
+            ),
+        )
 }
 
 private fun ComposeTestRule.assertVerticalOrder(vararg tags: String) {

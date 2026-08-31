@@ -55,6 +55,7 @@ fun HomeLoadingScreen(
     state: HomeForecastPresentationState,
     onRetry: () -> Unit = {},
     onRefresh: () -> Unit = {},
+    onChangeLocation: () -> Unit = {},
     onOpenAbout: () -> Unit = {},
 ) {
     Surface(Modifier.fillMaxSize()) {
@@ -62,6 +63,7 @@ fun HomeLoadingScreen(
             ReadyContent(
                 state = state,
                 onRefresh = onRefresh,
+                onChangeLocation = onChangeLocation,
                 onOpenAbout = onOpenAbout,
             )
             return@Surface
@@ -98,6 +100,14 @@ fun HomeLoadingScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Settings / About")
+                }
+                OutlinedButton(
+                    onClick = onChangeLocation,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("home-change-location"),
+                ) {
+                    Text("Change location")
                 }
             }
             when (state) {
@@ -157,6 +167,7 @@ private fun ErrorContent(
 private fun ReadyContent(
     state: HomeForecastPresentationState.ForecastReady,
     onRefresh: () -> Unit,
+    onChangeLocation: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
     val dashboard = state.dashboard
@@ -213,6 +224,7 @@ private fun ReadyContent(
                     HomePage.Now -> NowPage(
                         state = state,
                         onRefresh = onRefresh,
+                        onChangeLocation = onChangeLocation,
                         onOpenAbout = onOpenAbout,
                     )
                     HomePage.Hourly -> HourlyPage(state)
@@ -290,6 +302,7 @@ private fun ReadyHeader(
 private fun NowPage(
     state: HomeForecastPresentationState.ForecastReady,
     onRefresh: () -> Unit,
+    onChangeLocation: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
     val dashboard = state.dashboard
@@ -330,6 +343,15 @@ private fun NowPage(
             ) {
                 Text(text = state.refreshLabel)
             }
+        }
+        OutlinedButton(
+            onClick = onChangeLocation,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .testTag("home-change-location"),
+        ) {
+            Text("Change location")
         }
     }
 
