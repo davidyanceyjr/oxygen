@@ -612,7 +612,7 @@ Must prove:
 
 ## Slice 18D: Daily Page Visual Baseline
 
-Status: specified
+Status: committed
 
 Prerequisite:
 - Slice 18C committed.
@@ -1111,11 +1111,11 @@ Broad verification:
 
 ## Next Candidate Slice
 
-Candidate: Slice 18D: Daily Page Visual Baseline.
+Candidate: Slice 18E: Details Page Visual Baseline.
 
-Recommended sequence from the current committed state: Slice 18D, Slice 18E,
-Slice 18F, Slice 18G, Slice 18H, Slice 19, installed-app fallback completion,
-Slice 20, optional device location, official alerts, persisted presentation
-settings, recurring documentation-sync gates, and release gates.
+Recommended sequence from the current committed state: Slice 18E, Slice 18F,
+Slice 18G, Slice 18H, Slice 19, installed-app fallback completion, Slice 20,
+optional device location, official alerts, persisted presentation settings,
+recurring documentation-sync gates, and release gates.
 
 To start work, update `.codex/plans/current.md` to one single bounded gate or slice. Do not treat later roadmap entries as planned active work.
