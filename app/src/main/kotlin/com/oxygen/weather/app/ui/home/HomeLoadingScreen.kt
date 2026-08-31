@@ -35,12 +35,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import com.oxygen.weather.app.HomeDailyPresentation
 import com.oxygen.weather.app.HomeHourlyPresentation
 import com.oxygen.weather.app.HomeMetricPresentation
 import com.oxygen.weather.app.HomeForecastFreshness
@@ -196,32 +198,6 @@ private fun ReadyContent(
                 )
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            OutlinedButton(
-                onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
-                enabled = pagerState.currentPage > 0,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-                    .testTag("home-page-previous"),
-            ) {
-                Text("Previous")
-            }
-            Button(
-                onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
-                enabled = pagerState.currentPage < pages.lastIndex,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-                    .testTag("home-page-next"),
-            ) {
-                Text("Next")
-            }
-        }
-
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
@@ -232,14 +208,7 @@ private fun ReadyContent(
                     contentDescription = "${currentPage.title}, Page ${pagerState.currentPage + 1} of ${pages.size}"
                 },
         ) { pageIndex ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 16.dp)
-                    .testTag(pages[pageIndex].pageTag),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
+            HomePageContainer(page = pages[pageIndex]) {
                 when (pages[pageIndex]) {
                     HomePage.Now -> NowPage(
                         state = state,
@@ -253,6 +222,28 @@ private fun ReadyContent(
             }
         }
     }
+}
+
+@Composable
+private fun HomePageContainer(
+    page: HomePage,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val useOverflowScroll = page != HomePage.Daily || LocalDensity.current.fontScale > 1f
+    val baseModifier = Modifier
+        .fillMaxSize()
+        .padding(bottom = 16.dp)
+        .testTag(page.pageTag)
+    val pageModifier = if (useOverflowScroll) {
+        baseModifier.verticalScroll(rememberScrollState())
+    } else {
+        baseModifier
+    }
+    Column(
+        modifier = pageModifier,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        content = content,
+    )
 }
 
 @Composable
@@ -523,21 +514,29 @@ private fun DailyPage(state: HomeForecastPresentationState.ForecastReady) {
     val dashboard = state.dashboard
 
     if (dashboard.daily.isNotEmpty()) {
-        DashboardCard(tag = "home-section-daily") {
+        DashboardSection(tag = "home-section-daily") {
             Text("Daily forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            dashboard.daily.forEach { day ->
-                ForecastRow(
-                    primary = day.date,
-                    secondary = listOfNotNull(day.condition, day.precipitationProbability).joinToString(" | "),
-                    value = "${day.low} | ${day.high}",
-                )
-                if (day.sunrise != null || day.sunset != null) {
-                    Text(
-                        text = "Sunrise ${day.sunrise ?: "unavailable"} | Sunset ${day.sunset ?: "unavailable"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f),
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("home-daily-list"),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                dashboard.daily.take(6).forEachIndexed { index, day ->
+                    DailyEntry(
+                        day = day,
+                        index = index,
                     )
                 }
+            }
+            val sunSummary = dashboard.sun
+            if (sunSummary != null) {
+                Text(
+                    text = "Sun ${sunSummary.sunrise} / ${sunSummary.sunset}",
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f),
+                )
             }
         }
     } else {
@@ -573,6 +572,107 @@ private fun DetailsPage(state: HomeForecastPresentationState.ForecastReady) {
         state = state,
         modifier = Modifier.testTag("home-section-provenance-footer"),
     )
+}
+
+@Composable
+private fun DailyEntry(
+    day: HomeDailyPresentation,
+    index: Int,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 72.dp)
+            .testTag("home-daily-entry-$index")
+            .semantics {
+                contentDescription = listOf(
+                    day.date,
+                    day.condition,
+                    day.high,
+                    day.low,
+                    day.precipitationProbability ?: "Precipitation unavailable",
+                ).joinToString(", ")
+            },
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.58f),
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .semantics {
+                        contentDescription = day.condition
+                    },
+            ) {
+                WeatherConditionMark(
+                    condition = day.conditionIdentity,
+                    modifier = Modifier.size(34.dp),
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = day.date,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = day.condition,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = day.precipitationProbability?.let { "Precip $it" } ?: "Precipitation unavailable",
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                )
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                DailyTemperatureColumn("Low", day.low)
+                DailyTemperatureColumn("High", day.high)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DailyTemperatureColumn(
+    label: String,
+    value: String,
+) {
+    Column(
+        modifier = Modifier.widthIn(min = 72.dp),
+        verticalArrangement = Arrangement.spacedBy(1.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+            maxLines = 1,
+        )
+        Text(
+            text = value.removePrefix("$label "),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable

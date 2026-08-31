@@ -135,9 +135,12 @@ data class HomeHourlyPresentation(
 data class HomeDailyPresentation(
     val date: String,
     val condition: String,
+    val conditionIdentity: WeatherCondition,
     val precipitationProbability: String?,
     val high: String,
     val low: String,
+    val highC: Double?,
+    val lowC: Double?,
     val sunrise: String?,
     val sunset: String?,
 )
@@ -199,9 +202,12 @@ private fun DailyForecast.toDailyPresentation(zoneId: ZoneId): HomeDailyPresenta
     HomeDailyPresentation(
         date = DAY_FORMAT.format(LocalDate.ofEpochDay(dateEpochDay)),
         condition = condition.displayName(),
+        conditionIdentity = condition,
         precipitationProbability = precipitationProbabilityPercent?.let { "$it%" },
         high = highC?.let { "High ${it.formatFahrenheit()}" } ?: "High unavailable",
         low = lowC?.let { "Low ${it.formatFahrenheit()}" } ?: "Low unavailable",
+        highC = highC,
+        lowC = lowC,
         sunrise = sunrise?.formatLocalTime(zoneId),
         sunset = sunset?.formatLocalTime(zoneId),
     )

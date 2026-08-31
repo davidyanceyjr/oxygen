@@ -7,7 +7,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
@@ -96,8 +95,8 @@ class HomeDashboardUiTest {
         composeRule.assertNowHeroDominatesLocationChrome()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
         composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
-        composeRule.onNodeWithTag("home-page-previous").assertIsNotEnabled()
-        composeRule.onNodeWithTag("home-page-next").assertIsEnabled()
+        composeRule.onAllNodesWithTag("home-page-previous").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-page-next").assertCountEquals(0)
         composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
         composeRule.onNodeWithText("Rain showers").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Rain showers").assertExists()
@@ -118,12 +117,12 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
         composeRule.onNodeWithTag("home-section-daily").assertIsDisplayed()
-        composeRule.onNodeWithText("Sunrise 5:15 AM | Sunset 8:01 PM").assertExists()
+        composeRule.onNodeWithContentDescription("Sat, Aug 22, Rain showers, High 73 deg F, Low 54 deg F, 40%").assertExists()
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
         composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
-        composeRule.onNodeWithTag("home-page-next").assertIsNotEnabled()
+        composeRule.onAllNodesWithTag("home-page-next").assertCountEquals(0)
         composeRule.onNodeWithText("Fetched Aug 22, 7:00 AM CDT").assertExists()
         composeRule.onNodeWithText("Issued Aug 22, 6:45 AM CDT").assertExists()
         composeRule.onNodeWithText("Weather data by Open-Meteo.").assertExists()
@@ -148,7 +147,7 @@ class HomeDashboardUiTest {
     }
 
     @Test
-    fun homePageNavigationSupportsBoundedButtonsAndHorizontalSwipe() {
+    fun homePageNavigationSupportsDirectTabsAndHorizontalSwipeWithoutRedundantButtons() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
             weather = fullWeatherBundle(weatherLocation()),
@@ -156,11 +155,12 @@ class HomeDashboardUiTest {
 
         composeRule.setHomeContent(state)
 
-        composeRule.onNodeWithTag("home-page-next").performClick()
+        composeRule.onAllNodesWithTag("home-page-previous").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-page-next").assertCountEquals(0)
+
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
-        composeRule.onNodeWithTag("home-page-previous").assertIsEnabled()
-
         composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
@@ -172,7 +172,9 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
-        composeRule.onNodeWithTag("home-page-next").assertIsNotEnabled()
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
     }
 
     @Test
@@ -210,6 +212,45 @@ class HomeDashboardUiTest {
             "home-hourly-entry-2",
         )
         composeRule.writeSemanticsArtifact("hourly-compact-semantics.txt")
+    }
+
+    @Test
+    fun compactDailyPageShowsFourChronologicalEntriesWithHonestPrecipitation() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(
+                name = "A Very Long Selected Location Name Near The Lakefront, Wisconsin, United States",
+            ),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(state = state, widthDp = 360, heightDp = 640)
+
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-daily-list").assertIsDisplayed()
+        listOf(
+            "Sat, Aug 22, Rain showers, High 73 deg F, Low 54 deg F, 40%",
+            "Sun, Aug 23, Cloudy, High 70 deg F, Low 52 deg F, Precipitation unavailable",
+            "Mon, Aug 24, Partly cloudy, High 77 deg F, Low 57 deg F, 20%",
+            "Tue, Aug 25, Mostly clear, High 82 deg F, Low 61 deg F, 10%",
+        ).forEach { description ->
+            composeRule.onNodeWithContentDescription(description).assertIsDisplayed()
+        }
+        composeRule.assertWithinRootBounds(
+            "home-daily-entry-0",
+            "home-daily-entry-1",
+            "home-daily-entry-2",
+            "home-daily-entry-3",
+        )
+        composeRule.assertCheckedSiblingSpacing(
+            "home-daily-entry-0",
+            "home-daily-entry-1",
+            "home-daily-entry-2",
+            "home-daily-entry-3",
+        )
+        composeRule.writeSemanticsArtifact("daily-compact-semantics.txt")
     }
 
     @Test
@@ -317,7 +358,16 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-tab-daily").performClick()
         composeRule.waitForIdle()
         composeRule.assertReadableBoundsAfterScroll(
-            "home-section-daily",
+            "home-daily-entry-0",
+            "home-daily-entry-1",
+            "home-daily-entry-2",
+            "home-daily-entry-3",
+        )
+        composeRule.assertCheckedSiblingSpacing(
+            "home-daily-entry-0",
+            "home-daily-entry-1",
+            "home-daily-entry-2",
+            "home-daily-entry-3",
         )
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
@@ -616,6 +666,56 @@ private fun fullWeatherBundle(
                 condition = WeatherCondition.RAIN_SHOWERS,
                 sunrise = Instant.parse("2026-08-22T10:15:00Z"),
                 sunset = Instant.parse("2026-08-23T01:01:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = LocalDate.parse("2026-08-23").toEpochDay(),
+                highC = 21.1,
+                lowC = 11.2,
+                precipitationProbabilityPercent = null,
+                condition = WeatherCondition.CLOUDY,
+                sunrise = Instant.parse("2026-08-23T10:16:00Z"),
+                sunset = Instant.parse("2026-08-24T00:59:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = LocalDate.parse("2026-08-24").toEpochDay(),
+                highC = 24.8,
+                lowC = 14.1,
+                precipitationProbabilityPercent = 20,
+                condition = WeatherCondition.PARTLY_CLOUDY,
+                sunrise = Instant.parse("2026-08-24T10:17:00Z"),
+                sunset = Instant.parse("2026-08-25T00:57:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = LocalDate.parse("2026-08-25").toEpochDay(),
+                highC = 27.6,
+                lowC = 16.1,
+                precipitationProbabilityPercent = 10,
+                condition = WeatherCondition.MOSTLY_CLEAR,
+                sunrise = Instant.parse("2026-08-25T10:18:00Z"),
+                sunset = Instant.parse("2026-08-26T00:55:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = LocalDate.parse("2026-08-26").toEpochDay(),
+                highC = null,
+                lowC = 15.0,
+                precipitationProbabilityPercent = 50,
+                condition = WeatherCondition.THUNDERSTORM,
+                sunrise = Instant.parse("2026-08-26T10:19:00Z"),
+                sunset = Instant.parse("2026-08-27T00:53:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = LocalDate.parse("2026-08-27").toEpochDay(),
+                highC = 19.5,
+                lowC = null,
+                precipitationProbabilityPercent = null,
+                condition = WeatherCondition.RAIN,
+                sunrise = Instant.parse("2026-08-27T10:20:00Z"),
+                sunset = Instant.parse("2026-08-28T00:51:00Z"),
                 provenance = provenance.copy(type = DataType.FORECAST),
             ),
         ),
