@@ -23,6 +23,7 @@ and `docs/data-sources/`.
   provenance, and disclosure presentation.
 - Standard Home paged interaction foundation with Now, Hourly, Daily, and
   Details pages.
+- Standard Home Now and Hourly visual baselines.
 - Settings/About surfaces for Data Sources, Privacy, and Open Source Licenses.
 - Oxygen package/application identity, theme foundation, and Compose Home UI.
 
@@ -37,6 +38,7 @@ and `docs/data-sources/`.
 - Multiple saved locations and saved-location switching/removal.
 - Unit preferences.
 - Official weather alert lookup.
+- Daily and Details visual baselines for the Standard Home paged UI.
 - Persisted appearance/effects/layout settings.
 - Installed-app MET Norway fallback wiring.
 - Release-candidate verification.
