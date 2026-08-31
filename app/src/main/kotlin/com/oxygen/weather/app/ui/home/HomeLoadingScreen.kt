@@ -15,10 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -44,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import com.oxygen.weather.app.HomeHourlyPresentation
 import com.oxygen.weather.app.HomeMetricPresentation
 import com.oxygen.weather.app.HomeForecastFreshness
 import com.oxygen.weather.app.HomeForecastPresentationState
@@ -488,21 +486,30 @@ private fun HourlyPage(state: HomeForecastPresentationState.ForecastReady) {
     val dashboard = state.dashboard
 
     if (dashboard.hourly.isNotEmpty()) {
-        DashboardCard(tag = "home-section-hourly") {
-            Text("Hourly forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            LazyRow(
+        DashboardSection(tag = "home-section-hourly") {
+            Text("Next hours", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("home-hourly-row"),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    .testTag("home-hourly-grid"),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(dashboard.hourly) { hour ->
-                    HourlyTile(
-                        time = hour.time,
-                        condition = hour.condition,
-                        temperature = hour.temperature,
-                        precipitation = hour.precipitationProbability,
-                    )
+                dashboard.hourly.take(6).chunked(2).forEachIndexed { rowIndex, row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        row.forEachIndexed { columnIndex, hour ->
+                            HourlyTile(
+                                hour = hour,
+                                index = rowIndex * 2 + columnIndex,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (row.size == 1) {
+                            Spacer(Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
@@ -660,35 +667,79 @@ private fun ForecastRow(
 
 @Composable
 private fun HourlyTile(
-    time: String,
-    condition: String,
-    temperature: String,
-    precipitation: String?,
+    hour: HomeHourlyPresentation,
+    index: Int,
+    modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = Modifier
-            .width(108.dp)
-            .heightIn(min = 128.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+    Card(
+        modifier = modifier
+            .heightIn(min = 116.dp)
+            .testTag("home-hourly-entry-$index")
+            .semantics {
+                contentDescription = listOf(
+                    hour.time,
+                    hour.condition,
+                    hour.temperature,
+                    hour.precipitationProbability ?: "Precipitation unavailable",
+                ).joinToString(", ")
+            },
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.58f),
+        ),
     ) {
-        Text(
-            text = time,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = condition,
-            style = MaterialTheme.typography.bodySmall,
-            minLines = 2,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(temperature, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Text(precipitation ?: "Precip unavailable", style = MaterialTheme.typography.bodySmall)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .semantics {
+                            contentDescription = hour.condition
+                        },
+                ) {
+                    WeatherConditionMark(
+                        condition = hour.conditionIdentity,
+                        modifier = Modifier.size(36.dp),
+                    )
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = hour.time,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = hour.condition,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Text(
+                text = hour.temperature,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+            Text(
+                text = hour.precipitationProbability?.let { "Precip $it" } ?: "Precipitation unavailable",
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

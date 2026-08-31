@@ -1095,10 +1095,9 @@ Broad verification:
 
 ## Next Candidate Slice
 
-Candidate: Slice 18B: Now Page Visual Baseline.
+Candidate: Slice 18C: Hourly Page Visual Baseline.
 
-Recommended sequence from the current verified state: complete and commit the
-documentation sync gate if selected, then Slice 18B, Slice 18C, Slice 18D,
+Recommended sequence from the current verified state: Slice 18C, Slice 18D,
 Slice 18E, Slice 18F, Slice 18G, Slice 18H, Slice 19, installed-app fallback
 completion, Slice 20, optional device location, official alerts, persisted
 presentation settings, recurring documentation-sync gates, and release gates.

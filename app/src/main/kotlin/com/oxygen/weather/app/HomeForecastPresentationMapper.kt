@@ -127,6 +127,7 @@ data class HomeCurrentPresentation(
 data class HomeHourlyPresentation(
     val time: String,
     val condition: String,
+    val conditionIdentity: WeatherCondition,
     val temperature: String,
     val precipitationProbability: String?,
 )
@@ -189,6 +190,7 @@ private fun HourlyForecast.toHourlyPresentation(zoneId: ZoneId): HomeHourlyPrese
     HomeHourlyPresentation(
         time = HOUR_FORMAT.format(time.atZone(zoneId)),
         condition = condition.displayName(),
+        conditionIdentity = condition,
         temperature = temperatureC.formatFahrenheit(),
         precipitationProbability = precipitationProbabilityPercent?.let { "$it%" },
     )
