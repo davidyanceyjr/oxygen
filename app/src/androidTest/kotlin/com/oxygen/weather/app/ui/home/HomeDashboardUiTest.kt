@@ -89,10 +89,11 @@ class HomeDashboardUiTest {
 
         composeRule.assertVerticalOrder(
             "home-section-location",
-            "home-section-alert",
             "home-section-current",
+            "home-section-alert",
             "home-section-precipitation",
         )
+        composeRule.assertNowHeroDominatesLocationChrome()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
         composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
         composeRule.onNodeWithTag("home-page-previous").assertIsNotEnabled()
@@ -112,7 +113,7 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
         composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 4")
-        composeRule.onNodeWithTag("home-hourly-row").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-hourly-grid").assertIsDisplayed()
         composeRule.onNodeWithTag("home-page-tab-daily").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
@@ -175,6 +176,43 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun compactHourlyPageShowsFourChronologicalEntriesWithHonestPrecipitation() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(
+                name = "A Very Long Selected Location Name Near The Lakefront, Wisconsin, United States",
+            ),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(state = state, widthDp = 360, heightDp = 640)
+
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-hourly-grid").assertIsDisplayed()
+        listOf(
+            "6 AM, Rain, 64 deg F, 60%",
+            "7 AM, Cloudy, 67 deg F, Precipitation unavailable",
+            "8 AM, Partly cloudy, 68 deg F, 20%",
+            "9 AM, Mostly clear, 70 deg F, 10%",
+        ).forEach { description ->
+            composeRule.onNodeWithContentDescription(description).assertIsDisplayed()
+        }
+        composeRule.assertWithinRootBounds(
+            "home-hourly-entry-0",
+            "home-hourly-entry-1",
+            "home-hourly-entry-2",
+            "home-hourly-entry-3",
+        )
+        composeRule.assertCheckedSiblingSpacing(
+            "home-hourly-entry-0",
+            "home-hourly-entry-2",
+        )
+        composeRule.writeSemanticsArtifact("hourly-compact-semantics.txt")
+    }
+
+    @Test
     fun staleSuccessKeepsForecastContentRefreshAndRefreshFailureVisible() {
         val location = weatherLocation(name = "Stale Cache City")
         val state = HomeForecastPresentationState.ForecastReady.from(
@@ -199,9 +237,10 @@ class HomeDashboardUiTest {
         composeRule.assertVerticalOrder(
             "home-section-location",
             "home-section-stale",
-            "home-section-alert",
             "home-section-current",
+            "home-section-alert",
         )
+        composeRule.assertNowHeroDominatesLocationChrome()
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Open-Meteo").assertIsDisplayed()
@@ -316,9 +355,10 @@ class HomeDashboardUiTest {
         composeRule.assertVerticalOrder(
             "home-section-location",
             "home-refreshing",
-            "home-section-alert",
             "home-section-current",
+            "home-section-alert",
         )
+        composeRule.assertNowHeroDominatesLocationChrome()
         composeRule.writeSemanticsArtifact("refresh-in-progress-semantics.txt")
     }
 
@@ -385,6 +425,7 @@ class HomeDashboardUiTest {
 private fun ComposeContentTestRule.setHomeContent(
     state: HomeForecastPresentationState,
     widthDp: Int? = null,
+    heightDp: Int = 3200,
     fontScale: Float = 1f,
 ) {
     setContent {
@@ -396,7 +437,7 @@ private fun ComposeContentTestRule.setHomeContent(
                     Box(
                         Modifier
                             .width(widthDp.dp)
-                            .height(3200.dp),
+                            .height(heightDp.dp),
                     ) {
                         HomeLoadingScreen(state = state)
                     }
@@ -452,6 +493,26 @@ private fun ComposeTestRule.assertCheckedSiblingSpacing(vararg tags: String) {
         val after = requireNotNull(bounds[afterTag])
         assertTrue("$beforeTag should not overlap $afterTag", before.bottom <= after.top)
     }
+}
+
+private fun ComposeTestRule.assertWithinRootBounds(vararg tags: String) {
+    tags.forEach { tag ->
+        val rect = onAllNodesWithTag(tag).fetchSemanticsNodes().single().boundsInRoot
+        assertTrue("$tag should have positive width", rect.width > 0f)
+        assertTrue("$tag should have positive height", rect.height > 0f)
+        assertTrue("$tag should stay inside compact root width", rect.left >= 0f && rect.right <= 360f)
+        assertTrue("$tag should stay inside first compact viewport", rect.top >= 0f && rect.bottom <= 640f)
+    }
+}
+
+private fun ComposeTestRule.assertNowHeroDominatesLocationChrome() {
+    val location = onNodeWithTag("home-section-location").fetchSemanticsNode().boundsInRoot
+    val current = onNodeWithTag("home-section-current").fetchSemanticsNode().boundsInRoot
+    assertTrue("Now current hero should render below location chrome", location.bottom <= current.top)
+    assertTrue(
+        "Now current hero should occupy more vertical space than location chrome",
+        current.height > location.height,
+    )
 }
 
 private fun ComposeTestRule.writeSemanticsArtifact(fileName: String) {
@@ -511,6 +572,38 @@ private fun fullWeatherBundle(
                 precipitationProbabilityPercent = null,
                 precipitationMm = null,
                 condition = WeatherCondition.CLOUDY,
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            HourlyForecast(
+                time = Instant.parse("2026-08-22T13:00:00Z"),
+                temperatureC = 20.0,
+                precipitationProbabilityPercent = 20,
+                precipitationMm = 0.2,
+                condition = WeatherCondition.PARTLY_CLOUDY,
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            HourlyForecast(
+                time = Instant.parse("2026-08-22T14:00:00Z"),
+                temperatureC = 21.1,
+                precipitationProbabilityPercent = 10,
+                precipitationMm = 0.0,
+                condition = WeatherCondition.MOSTLY_CLEAR,
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            HourlyForecast(
+                time = Instant.parse("2026-08-22T15:00:00Z"),
+                temperatureC = 22.0,
+                precipitationProbabilityPercent = null,
+                precipitationMm = null,
+                condition = WeatherCondition.THUNDERSTORM,
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            HourlyForecast(
+                time = Instant.parse("2026-08-22T16:00:00Z"),
+                temperatureC = 21.5,
+                precipitationProbabilityPercent = 40,
+                precipitationMm = 0.8,
+                condition = WeatherCondition.RAIN_SHOWERS,
                 provenance = provenance.copy(type = DataType.FORECAST),
             ),
         ),

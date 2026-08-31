@@ -246,10 +246,16 @@ class HomeForecastStateHolderTest {
         assertEquals("L 54 deg F", ready.dashboard.current?.lowTemperature)
         assertEquals("Updated 5:30 AM", ready.dashboard.current?.updatedTime)
         assertEquals("Model estimate", ready.dashboard.current?.dataTypeLabel)
-        assertEquals("Up to 60% precipitation chance in the next 6 hours; 1.2 mm possible in the next 6 hours", ready.dashboard.precipitationSummary)
+        assertEquals("Up to 60% precipitation chance in the next 6 hours; 2.2 mm possible in the next 6 hours", ready.dashboard.precipitationSummary)
         assertEquals("6 AM", ready.dashboard.hourly[0].time)
+        assertEquals("Rain", ready.dashboard.hourly[0].condition)
+        assertEquals(WeatherCondition.RAIN, ready.dashboard.hourly[0].conditionIdentity)
         assertEquals("64 deg F", ready.dashboard.hourly[0].temperature)
         assertEquals("60%", ready.dashboard.hourly[0].precipitationProbability)
+        assertEquals("7 AM", ready.dashboard.hourly[1].time)
+        assertEquals("Cloudy", ready.dashboard.hourly[1].condition)
+        assertEquals(WeatherCondition.CLOUDY, ready.dashboard.hourly[1].conditionIdentity)
+        assertEquals(null, ready.dashboard.hourly[1].precipitationProbability)
         assertEquals("Sat, Aug 22", ready.dashboard.daily[0].date)
         assertEquals("Low 54 deg F", ready.dashboard.daily[0].low)
         assertEquals("High 73 deg F", ready.dashboard.daily[0].high)
@@ -945,6 +951,38 @@ private fun fullWeatherBundle(
                 precipitationProbabilityPercent = null,
                 precipitationMm = null,
                 condition = WeatherCondition.CLOUDY,
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            HourlyForecast(
+                time = Instant.parse("2026-08-22T13:00:00Z"),
+                temperatureC = 20.0,
+                precipitationProbabilityPercent = 20,
+                precipitationMm = 0.2,
+                condition = WeatherCondition.PARTLY_CLOUDY,
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            HourlyForecast(
+                time = Instant.parse("2026-08-22T14:00:00Z"),
+                temperatureC = 21.1,
+                precipitationProbabilityPercent = 10,
+                precipitationMm = 0.0,
+                condition = WeatherCondition.MOSTLY_CLEAR,
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            HourlyForecast(
+                time = Instant.parse("2026-08-22T15:00:00Z"),
+                temperatureC = 22.0,
+                precipitationProbabilityPercent = null,
+                precipitationMm = null,
+                condition = WeatherCondition.THUNDERSTORM,
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            HourlyForecast(
+                time = Instant.parse("2026-08-22T16:00:00Z"),
+                temperatureC = 21.5,
+                precipitationProbabilityPercent = 40,
+                precipitationMm = 0.8,
+                condition = WeatherCondition.RAIN_SHOWERS,
                 provenance = provenance.copy(type = DataType.FORECAST),
             ),
         ),

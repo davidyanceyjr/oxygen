@@ -21,6 +21,27 @@ Focused evidence means behavior-specific tests at the provider, repository, Andr
 
 Raw build/test output may remain ignored under `.codex/test-artifacts/`, but evidence required for roadmap, release-gate, or readiness claims must either be reproducible through CI or retained in a reviewable project artifact. Do not require every cycle log to be committed.
 
+## Documentation Sync Rule
+
+README, roadmap, disclosure, and active-cycle state are part of the product
+contract. Add a documentation-sync gate after every four completed
+non-documentation implementation cycles, and sooner when a slice changes any of
+these status surfaces:
+
+- installed-app behavior listed in README;
+- active/current provider or data-source disclosure;
+- privacy, permission, license, dependency, or attribution claims;
+- persistence, offline, stale-cache, saved-location, or release-readiness
+  status;
+- roadmap next-candidate sequencing.
+
+Documentation-sync gates use the documentation-only workflow:
+`discover -> contract/document -> review -> ready`. They must correct status
+without upgrading implementation states beyond the evidence recorded in
+`.codex/plans/current.md`, `.codex/cycles/history.md`, CI, or retained
+artifacts. Android build/test commands are not required for pure Markdown
+updates, but any skipped command must be named and justified.
+
 ## UI Rule
 
 Every user-facing active slice must carry the relevant UI specification with it. Do not defer UI obligations into a separate polish phase when they are part of the behavior being implemented.
@@ -844,6 +865,36 @@ Must prove:
 - Weather-data licenses and attribution remain separate from Oxygen source-code licensing.
 - Privacy text still discloses no advertising, no tracking, no account requirement, optional location permission, and request data sent to active providers.
 
+## Recurring Documentation Sync Gate
+
+Status: specified
+
+Cadence:
+- After every four completed non-documentation implementation cycles since the
+  previous documentation-sync gate.
+- Immediately when a completed slice changes README-visible app behavior,
+  provider disclosure, privacy/permission/license/dependency claims,
+  persistence/offline status, release-readiness status, or roadmap sequencing.
+
+Release intent: Keep README, roadmap, disclosure, and active-cycle state aligned
+with implemented and verified behavior.
+
+Must prove:
+- README implemented/not-implemented lists match the installed app and current
+  core behavior without claiming MVP, beta, release-candidate, or unverified
+  provider fallback status.
+- `.codex/plans/mvp-roadmap.md` next-candidate guidance matches completed
+  cycles and the intended next bounded slice.
+- Data-source, privacy, license, and attribution documents still distinguish
+  active/current behavior from specified roadmap behavior where applicable.
+- `.codex/plans/current.md` either records the active documentation-sync gate or
+  the next selected implementation slice after the sync is complete.
+- `.codex/cycles/history.md` records the documentation-sync evidence.
+- `git diff --check` passes.
+- Android build/test commands are either run because code-facing contracts
+  changed, or explicitly skipped because the gate changed only Markdown status
+  and planning text.
+
 ## Appearance Preference Relationship
 
 Status: specified
@@ -1044,8 +1095,11 @@ Broad verification:
 
 ## Next Candidate Slice
 
-Candidate: Persistence Architecture Gate.
+Candidate: Slice 18C: Hourly Page Visual Baseline.
 
-Recommended sequence after the review integration: Repository Engineering Gate, Slice 17B, Slice 17C, Persistence Architecture Gate, Slice 18 with selected-location small-state persistence and lifecycle-aware Home state, Slice 19, installed-app fallback completion, Slice 20, optional device location, official alerts, persisted presentation settings, and release gates.
+Recommended sequence from the current verified state: Slice 18C, Slice 18D,
+Slice 18E, Slice 18F, Slice 18G, Slice 18H, Slice 19, installed-app fallback
+completion, Slice 20, optional device location, official alerts, persisted
+presentation settings, recurring documentation-sync gates, and release gates.
 
 To start work, update `.codex/plans/current.md` to one single bounded gate or slice. Do not treat later roadmap entries as planned active work.
