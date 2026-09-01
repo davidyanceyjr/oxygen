@@ -1830,20 +1830,20 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation candidate is Slice 18F: Home Operational State
-Integration.
+The next implementation candidate is Slice 18G: Oxygen Home Design-System
+Consolidation.
 
-The Standard Home paged architecture should be verified across existing
-operational states, not only fresh successful forecasts. Loading,
-refresh-in-progress, fresh success, cached/stale success, refresh failure while
-cache remains useful, retryable no-cache error, retry, and source/update state
-should remain meaningful in the Now, Hourly, Daily, and Details page model.
+The completed Standard Home pages should be consolidated into reusable Oxygen
+design-system semantics without changing weather-provider behavior, persistence
+behavior, or page responsibilities. Repeated spacing, typography, shape,
+surface, weather-mark, and theme-translation choices from the committed Now,
+Hourly, Daily, Details, and operational-state work should either be represented
+by named roles or explicitly deferred with reason.
 
-Implementation should keep stale/error communication visible at appropriate
-semantic locations, preserve retry and refresh controls, avoid empty or
-misleading pages, preserve selected-location and forecast-cache behavior, and
-verify representative non-happy-path presentations with focused tests plus
-installed-app screenshot and hierarchy evidence.
+Implementation should preserve the established page designs, keep semantic
+distinction between Now, Hourly, Daily, and Details, avoid a speculative full
+theme engine, avoid persisted appearance/effects/layout settings, and verify
+that consolidation does not regress installed-app Home presentation.
 
 ---
 

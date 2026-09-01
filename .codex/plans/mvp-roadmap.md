@@ -656,7 +656,7 @@ Must prove:
 
 ## Slice 18F: Home Operational State Integration
 
-Status: specified
+Status: committed
 
 Prerequisites:
 - Slices 18A through 18E committed.
@@ -1111,10 +1111,10 @@ Broad verification:
 
 ## Next Candidate Slice
 
-Candidate: Slice 18F: Home Operational State Integration.
+Candidate: Slice 18G: Oxygen Home Design-System Consolidation.
 
-Recommended sequence from the current committed state: Slice 18F, Slice 18G,
-Slice 18H, Slice 19, installed-app fallback completion, Slice 20,
+Recommended sequence from the current committed state: Slice 18G, Slice 18H,
+Slice 19, installed-app fallback completion, Slice 20,
 optional device location, official alerts, persisted presentation settings,
 recurring documentation-sync gates, and release gates.
 
