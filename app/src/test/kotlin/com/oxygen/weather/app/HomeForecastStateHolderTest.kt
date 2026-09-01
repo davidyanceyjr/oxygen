@@ -186,6 +186,72 @@ class HomeForecastStateHolderTest {
     }
 
     @Test
+    fun `change location from home returns to manual search and selected candidate replaces location`() {
+        val oldLocation = weatherLocation("manual-old-location", "Old Location City")
+        val newLocation = weatherLocation("manual-new-location", "New Location City")
+        val weatherRepository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation))),
+            listOf(WeatherRepositoryResult.Loading),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            geocodingRepository = StaticGeocodingRepository(newLocation),
+            weatherRepository = weatherRepository,
+            searchExecutor = DirectForecastExecutor,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onChangeLocation()
+
+        val firstRun = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
+        assertEquals("", firstRun.query)
+        assertEquals(ManualLocationSearchState.Idle, firstRun.searchState)
+        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertFalse(stateHolder.presentationState.isShowingHome)
+
+        stateHolder.onManualLocationQueryChanged("New Location City")
+        stateHolder.onManualLocationSearchSubmitted()
+        val result = ((stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry)
+            .searchState as ManualLocationSearchState.Results).candidates.single()
+        stateHolder.onManualLocationCandidateSelected(result.id)
+
+        val loading = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.Loading
+        assertSame(result.location, loading.location)
+        assertEquals(newLocation, stateHolder.presentationState.selectedLocation)
+        assertEquals(listOf(oldLocation, newLocation), weatherRepository.locations)
+    }
+
+    @Test
+    fun `change location invalidates in-flight forecast result from previous selection`() {
+        val oldLocation = weatherLocation("manual-inflight-old", "Inflight Old City")
+        val repository = ControlledWeatherRepository()
+        val executor = Executors.newSingleThreadExecutor()
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            weatherRepository = repository,
+            forecastExecutor = executor,
+        )
+
+        try {
+            val oldCall = repository.awaitCall(0)
+            stateHolder.onChangeLocation()
+
+            oldCall.emit(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation)))
+            oldCall.finish()
+            executor.shutdown()
+            assertTrue(executor.awaitTermination(2, TimeUnit.SECONDS))
+
+            assertTrue(stateHolder.presentationState.screen is OxygenAppScreen.FirstRunLocationEntry)
+            assertEquals(null, stateHolder.presentationState.selectedLocation)
+            assertFalse(stateHolder.presentationState.isShowingHome)
+        } finally {
+            repository.finishAll()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
     fun `startup ignores wrong-location cache for restored selected location`() {
         val selected = weatherLocation("manual-selected-cache-scope", "Selected Cache Scope City")
         val other = weatherLocation("manual-other-cache-scope", "Other Cache Scope City")
@@ -257,10 +323,24 @@ class HomeForecastStateHolderTest {
         assertEquals(WeatherCondition.CLOUDY, ready.dashboard.hourly[1].conditionIdentity)
         assertEquals(null, ready.dashboard.hourly[1].precipitationProbability)
         assertEquals("Sat, Aug 22", ready.dashboard.daily[0].date)
+        assertEquals("Rain showers", ready.dashboard.daily[0].condition)
+        assertEquals(WeatherCondition.RAIN_SHOWERS, ready.dashboard.daily[0].conditionIdentity)
         assertEquals("Low 54 deg F", ready.dashboard.daily[0].low)
         assertEquals("High 73 deg F", ready.dashboard.daily[0].high)
+        assertEquals(22.7, ready.dashboard.daily[0].highC)
+        assertEquals(12.3, ready.dashboard.daily[0].lowC)
+        assertEquals("40%", ready.dashboard.daily[0].precipitationProbability)
         assertEquals("5:15 AM", ready.dashboard.daily[0].sunrise)
         assertEquals("8:01 PM", ready.dashboard.daily[0].sunset)
+        assertEquals("Sun, Aug 23", ready.dashboard.daily[1].date)
+        assertEquals(WeatherCondition.CLOUDY, ready.dashboard.daily[1].conditionIdentity)
+        assertEquals(21.1, ready.dashboard.daily[1].highC)
+        assertEquals(11.2, ready.dashboard.daily[1].lowC)
+        assertEquals(null, ready.dashboard.daily[1].precipitationProbability)
+        assertEquals(null, ready.dashboard.daily[4].highC)
+        assertEquals(15.0, ready.dashboard.daily[4].lowC)
+        assertEquals(19.5, ready.dashboard.daily[5].highC)
+        assertEquals(null, ready.dashboard.daily[5].lowC)
         assertEquals(HomeMetricPresentation("Wind", "14 km/h, gust 25 km/h, 225 deg"), ready.dashboard.metrics.single { it.label == "Wind" })
         assertEquals(HomeMetricPresentation("Visibility", "9.5 km"), ready.dashboard.metrics.single { it.label == "Visibility" })
         assertEquals(HomeMetricPresentation("Feels like", "63 deg F"), ready.dashboard.metrics.single { it.label == "Feels like" })
@@ -995,6 +1075,56 @@ private fun fullWeatherBundle(
                 condition = WeatherCondition.RAIN_SHOWERS,
                 sunrise = Instant.parse("2026-08-22T10:15:00Z"),
                 sunset = Instant.parse("2026-08-23T01:01:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = java.time.LocalDate.parse("2026-08-23").toEpochDay(),
+                highC = 21.1,
+                lowC = 11.2,
+                precipitationProbabilityPercent = null,
+                condition = WeatherCondition.CLOUDY,
+                sunrise = Instant.parse("2026-08-23T10:16:00Z"),
+                sunset = Instant.parse("2026-08-24T00:59:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = java.time.LocalDate.parse("2026-08-24").toEpochDay(),
+                highC = 24.8,
+                lowC = 14.1,
+                precipitationProbabilityPercent = 20,
+                condition = WeatherCondition.PARTLY_CLOUDY,
+                sunrise = Instant.parse("2026-08-24T10:17:00Z"),
+                sunset = Instant.parse("2026-08-25T00:57:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = java.time.LocalDate.parse("2026-08-25").toEpochDay(),
+                highC = 27.6,
+                lowC = 16.1,
+                precipitationProbabilityPercent = 10,
+                condition = WeatherCondition.MOSTLY_CLEAR,
+                sunrise = Instant.parse("2026-08-25T10:18:00Z"),
+                sunset = Instant.parse("2026-08-26T00:55:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = java.time.LocalDate.parse("2026-08-26").toEpochDay(),
+                highC = null,
+                lowC = 15.0,
+                precipitationProbabilityPercent = 50,
+                condition = WeatherCondition.THUNDERSTORM,
+                sunrise = Instant.parse("2026-08-26T10:19:00Z"),
+                sunset = Instant.parse("2026-08-27T00:53:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = java.time.LocalDate.parse("2026-08-27").toEpochDay(),
+                highC = 19.5,
+                lowC = null,
+                precipitationProbabilityPercent = null,
+                condition = WeatherCondition.RAIN,
+                sunrise = Instant.parse("2026-08-27T10:20:00Z"),
+                sunset = Instant.parse("2026-08-28T00:51:00Z"),
                 provenance = provenance.copy(type = DataType.FORECAST),
             ),
         ),

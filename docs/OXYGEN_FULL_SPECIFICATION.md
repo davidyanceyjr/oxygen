@@ -47,6 +47,35 @@ Oxygen should use actual weather state to influence the environment of the appli
 
 A rainy morning should feel different from a clear winter night before the user consciously reads the text. That atmospheric response should come from procedural rendering and semantic visual state rather than downloaded photographs.
 
+### 2.1 Initial visual language authority
+
+The initial look-and-feel foundation is captured in:
+
+```text
+docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png
+```
+
+![Oxygen Weather Visual Language Base Art Sheet v0.1](assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png)
+
+This art sheet is a product-design authority for Slice 18D and subsequent Home
+visual implementation slices. It establishes the initial direction for:
+
+- core provider-neutral weather marks;
+- atmospheric scene language for clear, cloudy, rain, storm, and snow states;
+- glass-like weather surfaces with strong readable numerals;
+- compact forecast, metric, and alert surface examples;
+- initial palette names and color references;
+- typography direction for display numerals, section headings, labels, and body copy;
+- theme translation direction across Oxygen, Paper, and Terminal.
+
+The art sheet does not authorize production bitmap weather icons, downloaded
+photographic weather backgrounds, inaccessible contrast, hidden weather text,
+fabricated weather values, provider-specific UI leakage, or a premature theme
+engine. Weather meaning still comes from provider-neutral domain and presentation
+state. Programmatic graphics such as daily range bars, charts, weather marks, and
+scene effects should be rendered by Compose/vector/procedural code unless a later
+asset-specific slice explicitly specifies otherwise.
+
 The application should remain useful with:
 
 - animation disabled;
@@ -638,6 +667,9 @@ A theme never owns business logic.
 
 The default theme is **Oxygen**.
 
+The initial Oxygen visual direction is defined by the Base Art Sheet v0.1 at
+`docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png`.
+
 Characteristics:
 
 - atmospheric rather than photographic;
@@ -652,6 +684,23 @@ Characteristics:
 - charts that feel native to the design rather than embedded dashboards.
 
 The default should be visually distinctive without demanding configuration.
+
+Initial palette references from the Base Art Sheet v0.1:
+
+| Role | Color |
+|---|---|
+| Sky Top | `#07151D` |
+| Sky Bottom | `#153444` |
+| Atmospheric Glow | `#86E4F0` |
+| Glass | `#23414D` |
+| Glass Strong | `#17313C` |
+| Outline | `#7FC1CE` |
+| Chart Accent | `#8DE7F1` |
+| Precipitation | `#79BFFF` |
+| Warning | `#FFB4BA` |
+
+These references are starting points, not exemptions from contrast, accessibility,
+or theme-independence requirements.
 
 ---
 
@@ -1284,6 +1333,18 @@ Create specifically for Oxygen:
 - wordmark;
 - notification icon.
 
+### 36.1.1 Visual-language reference asset
+
+Retain the Base Art Sheet v0.1 as a reviewable source artifact:
+
+```text
+docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png
+```
+
+This file is not an app runtime asset. It should be used to guide implementation
+of Compose/vector/procedural weather marks, atmospheric scenes, surfaces,
+typography, and theme translation.
+
 ### 36.2 Generic UI icons
 
 Use permissively licensed system/Material symbols for generic actions where appropriate.
@@ -1769,20 +1830,21 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation document should define the Open-Meteo client contract down to DTOs, endpoint parameters, mapping functions, error behavior, attribution, and fixture tests.
+The next implementation candidate is Slice 18E: Details Page Visual Baseline.
 
-Then implement:
+The Details page should turn already-supported secondary weather measurements
+and provenance into a coherent, information-dense Home page. It should organize
+available humidity, wind, pressure, visibility, UV, dew point, sun information,
+update/source, and provenance data without fabricating missing values or adding
+new provider capabilities only to populate the screen. UV or any other future
+metric should appear in this slice only if it already reaches the
+provider-neutral Home dashboard presentation data before Details work begins.
 
-```text
-OpenMeteoService
-OpenMeteoDto
-OpenMeteoMapper
-DefaultWeatherRepository
-WeatherUiState
-HomeViewModel
-```
-
-Only after the first real forecast path is reliable should Room persistence and broader theme work be expanded.
+Implementation should keep provenance readily accessible, give fresh-data
+provenance tertiary visual weight, make stale/fallback/failure context more
+prominent, avoid novelty gauges where simpler presentation communicates better,
+and verify the installed app with screenshots that show density and visual
+organization.
 
 ---
 

@@ -46,6 +46,20 @@ updates, but any skipped command must be named and justified.
 
 Every user-facing active slice must carry the relevant UI specification with it. Do not defer UI obligations into a separate polish phase when they are part of the behavior being implemented.
 
+The initial Home look-and-feel direction is now a reviewable product artifact:
+
+```text
+docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png
+```
+
+Use this Base Art Sheet v0.1 as visual-direction authority for Slice 18D and
+subsequent Standard Home visual slices. It guides weather marks, atmospheric
+scene language, glass-like surfaces, strong numerals, palette references,
+forecast/metric/alert composition, and Oxygen/Paper/Terminal theme translation.
+It does not implement app behavior, authorize runtime bitmap weather assets,
+weaken accessibility requirements, permit fabricated values, or move provider
+semantics into UI code.
+
 For MVP user-facing slices:
 - primary Home weather navigation uses semantic, viewport-oriented pages rather than one continuous vertical dashboard;
 - the initial Standard Home semantic page model is Now -> Hourly -> Daily -> Details, with page identities represented as semantic concepts rather than unexplained numeric indexes;
@@ -598,7 +612,7 @@ Must prove:
 
 ## Slice 18D: Daily Page Visual Baseline
 
-Status: specified
+Status: committed
 
 Prerequisite:
 - Slice 18C committed.
@@ -607,6 +621,7 @@ Release intent: Make the Daily page optimized for fast multi-day weather compari
 
 Must prove:
 - Multiple days can be compared quickly.
+- Daily composition follows the Base Art Sheet v0.1 direction where it helps comparison, especially strong numerals, compact weather marks, atmospheric surface treatment, and calm editorial density.
 - Each day's condition identity is clear.
 - High/low information has strong comparative structure.
 - Precipitation is visible where available.
@@ -675,6 +690,7 @@ Must prove:
 - Repeated spacing values are represented by semantic design tokens where justified.
 - Recurring typography roles are centralized.
 - Recurring shapes/surface roles are centralized.
+- Base Art Sheet v0.1 palette, typography, surface, weather-mark, and theme-translation decisions are either represented by named design-system roles or explicitly deferred with reason.
 - Weather/component presentation roles are understandable.
 - Accidental duplicated magic numbers introduced during visual iteration are removed where reasonable.
 - Generic surface primitives are not allowed to erase semantic distinction between Now, Hourly, Daily, and Details.
@@ -1095,11 +1111,11 @@ Broad verification:
 
 ## Next Candidate Slice
 
-Candidate: Slice 18C: Hourly Page Visual Baseline.
+Candidate: Slice 18E: Details Page Visual Baseline.
 
-Recommended sequence from the current verified state: Slice 18C, Slice 18D,
-Slice 18E, Slice 18F, Slice 18G, Slice 18H, Slice 19, installed-app fallback
-completion, Slice 20, optional device location, official alerts, persisted
-presentation settings, recurring documentation-sync gates, and release gates.
+Recommended sequence from the current committed state: Slice 18E, Slice 18F,
+Slice 18G, Slice 18H, Slice 19, installed-app fallback completion, Slice 20,
+optional device location, official alerts, persisted presentation settings,
+recurring documentation-sync gates, and release gates.
 
 To start work, update `.codex/plans/current.md` to one single bounded gate or slice. Do not treat later roadmap entries as planned active work.

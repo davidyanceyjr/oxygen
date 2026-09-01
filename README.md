@@ -1,6 +1,9 @@
 # Oxygen Weather
 
-Oxygen is a free, open-source, no-ads Android weather application built with Kotlin and Jetpack Compose.
+Oxygen is a free, open-source, no-ads Android weather application built with
+Kotlin and Jetpack Compose. Its intended use is simple: make useful weather
+information available to everyone without advertising, behavioral tracking,
+subscriptions, mandatory accounts, or a single locked-in weather vendor.
 
 This repository is an early Android app, not an MVP, beta, release candidate,
 or finished weather product.
@@ -13,6 +16,7 @@ and `docs/data-sources/`.
 ## Implemented in the installed app
 
 - Manual location search through the Open-Meteo geocoding path.
+- Manual selected-location change from the installed Home screen.
 - Explicit selected-location Open-Meteo forecast retrieval.
 - Last selected location persistence through the local DataStore path.
 - Offline restoration of the last forecast for the selected location through the
@@ -23,6 +27,7 @@ and `docs/data-sources/`.
   provenance, and disclosure presentation.
 - Standard Home paged interaction foundation with Now, Hourly, Daily, and
   Details pages.
+- Standard Home Now, Hourly, and Daily visual baselines.
 - Settings/About surfaces for Data Sources, Privacy, and Open Source Licenses.
 - Oxygen package/application identity, theme foundation, and Compose Home UI.
 
@@ -37,6 +42,7 @@ and `docs/data-sources/`.
 - Multiple saved locations and saved-location switching/removal.
 - Unit preferences.
 - Official weather alert lookup.
+- Details visual baseline for the Standard Home paged UI.
 - Persisted appearance/effects/layout settings.
 - Installed-app MET Norway fallback wiring.
 - Release-candidate verification.
@@ -49,21 +55,54 @@ and `docs/data-sources/`.
   MET Norway provider paths, fallback selection, and cache infrastructure.
 - `docs/OXYGEN_FULL_SPECIFICATION.md` is the implementation authority.
 
-## Build
+## Requirements
+
+To clone and build this project, use:
+
+- Git.
+- Linux or macOS shell environment.
+- JDK 26, or another JDK compatible with the Android Gradle Plugin used by this
+  repository. `scripts/android-env.sh` defaults `JAVA_HOME` to
+  `/usr/lib/jvm/java-26-openjdk` when `JAVA_HOME` is not already set.
+- Android SDK command-line tools and platform packages. `scripts/android-env.sh`
+  expects the SDK at `.android-sdk` by default and adds
+  `.android-sdk/platform-tools`, `.android-sdk/emulator`, and
+  `.android-sdk/cmdline-tools/latest/bin` to `PATH`.
+- Android SDK packages for the current build: `platforms;android-37.0`,
+  `build-tools;37.0.0`, and `platform-tools`. The repo-local emulator scripts
+  also require `emulator` and an Android 37 Google APIs x86_64 system image.
+- Repo-local runtime/cache directories `.android-sdk`, `.android`,
+  `.android-runtime`, and `.gradle` are intentionally ignored and must not be
+  committed.
+- Network access for the first dependency/provider fetches unless the required
+  Gradle and Android SDK artifacts are already cached locally.
+
+The repository includes the Gradle wrapper and uses these Android module
+settings:
+
+- `:app`: Android application, `compileSdk = 37`, `minSdk = 26`,
+  `targetSdk = 37`.
+- `:core`: Android library, `compileSdk = 37`, `minSdk = 26`.
+
+## Build Instructions
 
 On Linux/macOS:
 
 ```bash
+git clone <repository-url>
+cd oxygen
 . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
 . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
 . scripts/android-env.sh && ./gradlew :app:assembleDebug
 ```
 
 The helper script sets `JAVA_HOME`, Android SDK paths, Android user directories,
-and repo-local Gradle state. This project includes its own local Android SDK,
-AVD home, runtime directory, and standard Gradle 9.7.0 wrapper JAR.
+and repo-local Gradle state. A prepared workspace may already have the local SDK
+and AVD directories populated, but a fresh clone must provision the required
+Android SDK packages before the Gradle commands can run. The project includes
+the standard Gradle 9.7.0 wrapper JAR.
 
-## Run
+## Run Instructions
 
 This is an Android app. To run it with the local emulator setup:
 

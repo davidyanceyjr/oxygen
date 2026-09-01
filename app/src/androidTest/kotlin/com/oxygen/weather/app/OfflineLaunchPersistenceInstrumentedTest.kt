@@ -12,12 +12,14 @@ import com.oxygen.weather.core.model.LocationId
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
+import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import com.oxygen.weather.core.provider.cache.CachedWeatherRepository
 import com.oxygen.weather.core.provider.cache.room.RoomForecastCacheStorageFactory
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.Executor
 import org.junit.Assert.assertEquals
@@ -168,6 +170,17 @@ private fun fullWeatherBundle(location: WeatherLocation): WeatherBundle {
             time = Instant.parse("2026-08-22T10:30:00Z"),
             temperatureC = 18.4,
             apparentTemperatureC = 17.2,
+            dewPointC = 11.6,
+            humidityPercent = 72,
+            pressureHpa = 1012.4,
+            visibilityMeters = 9500.0,
+            cloudCoverPercent = 88,
+            wind = Wind(
+                speedMetersPerSecond = 4.0,
+                gustMetersPerSecond = 7.0,
+                directionDegrees = 225.0,
+            ),
+            precipitationMm = 0.4,
             condition = WeatherCondition.RAIN_SHOWERS,
             provenance = provenance,
         ),
@@ -223,13 +236,63 @@ private fun fullWeatherBundle(location: WeatherLocation): WeatherBundle {
         ),
         daily = listOf(
             DailyForecast(
-                dateEpochDay = java.time.LocalDate.parse("2026-08-22").toEpochDay(),
+                dateEpochDay = LocalDate.parse("2026-08-22").toEpochDay(),
                 highC = 22.7,
                 lowC = 12.3,
                 precipitationProbabilityPercent = 40,
                 condition = WeatherCondition.RAIN_SHOWERS,
                 sunrise = Instant.parse("2026-08-22T10:15:00Z"),
                 sunset = Instant.parse("2026-08-23T01:01:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = LocalDate.parse("2026-08-23").toEpochDay(),
+                highC = 21.1,
+                lowC = 11.2,
+                precipitationProbabilityPercent = null,
+                condition = WeatherCondition.CLOUDY,
+                sunrise = Instant.parse("2026-08-23T10:16:00Z"),
+                sunset = Instant.parse("2026-08-24T00:59:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = LocalDate.parse("2026-08-24").toEpochDay(),
+                highC = 24.8,
+                lowC = 14.1,
+                precipitationProbabilityPercent = 20,
+                condition = WeatherCondition.PARTLY_CLOUDY,
+                sunrise = Instant.parse("2026-08-24T10:17:00Z"),
+                sunset = Instant.parse("2026-08-25T00:57:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = LocalDate.parse("2026-08-25").toEpochDay(),
+                highC = 27.6,
+                lowC = 16.1,
+                precipitationProbabilityPercent = 10,
+                condition = WeatherCondition.MOSTLY_CLEAR,
+                sunrise = Instant.parse("2026-08-25T10:18:00Z"),
+                sunset = Instant.parse("2026-08-26T00:55:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = LocalDate.parse("2026-08-26").toEpochDay(),
+                highC = null,
+                lowC = 15.0,
+                precipitationProbabilityPercent = 50,
+                condition = WeatherCondition.THUNDERSTORM,
+                sunrise = Instant.parse("2026-08-26T10:19:00Z"),
+                sunset = Instant.parse("2026-08-27T00:53:00Z"),
+                provenance = provenance.copy(type = DataType.FORECAST),
+            ),
+            DailyForecast(
+                dateEpochDay = LocalDate.parse("2026-08-27").toEpochDay(),
+                highC = 19.5,
+                lowC = null,
+                precipitationProbabilityPercent = null,
+                condition = WeatherCondition.RAIN,
+                sunrise = Instant.parse("2026-08-27T10:20:00Z"),
+                sunset = Instant.parse("2026-08-28T00:51:00Z"),
                 provenance = provenance.copy(type = DataType.FORECAST),
             ),
         ),

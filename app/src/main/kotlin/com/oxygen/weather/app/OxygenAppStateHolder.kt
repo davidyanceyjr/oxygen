@@ -146,6 +146,16 @@ class OxygenAppStateHolder(
         startHomeForecastLoad(home.forecast.location)
     }
 
+    @Synchronized
+    fun onChangeLocation() {
+        nextForecastRequestId()
+        presentationState = OxygenAppPresentationState(
+            screen = OxygenAppScreen.FirstRunLocationEntry(),
+            selectedLocation = null,
+        )
+        publishState()
+    }
+
     fun onOpenAbout() {
         val currentScreen = presentationState.screen
         if (currentScreen is OxygenAppScreen.About) return
