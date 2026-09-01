@@ -1,15 +1,22 @@
 package com.oxygen.weather.app.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -24,6 +31,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.printToString
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.Density
@@ -34,6 +42,7 @@ import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.HomeSuccessSection
 import com.oxygen.weather.app.OxygenApp
 import com.oxygen.weather.app.OxygenAppStateHolder
+import com.oxygen.weather.app.ui.components.WeatherConditionMark
 import com.oxygen.weather.app.ui.theme.OxygenTheme
 import com.oxygen.weather.core.model.AlertSeverity
 import com.oxygen.weather.core.model.CurrentConditions
@@ -147,6 +156,44 @@ class HomeDashboardUiTest {
             state.dashboard.sectionOrder,
         )
         composeRule.writeSemanticsArtifact("fresh-dashboard-semantics.txt")
+    }
+
+    @Test
+    fun representativeWeatherMarksRenderGoldLineTreatmentForProviderNeutralConditions() {
+        composeRule.setContent {
+            OxygenTheme {
+                Row(
+                    modifier = Modifier
+                        .background(Color.Black)
+                        .testTag("weather-mark-strip"),
+                ) {
+                    listOf(
+                        "weather-mark-clear" to WeatherCondition.CLEAR,
+                        "weather-mark-rain" to WeatherCondition.RAIN_SHOWERS,
+                        "weather-mark-snow" to WeatherCondition.SNOW,
+                        "weather-mark-storm" to WeatherCondition.THUNDERSTORM_HAIL,
+                        "weather-mark-unknown" to WeatherCondition.UNKNOWN,
+                    ).forEach { (tag, condition) ->
+                        WeatherConditionMark(
+                            condition = condition,
+                            modifier = Modifier
+                                .size(64.dp)
+                                .testTag(tag),
+                        )
+                    }
+                }
+            }
+        }
+
+        listOf(
+            "weather-mark-clear",
+            "weather-mark-rain",
+            "weather-mark-snow",
+            "weather-mark-storm",
+            "weather-mark-unknown",
+        ).forEach { tag ->
+            composeRule.onNodeWithTag(tag).assertHasGoldLinePixels(tag)
+        }
     }
 
     @Test
@@ -757,6 +804,20 @@ private fun ComposeTestRule.assertNowHeroDominatesLocationChrome() {
         "Now current hero should occupy more vertical space than location chrome",
         current.height > location.height,
     )
+}
+
+private fun SemanticsNodeInteraction.assertHasGoldLinePixels(tag: String) {
+    val pixels = captureToImage().toPixelMap()
+    var goldPixelCount = 0
+    for (x in 0 until pixels.width) {
+        for (y in 0 until pixels.height) {
+            val color = pixels[x, y]
+            if (color.red > 0.70f && color.green > 0.46f && color.blue < 0.68f && color.alpha > 0.45f) {
+                goldPixelCount += 1
+            }
+        }
+    }
+    assertTrue("$tag should render visible art-sheet gold line pixels", goldPixelCount > 24)
 }
 
 private fun ComposeTestRule.writeSemanticsArtifact(fileName: String) {

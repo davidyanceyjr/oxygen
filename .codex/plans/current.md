@@ -1,11 +1,11 @@
 # Active Cycle
 
-Status: planned
+Status: ready
 Cycle ID: 2026-09-01-home-design-system-art-sheet-consolidation
 Mode: feature
 Goal: Implement Slice 18G by consolidating Home design-system roles and making the first visible, bounded runtime incorporation of the updated Oxygen art sheet without changing weather, provider, persistence, or page responsibilities.
 Roadmap context: Slice 18G follows committed Slices 18B through 18F and precedes Slice 18H accessibility and visual verification.
-Branch or work context: local `main` contains committed Slice 18F (`79bd830`). The worktree also contains uncommitted Markdown status-sync edits; preserve unrelated user/documentation changes.
+Branch or work context: local `main` contains committed Slice 18G planning work (`c09b117`) on top of committed Slice 18F (`79bd830`). The worktree is clean at plan review; preserve any unrelated user changes if they appear during implementation.
 
 ## Contract
 
@@ -62,7 +62,11 @@ Explicitly out of scope:
    - Preserve existing Home state-holder tests for provider/persistence behavior.
    - Add or adjust Compose tests to verify that art-sheet-aligned marks render for representative provider-neutral conditions without relying on provider-specific symbols.
    - Verify Home pages still expose the same test tags and semantic content descriptions after visual refactoring.
+   - Exercise Oxygen, Paper, and Terminal theme IDs only enough to verify Home semantics/content remain reachable after role consolidation. Do not add persistence, selectors, a theme registry, or new theme behavior.
    - Keep tests behavior-facing: page content, bounds, semantics, interactions, and representative visual-role application. Do not add tests that only prove constants/classes exist.
+   - Run focused post-change checks:
+     `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`
+     `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`
 
 5. Installed-app exercise:
    - Use the deterministic DataStore/Room seed path from prior Home slices.
@@ -70,6 +74,7 @@ Explicitly out of scope:
      `.codex/test-artifacts/2026-09-01-home-design-system-art-sheet-consolidation/`
    - Include compact-width or large-font evidence if focused Compose tests reveal risk.
    - Compare screenshots against the prior 18B-18F artifacts and record whether the art-sheet influence is visible.
+   - Record a concise before/after visual evidence note listing the prior screenshot path used for comparison, the new screenshot path, the observed concrete change, and any art-sheet element deferred with reason.
 
 6. Broad verification:
    - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
@@ -79,6 +84,8 @@ Explicitly out of scope:
 
 7. Review and ready:
    - Review production and test diffs for scope creep, provider leakage, fabricated values, dependency churn, and generic abstraction that hides page semantics.
+   - Before ready status, resolve or explicitly document the art-sheet naming drift: the tracked asset path/spec say Base Art Sheet v0.1 while the rendered image title says v0.2. Do not rename the PNG or introduce a replacement asset in this cycle unless a separate asset-governance decision is made.
+   - Reject completion if evidence is only renamed constants, screenshots without described observable changes, tests that only assert token/class existence, or build success without Home boundary exercise.
    - Update `.codex/plans/current.md` phase results with changed production/test files, focused evidence, installed-app artifact paths, broad evidence, and deferred art-sheet elements.
    - Append `.codex/cycles/history.md` only after the cycle is ready or committed.
    - Do not claim Slice 18H accessibility gate, persisted presentation settings, full icon packs, production bitmap scenes, release readiness, or MVP readiness.
@@ -87,3 +94,10 @@ Explicitly out of scope:
 
 - specified: Slice 18G is specified in `.codex/plans/mvp-roadmap.md`; the full specification section 53 selects Oxygen Home Design-System Consolidation and requires preservation of provider behavior, persistence behavior, and page responsibilities.
 - planned: This cycle selects a bounded Home design-system/art-sheet incorporation slice. The prior installed UI shows only partial palette alignment; visible art-sheet incorporation remains unimplemented until production Home changes and installed-app screenshots prove it.
+- covered: Focused Home state-holder unit tests pass, and `HomeDashboardUiTest` now includes a rendered-pixel assertion that representative provider-neutral weather marks expose the art-sheet gold-line treatment while existing Home page, compact, large-font, stale/error/source, and interaction tests remain in the same instrumentation boundary.
+- implemented: Added app-local Home design roles in `app/src/main/kotlin/com/oxygen/weather/app/ui/theme/OxygenTheme.kt`; applied roles in `HomeLoadingScreen.kt` and `GlassPanel.kt`; replaced the generic blob condition mark in `WeatherConditionMark.kt` with provider-neutral gold-line marks for all current `WeatherCondition` values; added the focused rendered-mark Compose test in `HomeDashboardUiTest.kt`.
+- verified: Baseline focused unit command passed before edits. Initial baseline connected Home instrumentation failed with `No connected devices`; after starting `oxygen_starter`, focused Home instrumentation passed 16 tests. Final focused commands passed: `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`; `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`. Broad commands passed: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh && ./gradlew :app:assembleDebug`; `git diff --check`.
+- artifacts: Verification logs and screenshots are under `.codex/test-artifacts/2026-09-01-home-design-system-art-sheet-consolidation/`. Valid installed Home evidence: `installed-final-home-now.png`/`.xml`, `installed-final-home-hourly.png`/`.xml`, `installed-final-home-daily.png`/`.xml`, `installed-final-home-details.png`/`.xml`, and `installed-final-cached-stale-now.png`/`.xml`. Focused logs: `focused-homeforecast-unit.log`, `focused-home-compose-instrumentation-final.log`. Broad logs: `broad-compile-debug-kotlin.log`, `broad-debug-unit-tests.log`, `broad-assemble-debug.log`, `git-diff-check.log`.
+- visual comparison: Compared against prior Slice 18F cached Now evidence at `.codex/test-artifacts/2026-09-01-home-operational-state-integration/installed-cached-now.png`; final installed Home screenshots visibly replace the white blob-like mark with gold-line marks, use stronger dark glass cards with accented outlines, and use a lighter display numeral treatment for the current temperature while retaining page selector, source/update, refresh/change-location, stale/cache, and page content.
+- deferred: Atmospheric scene imagery, production bitmap scenes, downloaded fonts, full icon packs, persisted presentation settings, and full theme engine remain deferred by 18G scope. The art-sheet naming drift is documented but not renamed: the tracked path/spec say Base Art Sheet v0.1 while the rendered image title says v0.2.
+- limitation: A final installed retryable no-cache screenshot was not captured; the attempted path failed after the targeted instrumentation run left the debug activity unavailable. Retryable no-cache behavior remains covered by `HomeDashboardUiTest.noCacheErrorKeepsAboutDisclosureAndRetryReachable`, `HomeForecastStateHolderTest`, and `OfflineLaunchPersistenceInstrumentedTest#startupWithSelectedLocationAndNoRoomCacheRendersRetryableNoCacheError`.
