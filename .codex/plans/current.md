@@ -1,6 +1,6 @@
 # Active Cycle
 
-Status: ready
+Status: committed
 Cycle ID: 2026-08-31-details-page-visual-baseline
 Mode: feature
 Goal: Implement Slice 18E: Details Page Visual Baseline without adding provider capabilities, fabricated values, or unrelated behavior changes.
