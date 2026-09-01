@@ -1830,21 +1830,20 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation candidate is Slice 18E: Details Page Visual Baseline.
+The next implementation candidate is Slice 18F: Home Operational State
+Integration.
 
-The Details page should turn already-supported secondary weather measurements
-and provenance into a coherent, information-dense Home page. It should organize
-available humidity, wind, pressure, visibility, UV, dew point, sun information,
-update/source, and provenance data without fabricating missing values or adding
-new provider capabilities only to populate the screen. UV or any other future
-metric should appear in this slice only if it already reaches the
-provider-neutral Home dashboard presentation data before Details work begins.
+The Standard Home paged architecture should be verified across existing
+operational states, not only fresh successful forecasts. Loading,
+refresh-in-progress, fresh success, cached/stale success, refresh failure while
+cache remains useful, retryable no-cache error, retry, and source/update state
+should remain meaningful in the Now, Hourly, Daily, and Details page model.
 
-Implementation should keep provenance readily accessible, give fresh-data
-provenance tertiary visual weight, make stale/fallback/failure context more
-prominent, avoid novelty gauges where simpler presentation communicates better,
-and verify the installed app with screenshots that show density and visual
-organization.
+Implementation should keep stale/error communication visible at appropriate
+semantic locations, preserve retry and refresh controls, avoid empty or
+misleading pages, preserve selected-location and forecast-cache behavior, and
+verify representative non-happy-path presentations with focused tests plus
+installed-app screenshot and hierarchy evidence.
 
 ---
 

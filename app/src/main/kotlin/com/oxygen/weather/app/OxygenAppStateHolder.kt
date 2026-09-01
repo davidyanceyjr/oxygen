@@ -142,8 +142,9 @@ class OxygenAppStateHolder(
 
     fun onHomeForecastRefresh() {
         val home = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home ?: return
-        if (home.forecast !is HomeForecastPresentationState.ForecastReady) return
-        startHomeForecastLoad(home.forecast.location)
+        val ready = home.forecast as? HomeForecastPresentationState.ForecastReady ?: return
+        if (ready.isRefreshInProgress) return
+        startHomeForecastLoad(ready.location)
     }
 
     @Synchronized
@@ -416,7 +417,10 @@ class OxygenAppStateHolder(
                     HomeForecastPresentationState.Loading.from(location)
                 }
             }
-            is WeatherRepositoryResult.Failure -> HomeForecastPresentationState.NoCacheError.from(
+            is WeatherRepositoryResult.Failure -> presentationState.retainVisibleCacheAfterRefreshFailure(
+                location = location,
+                error = result.error,
+            ) ?: HomeForecastPresentationState.NoCacheError.from(
                 location = location,
                 message = result.error.toHomeForecastMessage(),
             )
@@ -435,6 +439,33 @@ class OxygenAppStateHolder(
         )
         publishState()
     }
+}
+
+private fun OxygenAppPresentationState.retainVisibleCacheAfterRefreshFailure(
+    location: WeatherLocation,
+    error: ForecastError,
+): HomeForecastPresentationState.ForecastReady? {
+    val currentHome = screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
+    val currentReady = currentHome?.forecast as? HomeForecastPresentationState.ForecastReady
+    if (currentReady == null || currentReady.location != location) return null
+
+    val ageText = when (val freshness = currentReady.freshness) {
+        HomeForecastFreshness.Fresh -> return null
+        is HomeForecastFreshness.RestoredFromCache -> freshness.staleAgeText
+        is HomeForecastFreshness.StaleAfterFailedRefresh -> freshness.staleAgeText
+    }
+    val message = error.toHomeRefreshFailureMessage()
+    return currentReady.copy(
+        freshness = HomeForecastFreshness.StaleAfterFailedRefresh(
+            staleAgeText = ageText,
+            refreshFailureMessage = message,
+            statusText = "Showing cached forecast from $ageText ago because refresh failed.",
+        ),
+        isRefreshInProgress = false,
+        refreshInProgressText = null,
+        canRefresh = true,
+        canRetry = false,
+    )
 }
 
 data class OxygenAppPresentationState(

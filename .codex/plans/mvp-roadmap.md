@@ -1111,10 +1111,10 @@ Broad verification:
 
 ## Next Candidate Slice
 
-Candidate: Slice 18E: Details Page Visual Baseline.
+Candidate: Slice 18F: Home Operational State Integration.
 
-Recommended sequence from the current committed state: Slice 18E, Slice 18F,
-Slice 18G, Slice 18H, Slice 19, installed-app fallback completion, Slice 20,
+Recommended sequence from the current committed state: Slice 18F, Slice 18G,
+Slice 18H, Slice 19, installed-app fallback completion, Slice 20,
 optional device location, official alerts, persisted presentation settings,
 recurring documentation-sync gates, and release gates.
 

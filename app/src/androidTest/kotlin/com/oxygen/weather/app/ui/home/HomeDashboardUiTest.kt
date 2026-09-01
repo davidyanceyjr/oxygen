@@ -386,6 +386,38 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun restoredCacheSuccessKeepsForecastContentAndStatusReachableAcrossPages() {
+        val location = weatherLocation(name = "Restored Cache City")
+        val state = HomeForecastPresentationState.ForecastReady.fromRestoredCache(
+            location = location,
+            weather = fullWeatherBundle(location),
+            staleAge = Duration.ofMinutes(45),
+        )
+
+        composeRule.setHomeContent(state)
+
+        composeRule.onNodeWithTag("home-section-stale").assertIsDisplayed()
+        composeRule.onNodeWithText("Cached forecast").assertIsDisplayed()
+        composeRule.onNodeWithText("Showing cached forecast from 45 minutes ago while Oxygen refreshes this location.")
+            .assertExists()
+        composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-hourly-grid").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-daily-list").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-section-status").assertIsDisplayed()
+        composeRule.onNodeWithText("Showing cached forecast from 45 minutes ago while Oxygen refreshes this location.")
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-source").assertIsDisplayed()
+        composeRule.onNodeWithText("Weather data by Open-Meteo.").performScrollTo().assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("restored-cache-dashboard-semantics.txt")
+    }
+
+    @Test
     fun loadingKeepsAboutAndDisclosureReachable() {
         val location = weatherLocation(name = "Retry City")
 
