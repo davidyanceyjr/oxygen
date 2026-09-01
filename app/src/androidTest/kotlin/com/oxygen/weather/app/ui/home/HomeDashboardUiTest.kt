@@ -257,6 +257,96 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun compactDetailsPageShowsStructuredGroupsAndSourceSummaryInFirstViewport() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(
+                name = "A Very Long Selected Location Name Near The Lakefront, Wisconsin, United States",
+            ),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(state = state, widthDp = 360, heightDp = 640)
+
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.onNodeWithTag("home-section-metrics").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-comfort").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-wind").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-atmosphere").assertExists()
+        composeRule.onNodeWithContentDescription("Comfort, Feels like, 63 deg F, Humidity, 72%, Dew point, 53 deg F").assertExists()
+        composeRule.onNodeWithContentDescription("Wind, Wind, 14 km/h, gust 25 km/h, 225 deg").assertExists()
+        composeRule.onNodeWithContentDescription("Atmosphere, Pressure, 1012 hPa, Visibility, 9.5 km, Cloud cover, 88%, Precipitation, 0.4 mm").assertExists()
+        composeRule.onNodeWithTag("home-section-source").assertIsDisplayed()
+        composeRule.onNodeWithText("Source and updates").assertIsDisplayed()
+        composeRule.onNodeWithText("Open-Meteo").assertIsDisplayed()
+        composeRule.onNodeWithText("Fetched Aug 22, 7:00 AM CDT").assertIsDisplayed()
+        composeRule.onNodeWithText("Issued Aug 22, 6:45 AM CDT").assertExists()
+        composeRule.assertWithinRootBounds(
+            "home-page-title",
+            "home-section-comfort",
+            "home-section-wind",
+            "home-section-source",
+        )
+        composeRule.assertCheckedSiblingSpacing(
+            "home-section-metrics",
+            "home-section-source",
+        )
+        composeRule.onNodeWithText("Weather data by Open-Meteo.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Issued Aug 22, 6:45 AM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Forecast requests send this location's coordinates and timezone to Open-Meteo.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("details-compact-semantics.txt")
+    }
+
+    @Test
+    fun detailsPageOmitsMissingMetricGroupsWithoutInventingValues() {
+        val location = weatherLocation(name = "Sparse Details City")
+        val weather = fullWeatherBundle(location).copy(
+            current = CurrentConditions(
+                time = Instant.parse("2026-08-22T10:30:00Z"),
+                temperatureC = 18.4,
+                apparentTemperatureC = null,
+                dewPointC = null,
+                humidityPercent = null,
+                pressureHpa = null,
+                visibilityMeters = null,
+                cloudCoverPercent = null,
+                wind = Wind(
+                    speedMetersPerSecond = 4.0,
+                    gustMetersPerSecond = null,
+                    directionDegrees = null,
+                ),
+                precipitationMm = null,
+                condition = WeatherCondition.RAIN_SHOWERS,
+                provenance = forecastProvenance(),
+            ),
+        )
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = weather,
+        )
+
+        composeRule.setHomeContent(state = state)
+
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-section-comfort").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-wind").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-section-atmosphere").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Pressure").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Visibility").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Cloud cover").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Precipitation").assertCountEquals(0)
+        composeRule.onAllNodesWithText("0 deg F").assertCountEquals(0)
+        composeRule.onAllNodesWithText("0%").assertCountEquals(0)
+    }
+
+    @Test
     fun staleSuccessKeepsForecastContentRefreshAndRefreshFailureVisible() {
         val location = weatherLocation(name = "Stale Cache City")
         val state = HomeForecastPresentationState.ForecastReady.from(
@@ -287,6 +377,9 @@ class HomeDashboardUiTest {
         composeRule.assertNowHeroDominatesLocationChrome()
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-section-status").assertIsDisplayed()
+        composeRule.onNodeWithText("Showing cached forecast from 45 minutes ago because refresh failed.").assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.").assertIsDisplayed()
         composeRule.onNodeWithText("Open-Meteo").assertIsDisplayed()
         composeRule.onNodeWithTag("home-section-source").assertIsDisplayed()
         composeRule.writeSemanticsArtifact("stale-dashboard-semantics.txt")
@@ -377,12 +470,17 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("Open-Meteo Long Provider Attribution Name").assertExists()
         composeRule.assertReadableBoundsAfterScroll(
             "home-section-metrics",
+            "home-section-comfort",
+            "home-section-wind",
+            "home-section-atmosphere",
             "home-section-source",
+            "home-section-sun",
             "home-section-provenance-footer",
         )
         composeRule.assertCheckedSiblingSpacing(
             "home-section-metrics",
             "home-section-source",
+            "home-section-sun",
             "home-section-provenance-footer",
         )
     }

@@ -1830,20 +1830,21 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation document should define the Open-Meteo client contract down to DTOs, endpoint parameters, mapping functions, error behavior, attribution, and fixture tests.
+The next implementation candidate is Slice 18E: Details Page Visual Baseline.
 
-Then implement:
+The Details page should turn already-supported secondary weather measurements
+and provenance into a coherent, information-dense Home page. It should organize
+available humidity, wind, pressure, visibility, UV, dew point, sun information,
+update/source, and provenance data without fabricating missing values or adding
+new provider capabilities only to populate the screen. UV or any other future
+metric should appear in this slice only if it already reaches the
+provider-neutral Home dashboard presentation data before Details work begins.
 
-```text
-OpenMeteoService
-OpenMeteoDto
-OpenMeteoMapper
-DefaultWeatherRepository
-WeatherUiState
-HomeViewModel
-```
-
-Only after the first real forecast path is reliable should Room persistence and broader theme work be expanded.
+Implementation should keep provenance readily accessible, give fresh-data
+provenance tertiary visual weight, make stale/fallback/failure context more
+prominent, avoid novelty gauges where simpler presentation communicates better,
+and verify the installed app with screenshots that show density and visual
+organization.
 
 ---
 

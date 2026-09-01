@@ -1,6 +1,6 @@
 # Active Cycle
 
-Status: planned
+Status: ready
 Cycle ID: 2026-08-31-details-page-visual-baseline
 Mode: feature
 Goal: Implement Slice 18E: Details Page Visual Baseline without adding provider capabilities, fabricated values, or unrelated behavior changes.
@@ -85,3 +85,8 @@ Explicitly out of scope:
 
 - specified: Slice 18E is specified in `.codex/plans/mvp-roadmap.md` and `docs/OXYGEN_FULL_SPECIFICATION.md` section 53.
 - planned: This cycle selects only the Details page visual baseline described above.
+- covered: Focused HomeForecast app unit baseline passed before production edits. Final focused HomeForecast app unit tests passed and Home Compose instrumentation passed 14 tests on `oxygen_starter(AVD) - 17`; coverage includes Details structured groups, compact first-viewport source/update summary, missing metric group omission, stale/failure prominence, provenance reachability, compact width, large font, and sibling non-overlap.
+- implemented: `HomeLoadingScreen.kt` replaces the flat Details metrics list with provider-neutral Details status, Comfort, Wind, Atmosphere, Source/update, Sun, and provenance sections using only `HomeForecastPresentationState.ForecastReady.dashboard` data. `OfflineLaunchPersistenceInstrumentedTest.kt` expands the deterministic installed-app screenshot fixture with already-supported current-condition metrics so real-path Details evidence contains multiple metric groups.
+- verified: Offline installed-app launch from deterministic DataStore selected location plus Room cached forecast was exercised with emulator network disabled. Details was reached through the real Home tab UI and captured at `.codex/test-artifacts/2026-08-31-details-page-visual-baseline/details-after-installed.png`; hierarchy evidence is `.codex/test-artifacts/2026-08-31-details-page-visual-baseline/details-after-installed.xml`.
+- verified: Broad checks passed: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`, `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`, `. scripts/android-env.sh && ./gradlew :app:assembleDebug`, and `git diff --check`. Logs are saved under `.codex/test-artifacts/2026-08-31-details-page-visual-baseline/`.
+- not run: No manual-location, selected-location persistence, cache, provider-client, Room production, DataStore production, or MET Norway fallback-specific regression suite beyond the seeded installed-app exercise was run, because this slice did not change those production paths.

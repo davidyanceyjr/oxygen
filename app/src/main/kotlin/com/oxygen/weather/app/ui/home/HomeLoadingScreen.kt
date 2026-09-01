@@ -47,6 +47,8 @@ import com.oxygen.weather.app.HomeHourlyPresentation
 import com.oxygen.weather.app.HomeMetricPresentation
 import com.oxygen.weather.app.HomeForecastFreshness
 import com.oxygen.weather.app.HomeForecastPresentationState
+import com.oxygen.weather.app.HomeSourcePresentation
+import com.oxygen.weather.app.HomeSunPresentation
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
 import kotlinx.coroutines.launch
 
@@ -569,31 +571,227 @@ private fun DailyPage(state: HomeForecastPresentationState.ForecastReady) {
 @Composable
 private fun DetailsPage(state: HomeForecastPresentationState.ForecastReady) {
     val dashboard = state.dashboard
+    val groups = dashboard.metrics.toDetailsGroups()
 
-    if (dashboard.metrics.isNotEmpty()) {
-        MetricGrid(dashboard.metrics)
+    DetailsStatusBlock(state.freshness)
+
+    if (groups.isNotEmpty()) {
+        DetailsMetricGroups(groups.take(2))
+    } else if (dashboard.returnedDataUnavailableText != null) {
+        UnavailablePageCard("Details", dashboard.returnedDataUnavailableText)
+    }
+
+    DetailsSourceBlock(dashboard.source)
+
+    if (groups.size > 2) {
+        DetailsMetricGroups(groups.drop(2), includeContainerTag = false)
     }
 
     dashboard.sun?.let {
-        DashboardCard(tag = "home-section-sun") {
-            Text("Sun", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text("Sunrise ${it.sunrise}", style = MaterialTheme.typography.bodyMedium)
-            Text("Sunset ${it.sunset}", style = MaterialTheme.typography.bodyMedium)
-        }
+        DetailsSunBlock(it)
     }
 
-    DashboardCard(tag = "home-section-source") {
-        Text("Source", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Text(dashboard.source.sourceName, style = MaterialTheme.typography.bodyMedium)
-        Text(dashboard.source.dataType, style = MaterialTheme.typography.bodyMedium)
-        Text(dashboard.source.fetchedAt, style = MaterialTheme.typography.bodySmall)
-        dashboard.source.issuedAt?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        dashboard.source.license?.let { Text("License $it", style = MaterialTheme.typography.bodySmall) }
-    }
     ProviderDisclosure(
         state = state,
         modifier = Modifier.testTag("home-section-provenance-footer"),
     )
+}
+
+@Composable
+private fun DetailsStatusBlock(freshness: HomeForecastFreshness) {
+    when (freshness) {
+        HomeForecastFreshness.Fresh -> Unit
+        is HomeForecastFreshness.RestoredFromCache -> {
+            DashboardCard(tag = "home-section-status") {
+                Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        is HomeForecastFreshness.StaleAfterFailedRefresh -> {
+            DashboardCard(tag = "home-section-status") {
+                Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+                Text("Refresh failed: ${freshness.refreshFailureMessage.text}", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailsMetricGroups(
+    groups: List<DetailsMetricGroup>,
+    includeContainerTag: Boolean = true,
+) {
+    val modifier = if (includeContainerTag) {
+        Modifier
+            .fillMaxWidth()
+            .testTag("home-section-metrics")
+    } else {
+        Modifier.fillMaxWidth()
+    }
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        groups.chunked(2).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                row.forEach { group ->
+                    DetailsMetricGroupCard(
+                        group = group,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (row.size == 1) {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailsMetricGroupCard(
+    group: DetailsMetricGroup,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier
+            .heightIn(min = 112.dp)
+            .testTag(group.tag)
+            .semantics {
+                contentDescription = group.contentDescription
+            },
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            Text(
+                text = group.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            group.metrics.forEach { metric ->
+                DetailsMetricLine(metric)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailsMetricLine(metric: HomeMetricPresentation) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(1.dp),
+    ) {
+        Text(
+            text = metric.label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = metric.value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun DetailsSunBlock(sun: HomeSunPresentation) {
+    DashboardCard(tag = "home-section-sun") {
+        Text("Sun", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            DetailsValueColumn("Sunrise", sun.sunrise, Modifier.weight(1f))
+            DetailsValueColumn("Sunset", sun.sunset, Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun DetailsSourceBlock(source: HomeSourcePresentation) {
+    DashboardCard(tag = "home-section-source") {
+        Text("Source and updates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        DetailsValueColumn("Provider", source.sourceName)
+        DetailsValueColumn("Data type", source.dataType)
+        Text(source.fetchedAt, style = MaterialTheme.typography.bodySmall)
+        source.issuedAt?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        source.license?.let { Text("License $it", style = MaterialTheme.typography.bodySmall) }
+    }
+}
+
+@Composable
+private fun DetailsValueColumn(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(1.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+private data class DetailsMetricGroup(
+    val title: String,
+    val tag: String,
+    val metrics: List<HomeMetricPresentation>,
+) {
+    val contentDescription: String =
+        (listOf(title) + metrics.flatMap { listOf(it.label, it.value) }).joinToString(", ")
+}
+
+private fun List<HomeMetricPresentation>.toDetailsGroups(): List<DetailsMetricGroup> {
+    fun metricsFor(vararg labels: String): List<HomeMetricPresentation> =
+        labels.mapNotNull { label -> firstOrNull { it.label == label } }
+
+    return listOf(
+        DetailsMetricGroup(
+            title = "Comfort",
+            tag = "home-section-comfort",
+            metrics = metricsFor("Feels like", "Humidity", "Dew point"),
+        ),
+        DetailsMetricGroup(
+            title = "Wind",
+            tag = "home-section-wind",
+            metrics = metricsFor("Wind"),
+        ),
+        DetailsMetricGroup(
+            title = "Atmosphere",
+            tag = "home-section-atmosphere",
+            metrics = metricsFor("Pressure", "Visibility", "Cloud cover", "Precipitation"),
+        ),
+    ).filter { it.metrics.isNotEmpty() }
 }
 
 @Composable

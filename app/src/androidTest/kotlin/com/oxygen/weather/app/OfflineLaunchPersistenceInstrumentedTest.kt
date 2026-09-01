@@ -12,6 +12,7 @@ import com.oxygen.weather.core.model.LocationId
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
+import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
@@ -169,6 +170,17 @@ private fun fullWeatherBundle(location: WeatherLocation): WeatherBundle {
             time = Instant.parse("2026-08-22T10:30:00Z"),
             temperatureC = 18.4,
             apparentTemperatureC = 17.2,
+            dewPointC = 11.6,
+            humidityPercent = 72,
+            pressureHpa = 1012.4,
+            visibilityMeters = 9500.0,
+            cloudCoverPercent = 88,
+            wind = Wind(
+                speedMetersPerSecond = 4.0,
+                gustMetersPerSecond = 7.0,
+                directionDegrees = 225.0,
+            ),
+            precipitationMm = 0.4,
             condition = WeatherCondition.RAIN_SHOWERS,
             provenance = provenance,
         ),
