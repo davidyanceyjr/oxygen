@@ -34,6 +34,12 @@ core/build.gradle.kts
 scripts/android-env.sh
 ```
 
+For `.codex/cycles/history.md`, normal discovery must read only the live recent
+history contract, summary, and at most the most recent three cycle entries. Do
+not read the full archived ledger unless a specific implementation detail,
+status claim, artifact path, regression, commit, or authority conflict requires
+older evidence.
+
 Current modules:
 
 ```text
@@ -118,6 +124,12 @@ discover -> baseline-green -> design-if-needed -> build
 ```
 
 Keep `.codex/plans/current.md` current for substantial implementation cycles. Append completed cycle evidence to `.codex/cycles/history.md` when a cycle is ready or committed.
+
+Cycle history entries must be self-contained, concise, and appended at the end
+of the live history file. Before replacing, compressing, or otherwise rewriting
+the live history file, archive its previous content under `.codex/cycles/archive/`.
+Do not create a full duplicate archive before ordinary append-only writes; Git
+history and the archive file preserve previous ledger states.
 
 ## Engineering Rules
 
