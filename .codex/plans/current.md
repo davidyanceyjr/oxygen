@@ -1,108 +1,183 @@
 # Active Cycle
 
 Status: committed
-Cycle ID: 2026-09-01-home-operational-state-integration
+Cycle ID: 2026-09-02-mobile-one-handed-home-ergonomics
 Mode: feature
-Goal: Implement Slice 18F: Home Operational State Integration without redesigning providers, persistence, or Standard Home page visuals.
-Roadmap context: Slice 18F follows committed Slices 18A through 18E and precedes Slice 18G design-system consolidation.
-Branch or work context: local `main` contains committed Slice 18E (`fe243d0`) and the working tree is expected to start from the committed Details visual baseline.
+Goal: Plan Slice 18I, Mobile One-Handed Home Ergonomics, as a bounded UI
+adjustment slice before saved-location persistence. This cycle applies the
+installed-emulator review recommendations for thumb-reachable controls,
+first-run/location recovery, Home content clearance, stale-status visual weight,
+and provenance placement without changing weather providers, persistence
+semantics, saved-location behavior, or forecast data.
+Roadmap context: Slice 18I, Mobile One-Handed Home Ergonomics. Slice 18H is
+committed at `4f5f383`; Slice 19A saved-location storage/startup resolution is
+deferred until this UI ergonomics slice is ready or explicitly superseded.
 
 ## Contract
 
-Selected behavior:
-- Verify and, where needed, adjust the existing Standard Home paged architecture so current operational states remain usable across the Now, Hourly, Daily, and Details pages.
-- Keep loading, refresh-in-progress, fresh success, cached/stale success, refresh failure with useful cache, retryable no-cache error, retry, and source/update state observable in the paged Home model.
-- Ensure non-happy-path states do not strand the user on meaningless, empty, or misleading pages.
-- Preserve Slice 18 selected-location persistence and forecast-cache behavior through the existing DataStore, Room, and repository boundaries.
+Selected Behavior:
+- Keep primary Home navigation and recurring Home actions reachable from the
+  bottom thumb zone on handheld phones.
+- Keep first-run/manual location entry and change-location recovery optimized
+  for one-handed use by placing primary/secondary actions in a bottom-aligned
+  action area while preserving manual search as the no-permission path.
+- Keep About/disclosure recovery reachable through a bottom-aligned Back action.
+- Ensure scrollable Home content has enough bottom clearance that final visible
+  cards/text are not hidden behind the bottom navigation/actions.
+- Reduce routine cached/stale/source/provenance blocks to appropriate visual
+  weight: operational stale/failure state remains visible, fresh provenance is
+  tertiary, and full provider/privacy/license explanation remains in About.
+- Preserve accessibility: adequate touch targets, logical TalkBack order,
+  meaningful labels, large-font readability, and no overlap on narrow screens.
 
-Acceptance boundary:
-- The installed app and focused tests show that existing applicable Home operational states work with the paged architecture.
-- Loading and retryable no-cache error states give the user useful location/status context and reachable retry/navigation actions without exposing empty forecast pages as real content.
-- Refresh-in-progress remains visible on fresh or stale Home success without causing duplicate repository refreshes from recomposition or page navigation.
-- Cached/stale success and refresh-failed-with-cache states keep forecast pages usable while presenting stale/source/update/failure context at an appropriate semantic location.
-- Source/update and provenance remain reachable from success and stale success states.
-- Page selection, tab navigation, swipe navigation, refresh, retry, About, and Change location controls do not corrupt selected-location or forecast state.
-- No sample-weather, fabricated forecast, hidden default location, or provider-specific DTO/error data appears in the production Home path.
-- Focused Compose tests cover user-visible paged operational-state behavior. State-holder tests cover refresh, retry, selected-location isolation, and duplicate-refresh prevention where those behaviors are claimed.
-- Installed-app or Android-boundary screenshot and hierarchy evidence cover stale/cache or refresh-failed-with-cache presentation through the real Home UI.
-- Installed-app or Android-boundary evidence covers retryable no-cache presentation for a selected location with no useful cache and network unavailable. If the deterministic harness cannot produce this state, record the exact blocker and the closest lower-boundary evidence used instead.
-- `git diff --check` must pass.
+Acceptance Boundary:
+- On a clean first-run launch, the location screen shows the manual search field
+  and privacy/provider disclosure, with Search, Use my location, and
+  Settings/About reachable near the lower thumb zone without requiring a top
+  reach. Manual search still does not request location permission.
+- When opening Location from Home, Back is reachable from the lower thumb zone
+  and returns to the previous Home without starting a new search or forecast
+  request.
+- Home Now, Hourly, Daily, and Details retain bottom page tabs and lower
+  Location/Refresh/Settings actions with at least 48dp touch targets.
+- Home page scroll containers leave enough bottom padding for the last visible
+  card or disclosure text to clear the footer; no first-viewport content is
+  obscured by the footer on the installed emulator.
+- Now shows current weather as the dominant useful signal. Cached/restored or
+  refresh-failed state remains visible but does not consume more first-viewport
+  visual priority than current weather unless no current forecast is available.
+- Details presents weather metrics before routine source/update details when
+  data is otherwise usable. Source/update/provenance remains reachable from
+  Details and fully explained in About.
+- About overview and About detail surfaces keep their Back/recovery action
+  reachable near the lower thumb zone while preserving legal/privacy text
+  readability through vertical scrolling where needed.
+- Focused Compose tests cover bottom action placement/reachability, footer
+  clearance, stale-status weighting, Details provenance ordering, About Back
+  reachability, and large-font/narrow-screen non-overlap.
+- Installed-app screenshots/hierarchies cover first-run Location, Home Now,
+  Hourly, Daily, Details, About overview, and one About detail page on
+  `oxygen_starter`.
 
-Explicitly out of scope:
-- New weather providers, installed-app MET Norway fallback activation, provider fallback redesign, or provider endpoint changes.
-- Small production fixes in app UI/state code are allowed when directly required by 18F evidence.
-- Provider changes, cache schema changes, Room/DataStore redesign, repository fallback changes, or lifecycle architecture changes stop this cycle and require a separate plan unless the change is a minimal defect fix with focused regression coverage and no contract expansion.
-- New weather values, domain fields, unit preferences, saved-location list switching, official alert lookup, air quality, radar, background refresh, persisted appearance settings, release readiness, or MVP readiness.
-- Redesigning Now, Hourly, Daily, or Details visual baselines beyond small operational-state adjustments needed for correctness.
-- Placeholder screens, TODO-only paths, unused abstractions, sample-weather production fallback, or hard-coded production success.
+Out of Scope:
+- Saved-location storage/list/select/remove behavior, Room/DataStore schema
+  changes, legacy selected-location migration, and in-flight saved-location
+  switching isolation.
+- Device-location lookup beyond the existing explicit Use my location request
+  affordance.
+- Unit preferences, official alerts, air quality, radar/maps, widgets,
+  background refresh, persisted appearance/effects/layout settings,
+  installed-app MET Norway fallback wiring, provider behavior changes,
+  Gradle/dependency upgrades, release-readiness, MVP-readiness, and
+  sample-weather production fallback.
+- Moving all provenance only to About. Operational source/update/stale context
+  must remain reachable from Home.
 
 ## Implementation Plan
 
-1. Baseline and discover:
-   - Inspect the current Home state holder, presentation mapper, pager UI, and existing Home Compose instrumentation.
-   - Run focused baseline checks before production edits:
-     `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`
-     `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`
-   - If a baseline command cannot run, record the exact command and blocker before deciding whether to proceed.
+1. Discover and baseline:
+   - Re-read specification sections 30, 31, 34, 37, and 53; roadmap UI rule,
+     Slice 18H, Slice 18I, and Slice 19; current Home/Location/About
+     Composables; and focused Home instrumentation tests.
+   - Record `git status --short` before production edits.
+   - Run focused baseline tests where feasible:
+     `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`.
+   - Use existing review artifacts under
+     `.codex/test-artifacts/2026-09-02-mobile-ui-ergonomics-review/` as
+     baseline observations, not implementation evidence.
 
-2. Operational-state contract review:
-   - Enumerate the existing app states that can be produced by the current production path: loading, fresh success, refresh-in-progress, stale restored cache, stale after refresh failure, retryable no-cache error, and retry.
-   - Compare each state against the Standard Home page model and existing tests.
-   - Treat missing coverage as a test gap; treat a user-visible empty/misleading state as an implementation defect.
-   - Record an operational-state matrix before claiming `covered` or `verified`:
-     `state | production path or fixture | Compose evidence | state-holder evidence | installed-app/Android-boundary evidence | result/blocker`
-   - Known drift: About/Data Sources copy currently understates installed-app offline cache behavior relative to README and cycle history. If 18F changes About or disclosure surfaces, correct this in scope; otherwise defer it to a documentation/status sync gate before any release-readiness claim.
+2. Cover intended UI behavior before production edits:
+   - Add or adjust Compose instrumentation tests for first-run bottom action
+     reachability, change-location Back reachability, Home footer touch bounds,
+     Home footer/content clearance, Details metrics-before-routine-provenance
+     ordering, About bottom Back reachability, and large-font/narrow-screen
+     non-overlap.
+   - Keep tests focused on observable UI bounds/order/semantics rather than
+     symbol existence.
 
-3. Focused implementation:
-   - Prefer changes in the Home UI/state presentation layer when the issue is page behavior or status placement.
-   - Keep provider-neutral data flow through `HomeForecastPresentationState` and existing dashboard presentation data.
-   - Avoid provider, repository, DataStore, Room, Gradle, manifest, and dependency changes. If a focused defect appears to require one of those changes, stop and split the work unless it is a minimal defect fix with focused regression coverage and no contract expansion.
+3. Build:
+   - Introduce app-local bottom action layout primitives only if they remove
+     duplication between first-run Location and About surfaces.
+   - Update first-run/change-location layout so actions are bottom-aligned on a
+     handheld viewport while search/disclosure content remains readable and
+     scroll-safe.
+   - Update About surfaces so Back/recovery remains bottom-reachable while long
+     legal/privacy/provider text remains scrollable.
+   - Add bottom clearance to Home page content containers so footer overlap is
+     avoided.
+   - Rebalance Now stale-status placement/weight and Details source/update
+     placement without dropping source/update/provenance from Home.
 
-4. Focused tests:
-   - Add or adjust Home state-holder tests for refresh, retry, duplicate-refresh prevention, and selected-location/page-state isolation only where state behavior is involved.
-   - Add or adjust Compose instrumentation for every user-visible operational-state claim: loading, retryable no-cache error, refresh-in-progress, fresh success, cached/stale success, refresh-failed-with-cache, source/provenance reachability, tab/swipe stability, compact width, large font, and sibling non-overlap.
-   - Verify that retry and refresh invoke the expected existing callbacks for the selected location and do not fabricate success.
+4. Exercise and verify:
+   - Real path: clean app data -> launch first-run Location -> capture; perform
+     manual search/select real geocoding result -> Home Now -> navigate Hourly,
+     Daily, Details -> Location Back -> About overview/detail -> Back.
+   - Confirm on-device that primary actions are lower-screen reachable and that
+     Home content is not obscured by the footer.
+   - Run broad checks: `:app:compileDebugKotlin`,
+     `:app:testDebugUnitTest :core:testDebugUnitTest`, `:app:assembleDebug`,
+     and `git diff --check`.
+   - Save evidence under
+     `.codex/test-artifacts/2026-09-02-mobile-one-handed-home-ergonomics/`.
 
-5. Real-path exercise:
-   - Use the deterministic DataStore/Room seeding path to launch the installed app with a selected location and cached forecast, disable emulator network, and capture a stale/cache or refresh-failed presentation through the real Home UI.
-   - Capture a retryable no-cache installed-app or Android-boundary state from a selected location with no useful cache and network unavailable. If the harness cannot produce it, record the exact blocker and closest lower-boundary evidence.
-   - Save screenshots, hierarchy dumps, and logs under:
-     `.codex/test-artifacts/2026-09-01-home-operational-state-integration/`
-
-6. Broad verification:
-   - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-   - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-   - `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
-   - `git diff --check`
-
-7. Review and ready:
-   - Review production and test diffs for scope creep, provider leakage, fabricated values, operational-state regressions, and unrelated churn.
-   - Record the operational-state matrix with one row per claimed state before moving any state beyond `covered` or `verified`.
-   - Record focused evidence, installed-app artifact paths, changed production/test files, broad evidence, and any commands not run.
-   - Do not claim provider fallback, saved-location switching, unit preferences, alerts, background refresh, release readiness, or MVP readiness.
+5. Review:
+   - Check for drift: no persistence/storage/schema work, no saved-location
+     management behavior, no provider or forecast mapping changes, no unit or
+     permission-flow expansion, no all-provenance-to-About move, no appearance
+     persistence, no sample fallback, and no readiness claims.
+   - Update phase results and cycle history only with evidence actually run.
 
 ## Phase Results
 
-- specified: Slice 18F is specified in `.codex/plans/mvp-roadmap.md`.
-- planned: This cycle selects only Home Operational State Integration.
-- covered: Focused Home state-holder tests cover restored-cache foreground refresh failure retention and duplicate-refresh prevention while preserving existing loading, fresh success, stale success, retryable no-cache error, retry, selected-location isolation, and refresh success/failure behavior. Focused Home Compose instrumentation covers fresh success, restored-cache success, stale/refresh-failed success, refresh-in-progress, loading, retryable no-cache error, source/provenance reachability, tab/swipe navigation, compact width, large font, and sibling non-overlap.
-- implemented: `OxygenAppStateHolder` now ignores `onHomeForecastRefresh()` while the selected Home forecast is already refresh-in-progress, and preserves visible restored/stale cached Home content as `StaleAfterFailedRefresh` if a foreground refresh failure arrives after cached content is already visible.
-- verified: Focused baseline before production edits passed with `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`. Initial connected baseline command `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest` was blocked by `No connected devices!`; after starting `oxygen_starter`, the same connected HomeDashboard suite passed 15 tests on `oxygen_starter(AVD) - 17`.
-- verified: Installed-app cached/offline evidence used manual APK install, deterministic DataStore/Room seed instrumentation, disabled emulator network, launched `com.oxygen.weather/.MainActivity`, and captured `.codex/test-artifacts/2026-09-01-home-operational-state-integration/installed-cached-now.png` plus `.codex/test-artifacts/2026-09-01-home-operational-state-integration/installed-cached-now.xml`. The hierarchy shows `Android Installed Screenshot City`, `Now`, `Page 1 of 4`, `Cached forecast`, `Refresh failed: Refresh could not reach the weather service or network.`, `65 deg F`, and `Open-Meteo | Fetched Aug 22, 7:00 AM CDT`.
-- verified: Installed-app retryable no-cache evidence cleared app data, seeded a selected location with no useful Room cache through `OfflineLaunchPersistenceInstrumentedTest#startupWithSelectedLocationAndNoRoomCacheRendersRetryableNoCacheError`, disabled emulator network, launched `com.oxygen.weather/.MainActivity`, and captured `.codex/test-artifacts/2026-09-01-home-operational-state-integration/installed-no-cache-error.png` plus `.codex/test-artifacts/2026-09-01-home-operational-state-integration/installed-no-cache-error.xml`. The hierarchy shows `Android No Cache Launch City`, the no-cache network message, `Retry`, `Settings / About`, `Change location`, and Open-Meteo disclosure without page tabs pretending forecast content exists.
-- verified: Broad checks passed: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh && ./gradlew :app:assembleDebug`; `git diff --check`.
-- review: Production/test diff is scoped to Home state presentation and tests. Static search found `SampleWeather` only in scaffold/sample packages, not in `OxygenApp` or `MainActivity`; no provider DTO/error data was added to UI. No provider behavior, repository/cache schema, DataStore/Room design, installed-app MET Norway fallback, saved-location switching, unit preferences, alerts, air quality, radar, background refresh, persisted appearance settings, release readiness, or MVP readiness is claimed.
-
-## Operational-State Matrix
-
-| State | Production path or fixture | Compose evidence | State-holder evidence | Installed-app/Android-boundary evidence | Result/blocker |
-|---|---|---|---|---|---|
-| Loading | `HomeForecastPresentationState.Loading.from(selectedLocation)` from selected-location Home load | `loadingKeepsAboutAndDisclosureReachable` | Existing selected manual candidate and startup tests | Covered by HomeDashboard connected suite after AVD start | verified |
-| Fresh success | `WeatherRepositoryResult.Success(..., ForecastFreshness.Fresh)` mapped to `ForecastReady` | `freshSuccessRendersSemanticHomePagesAndPreservesDashboardContent` | `repository success becomes visible non-loading terminal home state` | Covered by HomeDashboard connected suite after AVD start | verified |
-| Refresh-in-progress | Ready Home receives `Loading` for the same selected location | `refreshInProgressKeepsDashboardAccessibleAndRefreshDisabled` | `explicit home refresh while ready keeps previous dashboard visible` | Covered by HomeDashboard connected suite after AVD start | verified |
-| Duplicate refresh prevention | `onHomeForecastRefresh()` while `ForecastReady.isRefreshInProgress` | `oxygenAppRefreshClickRequestsExactSelectedLocationOnce` and disabled refresh UI coverage | `duplicate home refresh while refresh is in progress does not start another repository request` | Covered by HomeDashboard connected suite after AVD start | verified |
-| Restored cached success | DataStore selected location plus useful Room/cache bundle before refresh terminal result | `restoredCacheSuccessKeepsForecastContentAndStatusReachableAcrossPages` | `startup restores selected location and matching useful cache before refresh completes` | `installed-cached-now.png` and `.xml` | verified |
-| Refresh-failed with cache | Cached repository returns stale success after eligible provider failure | `staleSuccessKeepsForecastContentRefreshAndRefreshFailureVisible` | `stale success after failed refresh keeps dashboard visible with refresh metadata`; `startup restored cache remains visible when foreground refresh fails` | `installed-cached-now.png` and `.xml` | verified |
-| Retryable no-cache error | Selected location with no useful cache and network/provider failure | `noCacheErrorKeepsAboutDisclosureAndRetryReachable` | `startup with selected location and no cache renders retryable no-cache error after offline refresh`; existing retry tests | `installed-no-cache-error.png` and `.xml` | verified |
-| Retry action | `onHomeForecastRetry()` uses current selected location | Existing HomeDashboard retry/error coverage | `home retry requests weather again for same selected location`; obsolete retry isolation test | Covered by focused unit and HomeDashboard connected suite | verified |
-| Source/update/provenance | Provider-neutral `HomeSuccessPresentation.source` and footer disclosure | Fresh, stale, restored-cache, Details, and compact-source Compose tests | Existing Open-Meteo/MET Norway/unavailable disclosure state-holder tests | Cached installed hierarchy includes Open-Meteo fetched/update text | verified |
+- specified: Slice 18I is specified in `.codex/plans/mvp-roadmap.md` as Mobile
+  One-Handed Home Ergonomics, based on the installed-emulator UI review
+  artifacts from
+  `.codex/test-artifacts/2026-09-02-mobile-ui-ergonomics-review/`.
+- planned: This document selects Slice 18I only: bottom-reachable
+  first-run/location/About actions, Home footer/content clearance, stale-status
+  visual weighting, Details provenance ordering, and accessibility/large-font
+  preservation.
+- covered: Focused Compose instrumentation coverage added in
+  `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
+  for first-run bottom actions, change-location Back reachability/no-refresh
+  return, About overview/detail bottom Back reachability, Now stale-status
+  ordering after current weather, Details metrics/source/status ordering,
+  footer touch bounds, and compact/large-font non-overlap.
+- implemented: Production UI changes are limited to
+  `app/src/main/kotlin/com/oxygen/weather/app/ui/firstrun/FirstRunLocationEntryScreen.kt`,
+  `app/src/main/kotlin/com/oxygen/weather/app/ui/about/AboutScreen.kt`, and
+  `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`.
+  First-run/change-location content now scrolls above bottom-aligned actions;
+  About content scrolls above a bottom Back action; Now stale/refresh status
+  follows the current-weather hero; Details presents metrics and source before
+  stale status; scrollable Home pages get footer clearance while compact Daily
+  retains its established fixed composition.
+- verified: Passed baseline focused unit test
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`.
+  Focused Home Compose instrumentation passed 24 tests on
+  `oxygen_starter(AVD) - 17` with `. scripts/android-env.sh && ./gradlew
+  :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+  Installed-app real-path evidence used `scripts/list-avds.sh`,
+  `scripts/start-emulator.sh`, and `scripts/install-debug.sh`, then clean app
+  data, first-run capture, manual Open-Meteo geocoding search/select for
+  Madison, Home Now/Hourly/Daily/Details captures, change-location Back
+  capture/return, About overview capture, and Privacy detail capture.
+  Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+- artifacts: `.codex/test-artifacts/2026-09-02-mobile-one-handed-home-ergonomics/`
+  contains focused and broad logs plus installed screenshots/hierarchies:
+  `installed-first-run-location`, `installed-location-results`,
+  `installed-home-now`, `installed-home-hourly`, `installed-home-daily`,
+  `installed-home-details`, `installed-change-location`,
+  `installed-after-location-back`, `installed-about-overview`, and
+  `installed-about-privacy`.
+- deferred: Slice 19A saved-location storage/startup resolution is deferred
+  until this UI ergonomics slice is ready or explicitly superseded.
+- skipped: No saved-location, storage/schema, provider, unit, alert, air
+  quality, radar, widget, background refresh, persisted appearance, MET Norway
+  fallback, release, or MVP readiness work.
+- committed: Slice 18I is committed in this changeset. Next implementation
+  candidate returns to Slice 19: Saved Locations Persistence.

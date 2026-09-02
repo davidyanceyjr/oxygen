@@ -1,49 +1,359 @@
 # Cycle History
 
-| Date | Cycle ID | Mode | Slice | Result | Focused evidence | Broad evidence | Commit |
-|---|---|---|---|---|---|---|---|
-| 2026-08-19 | 2026-08-19-open-meteo-provider-contract | documentation-only | Slice 1: Open-Meteo Provider Contract | committed | Reviewed `docs/data-sources/OPEN_METEO_FORECAST.md` against provider template, Oxygen specification, and Open-Meteo forecast docs/terms/license/pricing; primary-source HEAD checks for all four Open-Meteo pages returned HTTP 200. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed with `NO-SOURCE`; `:app:assembleDebug` passed; `git diff --check` passed. | current HEAD |
-| 2026-08-19 | 2026-08-19-open-meteo-fixtures-dto-parsing | feature | Slice 2: Open-Meteo Fixtures and DTO Parsing | committed | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteo*'` passed; fixture-backed tests cover normal Home forecast parsing, missing optional/null preservation, malformed envelope failure, provider error body, invalid weather-code preservation, and timezone metadata. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed with `:core:testDebugUnitTest` executed and `:app:testDebugUnitTest` `NO-SOURCE`; `:app:assembleDebug` passed; `git diff --check` passed. | current HEAD |
-| 2026-08-19 | 2026-08-19-open-meteo-domain-mapping | feature | Slice 3: Open-Meteo Weather-Code and Domain Mapping | committed | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteo*Mapper*'` passed; fixture-backed mapper tests cover normal parser-to-domain mapping, null preservation, timezone-sensitive timestamp conversion, contracted WMO code mapping, unknown-code fallback, wind unit conversion, and provenance. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed with `:core:testDebugUnitTest` executed and `:app:testDebugUnitTest` `NO-SOURCE`; `:app:assembleDebug` passed; `git diff --check` passed. | current HEAD |
-| 2026-08-19 | 2026-08-19-open-meteo-client-transport | feature | Slice 4: Open-Meteo Client Transport and Error Classification | committed | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteo*Client*'` passed; tests cover configurable base URL/query construction, contracted Home fields and unit/window parameters, fixture-backed parser success, I/O network failure, 429 rate limit, 5xx provider unavailable, provider error body, malformed success body, and unexpected HTTP status classification. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed with `:core:testDebugUnitTest` executed and `:app:testDebugUnitTest` `NO-SOURCE`; `:app:assembleDebug` passed; `git diff --check` passed. | `current HEAD` |
-| 2026-08-19 | 2026-08-19-open-meteo-repository-path | feature | Slice 5: Explicit-Location Open-Meteo Repository Path | committed | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Repository*'` passed; tests cover loading-before-terminal result behavior, explicit location coordinate/timezone propagation, fixture-backed success through the Open-Meteo client/parser/mapper path, deterministic fetched time/provenance, provider-neutral error translation, and repository result types outside the Open-Meteo package. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed with `:core:testDebugUnitTest` executed and `:app:testDebugUnitTest` `NO-SOURCE`; `:app:assembleDebug` passed; `git diff --check` passed. | `604da39` |
-| 2026-08-19 | 2026-08-19-open-meteo-geocoding-contract | documentation-only | Slice 6: Geocoding Provider Contract | committed | Reviewed `docs/data-sources/OPEN_METEO_GEOCODING.md` against the provider template, Oxygen specification, MVP roadmap, Open-Meteo geocoding docs/terms/license/pricing, GeoNames attribution/license information, and OSM public Nominatim policy; primary-source HEAD checks for Open-Meteo geocoding docs, Open-Meteo terms, Open-Meteo license, GeoNames about/license summary, and OSM public Nominatim policy returned HTTP 200. | `git diff --check` passed. Android build/test commands were not run because this documentation-only slice changed no production or test code. | `current HEAD` |
-| 2026-08-19 | 2026-08-19-open-meteo-geocoding-fixtures-mapping | feature | Slice 7: Geocoding Fixtures and Domain Mapping | committed | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Geocoding*'` passed; fixture-backed tests cover normal, empty, ambiguous, bounded postal-code/place query shape, missing optional, malformed envelope, missing/invalid required fields, invalid coordinate, invalid timezone, provider error body, provider-neutral candidate mapping, embedded `WeatherLocation`, country/admin/postcode preservation, and stable local `LocationId` generation independent of provider ID/result index. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed with `:core:testDebugUnitTest` executed and `:app:testDebugUnitTest` `NO-SOURCE`; `:app:assembleDebug` passed; `git diff --check` passed. | `current HEAD` |
-| 2026-08-19 | 2026-08-19-open-meteo-geocoding-client-repository | feature | Slice 8: Geocoding Search Client and Repository Boundary | committed | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Geocoding*Client*' --tests '*Geocoding*Repository*'` passed; fake-transport tests cover query construction, count/default/filter validation, parser-backed success and empty bodies, network/rate-limit/5xx/provider-error/invalid-response/unexpected-status classification, loading-before-terminal behavior, explicit empty state, provider-neutral error translation, deterministic ordering, and boundary isolation. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed with `:core:testDebugUnitTest` executed and `:app:testDebugUnitTest` `NO-SOURCE`; `:app:assembleDebug` passed; `git diff --check` passed. | `8748b03` |
-| 2026-08-20 | 2026-08-19-first-run-manual-location-entry | feature | Slice 9: First-Run Manual Location Entry | committed | `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRun*' --tests '*OxygenApp*'` passed; tests cover default no-selected-location first-run state, manual search not requesting permission/selecting location/routing Home/claiming geocoding success/showing fake searching/results states, retained submitted query with not-connected-yet message, one-shot provider-neutral permission command from `Use my location`, denied/unavailable permission return messaging, and static absence of `SampleWeather` from production `OxygenApp.kt`. Real-path emulator startup via `scripts/start-emulator.sh` and `scripts/install-debug.sh` showed `MainActivity` resumed; screenshot saved at `.codex/test-artifacts/2026-08-19-first-run-manual-location-entry/default-first-run-screen.png` showed first-run controls and no sample Home dashboard. Focused/static logs saved in `.codex/test-artifacts/2026-08-19-first-run-manual-location-entry/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed; logs saved in `.codex/test-artifacts/2026-08-19-first-run-manual-location-entry/`. | `current HEAD` |
-| 2026-08-20 | 2026-08-20-manual-search-results-selection | feature | Slice 9A: Manual Search Results Selection | committed | `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*ManualLocation*' --tests '*OxygenApp*'` passed; tests cover repository-backed manual search success, retained trimmed query, visible empty state, retryable network failure and retained-query retry, visible provider-neutral mappings for every current `GeocodingError`, exact candidate selection to `WeatherLocation` without Home routing, permission command isolation, first-run geocoding disclosure copy, and static absence of Open-Meteo DTO/provider-ID leakage from the production app UI boundary. Live Open-Meteo repository exercise through a temporary JVM test returned `Loading` then `Success` for `Madison`; logs saved in `.codex/test-artifacts/2026-08-20-manual-search-results-selection/`. Static no-provider-leak and no-sample production-path checks returned no matches. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed; logs saved in `.codex/test-artifacts/2026-08-20-manual-search-results-selection/`. | `current HEAD` |
-| 2026-08-22 | 2026-08-22-selected-location-home-handoff | feature | Slice 9B: Selected Location Handoff To Home | committed | `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRun*' --tests '*HomeHandoff*' --tests '*OxygenApp*'` passed; tests cover exact selected `WeatherLocation` handoff to typed Home loading, `selectedLocation`/Home loading identity, stale in-flight search emission isolation after Home handoff, superseded query isolation, long-name loading state preservation, preserved first-run empty/failure/retry/permission behavior, and no sample/default substitution. Static no-provider-leak and no-sample production-boundary checks returned no matches. Live Open-Meteo geocoding through default `OxygenAppStateHolder` selected `Madison, Wisconsin, United States` and reached Home loading for the same `WeatherLocation`; log saved at `.codex/test-artifacts/2026-08-22-selected-location-home-handoff/live-geocoding-home-handoff.log`. Emulator production-path Home loading screenshot saved at `.codex/test-artifacts/2026-08-22-selected-location-home-handoff/home-loading-default.png`; narrow screenshot was attempted but not retained because display resize recreated state and a later narrow scroll gesture hit the launcher home gesture. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. | `current HEAD` |
-| 2026-08-22 | 2026-08-22-home-loading-error-retry | feature | Slice 10: Manual Selection Routes to Home Loading, Error, and Retry | committed | `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRun*' --tests '*HomeHandoff*' --tests '*HomeForecast*' --tests '*OxygenApp*'` passed; tests cover no selected-location weather request, exact selected manual candidate forecast refresh through `WeatherRepository`, typed Home loading with Open-Meteo forecast request disclosure, provider-neutral no-cache error mapping, retry for the same selected `WeatherLocation`, obsolete retry emission isolation, terminal non-loading success without dashboard values, first-run preservation, and static absence of provider DTO/result/provider-id/sample weather leakage. Live default `OxygenAppStateHolder` exercise selected `Madison, Wisconsin, United States`, entered Home loading for the same `WeatherLocation`, and reached terminal `ForecastReady` with `terminal is loading=false`; logs saved in `.codex/test-artifacts/2026-08-22-home-loading-error-retry/`. Emulator install/launch succeeded and first-run screenshots were saved, but Home screenshot automation was blocked by repeated Pixel Launcher ANR dialogs and unreliable emulator text input; no Home screenshot is claimed. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed; logs saved in `.codex/test-artifacts/2026-08-22-home-loading-error-retry/`. | `current HEAD` |
-| 2026-08-22 | 2026-08-22-repository-license-privacy-baseline | documentation-only | Gate 3A: Repository License and Privacy Document Baseline | committed | Root `LICENSE`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, `DATA_SOURCES.md`, and `PRIVACY.md` exist. Root disclosures separate Oxygen source-code licensing from weather-data attribution, list Open-Meteo forecast and Open-Meteo geocoding/GeoNames as active current providers, identify MET Norway, NOAA/NWS, ECCC, and Open-Meteo/CAMS as specified roadmap providers only, and disclose no ads, no tracking, no account requirement, optional location permission, and request data sent to active providers. | `git diff --check` passed. Android build/test commands were not run because this documentation-only gate changed no production or test code. | `current HEAD` |
-| 2026-08-23 | 2026-08-22-provider-backed-home-success-dashboard | feature | Slice 11: Provider-Backed Home Success Dashboard | verified; user accepted | Focused app tests in `HomeForecastStateHolderTest` passed and cover provider-neutral Home success mapping from controlled `WeatherRepositoryResult.Success.weather`: selected location identity, current hero, hourly/daily rows, alert rendering, metric units, sun times, source/provenance text, model-estimate label, provider-ID non-leakage, returned-data-unavailable state, null/no-fabrication behavior, optional-section omission, near-term precipitation, timezone formatting, and retained loading/error/retry behavior. Static leakage checks returned no matches. Live default `OxygenAppStateHolder` geocoding-to-forecast exercise selected `Madison, Wisconsin, United States`, reached `ForecastReady`, and logged dashboard/provenance fields. Emulator production Home success screenshots show selected location, current hero, model-estimate labeling, hourly, daily, metrics, sun/source/provenance, and forecast request disclosure. Evidence saved in `.codex/test-artifacts/2026-08-22-provider-backed-home-success-dashboard/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed; logs saved in `.codex/test-artifacts/2026-08-22-provider-backed-home-success-dashboard/`. | not committed in this turn |
-| 2026-08-23 | 2026-08-23-met-norway-provider-contract | documentation-only | Slice 12: MET Norway Provider Contract | verified | Reviewed `docs/data-sources/MET_NORWAY_FORECAST.md` against the provider template, Oxygen specification sections 1, 5, 6.2, 6.3, 12, 16, 17, 39, 40, 44, 46, and 48, roadmap Slice 12/fallback constraints, and `docs/data-sources/OPEN_METEO_FORECAST.md` failover boundary. Primary-source HTTP checks for MET Weather API overview, Getting Started, Locationforecast docs, HOWTO, data model, Forecast JSON, OpenAPI schema, interface/errors, terms, FAQ, Locationforecast FAQ, license, MET privacy statement, and weathericons returned HTTP 200; evidence saved at `.codex/test-artifacts/2026-08-23-met-norway-provider-contract/source-checks.log`. `DATA_SOURCES.md` was clarified to keep MET Norway explicitly listed as a specified roadmap fallback only. | `git diff --check` passed. Static no-implementation, no-active-provider-disclosure, roadmap-only disclosure, and provider-template field checks passed. Android build/test commands were not run because this documentation-only slice changed no production, test, Gradle, manifest, resource, or script files. | not committed in this turn |
-| 2026-08-23 | 2026-08-23-met-norway-fixtures-dto-parsing | feature | Slice 13A: MET Norway Fixtures and DTO Parsing | verified | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*MetNo*Parser*'` passed; fixture-backed tests cover normal Locationforecast compact parsing, missing optional/null preservation, malformed envelope failure, unexpected unit metadata preservation for later validation, unknown symbol preservation, documented typo symbol preservation, and UTC time metadata parsing. Provider DTOs and parser exceptions remain isolated under `core.provider.metno`; fixtures are under `core/src/test/resources/providers/metno/`. Logs saved in `.codex/test-artifacts/2026-08-23-met-norway-fixtures-dto-parsing/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. Static boundary review found no MET Norway parser types in app/UI or provider-neutral core surfaces, and root disclosure still lists MET Norway as specified roadmap fallback only. | not committed in this turn |
-| 2026-08-23 | 2026-08-23-met-norway-symbol-domain-mapping | feature | Slice 13B: MET Norway Symbol and Domain Mapping | verified | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*MetNoForecastMapperTest'` passed; fixture-backed mapper tests cover provider-neutral current/hourly/daily Home-path mapping, official MET weathericons symbol-family mapping from 83 pinned `weather/svg` stems, unknown/malformed/null symbol fallback, UTC timestamp parsing, selected-location timezone daily grouping, MET Norway provenance, required-unit validation failure, invalid timestamp/no-timestep failures, and null preservation. Static provider-code and active-disclosure boundary checks returned no matches. Evidence saved in `.codex/test-artifacts/2026-08-23-met-norway-symbol-domain-mapping/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. No live MET Norway fetch, client transport, repository fallback, cache, UI, or active-provider disclosure behavior was added. | not committed in this turn |
-| 2026-08-23 | 2026-08-23-met-norway-client-transport | feature | Slice 13C: MET Norway Client Transport and Error Classification | verified | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*MetNoForecastClientTest'` passed; fake-transport tests cover compact URL/query/header construction from the exact default no-query compact URL, configured query/fragment base URL rejection, no extra compact parameters, deterministic coordinate rounding/formatting, invalid-coordinate rejection before transport, optional whole-meter altitude, conditional `If-Modified-Since`, valid default and invalid User-Agent handling, parser-backed HTTP 200 success with raw cache-header capture, case-insensitive cache and `X-ErrorClass` header lookup, distinct HTTP 304 not-modified, I/O network failure, rate-limit/provider-unavailable/illegal-identification/invalid-response/unsupported/unexpected-status classifications, malformed success bodies, and unknown error-class fallback. Static provider-code, production-leakage, and active-disclosure boundary checks passed. Logs saved in `.codex/test-artifacts/2026-08-23-met-norway-client-transport/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. No live MET Norway fetch, repository fallback, cache persistence, UI wiring, or active-provider disclosure behavior was added. | not committed in this turn |
-| 2026-08-23 | 2026-08-23-met-norway-repository-path | feature | Slice 13D: Explicit-Location MET Norway Repository Path | verified | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*MetNo*Repository*'` passed; fake-transport tests cover loading-before-terminal emissions, explicit selected-location coordinate and optional elevation request construction, no `If-Modified-Since` without cache state, fixture-backed success through the production MET Norway client/parser/mapper path, deterministic fetched time and MET Norway provenance, provider-neutral client error translation, mapper failure translation, unexpected 304/no-cache handling, and repository-boundary isolation. Static provider-code, production-leakage, and active-disclosure boundary checks passed. Logs saved in `.codex/test-artifacts/2026-08-23-met-norway-repository-path/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. No live MET Norway fetch, fallback selection, cache persistence, app wiring, UI disclosure, or active-provider disclosure behavior was added. | not committed in this turn |
-| 2026-08-25 | 2026-08-23-forecast-fallback-selection | feature | Slice 14: Forecast Fallback Selection | committed | `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*Fallback*Repository*'` passed; fake repository tests cover single top-level loading with child loading suppression, Open-Meteo/default success without MET Norway/fallback call, eligible default failures causing exactly one fallback attempt with exact selected location, fallback success preserving MET Norway provenance in provider-neutral weather, both-provider failure returning the fallback terminal error with ordered default/fallback diagnostics, non-eligible default failures skipping fallback, and repeated refresh calls across distinct locations without retained retry state. Static provider-boundary and app-leakage checks returned no matches. Logs saved in `.codex/test-artifacts/2026-08-23-forecast-fallback-selection/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. No live provider fetch, cache persistence, app wiring, Home UI, saved-location, alert, unit, or active disclosure behavior was added or claimed. | this commit |
-| 2026-08-25 | 2026-08-25-in-app-disclosure-surface | feature | Slice 15: In-App About, Privacy, Licenses, and Data-Source Surface | verified | `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*About*' --tests '*OxygenApp*' --tests '*HomeForecast*'` passed; tests cover first-run and Home Settings/About reachability, return-state preservation, Data Sources/Privacy/Open Source Licenses disclosure content, compact disclosure copy bounds, and controlled MET Norway Home provenance presentation without claiming installed-app fallback wiring. Static no-provider-implementation-leak returned no matches; disclosure consistency and README drift review logs saved in `.codex/test-artifacts/2026-08-25-in-app-disclosure-surface/`. Real debug APK install/launch passed; screenshots show first-run About entry, About overview, Data Sources surface, Home with About entry, and Home-to-About overview as installed-app navigation evidence, not live provider acceptance evidence. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed; logs saved in `.codex/test-artifacts/2026-08-25-in-app-disclosure-surface/`. No installed-app MET Norway fallback, cache persistence, offline stale UI, saved-location persistence, unit preferences, alert lookup, air-quality lookup, radar, dependency license generation, or release behavior was added or claimed. | not committed in this turn |
-| 2026-08-25 | 2026-08-25-in-app-disclosure-surface-r1 | feature | Slice 15r1: Review Revision for Slice 15 In-App Disclosure Surface | verified | Pre-fix red focused test log saved at `.codex/test-artifacts/2026-08-25-in-app-disclosure-surface-r1/pre-fix-red-home-footer-tests.log` showed the intended hardcoded Open-Meteo footer failures for controlled MET Norway success and unavailable provenance. `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*About*' --tests '*HomeForecast*'` passed after the fix; tests cover Open-Meteo success footer disclosure, MET Norway success footer disclosure, unavailable provenance not guessing Open-Meteo, and existing About/navigation disclosure behavior. Static no-provider-implementation-leak returned no matches; disclosure consistency review covered README, DATA_SOURCES, PRIVACY, and app disclosure. Real emulator evidence used `wm size 360x800` and `font_scale 1.3`; screenshots/hierarchy dumps show Settings/About reachability and Data Sources, Privacy, and Open Source Licenses disclosure text with long provider names. Evidence saved in `.codex/test-artifacts/2026-08-25-in-app-disclosure-surface-r1/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed; logs saved in `.codex/test-artifacts/2026-08-25-in-app-disclosure-surface-r1/`. Default app forecast wiring remains `OpenMeteoWeatherRepository()`; no installed-app MET Norway fallback, cache persistence, offline stale UI, saved-location persistence, unit preferences, alert lookup, air-quality lookup, radar, dependency license generation, release behavior, or live provider request behavior was added or claimed. | not committed in this turn |
-| 2026-08-26 | 2026-08-26-cache-one-forecast-bundle | feature | Slice 16: Cache One Forecast Bundle Through Repository | committed | Room feasibility log saved; durable file-backed fallback storage was used without adding Room/KSP dependencies. Pre-fix red focused cache repository log showed the incomplete wrapper returned provider success directly, skipped readback, and failed cache-error mapping. Focused cache tests passed and cover provider success write/readback emission, Open-Meteo-like and MET Norway-like provenance preservation, nullable field preservation, `LocationId` scoping, provider failure preserving no-cache failure behavior, local cache failure mapping, durable readback across storage instances, and failed replacement atomicity without partial visible bundles. Repository-only real-path exercise passed through cache-wrapped live `OpenMeteoWeatherRepository` for `manual-madison-real-path`, emitting `Loading` then `Success` with Open-Meteo provenance. Static provider-detail leak check returned no matches; cache/offline claim checks were reviewed. Evidence saved in `.codex/test-artifacts/2026-08-26-cache-one-forecast-bundle/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed; logs saved in `.codex/test-artifacts/2026-08-26-cache-one-forecast-bundle/`. App default forecast wiring remains `OpenMeteoWeatherRepository()`; no installed-app cache wiring, failed-refresh stale retention, offline launch/cache UX, saved-location persistence, unit preferences, alert lookup/cache, air-quality lookup/cache, radar, background work, release behavior, or active installed-app MET Norway fallback was added or claimed. | this commit |
-| 2026-08-27 | 2026-08-27-failed-refresh-retains-cached-forecast | feature | Slice 17: Failed Refresh Retains Cached Forecast | committed | Pre-fix red focused cache log showed failed refresh with same-location cache still emitted failure instead of cached stale success. Focused cache tests passed and cover provider success write/readback, success-then-failed-refresh same-location stale retention, no-cache failure preservation, wrong-location isolation, deterministic stale age from injected clock, refresh-failed metadata, cached value/provenance preservation, thrown cache read failure mapping, and rejected-request no-retention behavior. Focused Home state tests passed and cover stale success dashboard presentation with source/update/failure/retry metadata, same-location loading retention while already `ForecastReady`, and unchanged no-cache retryable errors. Foreground JVM cache-retention exercise wrote cache on first success for explicit `manual-chicago`, then a second refresh failed with `ForecastError.NetworkUnavailable` and emitted cached stale success with Open-Meteo-like provenance and 45-minute stale age. Static provider-detail leak check returned no matches; cache/offline claim checks were reviewed. Evidence saved in `.codex/test-artifacts/2026-08-27-failed-refresh-retains-cached-forecast/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed; logs saved in `.codex/test-artifacts/2026-08-27-failed-refresh-retains-cached-forecast/`. App default durable cache wiring remains unchanged; no installed-app offline cache behavior, offline launch, saved-location persistence, unit preferences, alert/air-quality/radar cache, background work, release behavior, or active installed-app MET Norway fallback was added or claimed. | this commit |
-| 2026-08-27 | 2026-08-27-slice-17-review-repair | feature | Slice 17 Review Repair | committed | Focused Home state tests passed and prove stale cached refresh-failure copy uses stale-specific wording without "No cached forecast is available yet." Focused cache tests passed and prove non-runtime `IOException` failures during failed-refresh cache read, provider-success write, and provider-success readback map to `ForecastError.LocalCacheFailure`. Evidence saved in `.codex/test-artifacts/2026-08-27-slice-17-review-repair/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed; logs saved in `.codex/test-artifacts/2026-08-27-slice-17-review-repair/`. No installed-app durable cache wiring, offline launch, saved-location persistence, unit preferences, alert/air-quality/radar cache, background work, release behavior, or active installed-app MET Norway fallback was added or claimed. | this commit |
-| 2026-08-28 | 2026-08-28-home-dashboard-presentation-alignment | feature | Slice 17A: Home Dashboard Presentation Alignment | committed | Pre-change red Home presentation log showed missing hero high/low fields. Focused Home state tests passed and cover dashboard section order, stale dashboard content/retry metadata, optional hero high/low derived from daily data, omitted missing hero range, no fabricated unavailable values, source/provenance text, and sample/provider-detail non-leakage. Controlled Compose UI tests passed on `oxygen_starter(AVD) - 17` and cover fresh success, stale success, provider-neutral alert-present success, loading, no-cache error/retry, provider disclosure, About entry, rendered section order, horizontal hourly row, and compact `360dp`/`fontScale = 1.3f` long-text rendered-bounds assertions. Debug app install/launch succeeded, but live installed-app screenshot/hierarchy capture was blocked by emulator ANR dialogs: `System UI isn't responding` then `Pixel Launcher isn't responding`. Evidence saved in `.codex/test-artifacts/2026-08-28-home-dashboard-presentation-alignment/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. Static sample-data and provider-detail checks returned no matches; cache/offline/claim check reviewed existing bounded disclaimers. No offline launch, installed-app durable cache wiring, saved-location persistence, unit preferences, alert lookup, air-quality/radar behavior, release behavior, or active installed-app MET Norway fallback was added or claimed. | this commit |
-| 2026-08-28 | 2026-08-28-project-review-roadmap-integration | documentation-only | Oxygen Project Review roadmap integration | verified | Parsed `~/Downloads/Oxygen Project Review — Problems, Recommended Solutions, Roadmap Integration, and Next Actions.md`; classified validated findings in `.codex/review/findings.md`; added Repository Engineering and Persistence Architecture gates, evidence-retention language, dependency prerequisites, and updated next-candidate sequence to `.codex/plans/mvp-roadmap.md`; corrected README maturity/status language without claiming MVP readiness. | `git diff --check` passed. Android build/test commands were not run because only README and planning/review Markdown files changed. | not committed in this turn |
-| 2026-08-28 | 2026-08-28-repository-engineering-gate | documentation-and-repository-maintenance | Repository Engineering Gate | committed | Project owner selected GPL-3.0-or-later for Oxygen source code; root `LICENSE`, `LICENSE-TODO.md`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, and `README.md` record the license decision while separating weather-data/provider attribution. Baseline GitHub Actions workflow `.github/workflows/android-ci.yml` was added with hosted Android/JDK/Gradle setup and separate compile, debug unit test, assemble, and whitespace steps. Hosted GitHub Actions run `33175936627` passed on commit `e7dbc75a9b2113f43b6fa0a3ab0c10c6b3f37535`; job `Android checks` passed all workflow steps: `https://github.com/davidyanceyjr/oxygen/actions/runs/33175936627`. `main` branch protection was configured after the hosted pass; protection requires strict status check `Android checks`, blocks force pushes and deletion, enforces protection for administrators, and requires pull-request review settings with zero required approvals for solo maintenance. | Local broad checks passed: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh && ./gradlew :app:assembleDebug`; `git diff --check`. Logs saved in `.codex/test-artifacts/2026-08-28-repository-engineering-gate/`. This gate added no app behavior, provider behavior, Room, DataStore, offline launch, saved locations, unit preferences, alerts, installed-app fallback, presentation settings, or release readiness. | `e7dbc75` plus protected-branch record PR |
-| 2026-08-28 | 2026-08-28-explicit-home-refresh-control | feature | Slice 17B: Explicit Home Refresh Control | committed | Pre-fix red state-holder log showed missing production refresh API/labels. Focused Home state-holder tests passed and cover dashboard `Refresh` metadata, stale dashboard `Refresh` metadata, exact selected-location refresh calls, refresh-in-progress dashboard retention, successful refresh replacement with stale metadata cleared, and failed refresh without cache returning a retryable no-cache error. Focused Compose/OxygenApp instrumentation passed 7 tests on `oxygen_starter(AVD) - 17`, covering visible `Refresh` on fresh and stale dashboards, absence of dashboard `Retry`, no-cache `Retry`, compact large-font bounds, and fresh/stale `Refresh` click-through calls using the exact selected `WeatherLocation`. Evidence saved in `.codex/test-artifacts/2026-08-28-explicit-home-refresh-control/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. The broad planned static `rg` patterns produced pre-existing non-Home-boundary matches in the sample scaffold package and provider-neutral `ForecastError` mapping; focused Home production-boundary checks returned no matches. No offline launch, installed-app durable cache wiring, saved-location persistence, background refresh, unit preferences, appearance persistence, alert lookup, air-quality/radar behavior, new provider behavior, release readiness, or active installed-app MET Norway fallback was added or claimed. | this commit |
-| 2026-08-28 | 2026-08-28-home-presentation-accessibility-evidence-baseline | feature | Slice 17C: Home Presentation Accessibility Evidence Baseline | committed | Focused Home UI instrumentation passed 8 tests on `oxygen_starter(AVD) - 17`; tests now cover visible/current weather semantics, `WeatherConditionMark` content description, current temperature, apparent temperature, high/low range, update/source/fetched/issued timestamps, stale age and refresh-failure copy, refresh-in-progress status with disabled refresh control, no-cache retry, rendered section order, compact `360dp` / `fontScale = 1.3f` positive bounds, and checked sibling non-overlap. Manual instrumentation also passed 8 tests and produced semantics dumps for fresh dashboard, stale dashboard, refresh-in-progress dashboard, loading, and no-cache error. Static Home-boundary leakage checks returned no matches. Evidence saved in `.codex/test-artifacts/2026-08-28-home-presentation-accessibility-evidence-baseline/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. No production code changed. No offline launch, installed-app durable cache wiring, saved-location persistence, unit preferences, appearance persistence, alert lookup, air-quality/radar behavior, background refresh, new provider behavior, release readiness, active installed-app MET Norway fallback, or production effects-off setting was added or claimed. | `fe871c8` |
-| 2026-08-28 | 2026-08-28-persistence-architecture-gate | feature | Persistence Architecture Gate | committed | Focused Room instrumentation passed 10 tests on `oxygen_starter(AVD) - 17`; tests cover production `Context` factory construction, Room-backed `ForecastCacheStorage` write/readback, `CachedWeatherRepository` success emission from Room readback, transaction rollback, same-location scoping/wrong-location miss, null preservation, row ordering, location/provenance/fetched/issued timestamp preservation, explicit forecast-only alert/air-quality rejection, and Room transaction failure mapping to `ForecastError.LocalCacheFailure`. Existing core cache and Home state focused regression checks passed. Evidence saved in `.codex/test-artifacts/2026-08-28-persistence-architecture-gate/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. Static checks kept Room out of app/provider clients, provider DTO/client details out of the Room package, and `SampleWeather` out of the production cache path. Pre-commit diff review found no blocking findings. No DataStore app-state persistence, lifecycle/Home startup Room wiring, offline launch, saved-location switching, unit conversion, alert/air-quality lookup or cache behavior, installed-app MET Norway fallback, provider-specific fallback cache metadata, background refresh, persisted presentation settings, release readiness, or MVP readiness was added or claimed. | this commit |
-| 2026-08-29 | 2026-08-29-offline-launch-from-last-forecast | feature | Slice 18: Offline Launch From Last Forecast | committed | Focused app unit tests passed and cover selected-location write-before-Home, write failure blocking durable Home route, stored selected-location read failure mapping, startup restore with matching useful cache before refresh completes, no-cache offline launch, wrong-location cache isolation, explicit refresh replacement/retention regressions, production DataStore/Room/CachedWeatherRepository wiring, and absence of sample/file-cache production paths. Focused app Android-boundary instrumentation passed 3 tests on `oxygen_starter(AVD) - 17` using real `DataStoreSelectedLocationStorage` and production Room forecast cache storage with deterministic `ForecastError.NetworkUnavailable`; it covers selected-location snapshot write/read, cached offline launch with stale Home, and selected-location/no-cache retryable launch. Existing Home Compose instrumentation passed 8 tests on `oxygen_starter(AVD) - 17`, covering dashboard, stale, refresh, retry, compact width, large font, and sibling non-overlap presentation. Evidence saved in `.codex/test-artifacts/2026-08-29-offline-launch-from-last-forecast/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. Static production-boundary checks for `SampleWeather`, provider DTO/details, Room/DataStore UI leakage, and `FileForecastCacheStorage` returned no production matches. No saved-location list switching, unit preferences, official alerts, air quality, radar, background refresh, installed-app MET Norway fallback activation, provider-specific fallback cache metadata, persisted presentation settings, release readiness, or MVP readiness was added or claimed. | this commit |
-| 2026-08-29 | 2026-08-29-home-paged-interaction-foundation-plan | documentation-only | Slice 18A planning/specification | committed | Amended `docs/OXYGEN_FULL_SPECIFICATION.md` to replace the future Home vertical-dashboard assumption with semantic, viewport-oriented Home pages; added Standard Now, Hourly, Daily, and Details responsibilities plus touch/swipe, visible page state, child-interaction, accessibility, scrolling, and theme/layout/effects separation rules. Added roadmap Slices 18A through 18H after Slice 18 and before existing Slice 19, preserving later slice numbering and later Effects/Layout/Theme/High Contrast slices. Replaced `.codex/plans/current.md` with only Slice 18A as the active planned cycle and a four-phase implementation plan. | `git diff --check` passed. Android build/test commands were not run because this planning/specification task changed only Markdown authority files and did not change production Kotlin, Compose, Gradle, manifest, resources, or tests. Current-tree inspection found `docs/UI_DEVELOPMENT_WORKFLOW.md` and `scripts/capture-screen.sh` absent despite the screenshot workflow being present in git history; the 18A plan records that the implementation cycle must confirm or restore the current-tree screenshot capture helper before relying on it. | this commit |
-| 2026-08-29 | 2026-08-29-home-paged-interaction-foundation | feature | Slice 18A: Home Paged Interaction Foundation | verified | Focused Home state-holder tests passed. Clean app connected instrumentation passed 13 tests on `oxygen_starter(AVD) - 17`; coverage includes Standard Home `Now`, `Hourly`, `Daily`, and `Details` page identities, visible selector tags, page position text, bounded previous/next controls, horizontal swipe navigation, compact `360dp`/`fontScale = 1.3f` representative content reachability, refresh/About child control isolation, loading/no-cache operational surfaces, and deterministic DataStore/Room screenshot-state seeding. Installed-app screenshots were captured from a seeded selected location and Room cached forecast after disabling emulator network and launching `com.oxygen.weather/.MainActivity`; artifacts include `home-now-foundation.png`, `home-hourly-foundation.png`, `home-daily-foundation.png`, `home-details-foundation.png`, page hierarchy dumps, and `home-content-inventory.md`. The planned pre-edit `home-baseline.png` was not captured before production edits and is not claimed. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. Evidence saved in `.codex/test-artifacts/2026-08-29-home-paged-interaction-foundation/`. No provider behavior, repository behavior, forecast persistence behavior, selected-location persistence behavior, weather-value mapping, production sample weather path, saved-location list switching, unit preferences, official alerts lookup, air quality, radar, background refresh, installed-app MET Norway fallback activation, persisted appearance settings, release readiness, or MVP readiness was added or claimed. | not committed in this turn |
-| 2026-08-30 | 2026-08-30-live-success-cache-failure-display | fix | Live Provider Success With Cache Failure | verified | Focused core cache tests passed and now cover successful provider refresh remaining displayable when cache write, write I/O, readback I/O, or missing readback prevents local persistence/readback. Core Room connected tests passed and cover the Android Room boundary preserving provider success when a Room transaction failure occurs after provider success. Installed-app evidence first confirmed a clean selected Florence flow rendered live Now weather, then installed the modified app, deliberately corrupted `room_master_table.identity_hash` to simulate stale/incompatible Room state, relaunched `com.oxygen.weather/.MainActivity`, and captured a live Now forecast instead of the previous local-save error. Evidence saved in `.codex/test-artifacts/2026-08-30-live-success-cache-failure-display/`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. No provider behavior, selected-location behavior, weather-value mapping, UI paging behavior, sample-data path, saved-location list switching, unit preferences, alert lookup, air quality, radar, background refresh, installed-app MET Norway fallback activation, persisted appearance settings, release readiness, or MVP readiness was added or claimed. | not committed in this turn |
-| 2026-08-30 | 2026-08-30-readme-roadmap-sync | documentation-only | Recurring Documentation Sync Gate | committed | README implemented/not-implemented status was compared against installed-app `MainActivity` wiring, current active-cycle evidence, cycle history, and the roadmap MVP boundary. README now identifies Open-Meteo, DataStore selected-location persistence, Room-backed forecast cache/offline restoration, stale-cache refresh-failure display, live-success cache-failure fallback, and Standard Home paged interaction as installed-app behavior while keeping multiple saved locations, unit preferences, official alerts, persisted appearance settings, radar, air quality, and installed-app MET Norway fallback out of implemented status. Roadmap now records a recurring documentation-sync rule/gate after every four completed non-documentation implementation cycles and sooner for status-sensitive changes, and updates next-candidate guidance to Slice 18B from the current verified state. | `git diff --check` passed. Android build/test commands were not run because this documentation-only sync changed only README and planning/history Markdown files, with no Kotlin, Compose, Gradle, manifest, resource, provider, persistence, or test behavior changes. | this commit |
-| 2026-08-30 | 2026-08-30-now-page-visual-baseline | feature | Slice 18B: Now Page Visual Baseline | committed | Focused Home unit tests passed. Focused Home connected instrumentation passed 9 tests on `oxygen_starter(AVD) - 17`; coverage includes Standard Home page navigation/child-control preservation plus Now-page current-before-alert order, current hero bounds larger than location/action chrome, stale/refresh-failed prominence, refresh-in-progress disabled control, compact `360dp`/`fontScale = 1.3f` long-location/status/source readability, loading/no-cache operational surfaces, and source/provenance reachability. Installed-app evidence manually installed debug app/test APKs, seeded deterministic selected location plus Room cached forecast, disabled emulator network, launched `com.oxygen.weather/.MainActivity`, and captured post-change cached Now screenshot/hierarchy at `.codex/test-artifacts/2026-08-30-now-page-visual-baseline/now-after-installed-final.png` and `.codex/test-artifacts/2026-08-30-now-page-visual-baseline/now-after-installed-final.xml`. Historical Slice 18A success baseline remains `.codex/test-artifacts/2026-08-29-home-paged-interaction-foundation/home-now-foundation.png`; attempted 18B `now-before.png` was an operational error screen and is not claimed as a successful Now baseline. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. Evidence saved in `.codex/test-artifacts/2026-08-30-now-page-visual-baseline/`. No provider behavior, repository/cache behavior, selected-location persistence behavior, weather-value mapping, production sample weather path, non-Now visual redesign, saved-location list switching, unit preferences, official alert lookup, air quality, radar, background refresh, installed-app MET Norway fallback activation, persisted appearance settings, release readiness, or MVP readiness was added or claimed. | this commit |
-| 2026-08-31 | 2026-08-31-hourly-page-visual-baseline | feature | Slice 18C: Hourly Page Visual Baseline | committed | Baseline Home state-holder test passed before production edits. Focused Home state-holder tests passed and cover provider-neutral Hourly `conditionIdentity` copied from `HourlyForecast.condition`, chronological time/condition/temperature mapping, real precipitation probability, and null preservation for unavailable precipitation. Focused Home Compose instrumentation passed 10 tests on `oxygen_starter(AVD) - 17`; coverage includes Standard Home page navigation/child-control preservation plus compact Hourly page identity, four chronological first-viewport entries, varied condition identity, real precipitation probability, explicit precipitation-unavailable state, rendered bounds, loading/no-cache operational surfaces, stale/refresh-in-progress preservation, About navigation, and source/provenance reachability. Installed-app seed test passed, then the debug app was launched offline from deterministic DataStore selected location plus Room cached forecast; post-change Hourly screenshot/hierarchy were captured at `.codex/test-artifacts/2026-08-31-hourly-page-visual-baseline/hourly-after-installed.png` and `.codex/test-artifacts/2026-08-31-hourly-page-visual-baseline/hourly-after-installed.xml`, showing `Hourly, Page 2 of 4`, `Next hours`, six chronological entries, real precipitation values, and unavailable precipitation labels. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. Evidence saved in `.codex/test-artifacts/2026-08-31-hourly-page-visual-baseline/`. No provider behavior, repository/cache behavior, selected-location persistence behavior, production sample-weather path, Now/Daily/Details redesign, saved-location switching, unit preferences, official alert lookup, air quality, radar, background refresh, installed-app MET Norway fallback activation, persisted appearance settings, release readiness, or MVP readiness was added or claimed. | `6f243c3` |
-| 2026-08-31 | 2026-08-31-project-status-sync-after-hourly | documentation-only | Project status sync after Slice 18C | ready | Compared README, roadmap next-candidate guidance, active-cycle state, cycle history, and `git log` after merged commit `6f243c3`; synced project status to record Slice 18C as committed and Slice 18D as the next candidate. | `git diff --check` passed. Android build/test commands were not run because this documentation-only sync changed only Markdown files and no production Kotlin, Compose, Gradle, manifest, resources, provider, persistence, or test behavior. | not committed in this turn |
-| 2026-08-31 | 2026-08-31-visual-language-art-sheet-authority | documentation-and-asset | Initial look-and-feel art sheet incorporation | ready | Moved the finalized Base Art Sheet v0.1 from the repository root to `docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png`; inspected the 1448x1086 PNG; updated `docs/OXYGEN_FULL_SPECIFICATION.md`, `.codex/plans/mvp-roadmap.md`, and the active Slice 18D plan to treat the art sheet as visual-direction authority for weather marks, atmospheric scene language, glass-like surfaces, strong numerals, palette references, compact forecast/metric/alert composition, and theme translation without claiming runtime implementation. | `git diff --check` passed. Android build/test commands were not run because this documentation/asset gate changed no Kotlin, Compose, Gradle, manifest, resources, provider, persistence, or test behavior. | not committed in this turn |
-| 2026-08-31 | 2026-08-31-daily-page-visual-baseline | feature | Slice 18D: Daily Page Visual Baseline | committed | Promoted the user-provided updated art sheet to `docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png` and removed the root copy. Focused Home state/app tests passed and cover provider-neutral Daily condition identity, nullable semantic high/low fields copied from `DailyForecast.highC`/`DailyForecast.lowC`, null preservation, precipitation null honesty, and removal of the redundant Previous/Next row. Focused Home Compose instrumentation passed 11 tests on `oxygen_starter(AVD) - 17`; coverage includes direct tab navigation, horizontal swipe navigation, compact `360dp x 640dp` Daily first-viewport entries, individual Daily entry bounds/non-overlap, condition identity, high/low text, precipitation value, explicit precipitation-unavailable semantics, loading/no-cache operational surfaces, stale/refresh-in-progress preservation, About navigation, and source/provenance reachability. Offline seeding instrumentation passed, direct installed-app seed passed, and final offline installed-app Daily screenshot/hierarchy were captured at `.codex/test-artifacts/2026-08-31-daily-page-visual-baseline/daily-after-installed.png` and `.codex/test-artifacts/2026-08-31-daily-page-visual-baseline/daily-after-installed.xml`, showing `Daily, Page 3 of 4`, six chronological Daily entries, precipitation values, and `Precipitation unavailable`. A pre-edit 18D installed-app baseline screenshot was not captured before implementation and is not claimed. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. Evidence saved in `.codex/test-artifacts/2026-08-31-daily-page-visual-baseline/`. No provider behavior, repository/cache behavior, selected-location persistence behavior, production sample-weather path, Now/Hourly/Details visual redesign, saved-location switching, unit preferences, official alert lookup, air quality, radar, background refresh, installed-app MET Norway fallback activation, persisted appearance settings, release readiness, or MVP readiness was added or claimed. | `108a1f8` |
-| 2026-08-31 | 2026-08-31-project-status-sync-after-daily | documentation-only | Project status sync after Slice 18D | ready | README, roadmap, active-cycle state, cycle history, `git log`, and local Android SDK package state were compared after committed Slice 18D. README now clarifies Oxygen as a free, open-source, privacy-respecting Android weather application intended to make useful weather information available to everyone, records the committed Daily visual baseline and restored manual location change path, and adds explicit clone/build requirements and build/run instructions. Roadmap next-candidate guidance now points to Slice 18E. | `git diff --check` passed. Android build/test commands were not run because this documentation-only sync changed only Markdown files and no production Kotlin, Compose, Gradle, manifest, resources, provider, persistence, or test behavior. | not committed in this turn |
-| 2026-08-31 | 2026-08-31-details-page-visual-baseline | feature | Slice 18E: Details Page Visual Baseline | committed | Baseline focused HomeForecast app unit tests passed before production edits. Final focused HomeForecast app unit tests passed. Focused Home Compose instrumentation passed 14 tests on `oxygen_starter(AVD) - 17`; coverage includes Details structured groups, compact `360dp x 640dp` first-viewport title/two groups/source summary, section tags/semantics for Comfort/Wind/Atmosphere/Source/Sun/status, missing metric group omission without invented values, stale/failure prominence, provenance reachability, compact width, large font, and sibling non-overlap. Installed-app evidence seeded deterministic DataStore selected location plus Room cached forecast, disabled emulator network, launched `com.oxygen.weather/.MainActivity`, navigated to Details through the real Home tab UI, and captured `.codex/test-artifacts/2026-08-31-details-page-visual-baseline/details-after-installed.png` plus `.codex/test-artifacts/2026-08-31-details-page-visual-baseline/details-after-installed.xml`, showing `Details, Page 4 of 4`, cached refresh-failure status, Comfort, Wind, Source/update, and Atmosphere from provider-neutral cached data. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. Evidence saved in `.codex/test-artifacts/2026-08-31-details-page-visual-baseline/`. No provider behavior, repository/cache production behavior, selected-location persistence production behavior, production sample-weather path, Now/Hourly/Daily redesign, saved-location switching, unit preferences, official alert lookup, air quality, radar, background refresh, installed-app MET Norway fallback activation, persisted appearance settings, release readiness, or MVP readiness was added or claimed. | `fe243d0` |
-| 2026-09-01 | 2026-09-01-home-operational-state-integration-plan | documentation-only | Slice 18F planning/status sync | ready | Updated `.codex/plans/current.md` to select Slice 18F as the active planned implementation cycle with a bounded operational-state contract, focused test plan, installed-app evidence target, and explicit out-of-scope limits. Synced `docs/OXYGEN_FULL_SPECIFICATION.md` section 53 and `.codex/plans/mvp-roadmap.md` next-candidate guidance so the project no longer points backward to committed Slice 18E. | `git diff --check` passed. Android build/test commands were not run because this planning/status sync changed only Markdown files and no Kotlin, Compose, Gradle, manifest, resources, provider, persistence, or test behavior. | not committed in this turn |
-| 2026-09-01 | 2026-09-01-home-operational-state-integration | feature | Slice 18F: Home Operational State Integration | committed | Focused HomeForecast unit baseline passed before production edits. `OxygenAppStateHolder` now ignores duplicate refresh calls while a ready forecast is already refresh-in-progress and preserves visible restored/stale cached Home content as refresh-failed stale success if a foreground refresh failure arrives after cached content is visible. Focused HomeForecast unit tests passed and now cover restored-cache foreground refresh failure retention plus duplicate-refresh prevention. Focused Home Compose instrumentation passed 15 tests on `oxygen_starter(AVD) - 17`, covering fresh success, restored-cache success across pages, stale/refresh-failed success, refresh-in-progress, loading, retryable no-cache error, source/provenance reachability, tab/swipe navigation, compact width, large font, and sibling non-overlap. Installed-app evidence used manual debug/test APK install, deterministic DataStore/Room seeding, network disabled, and real `com.oxygen.weather/.MainActivity` launch; cached/offline screenshot and hierarchy saved at `.codex/test-artifacts/2026-09-01-home-operational-state-integration/installed-cached-now.png` and `.xml`, and no-cache offline screenshot and hierarchy saved at `.codex/test-artifacts/2026-09-01-home-operational-state-integration/installed-no-cache-error.png` and `.xml`. | `:app:compileDebugKotlin` passed; `:app:testDebugUnitTest :core:testDebugUnitTest` passed; `:app:assembleDebug` passed; `git diff --check` passed. Initial connected baseline before AVD startup failed with `No connected devices!`, then passed after starting `oxygen_starter`. Static search found `SampleWeather` only in scaffold/sample packages and no production Home path provider DTO additions. No provider behavior, repository/cache schema, DataStore/Room design, installed-app MET Norway fallback, saved-location switching, unit preferences, official alert lookup, air quality, radar, background refresh, persisted appearance settings, release readiness, or MVP readiness was added or claimed. | this commit |
+## Reading Contract
+
+Normal discovery must not read the full archived cycle ledger.
+
+Read `AGENTS.md`, `.codex/plans/current.md`, and this file first. For cycle
+history context, use this live file plus at most the most recent three cycle
+entries unless a specific implementation detail, regression, artifact, commit,
+or authority conflict requires older evidence.
+
+Older detailed history is retained in:
+
+```text
+.codex/cycles/archive/history-through-2026-09-01-before-tail-limited-history.md
+```
+
+When adding a new history entry, append it to this file as a self-contained
+section with status, changed behavior or documents, focused evidence, broad
+evidence, artifacts, blockers, and commit state. Keep each entry concise enough
+that the last one to three entries remain usable within roughly 1,000 tokens.
+
+Before replacing or compressing this live file, archive the previous live file
+under `.codex/cycles/archive/`. Do not create a full duplicate archive before
+ordinary append-only writes; Git history plus the archive file preserve previous
+ledger states.
+
+## Recent State Summary
+
+- Last committed implementation slice: Slice 18H, Standard Home Accessibility
+  and Visual Verification Gate, commit `4f5f383`.
+- Last implementation slice: Slice 18I, Mobile One-Handed Home Ergonomics, is
+  committed in this changeset. Next implementation candidate returns to Slice
+  19, Saved Locations Persistence.
+- Current documentation drift under review: the tracked art sheet path/spec say
+  Base Art Sheet v0.1 while the visible image title says v0.2.
+- Current process correction: cycle history is now tail-limited for normal reads
+  and older detailed ledger content has been archived.
+
+## Recent Cycles
+
+### 2026-09-01-cycle-history-tail-read-contract
+
+Status: ready
+Mode: documentation-only
+Slice: Cycle history token-size and archive contract
+Commit: committed in this changeset
+
+Result:
+- Archived the previous full cycle ledger at
+  `.codex/cycles/archive/history-through-2026-09-01-before-tail-limited-history.md`.
+- Replaced the live `.codex/cycles/history.md` with a recent-history contract,
+  current summary, and self-contained recent entries.
+- Updated `AGENTS.md` so normal discovery reads only the live recent history and
+  at most the most recent three cycle entries unless older evidence is
+  specifically required.
+- Clarified that full archive copies are required before replacing or
+  compressing live history, not before ordinary append-only history writes.
+
+Evidence:
+- `git diff --check` passed.
+- Android build/test/emulator commands were not run because this
+  documentation-only process change touched only Markdown files and no Kotlin,
+  Compose, Gradle, manifest, resources, provider, persistence, or test behavior.
+
+### 2026-09-01-home-design-system-art-sheet-consolidation
+
+Status: committed
+Mode: feature
+Slice: Slice 18G, Oxygen Home Design-System Consolidation
+Commit: `fae63b3`
+
+Result:
+- Added static app-local Home design roles for spacing, card shape/padding,
+  glass surfaces, outline accents, weather-mark colors, and Home typography.
+- Replaced the generic blob-like `WeatherConditionMark` with provider-neutral
+  gold-line marks for all current `WeatherCondition` values.
+- Applied the Home roles across the installed Home Now, Hourly, Daily, Details,
+  stale/status, metric/list, source, and shared glass-panel surfaces without
+  changing provider, repository, Room, DataStore, weather mapping, Gradle,
+  app identity, saved-location, unit-preference, or alert behavior.
+
+Evidence:
+- Baseline focused HomeForecast unit tests passed before production edits.
+- Initial baseline connected Home instrumentation failed with `No connected
+  devices`; after starting `oxygen_starter`, focused Home instrumentation
+  passed 16 tests, including the new rendered-pixel gold-line weather-mark test.
+- Final focused checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest --tests '*HomeForecast*'`; `. scripts/android-env.sh
+  && ./gradlew :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- Logs and screenshots are under
+  `.codex/test-artifacts/2026-09-01-home-design-system-art-sheet-consolidation/`.
+- Valid installed Home evidence: `installed-final-home-now.png`/`.xml`,
+  `installed-final-home-hourly.png`/`.xml`,
+  `installed-final-home-daily.png`/`.xml`,
+  `installed-final-home-details.png`/`.xml`, and
+  `installed-final-cached-stale-now.png`/`.xml`.
+- Final focused logs: `focused-homeforecast-unit.log`,
+  `focused-home-compose-instrumentation-final.log`.
+- Broad logs: `broad-compile-debug-kotlin.log`,
+  `broad-debug-unit-tests.log`, `broad-assemble-debug.log`,
+  `git-diff-check.log`.
+
+Boundaries:
+- The art-sheet naming drift remains documented only: the tracked path/spec say
+  Base Art Sheet v0.1 while the rendered image title says v0.2.
+- Atmospheric scene imagery, production bitmap scenes, downloaded fonts, full
+  icon packs, persisted presentation settings, full theme engine, installed-app
+  MET Norway fallback, saved-location switching, unit preferences, release
+  readiness, and MVP readiness were not added or claimed.
+- A final installed retryable no-cache screenshot was not captured; the attempt
+  failed after the targeted instrumentation run left the debug activity
+  unavailable. No-cache behavior remains covered by passing Home instrumentation,
+  state-holder, and offline persistence instrumentation boundaries.
+
+### 2026-09-01-project-status-sync-after-home-design-system-consolidation
+
+Status: ready
+Mode: documentation-only
+Slice: Project status sync after Slice 18G
+Commit: committed in this changeset
+
+Result:
+- Compared README, specification section 53, roadmap Slice 18G/18H status,
+  roadmap next-candidate guidance, active-cycle state, cycle history, `git log`,
+  and worktree status after committed Slice 18G `fae63b3`.
+- README now records the installed Home art-sheet-aligned weather marks,
+  surface roles, typography roles, and app-local design roles.
+- Roadmap/spec next-candidate guidance now points to Slice 18H: Standard Home
+  Accessibility and Visual Verification Gate.
+- Live cycle history now records Slice 18G as committed at `fae63b3`.
+
+Evidence:
+- `git diff --check` passed.
+- Android build/test/emulator commands were not run because this
+  documentation-only sync changed only Markdown files and no Kotlin, Compose,
+  Gradle, manifest, resources, provider, persistence, or test behavior.
+
+### 2026-09-01-standard-home-accessibility-visual-verification-gate
+
+Status: committed
+Mode: feature
+Slice: Slice 18H, Standard Home Accessibility and Visual Verification Gate
+Commit: `4f5f383`
+
+Result:
+- Added named previous/next custom accessibility actions to the existing
+  Standard Home pager container and kept page tabs/swipes as the visible
+  navigation model.
+- Added an app-local, non-persisted `OxygenAppearance` input to
+  `HomeLoadingScreen` so `EffectsLevel.OFF` renders opaque Home surfaces while
+  preserving the same production Home composable path and weather semantics.
+- Raised Standard Home page tabs to a 48dp minimum height.
+- Added focused Home instrumentation coverage for named pager actions,
+  child-control page isolation, 48dp control bounds, and effects-disabled
+  stale/source/weather meaning.
+- Preserved provider, repository, Room, DataStore, forecast mapping,
+  selected-location, manual-search, stale-cache, retry/refresh, disclosure,
+  Gradle, manifest, saved-location, unit-preference, fallback, alert, air
+  quality, radar, release, and MVP-readiness behavior.
+
+Evidence:
+- Baseline focused state tests passed:
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`.
+- Focused Home instrumentation passed 19 tests on `oxygen_starter(AVD) - 17`:
+  `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+- Installed-app real-path evidence used `scripts/list-avds.sh`,
+  `scripts/start-emulator.sh`, and `scripts/install-debug.sh`, then selected a
+  real Open-Meteo geocoding result and captured Now, Hourly, Daily, and Details.
+- Installed stale refresh-failed cached Home was reached by disabling device
+  Wi-Fi/data with `adb shell svc wifi disable` and `adb shell svc data disable`,
+  tapping Refresh, then restoring services.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- Logs and screenshots are under
+  `.codex/test-artifacts/2026-09-01-standard-home-accessibility-visual-verification-gate/`.
+- Installed screenshots/hierarchies: `installed-final-home-now.png`/`.xml`,
+  `installed-final-home-hourly.png`/`.xml`,
+  `installed-final-home-daily.png`/`.xml`,
+  `installed-final-home-details.png`/`.xml`, and
+  `installed-operational-refresh-failed-attempt.png`/`.xml`.
+- Focused/broad logs: `baseline-homeforecast-unit.log`,
+  `focused-home-compose-instrumentation.log`,
+  `broad-compile-debug-kotlin.log`, `broad-debug-unit-tests.log`,
+  `broad-assemble-debug.log`, and `git-diff-check.log`.
+
+Boundaries:
+- Android shell denied direct airplane-mode broadcasts during operational setup;
+  Wi-Fi/data service toggles were sufficient to capture stale refresh-failed
+  cached Home, and network services were restored afterward.
+- No subjective visual inconsistency was found in the installed Now, Hourly,
+  Daily, and Details screenshots during review.
+
+### 2026-09-01-project-status-sync-after-home-accessibility-gate
+
+Status: ready
+Mode: documentation-only
+Slice: Project status sync after Slice 18H
+Commit: not committed in this turn
+
+Result:
+- Reconciled active-cycle and recent-history status with committed Slice 18H at
+  `4f5f383`.
+- Updated roadmap and specification next-candidate guidance from Slice 18H to
+  Slice 19: Saved Locations Persistence.
+- Preserved the boundary that saved-location behavior is not implemented or
+  planned until a new active Slice 19 cycle is selected.
+
+Evidence:
+- `git log --oneline -5` showed `4f5f383 Complete Slice 18H Home accessibility
+  gate`.
+- `git diff --check` passed.
+- Android build/test/emulator commands were not run because this
+  documentation-only sync changed only Markdown files and no Kotlin, Compose,
+  Gradle, manifest, resources, provider, persistence, or test behavior.
+
+### 2026-09-02-location-card-return-path
+
+Status: committed
+Mode: fix
+Slice: Location card return path from Home
+Commit: this commit
+
+Result:
+- Opening Location from Home now preserves the current Home screen as a return
+  target and shows a visible Back action on the Location card.
+- Tapping Back from that Location card restores the previous Home without
+  starting a new search or forecast request.
+- Selecting a new manual search result from the same Location card still
+  replaces the selected Home location through the existing manual-selection
+  path.
+
+Evidence:
+- Focused state tests passed: `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest' --tests
+  '*FirstRunLocationStateHolderTest'`.
+- Focused Home Compose instrumentation passed 20 tests on
+  `oxygen_starter(AVD) - 17`: `. scripts/android-env.sh && ./gradlew
+  :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- Logs are under
+  `.codex/test-artifacts/2026-09-02-location-card-return-path/`.
+
+Boundaries:
+- This did not add saved-location management, device-location lookup, provider
+  behavior, Room/DataStore schema behavior, unit preferences, alerts, air
+  quality, radar, release readiness, or MVP readiness.
+- The active saved-location persistence plan in `.codex/plans/current.md`
+  predated this fix and was left untouched.
+
+### 2026-09-02-mobile-one-handed-home-ergonomics-plan
+
+Status: ready
+Mode: documentation-only
+Slice: Slice 18I planning and roadmap/spec sequencing
+Commit: not committed in this turn
+
+Result:
+- Added Slice 18I, Mobile One-Handed Home Ergonomics, to
+  `.codex/plans/mvp-roadmap.md` as a bounded follow-up to the committed Slice
+  18H Standard Home baseline.
+- Updated `docs/OXYGEN_FULL_SPECIFICATION.md` section 53 so the immediate next
+  candidate is Slice 18I before returning to Slice 19 Saved Locations
+  Persistence.
+- Replaced the active `.codex/plans/current.md` cycle with a planned Slice 18I
+  implementation contract covering bottom thumb-zone actions, Home footer
+  clearance, stale-status visual weight, Details provenance ordering, About
+  recovery placement, focused Compose tests, and installed-app screenshots.
+- Preserved the boundary that operational provenance remains reachable from
+  Home and full provider/privacy/license explanation remains in About.
+
+Evidence:
+- `git diff --check` passed.
+- Android build/test/emulator commands were not run because this planning/status
+  sync changed only Markdown files and no Kotlin, Compose, Gradle, manifest,
+  resources, provider, persistence, or test behavior.
+
+Artifacts:
+- Planning check log:
+  `.codex/test-artifacts/2026-09-02-mobile-ui-ergonomics-review/planning-git-diff-check.log`.
+- Baseline UI review artifacts:
+  `.codex/test-artifacts/2026-09-02-mobile-ui-ergonomics-review/`.
+
+Boundaries:
+- No production UI, provider, repository, Room/DataStore, forecast mapping,
+  saved-location, unit-preference, alert, air-quality, radar, background
+  refresh, persisted appearance, installed-app MET Norway fallback, release, or
+  MVP-readiness behavior was changed.
+
+### 2026-09-02-mobile-one-handed-home-ergonomics
+
+Status: ready
+Mode: feature
+Slice: Slice 18I, Mobile One-Handed Home Ergonomics
+Commit: not committed in this turn
+
+Result:
+- First-run and change-location screens now keep manual search/disclosure
+  content scrollable above bottom-aligned Search, Use my location,
+  Settings/About, and return Back actions.
+- About overview/detail content now scrolls above a bottom Back action.
+- Home Now keeps current weather visually before refresh/stale status, while
+  keeping cached/refresh-failed context visible and reachable.
+- Details presents metric groups and source/update information before stale
+  status/provenance footer; operational provenance remains reachable from Home
+  and full explanations remain in About.
+- Scrollable Home pages have footer clearance; compact Daily retains its
+  established fixed page composition.
+
+Evidence:
+- Baseline focused unit tests passed: `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest --tests '*HomeForecast*'`.
+- Focused Home Compose instrumentation passed 24 tests on
+  `oxygen_starter(AVD) - 17`: `. scripts/android-env.sh && ./gradlew
+  :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+- Installed-app real path used `scripts/list-avds.sh`, `scripts/start-emulator.sh`,
+  `scripts/install-debug.sh`, clean app data, first-run capture, manual
+  Open-Meteo geocoding search/select for Madison, Home Now/Hourly/Daily/Details,
+  change-location Back/return, About overview, and About Privacy detail.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- Logs, screenshots, and hierarchies are under
+  `.codex/test-artifacts/2026-09-02-mobile-one-handed-home-ergonomics/`.
+- Installed evidence includes `installed-first-run-location.png`/`.xml`,
+  `installed-location-results.png`/`.xml`, `installed-home-now.png`/`.xml`,
+  `installed-home-hourly.png`/`.xml`, `installed-home-daily.png`/`.xml`,
+  `installed-home-details.png`/`.xml`, `installed-change-location.png`/`.xml`,
+  `installed-after-location-back.xml`, `installed-about-overview.png`/`.xml`,
+  and `installed-about-privacy.png`/`.xml`.
+
+Boundaries:
+- No saved-location management, Room/DataStore schema behavior, provider
+  behavior, forecast mapping, unit preferences, alerts, air quality, radar,
+  widget, background refresh, persisted appearance, installed-app MET Norway
+  fallback, release readiness, MVP readiness, or sample-weather production
+  fallback was added.

@@ -236,7 +236,8 @@ class HomeForecastStateHolderTest {
         val firstRun = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
         assertEquals("", firstRun.query)
         assertEquals(ManualLocationSearchState.Idle, firstRun.searchState)
-        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertTrue(firstRun.canReturnHome)
+        assertEquals(oldLocation, stateHolder.presentationState.selectedLocation)
         assertFalse(stateHolder.presentationState.isShowingHome)
 
         stateHolder.onManualLocationQueryChanged("New Location City")
@@ -250,6 +251,32 @@ class HomeForecastStateHolderTest {
         assertSame(result.location, loading.location)
         assertEquals(newLocation, stateHolder.presentationState.selectedLocation)
         assertEquals(listOf(oldLocation, newLocation), weatherRepository.locations)
+    }
+
+    @Test
+    fun `location entry back from home restores previous home without searching`() {
+        val oldLocation = weatherLocation("manual-cancel-location", "Cancel Location City")
+        val weatherRepository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            weatherRepository = weatherRepository,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onChangeLocation()
+        val firstRun = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
+        assertTrue(firstRun.canReturnHome)
+
+        stateHolder.onLocationEntryBack()
+
+        val home = stateHolder.presentationState.screen as OxygenAppScreen.Home
+        val ready = home.forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(oldLocation, stateHolder.presentationState.selectedLocation)
+        assertEquals(oldLocation, ready.location)
+        assertTrue(stateHolder.presentationState.isShowingHome)
+        assertEquals(listOf(oldLocation), weatherRepository.locations)
     }
 
     @Test
@@ -273,7 +300,7 @@ class HomeForecastStateHolderTest {
             assertTrue(executor.awaitTermination(2, TimeUnit.SECONDS))
 
             assertTrue(stateHolder.presentationState.screen is OxygenAppScreen.FirstRunLocationEntry)
-            assertEquals(null, stateHolder.presentationState.selectedLocation)
+            assertEquals(oldLocation, stateHolder.presentationState.selectedLocation)
             assertFalse(stateHolder.presentationState.isShowingHome)
         } finally {
             repository.finishAll()

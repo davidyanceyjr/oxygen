@@ -66,6 +66,10 @@ fun OxygenApp(
                     }
                     appState = stateHolder.presentationState
                 },
+                onBack = {
+                    stateHolder.onLocationEntryBack()
+                    appState = stateHolder.presentationState
+                },
                 onOpenAbout = {
                     stateHolder.onOpenAbout()
                     appState = stateHolder.presentationState
