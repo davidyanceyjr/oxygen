@@ -1,6 +1,6 @@
 # Active Cycle
 
-Status: ready
+Status: committed
 Cycle ID: 2026-09-01-standard-home-accessibility-visual-verification-gate
 Mode: feature
 Goal: Verify the completed Standard Home interaction and visual baseline as the
@@ -8,11 +8,11 @@ foundation for subsequent MVP work, fixing only accessibility or visual
 correctness defects found inside that baseline.
 Roadmap context: Slice 18H, Standard Home Accessibility and Visual Verification
 Gate. Prerequisites are Slices 18A through 18G committed; Slice 18G is committed
-at `fae63b3`.
-Branch or work context: HEAD is `fae63b3`; current branch name is
+at `fae63b3`; Slice 18H is committed at `4f5f383`.
+Branch or work context: HEAD is `4f5f383`; current branch name is
 `slice-18f-home-operational-state-integration`, retained from prior work. The
 worktree already contains user documentation/status edits from the post-18G
-sync.
+sync, now being updated for post-18H status.
 
 ## Contract
 
@@ -214,3 +214,6 @@ Explicitly out of scope:
   Android shell denied the `android.intent.action.AIRPLANE_MODE` broadcasts
   during operational-state setup, but `svc wifi disable` and `svc data disable`
   still forced the installed refresh failure; services were restored afterward.
+- committed: Slice 18H is committed at `4f5f383` (`Complete Slice 18H Home
+  accessibility gate`). Next implementation candidate is Slice 19: Saved
+  Locations Persistence; it is not planned in this active cycle.

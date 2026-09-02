@@ -677,7 +677,7 @@ Must prove:
 
 ## Slice 18G: Oxygen Home Design-System Consolidation
 
-Status: specified
+Status: committed
 
 Prerequisites:
 - Slices 18B through 18F committed.
@@ -702,7 +702,7 @@ Must prove:
 
 ## Slice 18H: Standard Home Accessibility and Visual Verification Gate
 
-Status: specified
+Status: committed
 
 Prerequisites:
 - Slices 18A through 18G committed.
@@ -1111,10 +1111,10 @@ Broad verification:
 
 ## Next Candidate Slice
 
-Candidate: Slice 18G: Oxygen Home Design-System Consolidation.
+Candidate: Slice 19: Saved Locations Persistence.
 
-Recommended sequence from the current committed state: Slice 18G, Slice 18H,
-Slice 19, installed-app fallback completion, Slice 20,
+Recommended sequence from the current committed state: Slice 19,
+installed-app fallback completion, Slice 20,
 optional device location, official alerts, persisted presentation settings,
 recurring documentation-sync gates, and release gates.
 

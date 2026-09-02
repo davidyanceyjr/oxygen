@@ -28,6 +28,8 @@ and `docs/data-sources/`.
 - Standard Home paged interaction foundation with Now, Hourly, Daily, and
   Details pages.
 - Standard Home Now, Hourly, Daily, and Details visual baselines.
+- Art-sheet-aligned Standard Home weather marks, surface roles, typography
+  roles, and app-local design roles for the installed Home surface.
 - Settings/About surfaces for Data Sources, Privacy, and Open Source Licenses.
 - Oxygen package/application identity, theme foundation, and Compose Home UI.
 

@@ -1830,20 +1830,27 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation candidate is Slice 18G: Oxygen Home Design-System
-Consolidation.
+The next implementation candidate is Slice 19: Saved Locations Persistence.
 
-The completed Standard Home pages should be consolidated into reusable Oxygen
-design-system semantics without changing weather-provider behavior, persistence
-behavior, or page responsibilities. Repeated spacing, typography, shape,
-surface, weather-mark, and theme-translation choices from the committed Now,
-Hourly, Daily, Details, and operational-state work should either be represented
-by named roles or explicitly deferred with reason.
+The completed Standard Home interaction, visual pages, operational states,
+design-system roles, accessibility navigation, effects-disabled rendering, and
+installed-app visual baseline are committed through Slice 18H.
 
-Implementation should preserve the established page designs, keep semantic
-distinction between Now, Hourly, Daily, and Details, avoid a speculative full
-theme engine, avoid persisted appearance/effects/layout settings, and verify
-that consolidation does not regress installed-app Home presentation.
+The next slice should let users save, list, select, and remove multiple forecast
+locations while preserving the manual-location path without location permission.
+Saved locations must reuse the production Room location model and persisted
+selected local `LocationId`; provider IDs must not become user-facing location
+identity. Switching locations must control the Home forecast through the same
+lifecycle-aware app boundary used for selected-location and offline launch
+behavior, so obsolete refreshes or stale cache emissions cannot update the wrong
+Home.
+
+Implementation should preserve weather-provider behavior, forecast mapping,
+source/update/stale communication, provider disclosures, Standard Home
+accessibility/visual baselines, and existing offline cache behavior. It must not
+add unit preferences, device-location permission flow, alert lookup, persisted
+appearance settings, installed-app MET Norway fallback wiring, or
+release-readiness claims.
 
 ---
 
