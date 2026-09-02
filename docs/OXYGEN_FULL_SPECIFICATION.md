@@ -1830,20 +1830,32 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation candidate is Slice 19: Saved Locations Persistence.
+The next implementation candidate is Slice 18I: Mobile One-Handed Home
+Ergonomics.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering, and
-installed-app visual baseline are committed through Slice 18H.
+installed-app visual baseline are committed through Slice 18H. The installed
+mobile UI review performed on September 2, 2026 identified a bounded follow-up:
+keep primary handheld actions in the lower thumb zone, prevent Home footer
+overlap, reduce routine stale/source/provenance visual weight where it competes
+with current weather, and keep About/detail recovery actions lower-screen
+reachable.
 
-The next slice should let users save, list, select, and remove multiple forecast
-locations while preserving the manual-location path without location permission.
-Saved locations must reuse the production Room location model and persisted
-selected local `LocationId`; provider IDs must not become user-facing location
-identity. Switching locations must control the Home forecast through the same
-lifecycle-aware app boundary used for selected-location and offline launch
-behavior, so obsolete refreshes or stale cache emissions cannot update the wrong
-Home.
+Slice 18I should preserve the Standard Home page model and source/update/stale
+semantics. Operational provenance must remain reachable from Home, while full
+provider, privacy, license, and attribution explanation remains available in
+About. Provenance must not be moved exclusively to About.
+
+After Slice 18I, the next implementation candidate returns to Slice 19: Saved
+Locations Persistence. Slice 19 should let users save, list, select, and remove
+multiple forecast locations while preserving the manual-location path without
+location permission. Saved locations must reuse the production Room location
+model and persisted selected local `LocationId`; provider IDs must not become
+user-facing location identity. Switching locations must control the Home
+forecast through the same lifecycle-aware app boundary used for
+selected-location and offline launch behavior, so obsolete refreshes or stale
+cache emissions cannot update the wrong Home.
 
 Implementation should preserve weather-provider behavior, forecast mapping,
 source/update/stale communication, provider disclosures, Standard Home

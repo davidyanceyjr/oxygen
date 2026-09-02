@@ -741,6 +741,54 @@ It must not implement:
 - persisted effects selection;
 - foldable-specific UI.
 
+## Slice 18I: Mobile One-Handed Home Ergonomics
+
+Status: specified
+
+Prerequisites:
+- Slice 18H committed.
+- Installed-emulator mobile UI review artifacts captured for the current Home,
+  first-run Location, change-location, About overview, and About detail
+  surfaces.
+
+Release intent: Apply the handheld one-handed usability findings from the
+installed mobile UI review while preserving the established Standard Home
+semantics. This is a bounded usability slice, not a generic polish phase.
+
+Must prove:
+- First-run manual location entry keeps manual search as the full-featured
+  no-location-permission path while placing Search, Use my location, and
+  Settings/About in a lower thumb-reachable action area.
+- Change-location return keeps Back thumb-reachable and restores the previous
+  Home without starting a new search or forecast request.
+- Home retains bottom semantic page navigation and lower Location/Refresh/
+  Settings actions with adequate touch targets.
+- Home page content has enough bottom clearance that cards, disclosure text, and
+  scrollable page content are not hidden behind the footer.
+- Now keeps current weather dominant; cached/restored or refresh-failed status
+  remains visible without overwhelming current conditions when a usable forecast
+  exists.
+- Details prioritizes weather metrics before routine source/update detail while
+  keeping source/update/provenance reachable from Home.
+- Full provider, privacy, license, and attribution explanations remain available
+  in About; provenance is not moved exclusively to About.
+- About overview and detail pages keep Back/recovery reachable from the lower
+  thumb zone while preserving scrollable reading for long disclosure text.
+- Large-font and narrow-screen checks preserve legibility, touch targets,
+  logical TalkBack order, and non-overlap.
+- Installed-app screenshot and hierarchy evidence covers first-run Location,
+  Home Now, Hourly, Daily, Details, About overview, and one About detail page.
+
+Explicitly out of scope:
+- saved-location persistence/list/select/remove behavior;
+- Room/DataStore schema changes;
+- provider behavior, forecast mapping, or cache policy changes;
+- new unit preferences, alerts, air quality, radar/maps, widgets, or background
+  refresh;
+- persisted theme/layout/effects settings;
+- installed-app MET Norway fallback wiring;
+- release-readiness or MVP-readiness claims.
+
 ## Slice 19: Saved Locations Persistence
 
 Status: specified
@@ -1111,9 +1159,9 @@ Broad verification:
 
 ## Next Candidate Slice
 
-Candidate: Slice 19: Saved Locations Persistence.
+Candidate: Slice 18I: Mobile One-Handed Home Ergonomics.
 
-Recommended sequence from the current committed state: Slice 19,
+Recommended sequence from the current committed state: Slice 18I, Slice 19,
 installed-app fallback completion, Slice 20,
 optional device location, official alerts, persisted presentation settings,
 recurring documentation-sync gates, and release gates.

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
@@ -48,79 +49,119 @@ fun FirstRunLocationEntryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .safeDrawingPadding()
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Spacer(Modifier.height(8.dp))
-            if (state.canReturnHome) {
-                OutlinedButton(
-                    onClick = onBack,
-                    modifier = Modifier.testTag("location-entry-back"),
-                ) {
-                    Text("Back")
-                }
-            }
-            Text(
-                text = "OXYGEN",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = state.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "Search for a city or place. Location permission is optional.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
-            )
-            OutlinedTextField(
-                value = state.query,
-                onValueChange = onQueryChanged,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(state.searchLabel) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { onSearch() }),
-            )
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .testTag("location-entry-content"),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Button(
-                    onClick = onSearch,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(state.searchActionLabel)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "OXYGEN",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = state.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "Search for a city or place. Location permission is optional.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                )
+                OutlinedTextField(
+                    value = state.query,
+                    onValueChange = onQueryChanged,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("location-entry-search-field"),
+                    label = { Text(state.searchLabel) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { onSearch() }),
+                )
+                state.message?.let { message ->
+                    FirstRunMessage(message)
                 }
-                OutlinedButton(
-                    onClick = onUseMyLocation,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(state.useMyLocationLabel)
-                }
-                OutlinedButton(
-                    onClick = onOpenAbout,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Settings / About")
-                }
+                ManualLocationSearchContent(
+                    searchState = state.searchState,
+                    retryLabel = state.retryLabel,
+                    onRetry = onRetry,
+                    onCandidateSelected = onCandidateSelected,
+                )
+                SearchDisclosure(
+                    disclosure = state.geocodingDisclosure,
+                    privacyNote = state.geocodingPrivacyNote,
+                )
             }
-            state.message?.let { message ->
-                FirstRunMessage(message)
+            LocationEntryBottomActions(
+                state = state,
+                onSearch = onSearch,
+                onUseMyLocation = onUseMyLocation,
+                onBack = onBack,
+                onOpenAbout = onOpenAbout,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LocationEntryBottomActions(
+    state: OxygenAppScreen.FirstRunLocationEntry,
+    onSearch: () -> Unit,
+    onUseMyLocation: () -> Unit,
+    onBack: () -> Unit,
+    onOpenAbout: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("location-entry-actions"),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Button(
+            onClick = onSearch,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .testTag("location-entry-search"),
+        ) {
+            Text(state.searchActionLabel)
+        }
+        OutlinedButton(
+            onClick = onUseMyLocation,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .testTag("location-entry-use-my-location"),
+        ) {
+            Text(state.useMyLocationLabel)
+        }
+        OutlinedButton(
+            onClick = onOpenAbout,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .testTag("location-entry-about"),
+        ) {
+            Text("Settings / About")
+        }
+        if (state.canReturnHome) {
+            OutlinedButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("location-entry-back"),
+            ) {
+                Text("Back")
             }
-            ManualLocationSearchContent(
-                searchState = state.searchState,
-                retryLabel = state.retryLabel,
-                onRetry = onRetry,
-                onCandidateSelected = onCandidateSelected,
-            )
-            SearchDisclosure(
-                disclosure = state.geocodingDisclosure,
-                privacyNote = state.geocodingPrivacyNote,
-            )
         }
     }
 }

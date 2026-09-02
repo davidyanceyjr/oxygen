@@ -1,219 +1,183 @@
 # Active Cycle
 
 Status: committed
-Cycle ID: 2026-09-01-standard-home-accessibility-visual-verification-gate
+Cycle ID: 2026-09-02-mobile-one-handed-home-ergonomics
 Mode: feature
-Goal: Verify the completed Standard Home interaction and visual baseline as the
-foundation for subsequent MVP work, fixing only accessibility or visual
-correctness defects found inside that baseline.
-Roadmap context: Slice 18H, Standard Home Accessibility and Visual Verification
-Gate. Prerequisites are Slices 18A through 18G committed; Slice 18G is committed
-at `fae63b3`; Slice 18H is committed at `4f5f383`.
-Branch or work context: HEAD is `4f5f383`; current branch name is
-`slice-18f-home-operational-state-integration`, retained from prior work. The
-worktree already contains user documentation/status edits from the post-18G
-sync, now being updated for post-18H status.
+Goal: Plan Slice 18I, Mobile One-Handed Home Ergonomics, as a bounded UI
+adjustment slice before saved-location persistence. This cycle applies the
+installed-emulator review recommendations for thumb-reachable controls,
+first-run/location recovery, Home content clearance, stale-status visual weight,
+and provenance placement without changing weather providers, persistence
+semantics, saved-location behavior, or forecast data.
+Roadmap context: Slice 18I, Mobile One-Handed Home Ergonomics. Slice 18H is
+committed at `4f5f383`; Slice 19A saved-location storage/startup resolution is
+deferred until this UI ergonomics slice is ready or explicitly superseded.
 
 ## Contract
 
-Selected behavior:
-- Establish Standard Home Now, Hourly, Daily, and Details as the verified
-  installed-app baseline for subsequent MVP slices.
-- Prove semantic page navigation, current-page identity, accessible page
-  movement, readable weather meaning, source/stale/error communication,
-  adequate touch targets, long-location handling, large-font safety,
-  non-overlap, and representative operational states.
-- Preserve the existing provider, repository, Room, DataStore, forecast mapping,
-  selected-location, manual-search, stale-cache, retry/refresh, and disclosure
-  behavior.
+Selected Behavior:
+- Keep primary Home navigation and recurring Home actions reachable from the
+  bottom thumb zone on handheld phones.
+- Keep first-run/manual location entry and change-location recovery optimized
+  for one-handed use by placing primary/secondary actions in a bottom-aligned
+  action area while preserving manual search as the no-permission path.
+- Keep About/disclosure recovery reachable through a bottom-aligned Back action.
+- Ensure scrollable Home content has enough bottom clearance that final visible
+  cards/text are not hidden behind the bottom navigation/actions.
+- Reduce routine cached/stale/source/provenance blocks to appropriate visual
+  weight: operational stale/failure state remains visible, fresh provenance is
+  tertiary, and full provider/privacy/license explanation remains in About.
+- Preserve accessibility: adequate touch targets, logical TalkBack order,
+  meaningful labels, large-font readability, and no overlap on narrow screens.
 
-Acceptance boundary:
-- Current Home page identity is visible and exposed through semantics on each
-  Standard Home page.
-- Page movement is available through ordinary tabs/swipes and through named
-  semantics actions on the existing pager container that let accessibility users
-  move from Now to Hourly and from Details to Daily without relying on swipe
-  gestures. Add visible previous/next controls only if custom semantics actions
-  cannot be verified through the Compose accessibility boundary.
-- Child controls such as Refresh, Settings/About, Change location, Retry, page
-  tabs, and forecast rows remain independently usable and do not accidentally
-  change pages.
-- Refresh, Settings/About, Change location, Retry, page tabs, and any explicit
-  page navigation controls expose independently clickable bounds of at least
-  48dp in the relevant tested configurations.
-- Important weather information remains readable with long location/provider
-  strings, compact width, and large font.
-- Important information is not clipped or overlapped in supported compact and
-  ordinary presentation checks.
-- Standard ordinary presentation does not require page-level vertical traversal
-  of the whole Home surface; localized overflow may scroll inside the relevant
-  page where needed.
-- Effects-disabled rendering uses the same Home composable production path with
-  `OxygenAppearance(effects = EffectsLevel.OFF)` or an equivalent app-local
-  appearance input, and still exposes complete weather meaning through
-  text/semantics: current page identity, current temperature, condition, high
-  and low, source/update context, provider disclosure, and stale/error messages
-  where present, without depending on gradients, transparency, animation, or
-  atmospheric decoration.
-- Stale, refresh-failed, loading, no-cache error, source/update, and provider
-  disclosure communication remains understandable and reachable.
-- Final installed-app screenshots exist for Now, Hourly, Daily, and Details.
-- Installed-app operational evidence targets stale refresh-failed cached Home;
-  if that state cannot be reached in the installed/debug path, capture no-cache
-  retryable error and record the exact blocker for stale-state capture.
-- Focused Compose/state tests and broad Android verification pass.
+Acceptance Boundary:
+- On a clean first-run launch, the location screen shows the manual search field
+  and privacy/provider disclosure, with Search, Use my location, and
+  Settings/About reachable near the lower thumb zone without requiring a top
+  reach. Manual search still does not request location permission.
+- When opening Location from Home, Back is reachable from the lower thumb zone
+  and returns to the previous Home without starting a new search or forecast
+  request.
+- Home Now, Hourly, Daily, and Details retain bottom page tabs and lower
+  Location/Refresh/Settings actions with at least 48dp touch targets.
+- Home page scroll containers leave enough bottom padding for the last visible
+  card or disclosure text to clear the footer; no first-viewport content is
+  obscured by the footer on the installed emulator.
+- Now shows current weather as the dominant useful signal. Cached/restored or
+  refresh-failed state remains visible but does not consume more first-viewport
+  visual priority than current weather unless no current forecast is available.
+- Details presents weather metrics before routine source/update details when
+  data is otherwise usable. Source/update/provenance remains reachable from
+  Details and fully explained in About.
+- About overview and About detail surfaces keep their Back/recovery action
+  reachable near the lower thumb zone while preserving legal/privacy text
+  readability through vertical scrolling where needed.
+- Focused Compose tests cover bottom action placement/reachability, footer
+  clearance, stale-status weighting, Details provenance ordering, About Back
+  reachability, and large-font/narrow-screen non-overlap.
+- Installed-app screenshots/hierarchies cover first-run Location, Home Now,
+  Hourly, Daily, Details, About overview, and one About detail page on
+  `oxygen_starter`.
 
-Explicitly out of scope:
-- Simple, Detailed, or Meteorologist layouts.
-- Persisted layout, theme, icon-pack, or effects selection.
-- A full theme engine or new user-facing appearance settings.
-- Foldable-specific UI.
-- Provider, fallback, geocoding, repository, Room, DataStore, cache schema,
-  weather mapping, app identity, dependency, Gradle, manifest, saved-location,
-  unit-preference, official-alert, air-quality, radar, background-refresh,
-  release-candidate, or MVP-readiness behavior changes.
-- Treating `SampleWeather.bundle` as production Home behavior.
+Out of Scope:
+- Saved-location storage/list/select/remove behavior, Room/DataStore schema
+  changes, legacy selected-location migration, and in-flight saved-location
+  switching isolation.
+- Device-location lookup beyond the existing explicit Use my location request
+  affordance.
+- Unit preferences, official alerts, air quality, radar/maps, widgets,
+  background refresh, persisted appearance/effects/layout settings,
+  installed-app MET Norway fallback wiring, provider behavior changes,
+  Gradle/dependency upgrades, release-readiness, MVP-readiness, and
+  sample-weather production fallback.
+- Moving all provenance only to About. Operational source/update/stale context
+  must remain reachable from Home.
 
 ## Implementation Plan
 
 1. Discover and baseline:
-   - Re-read the Slice 18H roadmap entry, specification section 53, current
-     Home composables, Home presentation/state tests, installed-app entry path,
-     and recent cycle evidence.
-   - Record `git status --short` before edits and preserve unrelated user
-     documentation changes.
-   - Run focused Home tests as a baseline where feasible:
-     `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`
-     and the existing Home Compose instrumentation class on a connected
-     emulator.
-   - Build a short Slice 18H evidence matrix before production edits. Mark each
-     roadmap proof item as `already covered`, `needs focused test`, `needs
-     installed evidence`, or `blocked with exact reason`; do not add duplicative
-     tests for items already covered at a meaningful boundary.
+   - Re-read specification sections 30, 31, 34, 37, and 53; roadmap UI rule,
+     Slice 18H, Slice 18I, and Slice 19; current Home/Location/About
+     Composables; and focused Home instrumentation tests.
+   - Record `git status --short` before production edits.
+   - Run focused baseline tests where feasible:
+     `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`.
+   - Use existing review artifacts under
+     `.codex/test-artifacts/2026-09-02-mobile-ui-ergonomics-review/` as
+     baseline observations, not implementation evidence.
 
-2. Cover the gate before or alongside fixes:
-   - Add or tighten Home Compose instrumentation tests for semantic current-page
-     identity, named accessibility movement through custom semantics actions
-     from Now to Hourly and Details to Daily without swipe gestures, child
-     controls not paging accidentally, 48dp-or-larger clickable bounds for Home
-     controls, compact
-     long-location/long-provider rendering, large-font readable bounds,
-     non-overlap, stale/source/error reachability, and effects-disabled weather
-     meaning through the production Home composable path.
-   - Prefer assertions at the Compose semantics, bounds, and rendered-pixel
-     boundary already used by `HomeDashboardUiTest`.
-   - Avoid tests that only assert tags, constructors, or static text exists
-     without exercising the Home interaction or rendered boundary.
+2. Cover intended UI behavior before production edits:
+   - Add or adjust Compose instrumentation tests for first-run bottom action
+     reachability, change-location Back reachability, Home footer touch bounds,
+     Home footer/content clearance, Details metrics-before-routine-provenance
+     ordering, About bottom Back reachability, and large-font/narrow-screen
+     non-overlap.
+   - Keep tests focused on observable UI bounds/order/semantics rather than
+     symbol existence.
 
-3. Implement only defects required by the gate:
-   - If baseline tests expose missing accessibility semantics, add the smallest
-     Home UI semantics needed to make page identity and page movement
-     discoverable. Prefer custom pager semantics actions over visible new
-     controls so the existing layout and child-control behavior do not drift.
-   - If compact/large-font/long-string evidence exposes clipping or overlap,
-     adjust only the affected Home layout constraints, wrapping, or stable
-     dimensions.
-   - If effects-disabled rendering has no production path, introduce the
-     narrowest app-local non-persisted rendering parameter needed for tests and
-     previews to exercise no-effects presentation through the same composable
-     path without creating user settings or a theme engine.
-   - Do not change provider/domain/repository/persistence behavior to satisfy
-     presentation tests.
+3. Build:
+   - Introduce app-local bottom action layout primitives only if they remove
+     duplication between first-run Location and About surfaces.
+   - Update first-run/change-location layout so actions are bottom-aligned on a
+     handheld viewport while search/disclosure content remains readable and
+     scroll-safe.
+   - Update About surfaces so Back/recovery remains bottom-reachable while long
+     legal/privacy/provider text remains scrollable.
+   - Add bottom clearance to Home page content containers so footer overlap is
+     avoided.
+   - Rebalance Now stale-status placement/weight and Details source/update
+     placement without dropping source/update/provenance from Home.
 
-4. Focused green:
-   - Run focused state tests:
-     `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`
-   - Run focused Home Compose instrumentation:
-     `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`
-   - Save focused logs under
-     `.codex/test-artifacts/2026-09-01-standard-home-accessibility-visual-verification-gate/`.
+4. Exercise and verify:
+   - Real path: clean app data -> launch first-run Location -> capture; perform
+     manual search/select real geocoding result -> Home Now -> navigate Hourly,
+     Daily, Details -> Location Back -> About overview/detail -> Back.
+   - Confirm on-device that primary actions are lower-screen reachable and that
+     Home content is not obscured by the footer.
+   - Run broad checks: `:app:compileDebugKotlin`,
+     `:app:testDebugUnitTest :core:testDebugUnitTest`, `:app:assembleDebug`,
+     and `git diff --check`.
+   - Save evidence under
+     `.codex/test-artifacts/2026-09-02-mobile-one-handed-home-ergonomics/`.
 
-5. Real-path exercise:
-   - Use `scripts/list-avds.sh`, `scripts/start-emulator.sh`, and
-     `scripts/install-debug.sh` to launch the installed app.
-   - For stale refresh-failed cached Home evidence, first reuse the deterministic
-     seed/failure path from prior Home slices: seed or retain a selected
-     location with a Room cached forecast, force the provider/network refresh to
-     fail, relaunch or refresh the installed debug app, and capture the stale
-     cached Now state. Record the exact seed/failure command or script used.
-   - Capture installed-app screenshots and hierarchies for Now, Hourly, Daily,
-     Details, and stale refresh-failed cached Home. If stale refresh-failed
-     cached Home cannot be reached in the installed/debug path, capture no-cache
-     retryable error and record the exact blocker.
-   - Record the emulator/device identity, commands, and artifact paths.
-
-6. Broad checks:
-   - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-   - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-   - `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
-   - `git diff --check`
-
-7. Review and ready:
-   - Review `git diff` for scope drift, provider/persistence changes, hidden
-     sample fallback, speculative settings, or status overclaims.
-   - Convert the page-to-page visual coherence proof into concrete evidence:
-     final installed screenshots for all four Standard Home pages, no
-     overlap/clipping assertions, stable page selector/header bounds where
-     practical, and a short review note naming any visible inconsistency found.
-     Do not use subjective visual review as a substitute for tests or
-     screenshots.
-   - Do not resolve art-sheet asset naming drift in this cycle unless it
-     directly blocks accessibility or installed-app visual verification.
-   - Update this plan's phase results with commands actually run and artifact
-     paths.
-   - Append a concise cycle-history entry only when the implementation cycle is
-     ready or committed.
+5. Review:
+   - Check for drift: no persistence/storage/schema work, no saved-location
+     management behavior, no provider or forecast mapping changes, no unit or
+     permission-flow expansion, no all-provenance-to-About move, no appearance
+     persistence, no sample fallback, and no readiness claims.
+   - Update phase results and cycle history only with evidence actually run.
 
 ## Phase Results
 
-- specified: Slice 18H is specified in `.codex/plans/mvp-roadmap.md` and
-  `docs/OXYGEN_FULL_SPECIFICATION.md` section 53 as the Standard Home
-  Accessibility and Visual Verification Gate.
-- planned: This cycle selects Slice 18H only. Acceptance is the verified
-  Standard Home baseline across accessibility, visual, operational-state, and
-  installed-app evidence boundaries without provider, persistence, settings, or
-  release-readiness changes.
-- covered: Added focused `HomeDashboardUiTest` coverage for named pager custom
-  accessibility actions, pager child-control isolation, 48dp Home control
-  bounds, and effects-disabled weather meaning through the production
-  `HomeLoadingScreen` path. Existing Home tests continue to cover long
-  location/provider strings, large-font readable bounds, non-overlap, stale
-  cache, restored cache, loading, no-cache error, source/update disclosure,
-  tabs, swipes, and provider-neutral weather marks.
-- implemented: `HomeLoadingScreen` now accepts app-local `OxygenAppearance`,
-  renders opaque Home surfaces when `effects = EffectsLevel.OFF`, exposes named
-  previous/next custom accessibility actions on the existing pager container,
-  and gives Standard Home page tabs a 48dp minimum height. No provider,
-  repository, Room, DataStore, forecast mapping, selected-location,
-  manual-search, stale-cache, retry/refresh, disclosure, Gradle, manifest,
-  saved-location, unit-preference, fallback, alert, or release behavior changed.
-- verified: Focused and broad checks passed with logs under
-  `.codex/test-artifacts/2026-09-01-standard-home-accessibility-visual-verification-gate/`:
-  `baseline-homeforecast-unit.log`,
-  `focused-compile-after-pager-actions.log`,
-  `focused-home-compose-instrumentation.log`,
-  `broad-compile-debug-kotlin.log`,
-  `broad-debug-unit-tests.log`,
-  `broad-assemble-debug.log`, and `git-diff-check.log`.
-  Focused Home instrumentation passed 19 tests on `oxygen_starter(AVD) - 17`.
-  Installed-app evidence was captured for a real Open-Meteo selected location:
-  `installed-final-home-now.png`/`.xml`,
-  `installed-final-home-hourly.png`/`.xml`,
-  `installed-final-home-daily.png`/`.xml`,
-  `installed-final-home-details.png`/`.xml`, and
-  `installed-operational-refresh-failed-attempt.png`/`.xml`. The operational
-  capture shows stale cached Home with `Cached forecast`, `Refresh failed`,
-  current condition, temperature, high/low, source/update, and no Retry.
-  Broad commands passed:
-  `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`;
-  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`;
-  `. scripts/android-env.sh && ./gradlew :app:assembleDebug`; `git diff --check`.
-- skipped: No Simple, Detailed, or Meteorologist layouts; no persisted
-  appearance settings; no provider, persistence, fallback, saved-location,
-  unit-preference, alert, air-quality, radar, release, or MVP-readiness changes.
-  Android shell denied the `android.intent.action.AIRPLANE_MODE` broadcasts
-  during operational-state setup, but `svc wifi disable` and `svc data disable`
-  still forced the installed refresh failure; services were restored afterward.
-- committed: Slice 18H is committed at `4f5f383` (`Complete Slice 18H Home
-  accessibility gate`). Next implementation candidate is Slice 19: Saved
-  Locations Persistence; it is not planned in this active cycle.
+- specified: Slice 18I is specified in `.codex/plans/mvp-roadmap.md` as Mobile
+  One-Handed Home Ergonomics, based on the installed-emulator UI review
+  artifacts from
+  `.codex/test-artifacts/2026-09-02-mobile-ui-ergonomics-review/`.
+- planned: This document selects Slice 18I only: bottom-reachable
+  first-run/location/About actions, Home footer/content clearance, stale-status
+  visual weighting, Details provenance ordering, and accessibility/large-font
+  preservation.
+- covered: Focused Compose instrumentation coverage added in
+  `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
+  for first-run bottom actions, change-location Back reachability/no-refresh
+  return, About overview/detail bottom Back reachability, Now stale-status
+  ordering after current weather, Details metrics/source/status ordering,
+  footer touch bounds, and compact/large-font non-overlap.
+- implemented: Production UI changes are limited to
+  `app/src/main/kotlin/com/oxygen/weather/app/ui/firstrun/FirstRunLocationEntryScreen.kt`,
+  `app/src/main/kotlin/com/oxygen/weather/app/ui/about/AboutScreen.kt`, and
+  `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`.
+  First-run/change-location content now scrolls above bottom-aligned actions;
+  About content scrolls above a bottom Back action; Now stale/refresh status
+  follows the current-weather hero; Details presents metrics and source before
+  stale status; scrollable Home pages get footer clearance while compact Daily
+  retains its established fixed composition.
+- verified: Passed baseline focused unit test
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`.
+  Focused Home Compose instrumentation passed 24 tests on
+  `oxygen_starter(AVD) - 17` with `. scripts/android-env.sh && ./gradlew
+  :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+  Installed-app real-path evidence used `scripts/list-avds.sh`,
+  `scripts/start-emulator.sh`, and `scripts/install-debug.sh`, then clean app
+  data, first-run capture, manual Open-Meteo geocoding search/select for
+  Madison, Home Now/Hourly/Daily/Details captures, change-location Back
+  capture/return, About overview capture, and Privacy detail capture.
+  Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+- artifacts: `.codex/test-artifacts/2026-09-02-mobile-one-handed-home-ergonomics/`
+  contains focused and broad logs plus installed screenshots/hierarchies:
+  `installed-first-run-location`, `installed-location-results`,
+  `installed-home-now`, `installed-home-hourly`, `installed-home-daily`,
+  `installed-home-details`, `installed-change-location`,
+  `installed-after-location-back`, `installed-about-overview`, and
+  `installed-about-privacy`.
+- deferred: Slice 19A saved-location storage/startup resolution is deferred
+  until this UI ergonomics slice is ready or explicitly superseded.
+- skipped: No saved-location, storage/schema, provider, unit, alert, air
+  quality, radar, widget, background refresh, persisted appearance, MET Norway
+  fallback, release, or MVP readiness work.
+- committed: Slice 18I is committed in this changeset. Next implementation
+  candidate returns to Slice 19: Saved Locations Persistence.

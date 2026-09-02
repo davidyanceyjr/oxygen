@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.AboutSection
@@ -32,40 +34,67 @@ fun AboutScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .safeDrawingPadding()
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = "OXYGEN",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = state.surfaceState.title,
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            if (state.selectedSurface == null) {
-                state.surfaceOptions.forEach { surface ->
-                    Button(
-                        onClick = { onSurfaceSelected(surface) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(surface.title)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .testTag("about-content"),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "OXYGEN",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = state.surfaceState.title,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (state.selectedSurface == null) {
+                    state.surfaceOptions.forEach { surface ->
+                        Button(
+                            onClick = { onSurfaceSelected(surface) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(surface.title)
+                        }
                     }
                 }
+                state.surfaceState.sections.forEach { section ->
+                    AboutSectionView(section)
+                }
             }
-            state.surfaceState.sections.forEach { section ->
-                AboutSectionView(section)
-            }
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (state.selectedSurface == null) "Back" else "Back to Settings / About")
-            }
+            AboutBottomActions(
+                state = state,
+                onBack = onBack,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AboutBottomActions(
+    state: OxygenAppScreen.About,
+    onBack: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("about-bottom-actions"),
+    ) {
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .testTag("about-back"),
+        ) {
+            Text(if (state.selectedSurface == null) "Back" else "Back to Settings / About")
         }
     }
 }

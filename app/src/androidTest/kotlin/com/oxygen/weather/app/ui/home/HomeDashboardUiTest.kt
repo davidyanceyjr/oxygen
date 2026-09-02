@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,9 +42,13 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.oxygen.weather.app.HomeForecastMessage
 import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.HomeSuccessSection
+import com.oxygen.weather.app.AboutSurfaceId
 import com.oxygen.weather.app.OxygenApp
+import com.oxygen.weather.app.OxygenAppScreen
 import com.oxygen.weather.app.OxygenAppStateHolder
+import com.oxygen.weather.app.ui.about.AboutScreen
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
+import com.oxygen.weather.app.ui.firstrun.FirstRunLocationEntryScreen
 import com.oxygen.weather.app.ui.theme.EffectsLevel
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenTheme
@@ -257,6 +262,102 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun firstRunLocationActionsStayBottomReachableOnCompactPhone() {
+        composeRule.setCompactContent {
+            FirstRunLocationEntryScreen(
+                state = OxygenAppScreen.FirstRunLocationEntry(query = "Madison"),
+                onQueryChanged = {},
+                onSearch = {},
+                onRetry = {},
+                onCandidateSelected = {},
+                onUseMyLocation = {},
+                onBack = {},
+                onOpenAbout = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("location-entry-actions").assertIsDisplayed()
+        composeRule.assertMinimumTouchTarget(
+            "location-entry-search",
+            "location-entry-use-my-location",
+            "location-entry-about",
+        )
+        composeRule.assertInLowerReachZone(
+            "location-entry-actions",
+            rootHeight = 640f,
+        )
+        composeRule.assertVerticalOrder(
+            "location-entry-search-field",
+            "location-entry-actions",
+        )
+    }
+
+    @Test
+    fun changeLocationBackStaysBottomReachableAndReturnsWithoutRefreshing() {
+        val oldLocation = weatherLocation(id = "manual-old-bottom", name = "Old Bottom City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactContent {
+            OxygenApp(stateHolder = stateHolder)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-change-location").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("location-entry-back").assertIsDisplayed()
+        composeRule.assertInLowerReachZone("location-entry-back", rootHeight = 640f)
+        composeRule.onNodeWithTag("location-entry-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Old Bottom City").assertIsDisplayed()
+        assertEquals(listOf(oldLocation), repository.locations)
+    }
+
+    @Test
+    fun aboutOverviewKeepsBackActionBottomReachable() {
+        composeRule.setCompactContent {
+            AboutScreen(
+                state = OxygenAppScreen.About(
+                    returnScreen = OxygenAppScreen.FirstRunLocationEntry(),
+                ),
+                onSurfaceSelected = {},
+                onBack = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("about-bottom-actions").assertIsDisplayed()
+        composeRule.onNodeWithTag("about-back").assertIsDisplayed()
+        composeRule.assertInLowerReachZone("about-bottom-actions", rootHeight = 640f)
+        composeRule.assertMinimumTouchTarget("about-back")
+    }
+
+    @Test
+    fun aboutDetailKeepsBackActionBottomReachable() {
+        composeRule.setCompactContent {
+            AboutScreen(
+                state = OxygenAppScreen.About(
+                    returnScreen = OxygenAppScreen.FirstRunLocationEntry(),
+                    selectedSurface = AboutSurfaceId.Privacy,
+                ),
+                onSurfaceSelected = {},
+                onBack = {},
+            )
+        }
+
+        composeRule.onNodeWithText("Privacy Baseline").assertIsDisplayed()
+        composeRule.onNodeWithTag("about-bottom-actions").assertIsDisplayed()
+        composeRule.assertInLowerReachZone("about-bottom-actions", rootHeight = 640f)
+        composeRule.assertMinimumTouchTarget("about-back")
+    }
+
+    @Test
     fun homePagerExposesNamedAccessibilityPageMovementActions() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
@@ -334,8 +435,9 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("Rain showers").assertIsDisplayed()
         composeRule.onNodeWithText("H 73 deg F   L 54 deg F").assertIsDisplayed()
         composeRule.onNodeWithText("Open-Meteo | Fetched Aug 22, 7:00 AM CDT").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Showing cached forecast from 45 minutes ago because refresh failed.").assertIsDisplayed()
-        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-stale").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Showing cached forecast from 45 minutes ago because refresh failed.").assertExists()
+        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.").assertExists()
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Weather data by Open-Meteo.").performScrollTo().assertIsDisplayed()
@@ -446,14 +548,13 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithContentDescription("Atmosphere, Pressure, 1012 hPa, Visibility, 9.5 km, Cloud cover, 88%, Precipitation, 0.4 mm").assertExists()
         composeRule.onNodeWithTag("home-section-source").assertIsDisplayed()
         composeRule.onNodeWithText("Source and updates").assertIsDisplayed()
-        composeRule.onNodeWithText("Open-Meteo").assertIsDisplayed()
-        composeRule.onNodeWithText("Fetched Aug 22, 7:00 AM CDT").assertIsDisplayed()
+        composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Fetched Aug 22, 7:00 AM CDT").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Issued Aug 22, 6:45 AM CDT").assertExists()
         composeRule.assertWithinRootBounds(
             "home-page-title",
             "home-section-comfort",
             "home-section-wind",
-            "home-section-source",
         )
         composeRule.assertCheckedSiblingSpacing(
             "home-section-metrics",
@@ -535,18 +636,27 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
         composeRule.assertVerticalOrder(
             "home-section-location",
-            "home-section-stale",
             "home-section-current",
+            "home-section-stale",
             "home-section-alert",
         )
         composeRule.assertNowHeroDominatesLocationChrome()
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-section-status").assertIsDisplayed()
-        composeRule.onNodeWithText("Showing cached forecast from 45 minutes ago because refresh failed.").assertIsDisplayed()
-        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.").assertIsDisplayed()
+        composeRule.onNodeWithText("Showing cached forecast from 45 minutes ago because refresh failed.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.")
+            .performScrollTo()
+            .assertIsDisplayed()
         composeRule.onNodeWithText("Open-Meteo").assertIsDisplayed()
         composeRule.onNodeWithTag("home-section-source").assertIsDisplayed()
+        composeRule.assertVerticalOrder(
+            "home-section-metrics",
+            "home-section-source",
+            "home-section-status",
+        )
         composeRule.writeSemanticsArtifact("stale-dashboard-semantics.txt")
     }
 
@@ -640,8 +750,8 @@ class HomeDashboardUiTest {
         )
         composeRule.assertCheckedSiblingSpacing(
             "home-section-location",
-            "home-section-stale",
             "home-section-current",
+            "home-section-stale",
         )
         composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
         composeRule.waitForIdle()
@@ -702,8 +812,8 @@ class HomeDashboardUiTest {
         composeRule.onAllNodesWithText("Retry").assertCountEquals(0)
         composeRule.assertVerticalOrder(
             "home-section-location",
-            "home-refreshing",
             "home-section-current",
+            "home-refreshing",
             "home-section-alert",
         )
         composeRule.assertNowHeroDominatesLocationChrome()
@@ -845,6 +955,27 @@ private fun ComposeContentTestRule.setHomeContent(
     }
 }
 
+private fun ComposeContentTestRule.setCompactContent(
+    widthDp: Int = 360,
+    heightDp: Int = 640,
+    fontScale: Float = 1f,
+    content: @Composable () -> Unit,
+) {
+    setContent {
+        CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = fontScale)) {
+            OxygenTheme {
+                Box(
+                    Modifier
+                        .width(widthDp.dp)
+                        .height(heightDp.dp),
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
 private object DirectExecutor : Executor {
     override fun execute(command: Runnable) = command.run()
 }
@@ -934,6 +1065,13 @@ private fun ComposeTestRule.assertMinimumTouchTarget(vararg tags: String) {
         assertTrue("$tag should be at least 48dp wide", rect.width >= 48f)
         assertTrue("$tag should be at least 48dp tall", rect.height >= 48f)
     }
+}
+
+private fun ComposeTestRule.assertInLowerReachZone(tag: String, rootHeight: Float) {
+    val rect = onAllNodesWithTag(tag).fetchSemanticsNodes().single().boundsInRoot
+    assertTrue("$tag should have positive height", rect.height > 0f)
+    assertTrue("$tag should be in lower half of compact phone", rect.top >= rootHeight * 0.48f)
+    assertTrue("$tag should stay visible above bottom edge", rect.bottom <= rootHeight)
 }
 
 private fun ComposeTestRule.assertSecondaryActionsUseLessWidthThanPageTabs() {

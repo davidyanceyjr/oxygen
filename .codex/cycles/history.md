@@ -29,8 +29,9 @@ ledger states.
 
 - Last committed implementation slice: Slice 18H, Standard Home Accessibility
   and Visual Verification Gate, commit `4f5f383`.
-- Active planned implementation slice: none. Next implementation candidate is
-  Slice 19, Saved Locations Persistence.
+- Last implementation slice: Slice 18I, Mobile One-Handed Home Ergonomics, is
+  committed in this changeset. Next implementation candidate returns to Slice
+  19, Saved Locations Persistence.
 - Current documentation drift under review: the tracked art sheet path/spec say
   Base Art Sheet v0.1 while the visible image title says v0.2.
 - Current process correction: cycle history is now tail-limited for normal reads
@@ -43,7 +44,7 @@ ledger states.
 Status: ready
 Mode: documentation-only
 Slice: Cycle history token-size and archive contract
-Commit: not committed in this turn
+Commit: committed in this changeset
 
 Result:
 - Archived the previous full cycle ledger at
@@ -124,7 +125,7 @@ Boundaries:
 Status: ready
 Mode: documentation-only
 Slice: Project status sync after Slice 18G
-Commit: not committed in this turn
+Commit: committed in this changeset
 
 Result:
 - Compared README, specification section 53, roadmap Slice 18G/18H status,
@@ -264,3 +265,95 @@ Boundaries:
   quality, radar, release readiness, or MVP readiness.
 - The active saved-location persistence plan in `.codex/plans/current.md`
   predated this fix and was left untouched.
+
+### 2026-09-02-mobile-one-handed-home-ergonomics-plan
+
+Status: ready
+Mode: documentation-only
+Slice: Slice 18I planning and roadmap/spec sequencing
+Commit: not committed in this turn
+
+Result:
+- Added Slice 18I, Mobile One-Handed Home Ergonomics, to
+  `.codex/plans/mvp-roadmap.md` as a bounded follow-up to the committed Slice
+  18H Standard Home baseline.
+- Updated `docs/OXYGEN_FULL_SPECIFICATION.md` section 53 so the immediate next
+  candidate is Slice 18I before returning to Slice 19 Saved Locations
+  Persistence.
+- Replaced the active `.codex/plans/current.md` cycle with a planned Slice 18I
+  implementation contract covering bottom thumb-zone actions, Home footer
+  clearance, stale-status visual weight, Details provenance ordering, About
+  recovery placement, focused Compose tests, and installed-app screenshots.
+- Preserved the boundary that operational provenance remains reachable from
+  Home and full provider/privacy/license explanation remains in About.
+
+Evidence:
+- `git diff --check` passed.
+- Android build/test/emulator commands were not run because this planning/status
+  sync changed only Markdown files and no Kotlin, Compose, Gradle, manifest,
+  resources, provider, persistence, or test behavior.
+
+Artifacts:
+- Planning check log:
+  `.codex/test-artifacts/2026-09-02-mobile-ui-ergonomics-review/planning-git-diff-check.log`.
+- Baseline UI review artifacts:
+  `.codex/test-artifacts/2026-09-02-mobile-ui-ergonomics-review/`.
+
+Boundaries:
+- No production UI, provider, repository, Room/DataStore, forecast mapping,
+  saved-location, unit-preference, alert, air-quality, radar, background
+  refresh, persisted appearance, installed-app MET Norway fallback, release, or
+  MVP-readiness behavior was changed.
+
+### 2026-09-02-mobile-one-handed-home-ergonomics
+
+Status: ready
+Mode: feature
+Slice: Slice 18I, Mobile One-Handed Home Ergonomics
+Commit: not committed in this turn
+
+Result:
+- First-run and change-location screens now keep manual search/disclosure
+  content scrollable above bottom-aligned Search, Use my location,
+  Settings/About, and return Back actions.
+- About overview/detail content now scrolls above a bottom Back action.
+- Home Now keeps current weather visually before refresh/stale status, while
+  keeping cached/refresh-failed context visible and reachable.
+- Details presents metric groups and source/update information before stale
+  status/provenance footer; operational provenance remains reachable from Home
+  and full explanations remain in About.
+- Scrollable Home pages have footer clearance; compact Daily retains its
+  established fixed page composition.
+
+Evidence:
+- Baseline focused unit tests passed: `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest --tests '*HomeForecast*'`.
+- Focused Home Compose instrumentation passed 24 tests on
+  `oxygen_starter(AVD) - 17`: `. scripts/android-env.sh && ./gradlew
+  :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+- Installed-app real path used `scripts/list-avds.sh`, `scripts/start-emulator.sh`,
+  `scripts/install-debug.sh`, clean app data, first-run capture, manual
+  Open-Meteo geocoding search/select for Madison, Home Now/Hourly/Daily/Details,
+  change-location Back/return, About overview, and About Privacy detail.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- Logs, screenshots, and hierarchies are under
+  `.codex/test-artifacts/2026-09-02-mobile-one-handed-home-ergonomics/`.
+- Installed evidence includes `installed-first-run-location.png`/`.xml`,
+  `installed-location-results.png`/`.xml`, `installed-home-now.png`/`.xml`,
+  `installed-home-hourly.png`/`.xml`, `installed-home-daily.png`/`.xml`,
+  `installed-home-details.png`/`.xml`, `installed-change-location.png`/`.xml`,
+  `installed-after-location-back.xml`, `installed-about-overview.png`/`.xml`,
+  and `installed-about-privacy.png`/`.xml`.
+
+Boundaries:
+- No saved-location management, Room/DataStore schema behavior, provider
+  behavior, forecast mapping, unit preferences, alerts, air quality, radar,
+  widget, background refresh, persisted appearance, installed-app MET Norway
+  fallback, release readiness, MVP readiness, or sample-weather production
+  fallback was added.

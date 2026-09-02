@@ -350,9 +350,10 @@ private fun HomePageContainer(
 ) {
     val roles = LocalOxygenHomeDesign.current
     val useOverflowScroll = page != HomePage.Daily || LocalDensity.current.fontScale > 1f
+    val bottomClearance = if (useOverflowScroll) roles.sectionGap + 24.dp else roles.sectionGap
     val baseModifier = Modifier
         .fillMaxSize()
-        .padding(bottom = roles.sectionGap)
+        .padding(bottom = bottomClearance)
         .testTag(page.pageTag)
     val pageModifier = if (useOverflowScroll) {
         baseModifier.verticalScroll(rememberScrollState())
@@ -428,28 +429,6 @@ private fun NowPage(
         )
     }
 
-    state.refreshInProgressText?.let { refreshText ->
-        DashboardCard(tag = "home-refreshing") {
-            Text(refreshText, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-    when (val freshness = state.freshness) {
-        HomeForecastFreshness.Fresh -> Unit
-        is HomeForecastFreshness.RestoredFromCache -> {
-            DashboardCard(tag = "home-section-stale") {
-                Text("Cached forecast", style = roles.sectionHeading)
-                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-        is HomeForecastFreshness.StaleAfterFailedRefresh -> {
-            DashboardCard(tag = "home-section-stale") {
-                Text("Cached forecast", style = roles.sectionHeading)
-                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
-                Text("Refresh failed: ${freshness.refreshFailureMessage.text}", style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-
     DashboardCard(tag = "home-section-current") {
         if (dashboard.current == null) {
             Text("Current conditions", style = roles.sectionHeading)
@@ -507,6 +486,28 @@ private fun NowPage(
             )
             Text("${dashboard.current.updatedTime} | ${dashboard.current.dataTypeLabel}", style = roles.supportingLabel)
             Text("${dashboard.source.sourceName} | ${dashboard.source.fetchedAt}", style = roles.supportingLabel)
+        }
+    }
+
+    state.refreshInProgressText?.let { refreshText ->
+        DashboardCard(tag = "home-refreshing") {
+            Text(refreshText, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+    when (val freshness = state.freshness) {
+        HomeForecastFreshness.Fresh -> Unit
+        is HomeForecastFreshness.RestoredFromCache -> {
+            DashboardCard(tag = "home-section-stale") {
+                Text("Cached forecast", style = roles.sectionHeading)
+                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        is HomeForecastFreshness.StaleAfterFailedRefresh -> {
+            DashboardCard(tag = "home-section-stale") {
+                Text("Cached forecast", style = roles.sectionHeading)
+                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+                Text("Refresh failed: ${freshness.refreshFailureMessage.text}", style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 
@@ -645,8 +646,6 @@ private fun DetailsPage(state: HomeForecastPresentationState.ForecastReady) {
     val dashboard = state.dashboard
     val groups = dashboard.metrics.toDetailsGroups()
 
-    DetailsStatusBlock(state.freshness)
-
     if (groups.isNotEmpty()) {
         DetailsMetricGroups(groups.take(2))
     } else if (dashboard.returnedDataUnavailableText != null) {
@@ -654,6 +653,8 @@ private fun DetailsPage(state: HomeForecastPresentationState.ForecastReady) {
     }
 
     DetailsSourceBlock(dashboard.source)
+
+    DetailsStatusBlock(state.freshness)
 
     if (groups.size > 2) {
         DetailsMetricGroups(groups.drop(2), includeContainerTag = false)
