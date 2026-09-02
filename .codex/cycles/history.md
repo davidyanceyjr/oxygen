@@ -224,3 +224,43 @@ Evidence:
 - Android build/test/emulator commands were not run because this
   documentation-only sync changed only Markdown files and no Kotlin, Compose,
   Gradle, manifest, resources, provider, persistence, or test behavior.
+
+### 2026-09-02-location-card-return-path
+
+Status: committed
+Mode: fix
+Slice: Location card return path from Home
+Commit: this commit
+
+Result:
+- Opening Location from Home now preserves the current Home screen as a return
+  target and shows a visible Back action on the Location card.
+- Tapping Back from that Location card restores the previous Home without
+  starting a new search or forecast request.
+- Selecting a new manual search result from the same Location card still
+  replaces the selected Home location through the existing manual-selection
+  path.
+
+Evidence:
+- Focused state tests passed: `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest' --tests
+  '*FirstRunLocationStateHolderTest'`.
+- Focused Home Compose instrumentation passed 20 tests on
+  `oxygen_starter(AVD) - 17`: `. scripts/android-env.sh && ./gradlew
+  :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- Logs are under
+  `.codex/test-artifacts/2026-09-02-location-card-return-path/`.
+
+Boundaries:
+- This did not add saved-location management, device-location lookup, provider
+  behavior, Room/DataStore schema behavior, unit preferences, alerts, air
+  quality, radar, release readiness, or MVP readiness.
+- The active saved-location persistence plan in `.codex/plans/current.md`
+  predated this fix and was left untouched.

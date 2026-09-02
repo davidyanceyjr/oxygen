@@ -22,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -39,6 +40,7 @@ fun FirstRunLocationEntryScreen(
     onRetry: () -> Unit,
     onCandidateSelected: (LocationId) -> Unit,
     onUseMyLocation: () -> Unit,
+    onBack: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
     Surface(Modifier.fillMaxSize()) {
@@ -51,6 +53,14 @@ fun FirstRunLocationEntryScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Spacer(Modifier.height(8.dp))
+            if (state.canReturnHome) {
+                OutlinedButton(
+                    onClick = onBack,
+                    modifier = Modifier.testTag("location-entry-back"),
+                ) {
+                    Text("Back")
+                }
+            }
             Text(
                 text = "OXYGEN",
                 style = MaterialTheme.typography.labelLarge,

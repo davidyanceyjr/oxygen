@@ -149,11 +149,19 @@ class OxygenAppStateHolder(
 
     @Synchronized
     fun onChangeLocation() {
+        val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
+            ?: return
         nextForecastRequestId()
-        presentationState = OxygenAppPresentationState(
-            screen = OxygenAppScreen.FirstRunLocationEntry(),
-            selectedLocation = null,
+        presentationState = presentationState.copy(
+            screen = OxygenAppScreen.FirstRunLocationEntry(returnScreen = currentHome),
         )
+        publishState()
+    }
+
+    fun onLocationEntryBack() {
+        val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
+        val returnScreen = firstRun.returnScreen ?: return
+        presentationState = presentationState.copy(screen = returnScreen)
         publishState()
     }
 
@@ -715,6 +723,7 @@ sealed interface OxygenAppScreen {
         val submittedQuery: String? = null,
         val message: FirstRunLocationMessage? = null,
         val searchState: ManualLocationSearchState = ManualLocationSearchState.Idle,
+        val returnScreen: Home? = null,
         val title: String = "Choose a location",
         val searchLabel: String = "Search for a location",
         val searchActionLabel: String = "Search",
@@ -722,7 +731,10 @@ sealed interface OxygenAppScreen {
         val retryLabel: String = "Retry",
         val geocodingDisclosure: String = "Location search by Open-Meteo, based on GeoNames data.",
         val geocodingPrivacyNote: String = "Your typed search is sent to Open-Meteo to find matching places.",
-    ) : OxygenAppScreen
+    ) : OxygenAppScreen {
+        val canReturnHome: Boolean
+            get() = returnScreen != null
+    }
 
     data class Home(
         val forecast: HomeForecastPresentationState,
