@@ -231,6 +231,32 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun compactHomeKeepsDataPagerAboveBottomNavigationAndSecondaryActions() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(state = state, widthDp = 360, heightDp = 640)
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
+        composeRule.assertVerticalOrder(
+            "home-page-container",
+            "home-footer-navigation",
+        )
+        composeRule.assertVerticalOrder(
+            "home-page-selector",
+            "home-secondary-actions",
+        )
+        composeRule.assertWithinRootBounds(
+            "home-page-container",
+            "home-footer-navigation",
+        )
+        composeRule.assertSecondaryActionsUseLessWidthThanPageTabs()
+    }
+
+    @Test
     fun homePagerExposesNamedAccessibilityPageMovementActions() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
@@ -703,6 +729,9 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         assertEquals(listOf(location), repository.locations)
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
         composeRule.onNodeWithTag("home-refresh").performClick()
         composeRule.waitForIdle()
 
@@ -895,6 +924,22 @@ private fun ComposeTestRule.assertMinimumTouchTarget(vararg tags: String) {
         assertTrue("$tag should be at least 48dp wide", rect.width >= 48f)
         assertTrue("$tag should be at least 48dp tall", rect.height >= 48f)
     }
+}
+
+private fun ComposeTestRule.assertSecondaryActionsUseLessWidthThanPageTabs() {
+    val pageSelector = onNodeWithTag("home-page-selector").fetchSemanticsNode().boundsInRoot
+    val secondaryActionWidth = listOf(
+        "home-change-location",
+        "home-refresh",
+        "home-about-entry",
+    ).sumOf { tag ->
+        onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.width.toDouble()
+    }.toFloat()
+
+    assertTrue(
+        "Secondary actions should not take the same visual width as primary Home page navigation",
+        secondaryActionWidth < pageSelector.width,
+    )
 }
 
 private fun SemanticsNodeInteraction.assertCustomActions(vararg labels: String) {

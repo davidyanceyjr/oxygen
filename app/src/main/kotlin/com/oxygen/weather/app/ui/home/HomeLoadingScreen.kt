@@ -29,6 +29,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
@@ -211,27 +212,6 @@ private fun ReadyContent(
             pageIndex = pagerState.currentPage,
             pageCount = pages.size,
         )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("home-page-selector"),
-            horizontalArrangement = Arrangement.spacedBy(roles.tileGap - 2.dp),
-        ) {
-            pages.forEachIndexed { index, page ->
-                FilterChip(
-                    selected = index == pagerState.currentPage,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                    label = { Text(page.title) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
-                        .testTag(page.tabTag)
-                        .semantics {
-                            contentDescription = "${page.title} page"
-                        },
-                )
-            }
-        }
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
@@ -266,14 +246,98 @@ private fun ReadyContent(
                 when (pages[pageIndex]) {
                     HomePage.Now -> NowPage(
                         state = state,
-                        onRefresh = onRefresh,
-                        onChangeLocation = onChangeLocation,
-                        onOpenAbout = onOpenAbout,
                     )
                     HomePage.Hourly -> HourlyPage(state)
                     HomePage.Daily -> DailyPage(state)
                     HomePage.Details -> DetailsPage(state)
                 }
+            }
+        }
+        HomeFooterNavigation(
+            pages = pages,
+            selectedPageIndex = pagerState.currentPage,
+            isRefreshEnabled = state.canRefresh && !state.isRefreshInProgress,
+            refreshLabel = state.refreshLabel,
+            onPageSelected = { pageIndex ->
+                scope.launch { pagerState.animateScrollToPage(pageIndex) }
+            },
+            onRefresh = onRefresh,
+            onChangeLocation = onChangeLocation,
+            onOpenAbout = onOpenAbout,
+        )
+    }
+}
+
+@Composable
+private fun HomeFooterNavigation(
+    pages: List<HomePage>,
+    selectedPageIndex: Int,
+    isRefreshEnabled: Boolean,
+    refreshLabel: String,
+    onPageSelected: (Int) -> Unit,
+    onRefresh: () -> Unit,
+    onChangeLocation: () -> Unit,
+    onOpenAbout: () -> Unit,
+) {
+    val roles = LocalOxygenHomeDesign.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("home-footer-navigation"),
+        verticalArrangement = Arrangement.spacedBy(roles.tileGap - 4.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("home-page-selector"),
+            horizontalArrangement = Arrangement.spacedBy(roles.tileGap - 2.dp),
+        ) {
+            pages.forEachIndexed { index, page ->
+                FilterChip(
+                    selected = index == selectedPageIndex,
+                    onClick = { onPageSelected(index) },
+                    label = { Text(page.title) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp)
+                        .testTag(page.tabTag)
+                        .semantics {
+                            contentDescription = "${page.title} page"
+                        },
+                )
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("home-secondary-actions"),
+            horizontalArrangement = Arrangement.spacedBy(roles.tileGap - 2.dp),
+        ) {
+            TextButton(
+                onClick = onChangeLocation,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .testTag("home-change-location"),
+            ) {
+                Text("Location")
+            }
+            Spacer(Modifier.weight(1f))
+            TextButton(
+                onClick = onRefresh,
+                enabled = isRefreshEnabled,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .testTag("home-refresh"),
+            ) {
+                Text(text = refreshLabel)
+            }
+            TextButton(
+                onClick = onOpenAbout,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .testTag("home-about-entry"),
+            ) {
+                Text("Settings")
             }
         }
     }
@@ -345,9 +409,6 @@ private fun ReadyHeader(
 @Composable
 private fun NowPage(
     state: HomeForecastPresentationState.ForecastReady,
-    onRefresh: () -> Unit,
-    onChangeLocation: () -> Unit,
-    onOpenAbout: () -> Unit,
 ) {
     val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
@@ -365,39 +426,6 @@ private fun NowPage(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            OutlinedButton(
-                onClick = onOpenAbout,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-                    .testTag("home-about-entry"),
-            ) {
-                Text("Settings / About")
-            }
-            Button(
-                onClick = onRefresh,
-                enabled = state.canRefresh && !state.isRefreshInProgress,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-                    .testTag("home-refresh"),
-            ) {
-                Text(text = state.refreshLabel)
-            }
-        }
-        OutlinedButton(
-            onClick = onChangeLocation,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .testTag("home-change-location"),
-        ) {
-            Text("Change location")
-        }
     }
 
     state.refreshInProgressText?.let { refreshText ->
@@ -706,7 +734,7 @@ private fun DetailsMetricGroupCard(
     val roles = LocalOxygenHomeDesign.current
     Card(
         modifier = modifier
-            .heightIn(min = 112.dp)
+            .heightIn(min = 96.dp)
             .testTag(group.tag)
             .semantics {
                 contentDescription = group.contentDescription
@@ -720,8 +748,8 @@ private fun DetailsMetricGroupCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(7.dp),
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
             Text(
                 text = group.title,
@@ -779,13 +807,39 @@ private fun DetailsSunBlock(sun: HomeSunPresentation) {
 @Composable
 private fun DetailsSourceBlock(source: HomeSourcePresentation) {
     val roles = LocalOxygenHomeDesign.current
-    DashboardCard(tag = "home-section-source") {
-        Text("Source and updates", style = roles.sectionHeading)
-        DetailsValueColumn("Provider", source.sourceName)
-        DetailsValueColumn("Data type", source.dataType)
-        Text(source.fetchedAt, style = MaterialTheme.typography.bodySmall)
-        source.issuedAt?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        source.license?.let { Text("License $it", style = MaterialTheme.typography.bodySmall) }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("home-section-source"),
+        shape = RoundedCornerShape(roles.homeCardCorner),
+        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.46f)),
+        colors = CardDefaults.cardColors(
+            containerColor = roles.strongGlassSurface,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(roles.compactCardPadding),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text("Source and updates", style = roles.sectionHeading)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(roles.tileGap),
+            ) {
+                DetailsValueColumn("Provider", source.sourceName, Modifier.weight(1f))
+                DetailsValueColumn("Fetched", source.fetchedAt, Modifier.weight(1f))
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(roles.tileGap),
+            ) {
+                DetailsValueColumn("Data type", source.dataType, Modifier.weight(1f))
+                DetailsValueColumn("Issued", source.issuedAt ?: "Unavailable", Modifier.weight(1f))
+            }
+            source.license?.let { Text("License $it", style = MaterialTheme.typography.bodySmall) }
+        }
     }
 }
 
@@ -854,7 +908,7 @@ private fun DailyEntry(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 72.dp)
+            .heightIn(min = 60.dp)
             .testTag("home-daily-entry-$index")
             .semantics {
                 contentDescription = listOf(
@@ -874,12 +928,12 @@ private fun DailyEntry(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(30.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .semantics {
                         contentDescription = day.condition
@@ -887,7 +941,7 @@ private fun DailyEntry(
             ) {
                 WeatherConditionMark(
                     condition = day.conditionIdentity,
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier.size(30.dp),
                 )
             }
             Column(
@@ -929,7 +983,7 @@ private fun DailyTemperatureColumn(
 ) {
     val roles = LocalOxygenHomeDesign.current
     Column(
-        modifier = Modifier.widthIn(min = 72.dp),
+        modifier = Modifier.widthIn(min = 64.dp),
         verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
         Text(
