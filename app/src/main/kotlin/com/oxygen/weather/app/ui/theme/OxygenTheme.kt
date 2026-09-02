@@ -8,7 +8,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 @Immutable
 data class OxygenPalette(
@@ -21,6 +25,27 @@ data class OxygenPalette(
     val chartAccent: Color,
     val precipitation: Color,
     val warning: Color,
+)
+
+@Immutable
+data class OxygenHomeDesignRoles(
+    val pageMarginHorizontal: Dp,
+    val pageMarginVertical: Dp,
+    val pageGap: Dp,
+    val sectionGap: Dp,
+    val tileGap: Dp,
+    val cardPadding: Dp,
+    val compactCardPadding: Dp,
+    val homeCardCorner: Dp,
+    val weatherMarkGold: Color,
+    val weatherMarkQuiet: Color,
+    val ambientGlassSurface: Color,
+    val strongGlassSurface: Color,
+    val outlineAccent: Color,
+    val displayWeatherValue: TextStyle,
+    val sectionHeading: TextStyle,
+    val supportingLabel: TextStyle,
+    val compactWeatherValue: TextStyle,
 )
 
 enum class OxygenThemeId(val displayName: String) {
@@ -47,6 +72,28 @@ val LocalOxygenPalette = staticCompositionLocalOf {
         chartAccent = Color.White,
         precipitation = Color.White,
         warning = Color.Red,
+    )
+}
+
+val LocalOxygenHomeDesign = staticCompositionLocalOf {
+    OxygenHomeDesignRoles(
+        pageMarginHorizontal = 18.dp,
+        pageMarginVertical = 18.dp,
+        pageGap = 10.dp,
+        sectionGap = 16.dp,
+        tileGap = 10.dp,
+        cardPadding = 16.dp,
+        compactCardPadding = 10.dp,
+        homeCardCorner = 8.dp,
+        weatherMarkGold = Color(0xFFFFD28A),
+        weatherMarkQuiet = Color(0xFFE8F8FB),
+        ambientGlassSurface = Color(0x5523414D),
+        strongGlassSurface = Color(0xAA17313C),
+        outlineAccent = Color(0x667FC1CE),
+        displayWeatherValue = Typography().displayMedium.copy(fontWeight = FontWeight.Light),
+        sectionHeading = Typography().titleMedium.copy(fontWeight = FontWeight.SemiBold),
+        supportingLabel = Typography().labelSmall.copy(fontWeight = FontWeight.SemiBold),
+        compactWeatherValue = Typography().titleMedium.copy(fontWeight = FontWeight.SemiBold),
     )
 }
 
@@ -122,12 +169,34 @@ fun OxygenTheme(
 ) {
     val spec = oxygenThemeSpec(themeId)
     val palette = spec.palette
+    val typography = spec.typography
+    val homeDesign = OxygenHomeDesignRoles(
+        pageMarginHorizontal = 18.dp,
+        pageMarginVertical = 18.dp,
+        pageGap = 10.dp,
+        sectionGap = 16.dp,
+        tileGap = 10.dp,
+        cardPadding = 16.dp,
+        compactCardPadding = 10.dp,
+        homeCardCorner = 8.dp,
+        weatherMarkGold = if (spec.dark) Color(0xFFFFD28A) else Color(0xFF8A5D18),
+        weatherMarkQuiet = if (spec.dark) Color(0xFFE8F8FB) else Color(0xFF244954),
+        ambientGlassSurface = palette.glass,
+        strongGlassSurface = palette.glassStrong,
+        outlineAccent = palette.outline,
+        displayWeatherValue = typography.displayMedium.copy(fontWeight = FontWeight.Light),
+        sectionHeading = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+        supportingLabel = typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+        compactWeatherValue = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+    )
     val scheme = if (spec.dark) {
         darkColorScheme(
             primary = palette.chartAccent,
             secondary = palette.precipitation,
             background = palette.skyTop,
             surface = palette.glassStrong,
+            surfaceVariant = palette.glass,
+            outline = palette.outline,
             onPrimary = Color(0xFF062126),
             onSecondary = Color(0xFF072033),
             onBackground = Color(0xFFF2FAFC),
@@ -140,6 +209,8 @@ fun OxygenTheme(
             secondary = palette.precipitation,
             background = palette.skyTop,
             surface = palette.glassStrong,
+            surfaceVariant = palette.glass,
+            outline = palette.outline,
             onPrimary = Color.White,
             onSecondary = Color.White,
             onBackground = Color(0xFF2A2722),
@@ -148,7 +219,10 @@ fun OxygenTheme(
         )
     }
 
-    androidx.compose.runtime.CompositionLocalProvider(LocalOxygenPalette provides palette) {
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalOxygenPalette provides palette,
+        LocalOxygenHomeDesign provides homeDesign,
+    ) {
         MaterialTheme(
             colorScheme = scheme,
             typography = spec.typography,

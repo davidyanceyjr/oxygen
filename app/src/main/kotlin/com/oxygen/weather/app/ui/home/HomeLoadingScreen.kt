@@ -29,11 +29,15 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -49,78 +53,94 @@ import com.oxygen.weather.app.HomeForecastFreshness
 import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.HomeSourcePresentation
 import com.oxygen.weather.app.HomeSunPresentation
+import com.oxygen.weather.app.ui.theme.EffectsLevel
+import com.oxygen.weather.app.ui.theme.LocalOxygenHomeDesign
+import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
 import kotlinx.coroutines.launch
 
 @Composable
 fun HomeLoadingScreen(
     state: HomeForecastPresentationState,
+    appearance: OxygenAppearance = OxygenAppearance(),
     onRetry: () -> Unit = {},
     onRefresh: () -> Unit = {},
     onChangeLocation: () -> Unit = {},
     onOpenAbout: () -> Unit = {},
 ) {
+    val baseRoles = LocalOxygenHomeDesign.current
+    val roles = if (appearance.effects == EffectsLevel.OFF) {
+        baseRoles.copy(
+            ambientGlassSurface = MaterialTheme.colorScheme.surface,
+            strongGlassSurface = MaterialTheme.colorScheme.surface,
+            outlineAccent = MaterialTheme.colorScheme.outline,
+        )
+    } else {
+        baseRoles
+    }
     Surface(Modifier.fillMaxSize()) {
-        if (state is HomeForecastPresentationState.ForecastReady) {
-            ReadyContent(
-                state = state,
-                onRefresh = onRefresh,
-                onChangeLocation = onChangeLocation,
-                onOpenAbout = onOpenAbout,
-            )
-            return@Surface
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeDrawingPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "OXYGEN",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            if (state !is HomeForecastPresentationState.ForecastReady) {
-                Text(
-                    text = state.title,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = state.subtitle,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
-                )
-                OutlinedButton(
-                    onClick = onOpenAbout,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Settings / About")
-                }
-                OutlinedButton(
-                    onClick = onChangeLocation,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("home-change-location"),
-                ) {
-                    Text("Change location")
-                }
-            }
-            when (state) {
-                is HomeForecastPresentationState.Loading -> LoadingContent(state)
-                is HomeForecastPresentationState.NoCacheError -> ErrorContent(
+        CompositionLocalProvider(LocalOxygenHomeDesign provides roles) {
+            if (state is HomeForecastPresentationState.ForecastReady) {
+                ReadyContent(
                     state = state,
-                    onRetry = onRetry,
+                    onRefresh = onRefresh,
+                    onChangeLocation = onChangeLocation,
+                    onOpenAbout = onOpenAbout,
                 )
-                is HomeForecastPresentationState.ForecastReady -> Unit
+                return@CompositionLocalProvider
             }
-            ProviderDisclosure(state)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = roles.pageMarginHorizontal, vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(roles.sectionGap),
+            ) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "OXYGEN",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (state !is HomeForecastPresentationState.ForecastReady) {
+                    Text(
+                        text = state.title,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = state.subtitle,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                    )
+                    OutlinedButton(
+                        onClick = onOpenAbout,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Settings / About")
+                    }
+                    OutlinedButton(
+                        onClick = onChangeLocation,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("home-change-location"),
+                    ) {
+                        Text("Change location")
+                    }
+                }
+                when (state) {
+                    is HomeForecastPresentationState.Loading -> LoadingContent(state)
+                    is HomeForecastPresentationState.NoCacheError -> ErrorContent(
+                        state = state,
+                        onRetry = onRetry,
+                    )
+                    is HomeForecastPresentationState.ForecastReady -> Unit
+                }
+                ProviderDisclosure(state)
+            }
         }
     }
 }
@@ -172,6 +192,7 @@ private fun ReadyContent(
     onChangeLocation: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
     val pages = HomePage.entries
     val pagerState = rememberPagerState(pageCount = { pages.size })
@@ -182,35 +203,15 @@ private fun ReadyContent(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
-            .padding(horizontal = 18.dp, vertical = 18.dp)
+            .padding(horizontal = roles.pageMarginHorizontal, vertical = roles.pageMarginVertical)
             .testTag("home-dashboard"),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(roles.pageGap),
     ) {
         ReadyHeader(
             currentPage = currentPage,
             pageIndex = pagerState.currentPage,
             pageCount = pages.size,
         )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("home-page-selector"),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            pages.forEachIndexed { index, page ->
-                FilterChip(
-                    selected = index == pagerState.currentPage,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                    label = { Text(page.title) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag(page.tabTag)
-                        .semantics {
-                            contentDescription = "${page.title} page"
-                        },
-                )
-            }
-        }
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
@@ -219,20 +220,124 @@ private fun ReadyContent(
                 .testTag("home-page-container")
                 .semantics {
                     contentDescription = "${currentPage.title}, Page ${pagerState.currentPage + 1} of ${pages.size}"
+                    customActions = buildList {
+                        if (pagerState.currentPage > 0) {
+                            val previousPage = pages[pagerState.currentPage - 1]
+                            add(
+                                CustomAccessibilityAction("Show previous page: ${previousPage.title}") {
+                                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                                    true
+                                },
+                            )
+                        }
+                        if (pagerState.currentPage < pages.lastIndex) {
+                            val nextPage = pages[pagerState.currentPage + 1]
+                            add(
+                                CustomAccessibilityAction("Show next page: ${nextPage.title}") {
+                                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                                    true
+                                },
+                            )
+                        }
+                    }
                 },
         ) { pageIndex ->
             HomePageContainer(page = pages[pageIndex]) {
                 when (pages[pageIndex]) {
                     HomePage.Now -> NowPage(
                         state = state,
-                        onRefresh = onRefresh,
-                        onChangeLocation = onChangeLocation,
-                        onOpenAbout = onOpenAbout,
                     )
                     HomePage.Hourly -> HourlyPage(state)
                     HomePage.Daily -> DailyPage(state)
                     HomePage.Details -> DetailsPage(state)
                 }
+            }
+        }
+        HomeFooterNavigation(
+            pages = pages,
+            selectedPageIndex = pagerState.currentPage,
+            isRefreshEnabled = state.canRefresh && !state.isRefreshInProgress,
+            refreshLabel = state.refreshLabel,
+            onPageSelected = { pageIndex ->
+                scope.launch { pagerState.animateScrollToPage(pageIndex) }
+            },
+            onRefresh = onRefresh,
+            onChangeLocation = onChangeLocation,
+            onOpenAbout = onOpenAbout,
+        )
+    }
+}
+
+@Composable
+private fun HomeFooterNavigation(
+    pages: List<HomePage>,
+    selectedPageIndex: Int,
+    isRefreshEnabled: Boolean,
+    refreshLabel: String,
+    onPageSelected: (Int) -> Unit,
+    onRefresh: () -> Unit,
+    onChangeLocation: () -> Unit,
+    onOpenAbout: () -> Unit,
+) {
+    val roles = LocalOxygenHomeDesign.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("home-footer-navigation"),
+        verticalArrangement = Arrangement.spacedBy(roles.tileGap - 4.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("home-page-selector"),
+            horizontalArrangement = Arrangement.spacedBy(roles.tileGap - 2.dp),
+        ) {
+            pages.forEachIndexed { index, page ->
+                FilterChip(
+                    selected = index == selectedPageIndex,
+                    onClick = { onPageSelected(index) },
+                    label = { Text(page.title) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp)
+                        .testTag(page.tabTag)
+                        .semantics {
+                            contentDescription = "${page.title} page"
+                        },
+                )
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("home-secondary-actions"),
+            horizontalArrangement = Arrangement.spacedBy(roles.tileGap - 2.dp),
+        ) {
+            TextButton(
+                onClick = onChangeLocation,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .testTag("home-change-location"),
+            ) {
+                Text("Location")
+            }
+            Spacer(Modifier.weight(1f))
+            TextButton(
+                onClick = onRefresh,
+                enabled = isRefreshEnabled,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .testTag("home-refresh"),
+            ) {
+                Text(text = refreshLabel)
+            }
+            TextButton(
+                onClick = onOpenAbout,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .testTag("home-about-entry"),
+            ) {
+                Text("Settings")
             }
         }
     }
@@ -243,10 +348,12 @@ private fun HomePageContainer(
     page: HomePage,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     val useOverflowScroll = page != HomePage.Daily || LocalDensity.current.fontScale > 1f
+    val bottomClearance = if (useOverflowScroll) roles.sectionGap + 24.dp else roles.sectionGap
     val baseModifier = Modifier
         .fillMaxSize()
-        .padding(bottom = 16.dp)
+        .padding(bottom = bottomClearance)
         .testTag(page.pageTag)
     val pageModifier = if (useOverflowScroll) {
         baseModifier.verticalScroll(rememberScrollState())
@@ -255,7 +362,7 @@ private fun HomePageContainer(
     }
     Column(
         modifier = pageModifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(roles.sectionGap),
         content = content,
     )
 }
@@ -266,6 +373,7 @@ private fun ReadyHeader(
     pageIndex: Int,
     pageCount: Int,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -281,11 +389,10 @@ private fun ReadyHeader(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("home-page-title")
-                    .semantics {
-                        contentDescription = "${currentPage.title}, Page ${pageIndex + 1} of $pageCount"
-                    },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                .semantics {
+                    contentDescription = "${currentPage.title}, Page ${pageIndex + 1} of $pageCount"
+                },
+                style = roles.sectionHeading,
             )
         }
         Text(
@@ -293,7 +400,7 @@ private fun ReadyHeader(
             modifier = Modifier
                 .widthIn(min = 72.dp)
                 .testTag("home-page-position"),
-            style = MaterialTheme.typography.bodySmall,
+            style = roles.supportingLabel,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
             textAlign = TextAlign.End,
         )
@@ -303,10 +410,8 @@ private fun ReadyHeader(
 @Composable
 private fun NowPage(
     state: HomeForecastPresentationState.ForecastReady,
-    onRefresh: () -> Unit,
-    onChangeLocation: () -> Unit,
-    onOpenAbout: () -> Unit,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
 
     DashboardSection(tag = "home-section-location") {
@@ -322,66 +427,11 @@ private fun NowPage(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            OutlinedButton(
-                onClick = onOpenAbout,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-                    .testTag("home-about-entry"),
-            ) {
-                Text("Settings / About")
-            }
-            Button(
-                onClick = onRefresh,
-                enabled = state.canRefresh && !state.isRefreshInProgress,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-                    .testTag("home-refresh"),
-            ) {
-                Text(text = state.refreshLabel)
-            }
-        }
-        OutlinedButton(
-            onClick = onChangeLocation,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .testTag("home-change-location"),
-        ) {
-            Text("Change location")
-        }
-    }
-
-    state.refreshInProgressText?.let { refreshText ->
-        DashboardCard(tag = "home-refreshing") {
-            Text(refreshText, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-    when (val freshness = state.freshness) {
-        HomeForecastFreshness.Fresh -> Unit
-        is HomeForecastFreshness.RestoredFromCache -> {
-            DashboardCard(tag = "home-section-stale") {
-                Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-        is HomeForecastFreshness.StaleAfterFailedRefresh -> {
-            DashboardCard(tag = "home-section-stale") {
-                Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
-                Text("Refresh failed: ${freshness.refreshFailureMessage.text}", style = MaterialTheme.typography.bodySmall)
-            }
-        }
     }
 
     DashboardCard(tag = "home-section-current") {
         if (dashboard.current == null) {
-            Text("Current conditions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Current conditions", style = roles.sectionHeading)
             Text(
                 text = dashboard.currentUnavailableText ?: dashboard.returnedDataUnavailableText.orEmpty(),
                 style = MaterialTheme.typography.bodyLarge,
@@ -415,8 +465,7 @@ private fun NowPage(
                     )
                     Text(
                         text = dashboard.current.temperature,
-                        style = MaterialTheme.typography.displayMedium,
-                        fontWeight = FontWeight.Light,
+                        style = roles.displayWeatherValue,
                     )
                 }
             }
@@ -426,8 +475,7 @@ private fun NowPage(
             ).joinToString("   ").ifEmpty { null }
             Text(
                 text = dashboard.current.apparentTemperature,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
+                style = roles.compactWeatherValue,
             )
             NowContextGrid(
                 items = listOfNotNull(
@@ -436,14 +484,36 @@ private fun NowPage(
                     dashboard.metrics.firstOrNull { it.label == "Wind" }?.let { it.label to it.value },
                 ),
             )
-            Text("${dashboard.current.updatedTime} | ${dashboard.current.dataTypeLabel}", style = MaterialTheme.typography.bodySmall)
-            Text("${dashboard.source.sourceName} | ${dashboard.source.fetchedAt}", style = MaterialTheme.typography.bodySmall)
+            Text("${dashboard.current.updatedTime} | ${dashboard.current.dataTypeLabel}", style = roles.supportingLabel)
+            Text("${dashboard.source.sourceName} | ${dashboard.source.fetchedAt}", style = roles.supportingLabel)
+        }
+    }
+
+    state.refreshInProgressText?.let { refreshText ->
+        DashboardCard(tag = "home-refreshing") {
+            Text(refreshText, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+    when (val freshness = state.freshness) {
+        HomeForecastFreshness.Fresh -> Unit
+        is HomeForecastFreshness.RestoredFromCache -> {
+            DashboardCard(tag = "home-section-stale") {
+                Text("Cached forecast", style = roles.sectionHeading)
+                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        is HomeForecastFreshness.StaleAfterFailedRefresh -> {
+            DashboardCard(tag = "home-section-stale") {
+                Text("Cached forecast", style = roles.sectionHeading)
+                Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+                Text("Refresh failed: ${freshness.refreshFailureMessage.text}", style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 
     dashboard.alerts.forEach { alert ->
         DashboardCard(tag = "home-section-alert") {
-            Text(alert.event, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(alert.event, style = roles.sectionHeading)
             Text(alert.headline, style = MaterialTheme.typography.bodyMedium)
             Text("${alert.severity} | ${alert.issuer}", style = MaterialTheme.typography.bodySmall)
             alert.effective?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
@@ -453,7 +523,7 @@ private fun NowPage(
 
     dashboard.precipitationSummary?.let {
         DashboardCard(tag = "home-section-precipitation") {
-            Text("Near-term precipitation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Near-term precipitation", style = roles.sectionHeading)
             Text(it, style = MaterialTheme.typography.bodyMedium)
         }
     }
@@ -461,6 +531,7 @@ private fun NowPage(
 
 @Composable
 private fun NowContextGrid(items: List<Pair<String, String>>) {
+    val roles = LocalOxygenHomeDesign.current
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -478,7 +549,7 @@ private fun NowContextGrid(items: List<Pair<String, String>>) {
                     ) {
                         Text(
                             text = item.first,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = roles.supportingLabel,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
                         )
                         Text(
@@ -498,21 +569,22 @@ private fun NowContextGrid(items: List<Pair<String, String>>) {
 
 @Composable
 private fun HourlyPage(state: HomeForecastPresentationState.ForecastReady) {
+    val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
 
     if (dashboard.hourly.isNotEmpty()) {
         DashboardSection(tag = "home-section-hourly") {
-            Text("Next hours", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Next hours", style = roles.sectionHeading)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("home-hourly-grid"),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(roles.tileGap),
             ) {
                 dashboard.hourly.take(6).chunked(2).forEachIndexed { rowIndex, row ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(roles.tileGap),
                     ) {
                         row.forEachIndexed { columnIndex, hour ->
                             HourlyTile(
@@ -535,16 +607,17 @@ private fun HourlyPage(state: HomeForecastPresentationState.ForecastReady) {
 
 @Composable
 private fun DailyPage(state: HomeForecastPresentationState.ForecastReady) {
+    val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
 
     if (dashboard.daily.isNotEmpty()) {
         DashboardSection(tag = "home-section-daily") {
-            Text("Daily forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Daily forecast", style = roles.sectionHeading)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("home-daily-list"),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(roles.tileGap - 2.dp),
             ) {
                 dashboard.daily.take(6).forEachIndexed { index, day ->
                     DailyEntry(
@@ -573,8 +646,6 @@ private fun DetailsPage(state: HomeForecastPresentationState.ForecastReady) {
     val dashboard = state.dashboard
     val groups = dashboard.metrics.toDetailsGroups()
 
-    DetailsStatusBlock(state.freshness)
-
     if (groups.isNotEmpty()) {
         DetailsMetricGroups(groups.take(2))
     } else if (dashboard.returnedDataUnavailableText != null) {
@@ -582,6 +653,8 @@ private fun DetailsPage(state: HomeForecastPresentationState.ForecastReady) {
     }
 
     DetailsSourceBlock(dashboard.source)
+
+    DetailsStatusBlock(state.freshness)
 
     if (groups.size > 2) {
         DetailsMetricGroups(groups.drop(2), includeContainerTag = false)
@@ -599,17 +672,18 @@ private fun DetailsPage(state: HomeForecastPresentationState.ForecastReady) {
 
 @Composable
 private fun DetailsStatusBlock(freshness: HomeForecastFreshness) {
+    val roles = LocalOxygenHomeDesign.current
     when (freshness) {
         HomeForecastFreshness.Fresh -> Unit
         is HomeForecastFreshness.RestoredFromCache -> {
             DashboardCard(tag = "home-section-status") {
-                Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("Cached forecast", style = roles.sectionHeading)
                 Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
             }
         }
         is HomeForecastFreshness.StaleAfterFailedRefresh -> {
             DashboardCard(tag = "home-section-status") {
-                Text("Cached forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("Cached forecast", style = roles.sectionHeading)
                 Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
                 Text("Refresh failed: ${freshness.refreshFailureMessage.text}", style = MaterialTheme.typography.bodySmall)
             }
@@ -622,6 +696,7 @@ private fun DetailsMetricGroups(
     groups: List<DetailsMetricGroup>,
     includeContainerTag: Boolean = true,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     val modifier = if (includeContainerTag) {
         Modifier
             .fillMaxWidth()
@@ -631,12 +706,12 @@ private fun DetailsMetricGroups(
     }
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(roles.tileGap),
     ) {
         groups.chunked(2).forEach { row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(roles.tileGap),
             ) {
                 row.forEach { group ->
                     DetailsMetricGroupCard(
@@ -657,24 +732,25 @@ private fun DetailsMetricGroupCard(
     group: DetailsMetricGroup,
     modifier: Modifier = Modifier,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     Card(
         modifier = modifier
-            .heightIn(min = 112.dp)
+            .heightIn(min = 96.dp)
             .testTag(group.tag)
             .semantics {
                 contentDescription = group.contentDescription
             },
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)),
+        shape = RoundedCornerShape(roles.homeCardCorner),
+        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.42f)),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+            containerColor = roles.ambientGlassSurface,
         ),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(7.dp),
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
             Text(
                 text = group.title,
@@ -692,13 +768,14 @@ private fun DetailsMetricGroupCard(
 
 @Composable
 private fun DetailsMetricLine(metric: HomeMetricPresentation) {
+    val roles = LocalOxygenHomeDesign.current
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
         Text(
             text = metric.label,
-            style = MaterialTheme.typography.bodySmall,
+            style = roles.supportingLabel,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -715,11 +792,12 @@ private fun DetailsMetricLine(metric: HomeMetricPresentation) {
 
 @Composable
 private fun DetailsSunBlock(sun: HomeSunPresentation) {
+    val roles = LocalOxygenHomeDesign.current
     DashboardCard(tag = "home-section-sun") {
-        Text("Sun", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text("Sun", style = roles.sectionHeading)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(roles.tileGap),
         ) {
             DetailsValueColumn("Sunrise", sun.sunrise, Modifier.weight(1f))
             DetailsValueColumn("Sunset", sun.sunset, Modifier.weight(1f))
@@ -729,13 +807,40 @@ private fun DetailsSunBlock(sun: HomeSunPresentation) {
 
 @Composable
 private fun DetailsSourceBlock(source: HomeSourcePresentation) {
-    DashboardCard(tag = "home-section-source") {
-        Text("Source and updates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        DetailsValueColumn("Provider", source.sourceName)
-        DetailsValueColumn("Data type", source.dataType)
-        Text(source.fetchedAt, style = MaterialTheme.typography.bodySmall)
-        source.issuedAt?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        source.license?.let { Text("License $it", style = MaterialTheme.typography.bodySmall) }
+    val roles = LocalOxygenHomeDesign.current
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("home-section-source"),
+        shape = RoundedCornerShape(roles.homeCardCorner),
+        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.46f)),
+        colors = CardDefaults.cardColors(
+            containerColor = roles.strongGlassSurface,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(roles.compactCardPadding),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text("Source and updates", style = roles.sectionHeading)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(roles.tileGap),
+            ) {
+                DetailsValueColumn("Provider", source.sourceName, Modifier.weight(1f))
+                DetailsValueColumn("Fetched", source.fetchedAt, Modifier.weight(1f))
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(roles.tileGap),
+            ) {
+                DetailsValueColumn("Data type", source.dataType, Modifier.weight(1f))
+                DetailsValueColumn("Issued", source.issuedAt ?: "Unavailable", Modifier.weight(1f))
+            }
+            source.license?.let { Text("License $it", style = MaterialTheme.typography.bodySmall) }
+        }
     }
 }
 
@@ -745,13 +850,14 @@ private fun DetailsValueColumn(
     value: String,
     modifier: Modifier = Modifier,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
+            style = roles.supportingLabel,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
         )
         Text(
@@ -799,10 +905,11 @@ private fun DailyEntry(
     day: HomeDailyPresentation,
     index: Int,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 72.dp)
+            .heightIn(min = 60.dp)
             .testTag("home-daily-entry-$index")
             .semantics {
                 contentDescription = listOf(
@@ -813,20 +920,21 @@ private fun DailyEntry(
                     day.precipitationProbability ?: "Precipitation unavailable",
                 ).joinToString(", ")
             },
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(roles.homeCardCorner),
+        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.34f)),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.58f),
+            containerColor = roles.ambientGlassSurface,
         ),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(30.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .semantics {
                         contentDescription = day.condition
@@ -834,7 +942,7 @@ private fun DailyEntry(
             ) {
                 WeatherConditionMark(
                     condition = day.conditionIdentity,
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier.size(30.dp),
                 )
             }
             Column(
@@ -843,8 +951,7 @@ private fun DailyEntry(
             ) {
                 Text(
                     text = day.date,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
+                    style = roles.compactWeatherValue,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -856,7 +963,7 @@ private fun DailyEntry(
                 )
                 Text(
                     text = day.precipitationProbability?.let { "Precip $it" } ?: "Precipitation unavailable",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = roles.supportingLabel,
                     maxLines = 2,
                 )
             }
@@ -875,20 +982,20 @@ private fun DailyTemperatureColumn(
     label: String,
     value: String,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     Column(
-        modifier = Modifier.widthIn(min = 72.dp),
+        modifier = Modifier.widthIn(min = 64.dp),
         verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
+            style = roles.supportingLabel,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
             maxLines = 1,
         )
         Text(
             text = value.removePrefix("$label "),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            style = roles.compactWeatherValue,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -898,7 +1005,7 @@ private fun DailyTemperatureColumn(
 @Composable
 private fun UnavailablePageCard(title: String, message: String?) {
     DashboardCard(tag = "home-section-unavailable") {
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text(title, style = LocalOxygenHomeDesign.current.sectionHeading)
         Text(
             text = message ?: "This forecast information is unavailable from the selected source.",
             style = MaterialTheme.typography.bodyMedium,
@@ -922,11 +1029,12 @@ private fun DashboardSection(
     tag: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .testTag(tag),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(roles.tileGap - 2.dp),
         content = content,
     )
 }
@@ -936,21 +1044,22 @@ private fun DashboardCard(
     tag: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .testTag(tag),
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.30f)),
+        shape = RoundedCornerShape(roles.homeCardCorner),
+        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.46f)),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+            containerColor = roles.strongGlassSurface,
         ),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(roles.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(roles.tileGap - 2.dp),
             content = content,
         )
     }
@@ -991,6 +1100,7 @@ private fun HourlyTile(
     index: Int,
     modifier: Modifier = Modifier,
 ) {
+    val roles = LocalOxygenHomeDesign.current
     Card(
         modifier = modifier
             .heightIn(min = 116.dp)
@@ -1003,15 +1113,16 @@ private fun HourlyTile(
                     hour.precipitationProbability ?: "Precipitation unavailable",
                 ).joinToString(", ")
             },
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(roles.homeCardCorner),
+        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.34f)),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.58f),
+            containerColor = roles.ambientGlassSurface,
         ),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
+                .padding(roles.compactCardPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Row(
@@ -1049,13 +1160,12 @@ private fun HourlyTile(
             }
             Text(
                 text = hour.temperature,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
+                style = roles.compactWeatherValue,
                 maxLines = 1,
             )
             Text(
                 text = hour.precipitationProbability?.let { "Precip $it" } ?: "Precipitation unavailable",
-                style = MaterialTheme.typography.bodySmall,
+                style = roles.supportingLabel,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -1066,7 +1176,7 @@ private fun HourlyTile(
 @Composable
 private fun MetricGrid(metrics: List<HomeMetricPresentation>) {
     DashboardCard(tag = "home-section-metrics") {
-        Text("Metrics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text("Metrics", style = LocalOxygenHomeDesign.current.sectionHeading)
         metrics.chunked(2).forEach { row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1080,10 +1190,10 @@ private fun MetricGrid(metrics: List<HomeMetricPresentation>) {
                     ) {
                         Text(
                             text = metric.label,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = LocalOxygenHomeDesign.current.supportingLabel,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
                         )
-                        Text(metric.value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                        Text(metric.value, style = LocalOxygenHomeDesign.current.compactWeatherValue)
                     }
                 }
                 if (row.size == 1) {

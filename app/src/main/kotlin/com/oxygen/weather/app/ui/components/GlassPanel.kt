@@ -8,7 +8,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.oxygen.weather.app.ui.theme.LocalOxygenPalette
+import com.oxygen.weather.app.ui.theme.LocalOxygenHomeDesign
 
 @Composable
 fun GlassPanel(
@@ -16,12 +16,12 @@ fun GlassPanel(
     contentPadding: PaddingValues = PaddingValues(18.dp),
     content: @Composable () -> Unit,
 ) {
-    val palette = LocalOxygenPalette.current
+    val roles = LocalOxygenHomeDesign.current
     Surface(
         modifier = modifier,
-        color = palette.glass,
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, palette.outline),
+        color = roles.strongGlassSurface,
+        shape = RoundedCornerShape(roles.homeCardCorner),
+        border = BorderStroke(1.dp, roles.outlineAccent),
         shadowElevation = 0.dp,
     ) {
         androidx.compose.foundation.layout.Box(Modifier.padding(contentPadding)) {

@@ -1830,21 +1830,39 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation candidate is Slice 18E: Details Page Visual Baseline.
+The next implementation candidate is Slice 18I: Mobile One-Handed Home
+Ergonomics.
 
-The Details page should turn already-supported secondary weather measurements
-and provenance into a coherent, information-dense Home page. It should organize
-available humidity, wind, pressure, visibility, UV, dew point, sun information,
-update/source, and provenance data without fabricating missing values or adding
-new provider capabilities only to populate the screen. UV or any other future
-metric should appear in this slice only if it already reaches the
-provider-neutral Home dashboard presentation data before Details work begins.
+The completed Standard Home interaction, visual pages, operational states,
+design-system roles, accessibility navigation, effects-disabled rendering, and
+installed-app visual baseline are committed through Slice 18H. The installed
+mobile UI review performed on September 2, 2026 identified a bounded follow-up:
+keep primary handheld actions in the lower thumb zone, prevent Home footer
+overlap, reduce routine stale/source/provenance visual weight where it competes
+with current weather, and keep About/detail recovery actions lower-screen
+reachable.
 
-Implementation should keep provenance readily accessible, give fresh-data
-provenance tertiary visual weight, make stale/fallback/failure context more
-prominent, avoid novelty gauges where simpler presentation communicates better,
-and verify the installed app with screenshots that show density and visual
-organization.
+Slice 18I should preserve the Standard Home page model and source/update/stale
+semantics. Operational provenance must remain reachable from Home, while full
+provider, privacy, license, and attribution explanation remains available in
+About. Provenance must not be moved exclusively to About.
+
+After Slice 18I, the next implementation candidate returns to Slice 19: Saved
+Locations Persistence. Slice 19 should let users save, list, select, and remove
+multiple forecast locations while preserving the manual-location path without
+location permission. Saved locations must reuse the production Room location
+model and persisted selected local `LocationId`; provider IDs must not become
+user-facing location identity. Switching locations must control the Home
+forecast through the same lifecycle-aware app boundary used for
+selected-location and offline launch behavior, so obsolete refreshes or stale
+cache emissions cannot update the wrong Home.
+
+Implementation should preserve weather-provider behavior, forecast mapping,
+source/update/stale communication, provider disclosures, Standard Home
+accessibility/visual baselines, and existing offline cache behavior. It must not
+add unit preferences, device-location permission flow, alert lookup, persisted
+appearance settings, installed-app MET Norway fallback wiring, or
+release-readiness claims.
 
 ---
 

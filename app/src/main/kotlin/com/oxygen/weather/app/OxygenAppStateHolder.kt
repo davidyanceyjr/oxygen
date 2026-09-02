@@ -142,17 +142,26 @@ class OxygenAppStateHolder(
 
     fun onHomeForecastRefresh() {
         val home = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home ?: return
-        if (home.forecast !is HomeForecastPresentationState.ForecastReady) return
-        startHomeForecastLoad(home.forecast.location)
+        val ready = home.forecast as? HomeForecastPresentationState.ForecastReady ?: return
+        if (ready.isRefreshInProgress) return
+        startHomeForecastLoad(ready.location)
     }
 
     @Synchronized
     fun onChangeLocation() {
+        val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
+            ?: return
         nextForecastRequestId()
-        presentationState = OxygenAppPresentationState(
-            screen = OxygenAppScreen.FirstRunLocationEntry(),
-            selectedLocation = null,
+        presentationState = presentationState.copy(
+            screen = OxygenAppScreen.FirstRunLocationEntry(returnScreen = currentHome),
         )
+        publishState()
+    }
+
+    fun onLocationEntryBack() {
+        val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
+        val returnScreen = firstRun.returnScreen ?: return
+        presentationState = presentationState.copy(screen = returnScreen)
         publishState()
     }
 
@@ -416,7 +425,10 @@ class OxygenAppStateHolder(
                     HomeForecastPresentationState.Loading.from(location)
                 }
             }
-            is WeatherRepositoryResult.Failure -> HomeForecastPresentationState.NoCacheError.from(
+            is WeatherRepositoryResult.Failure -> presentationState.retainVisibleCacheAfterRefreshFailure(
+                location = location,
+                error = result.error,
+            ) ?: HomeForecastPresentationState.NoCacheError.from(
                 location = location,
                 message = result.error.toHomeForecastMessage(),
             )
@@ -435,6 +447,33 @@ class OxygenAppStateHolder(
         )
         publishState()
     }
+}
+
+private fun OxygenAppPresentationState.retainVisibleCacheAfterRefreshFailure(
+    location: WeatherLocation,
+    error: ForecastError,
+): HomeForecastPresentationState.ForecastReady? {
+    val currentHome = screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
+    val currentReady = currentHome?.forecast as? HomeForecastPresentationState.ForecastReady
+    if (currentReady == null || currentReady.location != location) return null
+
+    val ageText = when (val freshness = currentReady.freshness) {
+        HomeForecastFreshness.Fresh -> return null
+        is HomeForecastFreshness.RestoredFromCache -> freshness.staleAgeText
+        is HomeForecastFreshness.StaleAfterFailedRefresh -> freshness.staleAgeText
+    }
+    val message = error.toHomeRefreshFailureMessage()
+    return currentReady.copy(
+        freshness = HomeForecastFreshness.StaleAfterFailedRefresh(
+            staleAgeText = ageText,
+            refreshFailureMessage = message,
+            statusText = "Showing cached forecast from $ageText ago because refresh failed.",
+        ),
+        isRefreshInProgress = false,
+        refreshInProgressText = null,
+        canRefresh = true,
+        canRetry = false,
+    )
 }
 
 data class OxygenAppPresentationState(
@@ -684,6 +723,7 @@ sealed interface OxygenAppScreen {
         val submittedQuery: String? = null,
         val message: FirstRunLocationMessage? = null,
         val searchState: ManualLocationSearchState = ManualLocationSearchState.Idle,
+        val returnScreen: Home? = null,
         val title: String = "Choose a location",
         val searchLabel: String = "Search for a location",
         val searchActionLabel: String = "Search",
@@ -691,7 +731,10 @@ sealed interface OxygenAppScreen {
         val retryLabel: String = "Retry",
         val geocodingDisclosure: String = "Location search by Open-Meteo, based on GeoNames data.",
         val geocodingPrivacyNote: String = "Your typed search is sent to Open-Meteo to find matching places.",
-    ) : OxygenAppScreen
+    ) : OxygenAppScreen {
+        val canReturnHome: Boolean
+            get() = returnScreen != null
+    }
 
     data class Home(
         val forecast: HomeForecastPresentationState,

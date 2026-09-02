@@ -34,6 +34,12 @@ core/build.gradle.kts
 scripts/android-env.sh
 ```
 
+For `.codex/cycles/history.md`, normal discovery must read only the live recent
+history contract, summary, and at most the most recent three cycle entries. Do
+not read the full archived ledger unless a specific implementation detail,
+status claim, artifact path, regression, commit, or authority conflict requires
+older evidence.
+
 Current modules:
 
 ```text
@@ -119,6 +125,12 @@ discover -> baseline-green -> design-if-needed -> build
 
 Keep `.codex/plans/current.md` current for substantial implementation cycles. Append completed cycle evidence to `.codex/cycles/history.md` when a cycle is ready or committed.
 
+Cycle history entries must be self-contained, concise, and appended at the end
+of the live history file. Before replacing, compressing, or otherwise rewriting
+the live history file, archive its previous content under `.codex/cycles/archive/`.
+Do not create a full duplicate archive before ordinary append-only writes; Git
+history and the archive file preserve previous ledger states.
+
 ## Engineering Rules
 
 - Prefer existing package structure and Kotlin/Compose idioms already used in `app` and `core`.
@@ -138,6 +150,22 @@ Keep `.codex/plans/current.md` current for substantial implementation cycles. Ap
 - Keep text legible with large accessibility font settings and avoid layout overlap on narrow screens.
 - Use stable dimensions for fixed-format UI such as cards, charts, rows, controls, and weather-scene containers so dynamic content does not shift the layout unexpectedly.
 - Do not make a single visual theme dominate all future components; Oxygen supports multiple appearance directions.
+- Preserve user-facing UI obligations inside each slice; do not defer relevant readability, accessibility, layout, or evidence work to a final polish phase.
+
+## Codex UI Working Rules
+
+- For visual UI work, evaluate the installed rendered application rather than Kotlin source alone.
+- Capture a baseline screenshot before meaningful visual changes.
+- Work on one bounded component or visual concern at a time.
+- Do not alter weather semantics, provider behavior, repository behavior, navigation, presentation values, or accessibility behavior merely to achieve a visual result.
+- Use the fast edit/build/install/capture/inspect loop in `docs/UI_DEVELOPMENT_WORKFLOW.md` until the visual acceptance criteria are met.
+- Treat rendered screenshots from the installed app as presentation evidence.
+- Compilation alone is not evidence that a visual change succeeded.
+- Promote successful repeated dimensions, shapes, surface treatments, typography decisions, and other styling values into Oxygen design-system tokens instead of leaving duplicated magic numbers.
+- Preserve complete readability and functionality with decorative effects disabled.
+- Run focused and broader verification after visual convergence rather than after every tiny visual edit.
+- Keep final UI evidence with the normal Codex cycle/test-artifact workflow when the active slice requires visual evidence.
+- Codex is allowed and expected to reject its own first visual attempt and iterate when the screenshot does not meet the stated objective.
 
 ## Verification Commands
 
