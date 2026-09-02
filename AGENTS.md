@@ -138,6 +138,22 @@ Keep `.codex/plans/current.md` current for substantial implementation cycles. Ap
 - Keep text legible with large accessibility font settings and avoid layout overlap on narrow screens.
 - Use stable dimensions for fixed-format UI such as cards, charts, rows, controls, and weather-scene containers so dynamic content does not shift the layout unexpectedly.
 - Do not make a single visual theme dominate all future components; Oxygen supports multiple appearance directions.
+- Preserve user-facing UI obligations inside each slice; do not defer relevant readability, accessibility, layout, or evidence work to a final polish phase.
+
+## Codex UI Working Rules
+
+- For visual UI work, evaluate the installed rendered application rather than Kotlin source alone.
+- Capture a baseline screenshot before meaningful visual changes.
+- Work on one bounded component or visual concern at a time.
+- Do not alter weather semantics, provider behavior, repository behavior, navigation, presentation values, or accessibility behavior merely to achieve a visual result.
+- Use the fast edit/build/install/capture/inspect loop in `docs/UI_DEVELOPMENT_WORKFLOW.md` until the visual acceptance criteria are met.
+- Treat rendered screenshots from the installed app as presentation evidence.
+- Compilation alone is not evidence that a visual change succeeded.
+- Promote successful repeated dimensions, shapes, surface treatments, typography decisions, and other styling values into Oxygen design-system tokens instead of leaving duplicated magic numbers.
+- Preserve complete readability and functionality with decorative effects disabled.
+- Run focused and broader verification after visual convergence rather than after every tiny visual edit.
+- Keep final UI evidence with the normal Codex cycle/test-artifact workflow when the active slice requires visual evidence.
+- Codex is allowed and expected to reject its own first visual attempt and iterate when the screenshot does not meet the stated objective.
 
 ## Verification Commands
 
