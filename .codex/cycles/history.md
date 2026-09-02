@@ -27,79 +27,16 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 18F, Home Operational State
-  Integration, commit `79bd830`.
-- Active planned implementation slice: Slice 18G, Oxygen Home Design-System
-  Consolidation, in `.codex/plans/current.md`.
+- Last committed implementation slice: Slice 18G, Oxygen Home Design-System
+  Consolidation, commit `fae63b3`.
+- Active planned implementation slice: Slice 18H, Standard Home Accessibility
+  and Visual Verification Gate, in `.codex/plans/current.md`.
 - Current documentation drift under review: the tracked art sheet path/spec say
   Base Art Sheet v0.1 while the visible image title says v0.2.
 - Current process correction: cycle history is now tail-limited for normal reads
   and older detailed ledger content has been archived.
 
 ## Recent Cycles
-
-### 2026-09-01-home-operational-state-integration
-
-Status: committed
-Mode: feature
-Slice: Slice 18F, Home Operational State Integration
-Commit: `79bd830`
-
-Result:
-- `OxygenAppStateHolder` ignores duplicate Home refresh calls while the selected
-  Home forecast is already refresh-in-progress.
-- Visible restored/stale cached Home content is preserved as refresh-failed
-  stale success if a foreground refresh failure arrives after cached content is
-  already visible.
-
-Evidence:
-- Focused HomeForecast unit baseline passed before production edits.
-- Focused HomeForecast unit tests passed after implementation and cover
-  restored-cache foreground refresh failure retention plus duplicate-refresh
-  prevention.
-- Focused Home Compose instrumentation passed 15 tests on `oxygen_starter(AVD)
-  - 17`, covering fresh success, restored-cache success across pages,
-  stale/refresh-failed success, refresh-in-progress, loading, retryable no-cache
-  error, source/provenance reachability, tab/swipe navigation, compact width,
-  large font, and sibling non-overlap.
-- Installed-app cached/offline screenshot and hierarchy:
-  `.codex/test-artifacts/2026-09-01-home-operational-state-integration/installed-cached-now.png`
-  and `.xml`.
-- Installed-app no-cache offline screenshot and hierarchy:
-  `.codex/test-artifacts/2026-09-01-home-operational-state-integration/installed-no-cache-error.png`
-  and `.xml`.
-- Broad checks passed: `. scripts/android-env.sh && ./gradlew
-  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
-  ./gradlew :app:assembleDebug`; `git diff --check`.
-
-Boundaries:
-- No provider behavior, repository/cache schema, DataStore/Room design,
-  installed-app MET Norway fallback, saved-location switching, unit preferences,
-  official alert lookup, air quality, radar, background refresh, persisted
-  appearance settings, release readiness, or MVP readiness was added or claimed.
-
-### 2026-09-01-project-status-sync-after-home-operational-state-integration
-
-Status: ready
-Mode: documentation-only
-Slice: Project status sync after Slice 18F
-Commit: not committed in this turn
-
-Result:
-- Compared README, specification section 53, roadmap Slice 18F/18G status,
-  roadmap next-candidate guidance, active-cycle state, cycle history, `git log`,
-  and worktree status after committed Slice 18F `79bd830`.
-- README now records the committed Details visual baseline as installed-app
-  behavior and no longer lists it as not implemented.
-- Roadmap/spec next-candidate guidance now points to Slice 18G: Oxygen Home
-  Design-System Consolidation.
-
-Evidence:
-- `git diff --check` passed.
-- Android build/test/emulator commands were not run because this
-  documentation-only sync changed only Markdown files and no Kotlin, Compose,
-  Gradle, manifest, resources, provider, persistence, or test behavior.
 
 ### 2026-09-01-cycle-history-tail-read-contract
 
@@ -127,10 +64,10 @@ Evidence:
 
 ### 2026-09-01-home-design-system-art-sheet-consolidation
 
-Status: ready
+Status: committed
 Mode: feature
 Slice: Slice 18G, Oxygen Home Design-System Consolidation
-Commit: not committed in this turn
+Commit: `fae63b3`
 
 Result:
 - Added static app-local Home design roles for spacing, card shape/padding,
@@ -181,3 +118,86 @@ Boundaries:
   failed after the targeted instrumentation run left the debug activity
   unavailable. No-cache behavior remains covered by passing Home instrumentation,
   state-holder, and offline persistence instrumentation boundaries.
+
+### 2026-09-01-project-status-sync-after-home-design-system-consolidation
+
+Status: ready
+Mode: documentation-only
+Slice: Project status sync after Slice 18G
+Commit: not committed in this turn
+
+Result:
+- Compared README, specification section 53, roadmap Slice 18G/18H status,
+  roadmap next-candidate guidance, active-cycle state, cycle history, `git log`,
+  and worktree status after committed Slice 18G `fae63b3`.
+- README now records the installed Home art-sheet-aligned weather marks,
+  surface roles, typography roles, and app-local design roles.
+- Roadmap/spec next-candidate guidance now points to Slice 18H: Standard Home
+  Accessibility and Visual Verification Gate.
+- Live cycle history now records Slice 18G as committed at `fae63b3`.
+
+Evidence:
+- `git diff --check` passed.
+- Android build/test/emulator commands were not run because this
+  documentation-only sync changed only Markdown files and no Kotlin, Compose,
+  Gradle, manifest, resources, provider, persistence, or test behavior.
+
+### 2026-09-01-standard-home-accessibility-visual-verification-gate
+
+Status: ready
+Mode: feature
+Slice: Slice 18H, Standard Home Accessibility and Visual Verification Gate
+Commit: not committed in this turn
+
+Result:
+- Added named previous/next custom accessibility actions to the existing
+  Standard Home pager container and kept page tabs/swipes as the visible
+  navigation model.
+- Added an app-local, non-persisted `OxygenAppearance` input to
+  `HomeLoadingScreen` so `EffectsLevel.OFF` renders opaque Home surfaces while
+  preserving the same production Home composable path and weather semantics.
+- Raised Standard Home page tabs to a 48dp minimum height.
+- Added focused Home instrumentation coverage for named pager actions,
+  child-control page isolation, 48dp control bounds, and effects-disabled
+  stale/source/weather meaning.
+- Preserved provider, repository, Room, DataStore, forecast mapping,
+  selected-location, manual-search, stale-cache, retry/refresh, disclosure,
+  Gradle, manifest, saved-location, unit-preference, fallback, alert, air
+  quality, radar, release, and MVP-readiness behavior.
+
+Evidence:
+- Baseline focused state tests passed:
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`.
+- Focused Home instrumentation passed 19 tests on `oxygen_starter(AVD) - 17`:
+  `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+- Installed-app real-path evidence used `scripts/list-avds.sh`,
+  `scripts/start-emulator.sh`, and `scripts/install-debug.sh`, then selected a
+  real Open-Meteo geocoding result and captured Now, Hourly, Daily, and Details.
+- Installed stale refresh-failed cached Home was reached by disabling device
+  Wi-Fi/data with `adb shell svc wifi disable` and `adb shell svc data disable`,
+  tapping Refresh, then restoring services.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- Logs and screenshots are under
+  `.codex/test-artifacts/2026-09-01-standard-home-accessibility-visual-verification-gate/`.
+- Installed screenshots/hierarchies: `installed-final-home-now.png`/`.xml`,
+  `installed-final-home-hourly.png`/`.xml`,
+  `installed-final-home-daily.png`/`.xml`,
+  `installed-final-home-details.png`/`.xml`, and
+  `installed-operational-refresh-failed-attempt.png`/`.xml`.
+- Focused/broad logs: `baseline-homeforecast-unit.log`,
+  `focused-home-compose-instrumentation.log`,
+  `broad-compile-debug-kotlin.log`, `broad-debug-unit-tests.log`,
+  `broad-assemble-debug.log`, and `git-diff-check.log`.
+
+Boundaries:
+- Android shell denied direct airplane-mode broadcasts during operational setup;
+  Wi-Fi/data service toggles were sufficient to capture stale refresh-failed
+  cached Home, and network services were restored afterward.
+- No subjective visual inconsistency was found in the installed Now, Hourly,
+  Daily, and Details screenshots during review.

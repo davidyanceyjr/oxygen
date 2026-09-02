@@ -1,103 +1,216 @@
 # Active Cycle
 
 Status: ready
-Cycle ID: 2026-09-01-home-design-system-art-sheet-consolidation
+Cycle ID: 2026-09-01-standard-home-accessibility-visual-verification-gate
 Mode: feature
-Goal: Implement Slice 18G by consolidating Home design-system roles and making the first visible, bounded runtime incorporation of the updated Oxygen art sheet without changing weather, provider, persistence, or page responsibilities.
-Roadmap context: Slice 18G follows committed Slices 18B through 18F and precedes Slice 18H accessibility and visual verification.
-Branch or work context: local `main` contains committed Slice 18G planning work (`c09b117`) on top of committed Slice 18F (`79bd830`). The worktree is clean at plan review; preserve any unrelated user changes if they appear during implementation.
+Goal: Verify the completed Standard Home interaction and visual baseline as the
+foundation for subsequent MVP work, fixing only accessibility or visual
+correctness defects found inside that baseline.
+Roadmap context: Slice 18H, Standard Home Accessibility and Visual Verification
+Gate. Prerequisites are Slices 18A through 18G committed; Slice 18G is committed
+at `fae63b3`.
+Branch or work context: HEAD is `fae63b3`; current branch name is
+`slice-18f-home-operational-state-integration`, retained from prior work. The
+worktree already contains user documentation/status edits from the post-18G
+sync.
 
 ## Contract
 
 Selected behavior:
-- Consolidate repeated Standard Home spacing, typography, shape, surface, weather-mark, and theme-translation choices into named Oxygen design-system roles where the role is already justified by existing Home pages.
-- Make the updated art sheet visibly represented in the installed Home UI, not only documented or hidden behind token names.
-- Replace the current generic blob-like weather mark presentation with a first art-sheet-aligned gold-line weather-mark treatment for existing provider-neutral `WeatherCondition` values.
-- Apply art-sheet-aligned display numeral and section-label typography direction to Home weather values using available system fonts only.
-- Apply art-sheet-aligned dark glass/surface and accent roles to Now, Hourly, Daily, Details, stale/status, metric, and source blocks while preserving their existing information hierarchy.
-- Keep semantic distinction between Now, Hourly, Daily, and Details pages.
-- Record any art-sheet elements deliberately deferred with a reason.
+- Establish Standard Home Now, Hourly, Daily, and Details as the verified
+  installed-app baseline for subsequent MVP slices.
+- Prove semantic page navigation, current-page identity, accessible page
+  movement, readable weather meaning, source/stale/error communication,
+  adequate touch targets, long-location handling, large-font safety,
+  non-overlap, and representative operational states.
+- Preserve the existing provider, repository, Room, DataStore, forecast mapping,
+  selected-location, manual-search, stale-cache, retry/refresh, and disclosure
+  behavior.
 
 Acceptance boundary:
-- Installed-app screenshots show visible art-sheet influence on the Home surface: gold-line weather marks, display-style weather numerals, stronger dark glass surfaces, compact metric/list treatment, and palette alignment.
-- Existing Home content and interactions remain observable: page selector, Now, Hourly, Daily, Details, refresh, retry, Settings/About, Change location, source/update/provenance, stale/cache, and no-cache error.
-- Focused Compose tests verify non-regression for page identity/content, compact phone width, large font behavior, sibling non-overlap, stale/error/source reachability, and supported theme rendering.
-- State-holder tests continue to verify selected-location, refresh, retry, stale cache, and no-cache behavior without production sample fallback.
-- No provider, repository, Room, DataStore, weather mapping, app identity, Gradle dependency, or saved-location/unit/alert behavior changes are required or claimed.
-- `git diff --check` passes.
+- Current Home page identity is visible and exposed through semantics on each
+  Standard Home page.
+- Page movement is available through ordinary tabs/swipes and through named
+  semantics actions on the existing pager container that let accessibility users
+  move from Now to Hourly and from Details to Daily without relying on swipe
+  gestures. Add visible previous/next controls only if custom semantics actions
+  cannot be verified through the Compose accessibility boundary.
+- Child controls such as Refresh, Settings/About, Change location, Retry, page
+  tabs, and forecast rows remain independently usable and do not accidentally
+  change pages.
+- Refresh, Settings/About, Change location, Retry, page tabs, and any explicit
+  page navigation controls expose independently clickable bounds of at least
+  48dp in the relevant tested configurations.
+- Important weather information remains readable with long location/provider
+  strings, compact width, and large font.
+- Important information is not clipped or overlapped in supported compact and
+  ordinary presentation checks.
+- Standard ordinary presentation does not require page-level vertical traversal
+  of the whole Home surface; localized overflow may scroll inside the relevant
+  page where needed.
+- Effects-disabled rendering uses the same Home composable production path with
+  `OxygenAppearance(effects = EffectsLevel.OFF)` or an equivalent app-local
+  appearance input, and still exposes complete weather meaning through
+  text/semantics: current page identity, current temperature, condition, high
+  and low, source/update context, provider disclosure, and stale/error messages
+  where present, without depending on gradients, transparency, animation, or
+  atmospheric decoration.
+- Stale, refresh-failed, loading, no-cache error, source/update, and provider
+  disclosure communication remains understandable and reachable.
+- Final installed-app screenshots exist for Now, Hourly, Daily, and Details.
+- Installed-app operational evidence targets stale refresh-failed cached Home;
+  if that state cannot be reached in the installed/debug path, capture no-cache
+  retryable error and record the exact blocker for stale-state capture.
+- Focused Compose/state tests and broad Android verification pass.
 
 Explicitly out of scope:
-- Full theme engine, persisted appearance/effects/layout settings, user-selectable icon packs, downloaded fonts, bundled production bitmap weather scenes, remote images, animations beyond existing behavior, radar, air quality, official alerts, saved-location switching, unit preferences, installed-app MET Norway fallback activation, release readiness, or MVP readiness.
-- New provider data fields or fabricated weather values solely to match the art sheet.
-- Generic surface primitives that erase the semantic differences between Now hero, Hourly tiles, Daily rows, Details metric groups, stale/status blocks, and source/provenance.
-- Treating design-token extraction alone as implementation. If the installed Home screenshot does not visibly change toward the art sheet, the slice is not implemented.
-- Updating dependency versions or adding icon/font/image libraries unless a separate dependency-maintenance slice is selected.
+- Simple, Detailed, or Meteorologist layouts.
+- Persisted layout, theme, icon-pack, or effects selection.
+- A full theme engine or new user-facing appearance settings.
+- Foldable-specific UI.
+- Provider, fallback, geocoding, repository, Room, DataStore, cache schema,
+  weather mapping, app identity, dependency, Gradle, manifest, saved-location,
+  unit-preference, official-alert, air-quality, radar, background-refresh,
+  release-candidate, or MVP-readiness behavior changes.
+- Treating `SampleWeather.bundle` as production Home behavior.
 
 ## Implementation Plan
 
 1. Discover and baseline:
-   - Inspect `docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png`; note that the current image title says v0.2 while the path/spec call it v0.1, and resolve documentation naming before final status claims if needed.
-   - Compare existing Home screenshots from Slices 18B through 18F against the art sheet and record the gap explicitly.
-   - Inspect `HomeLoadingScreen.kt`, `OxygenTheme.kt`, `WeatherConditionMark.kt`, `GlassPanel.kt`, `WeatherScene.kt`, and current Home Compose tests.
-   - Run focused baseline checks before production edits:
+   - Re-read the Slice 18H roadmap entry, specification section 53, current
+     Home composables, Home presentation/state tests, installed-app entry path,
+     and recent cycle evidence.
+   - Record `git status --short` before edits and preserve unrelated user
+     documentation changes.
+   - Run focused Home tests as a baseline where feasible:
      `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`
-     `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`
-   - If an emulator or Android command cannot run, record the exact command, failure, and lower-boundary evidence used.
+     and the existing Home Compose instrumentation class on a connected
+     emulator.
+   - Build a short Slice 18H evidence matrix before production edits. Mark each
+     roadmap proof item as `already covered`, `needs focused test`, `needs
+     installed evidence`, or `blocked with exact reason`; do not add duplicative
+     tests for items already covered at a meaningful boundary.
 
-2. Define bounded Home design-system roles:
-   - Add or extend app-local theme roles for Home spacing, shapes, surface colors/alphas, type roles, and weather-mark roles.
-   - Use Material 3 underneath and keep roles in `:app` UI/theme code.
-   - Keep roles static and runtime-only; do not add persistence, settings UI, or a future-theme registry.
-   - Name roles by semantic use, for example Home page margin, card padding, page gap, tile gap, compact mark, hero mark, display weather value, section heading, supporting label, ambient glass surface, strong status surface, and outline accent.
+2. Cover the gate before or alongside fixes:
+   - Add or tighten Home Compose instrumentation tests for semantic current-page
+     identity, named accessibility movement through custom semantics actions
+     from Now to Hourly and Details to Daily without swipe gestures, child
+     controls not paging accidentally, 48dp-or-larger clickable bounds for Home
+     controls, compact
+     long-location/long-provider rendering, large-font readable bounds,
+     non-overlap, stale/source/error reachability, and effects-disabled weather
+     meaning through the production Home composable path.
+   - Prefer assertions at the Compose semantics, bounds, and rendered-pixel
+     boundary already used by `HomeDashboardUiTest`.
+   - Avoid tests that only assert tags, constructors, or static text exists
+     without exercising the Home interaction or rendered boundary.
 
-3. Implement visible art-sheet alignment:
-   - Rework `WeatherConditionMark` to use a gold-line visual language for current provider-neutral conditions, including clear, mostly clear, partly cloudy, cloudy, fog, drizzle/rain/showers, snow, sleet/freezing rain, thunderstorm, and unknown.
-   - Preserve Home-owned content descriptions and provider-neutral condition mapping.
-   - Apply display numeral styling to current temperature, hourly temperatures, daily high/low values, and metric values where it improves readability.
-   - Apply uppercase/small-label treatment to section labels and metric labels where already present.
-   - Update Home card/tile surfaces to use named glass/surface roles while keeping the current page layout and operational-state placement.
-   - Keep atmospheric scene imagery deferred unless a separate small asset slice is selected; do not fabricate scene images in 18G.
+3. Implement only defects required by the gate:
+   - If baseline tests expose missing accessibility semantics, add the smallest
+     Home UI semantics needed to make page identity and page movement
+     discoverable. Prefer custom pager semantics actions over visible new
+     controls so the existing layout and child-control behavior do not drift.
+   - If compact/large-font/long-string evidence exposes clipping or overlap,
+     adjust only the affected Home layout constraints, wrapping, or stable
+     dimensions.
+   - If effects-disabled rendering has no production path, introduce the
+     narrowest app-local non-persisted rendering parameter needed for tests and
+     previews to exercise no-effects presentation through the same composable
+     path without creating user settings or a theme engine.
+   - Do not change provider/domain/repository/persistence behavior to satisfy
+     presentation tests.
 
-4. Focused tests:
-   - Preserve existing Home state-holder tests for provider/persistence behavior.
-   - Add or adjust Compose tests to verify that art-sheet-aligned marks render for representative provider-neutral conditions without relying on provider-specific symbols.
-   - Verify Home pages still expose the same test tags and semantic content descriptions after visual refactoring.
-   - Exercise Oxygen, Paper, and Terminal theme IDs only enough to verify Home semantics/content remain reachable after role consolidation. Do not add persistence, selectors, a theme registry, or new theme behavior.
-   - Keep tests behavior-facing: page content, bounds, semantics, interactions, and representative visual-role application. Do not add tests that only prove constants/classes exist.
-   - Run focused post-change checks:
+4. Focused green:
+   - Run focused state tests:
      `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`
+   - Run focused Home Compose instrumentation:
      `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`
+   - Save focused logs under
+     `.codex/test-artifacts/2026-09-01-standard-home-accessibility-visual-verification-gate/`.
 
-5. Installed-app exercise:
-   - Use the deterministic DataStore/Room seed path from prior Home slices.
-   - Capture installed-app screenshots and hierarchy dumps for at least Now, Hourly, Daily, Details, cached/stale Now, and retryable no-cache error under:
-     `.codex/test-artifacts/2026-09-01-home-design-system-art-sheet-consolidation/`
-   - Include compact-width or large-font evidence if focused Compose tests reveal risk.
-   - Compare screenshots against the prior 18B-18F artifacts and record whether the art-sheet influence is visible.
-   - Record a concise before/after visual evidence note listing the prior screenshot path used for comparison, the new screenshot path, the observed concrete change, and any art-sheet element deferred with reason.
+5. Real-path exercise:
+   - Use `scripts/list-avds.sh`, `scripts/start-emulator.sh`, and
+     `scripts/install-debug.sh` to launch the installed app.
+   - For stale refresh-failed cached Home evidence, first reuse the deterministic
+     seed/failure path from prior Home slices: seed or retain a selected
+     location with a Room cached forecast, force the provider/network refresh to
+     fail, relaunch or refresh the installed debug app, and capture the stale
+     cached Now state. Record the exact seed/failure command or script used.
+   - Capture installed-app screenshots and hierarchies for Now, Hourly, Daily,
+     Details, and stale refresh-failed cached Home. If stale refresh-failed
+     cached Home cannot be reached in the installed/debug path, capture no-cache
+     retryable error and record the exact blocker.
+   - Record the emulator/device identity, commands, and artifact paths.
 
-6. Broad verification:
+6. Broad checks:
    - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
    - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
    - `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
    - `git diff --check`
 
 7. Review and ready:
-   - Review production and test diffs for scope creep, provider leakage, fabricated values, dependency churn, and generic abstraction that hides page semantics.
-   - Before ready status, resolve or explicitly document the art-sheet naming drift: the tracked asset path/spec say Base Art Sheet v0.1 while the rendered image title says v0.2. Do not rename the PNG or introduce a replacement asset in this cycle unless a separate asset-governance decision is made.
-   - Reject completion if evidence is only renamed constants, screenshots without described observable changes, tests that only assert token/class existence, or build success without Home boundary exercise.
-   - Update `.codex/plans/current.md` phase results with changed production/test files, focused evidence, installed-app artifact paths, broad evidence, and deferred art-sheet elements.
-   - Append `.codex/cycles/history.md` only after the cycle is ready or committed.
-   - Do not claim Slice 18H accessibility gate, persisted presentation settings, full icon packs, production bitmap scenes, release readiness, or MVP readiness.
+   - Review `git diff` for scope drift, provider/persistence changes, hidden
+     sample fallback, speculative settings, or status overclaims.
+   - Convert the page-to-page visual coherence proof into concrete evidence:
+     final installed screenshots for all four Standard Home pages, no
+     overlap/clipping assertions, stable page selector/header bounds where
+     practical, and a short review note naming any visible inconsistency found.
+     Do not use subjective visual review as a substitute for tests or
+     screenshots.
+   - Do not resolve art-sheet asset naming drift in this cycle unless it
+     directly blocks accessibility or installed-app visual verification.
+   - Update this plan's phase results with commands actually run and artifact
+     paths.
+   - Append a concise cycle-history entry only when the implementation cycle is
+     ready or committed.
 
 ## Phase Results
 
-- specified: Slice 18G is specified in `.codex/plans/mvp-roadmap.md`; the full specification section 53 selects Oxygen Home Design-System Consolidation and requires preservation of provider behavior, persistence behavior, and page responsibilities.
-- planned: This cycle selects a bounded Home design-system/art-sheet incorporation slice. The prior installed UI shows only partial palette alignment; visible art-sheet incorporation remains unimplemented until production Home changes and installed-app screenshots prove it.
-- covered: Focused Home state-holder unit tests pass, and `HomeDashboardUiTest` now includes a rendered-pixel assertion that representative provider-neutral weather marks expose the art-sheet gold-line treatment while existing Home page, compact, large-font, stale/error/source, and interaction tests remain in the same instrumentation boundary.
-- implemented: Added app-local Home design roles in `app/src/main/kotlin/com/oxygen/weather/app/ui/theme/OxygenTheme.kt`; applied roles in `HomeLoadingScreen.kt` and `GlassPanel.kt`; replaced the generic blob condition mark in `WeatherConditionMark.kt` with provider-neutral gold-line marks for all current `WeatherCondition` values; added the focused rendered-mark Compose test in `HomeDashboardUiTest.kt`.
-- verified: Baseline focused unit command passed before edits. Initial baseline connected Home instrumentation failed with `No connected devices`; after starting `oxygen_starter`, focused Home instrumentation passed 16 tests. Final focused commands passed: `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`; `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`. Broad commands passed: `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh && ./gradlew :app:assembleDebug`; `git diff --check`.
-- artifacts: Verification logs and screenshots are under `.codex/test-artifacts/2026-09-01-home-design-system-art-sheet-consolidation/`. Valid installed Home evidence: `installed-final-home-now.png`/`.xml`, `installed-final-home-hourly.png`/`.xml`, `installed-final-home-daily.png`/`.xml`, `installed-final-home-details.png`/`.xml`, and `installed-final-cached-stale-now.png`/`.xml`. Focused logs: `focused-homeforecast-unit.log`, `focused-home-compose-instrumentation-final.log`. Broad logs: `broad-compile-debug-kotlin.log`, `broad-debug-unit-tests.log`, `broad-assemble-debug.log`, `git-diff-check.log`.
-- visual comparison: Compared against prior Slice 18F cached Now evidence at `.codex/test-artifacts/2026-09-01-home-operational-state-integration/installed-cached-now.png`; final installed Home screenshots visibly replace the white blob-like mark with gold-line marks, use stronger dark glass cards with accented outlines, and use a lighter display numeral treatment for the current temperature while retaining page selector, source/update, refresh/change-location, stale/cache, and page content.
-- deferred: Atmospheric scene imagery, production bitmap scenes, downloaded fonts, full icon packs, persisted presentation settings, and full theme engine remain deferred by 18G scope. The art-sheet naming drift is documented but not renamed: the tracked path/spec say Base Art Sheet v0.1 while the rendered image title says v0.2.
-- limitation: A final installed retryable no-cache screenshot was not captured; the attempted path failed after the targeted instrumentation run left the debug activity unavailable. Retryable no-cache behavior remains covered by `HomeDashboardUiTest.noCacheErrorKeepsAboutDisclosureAndRetryReachable`, `HomeForecastStateHolderTest`, and `OfflineLaunchPersistenceInstrumentedTest#startupWithSelectedLocationAndNoRoomCacheRendersRetryableNoCacheError`.
+- specified: Slice 18H is specified in `.codex/plans/mvp-roadmap.md` and
+  `docs/OXYGEN_FULL_SPECIFICATION.md` section 53 as the Standard Home
+  Accessibility and Visual Verification Gate.
+- planned: This cycle selects Slice 18H only. Acceptance is the verified
+  Standard Home baseline across accessibility, visual, operational-state, and
+  installed-app evidence boundaries without provider, persistence, settings, or
+  release-readiness changes.
+- covered: Added focused `HomeDashboardUiTest` coverage for named pager custom
+  accessibility actions, pager child-control isolation, 48dp Home control
+  bounds, and effects-disabled weather meaning through the production
+  `HomeLoadingScreen` path. Existing Home tests continue to cover long
+  location/provider strings, large-font readable bounds, non-overlap, stale
+  cache, restored cache, loading, no-cache error, source/update disclosure,
+  tabs, swipes, and provider-neutral weather marks.
+- implemented: `HomeLoadingScreen` now accepts app-local `OxygenAppearance`,
+  renders opaque Home surfaces when `effects = EffectsLevel.OFF`, exposes named
+  previous/next custom accessibility actions on the existing pager container,
+  and gives Standard Home page tabs a 48dp minimum height. No provider,
+  repository, Room, DataStore, forecast mapping, selected-location,
+  manual-search, stale-cache, retry/refresh, disclosure, Gradle, manifest,
+  saved-location, unit-preference, fallback, alert, or release behavior changed.
+- verified: Focused and broad checks passed with logs under
+  `.codex/test-artifacts/2026-09-01-standard-home-accessibility-visual-verification-gate/`:
+  `baseline-homeforecast-unit.log`,
+  `focused-compile-after-pager-actions.log`,
+  `focused-home-compose-instrumentation.log`,
+  `broad-compile-debug-kotlin.log`,
+  `broad-debug-unit-tests.log`,
+  `broad-assemble-debug.log`, and `git-diff-check.log`.
+  Focused Home instrumentation passed 19 tests on `oxygen_starter(AVD) - 17`.
+  Installed-app evidence was captured for a real Open-Meteo selected location:
+  `installed-final-home-now.png`/`.xml`,
+  `installed-final-home-hourly.png`/`.xml`,
+  `installed-final-home-daily.png`/`.xml`,
+  `installed-final-home-details.png`/`.xml`, and
+  `installed-operational-refresh-failed-attempt.png`/`.xml`. The operational
+  capture shows stale cached Home with `Cached forecast`, `Refresh failed`,
+  current condition, temperature, high/low, source/update, and no Retry.
+  Broad commands passed:
+  `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`;
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`;
+  `. scripts/android-env.sh && ./gradlew :app:assembleDebug`; `git diff --check`.
+- skipped: No Simple, Detailed, or Meteorologist layouts; no persisted
+  appearance settings; no provider, persistence, fallback, saved-location,
+  unit-preference, alert, air-quality, radar, release, or MVP-readiness changes.
+  Android shell denied the `android.intent.action.AIRPLANE_MODE` broadcasts
+  during operational-state setup, but `svc wifi disable` and `svc data disable`
+  still forced the installed refresh failure; services were restored afterward.

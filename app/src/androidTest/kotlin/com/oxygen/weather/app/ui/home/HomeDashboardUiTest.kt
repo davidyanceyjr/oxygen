@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -43,6 +44,8 @@ import com.oxygen.weather.app.HomeSuccessSection
 import com.oxygen.weather.app.OxygenApp
 import com.oxygen.weather.app.OxygenAppStateHolder
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
+import com.oxygen.weather.app.ui.theme.EffectsLevel
+import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenTheme
 import com.oxygen.weather.core.model.AlertSeverity
 import com.oxygen.weather.core.model.CurrentConditions
@@ -225,6 +228,95 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+    }
+
+    @Test
+    fun homePagerExposesNamedAccessibilityPageMovementActions() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(state)
+
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show next page: Hourly")
+        composeRule.performPagerCustomAction("Show next page: Hourly")
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show previous page: Now", "Show next page: Daily")
+
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show previous page: Daily")
+        composeRule.performPagerCustomAction("Show previous page: Daily")
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 3 of 4")
+    }
+
+    @Test
+    fun homeInteractiveControlsExposeMinimumTouchTargetsAndDoNotPageAccidentally() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(state = state, widthDp = 360, heightDp = 640)
+
+        composeRule.assertMinimumTouchTarget(
+            "home-page-tab-now",
+            "home-page-tab-hourly",
+            "home-page-tab-daily",
+            "home-page-tab-details",
+            "home-about-entry",
+            "home-refresh",
+            "home-change-location",
+        )
+
+        listOf("home-about-entry", "home-refresh", "home-change-location").forEach { tag ->
+            composeRule.onNodeWithTag(tag).performClick()
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+            composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        }
+    }
+
+    @Test
+    fun effectsDisabledHomePathKeepsCompleteWeatherMeaningReachable() {
+        val location = weatherLocation(name = "Effects Disabled City")
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+            freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                staleAge = Duration.ofMinutes(45),
+                refreshFailure = ForecastError.NetworkUnavailable,
+            ),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 900,
+            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+        )
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
+        composeRule.onNodeWithText("Rain showers").assertIsDisplayed()
+        composeRule.onNodeWithText("H 73 deg F   L 54 deg F").assertIsDisplayed()
+        composeRule.onNodeWithText("Open-Meteo | Fetched Aug 22, 7:00 AM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Showing cached forecast from 45 minutes ago because refresh failed.").assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Weather data by Open-Meteo.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Forecast requests send this location's coordinates and timezone to Open-Meteo.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("effects-off-dashboard-semantics.txt")
     }
 
     @Test
@@ -693,19 +785,20 @@ private fun ComposeContentTestRule.setHomeContent(
     widthDp: Int? = null,
     heightDp: Int = 3200,
     fontScale: Float = 1f,
+    appearance: OxygenAppearance = OxygenAppearance(),
 ) {
     setContent {
         CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = fontScale)) {
             OxygenTheme {
                 if (widthDp == null) {
-                    HomeLoadingScreen(state = state)
+                    HomeLoadingScreen(state = state, appearance = appearance)
                 } else {
                     Box(
                         Modifier
                             .width(widthDp.dp)
                             .height(heightDp.dp),
                     ) {
-                        HomeLoadingScreen(state = state)
+                        HomeLoadingScreen(state = state, appearance = appearance)
                     }
                 }
             }
@@ -793,6 +886,34 @@ private fun ComposeTestRule.assertWithinRootBounds(vararg tags: String) {
         assertTrue("$tag should have positive height", rect.height > 0f)
         assertTrue("$tag should stay inside compact root width", rect.left >= 0f && rect.right <= 360f)
         assertTrue("$tag should stay inside first compact viewport", rect.top >= 0f && rect.bottom <= 640f)
+    }
+}
+
+private fun ComposeTestRule.assertMinimumTouchTarget(vararg tags: String) {
+    tags.forEach { tag ->
+        val rect = onAllNodesWithTag(tag).fetchSemanticsNodes().single().boundsInRoot
+        assertTrue("$tag should be at least 48dp wide", rect.width >= 48f)
+        assertTrue("$tag should be at least 48dp tall", rect.height >= 48f)
+    }
+}
+
+private fun SemanticsNodeInteraction.assertCustomActions(vararg labels: String) {
+    val actions = fetchSemanticsNode().config.getOrElse(SemanticsActions.CustomActions) { emptyList() }
+    val actualLabels = actions.map { it.label }
+    labels.forEach { label ->
+        assertTrue("Expected custom action '$label' in $actualLabels", actualLabels.contains(label))
+    }
+}
+
+private fun ComposeTestRule.performPagerCustomAction(label: String) {
+    val actions = onNodeWithTag("home-page-container")
+        .fetchSemanticsNode()
+        .config
+        .getOrElse(SemanticsActions.CustomActions) { emptyList() }
+    val action = actions.singleOrNull { it.label == label }
+    assertTrue("Expected exactly one custom action '$label'", action != null)
+    runOnIdle {
+        assertTrue("Custom action '$label' should report handled", action!!.action.invoke())
     }
 }
 

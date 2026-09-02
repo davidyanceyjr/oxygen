@@ -30,10 +30,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -49,80 +52,94 @@ import com.oxygen.weather.app.HomeForecastFreshness
 import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.HomeSourcePresentation
 import com.oxygen.weather.app.HomeSunPresentation
-import com.oxygen.weather.app.ui.components.WeatherConditionMark
+import com.oxygen.weather.app.ui.theme.EffectsLevel
 import com.oxygen.weather.app.ui.theme.LocalOxygenHomeDesign
+import com.oxygen.weather.app.ui.theme.OxygenAppearance
+import com.oxygen.weather.app.ui.components.WeatherConditionMark
 import kotlinx.coroutines.launch
 
 @Composable
 fun HomeLoadingScreen(
     state: HomeForecastPresentationState,
+    appearance: OxygenAppearance = OxygenAppearance(),
     onRetry: () -> Unit = {},
     onRefresh: () -> Unit = {},
     onChangeLocation: () -> Unit = {},
     onOpenAbout: () -> Unit = {},
 ) {
-    val roles = LocalOxygenHomeDesign.current
+    val baseRoles = LocalOxygenHomeDesign.current
+    val roles = if (appearance.effects == EffectsLevel.OFF) {
+        baseRoles.copy(
+            ambientGlassSurface = MaterialTheme.colorScheme.surface,
+            strongGlassSurface = MaterialTheme.colorScheme.surface,
+            outlineAccent = MaterialTheme.colorScheme.outline,
+        )
+    } else {
+        baseRoles
+    }
     Surface(Modifier.fillMaxSize()) {
-        if (state is HomeForecastPresentationState.ForecastReady) {
-            ReadyContent(
-                state = state,
-                onRefresh = onRefresh,
-                onChangeLocation = onChangeLocation,
-                onOpenAbout = onOpenAbout,
-            )
-            return@Surface
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeDrawingPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = roles.pageMarginHorizontal, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(roles.sectionGap),
-        ) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "OXYGEN",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            if (state !is HomeForecastPresentationState.ForecastReady) {
-                Text(
-                    text = state.title,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = state.subtitle,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
-                )
-                OutlinedButton(
-                    onClick = onOpenAbout,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Settings / About")
-                }
-                OutlinedButton(
-                    onClick = onChangeLocation,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("home-change-location"),
-                ) {
-                    Text("Change location")
-                }
-            }
-            when (state) {
-                is HomeForecastPresentationState.Loading -> LoadingContent(state)
-                is HomeForecastPresentationState.NoCacheError -> ErrorContent(
+        CompositionLocalProvider(LocalOxygenHomeDesign provides roles) {
+            if (state is HomeForecastPresentationState.ForecastReady) {
+                ReadyContent(
                     state = state,
-                    onRetry = onRetry,
+                    onRefresh = onRefresh,
+                    onChangeLocation = onChangeLocation,
+                    onOpenAbout = onOpenAbout,
                 )
-                is HomeForecastPresentationState.ForecastReady -> Unit
+                return@CompositionLocalProvider
             }
-            ProviderDisclosure(state)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = roles.pageMarginHorizontal, vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(roles.sectionGap),
+            ) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "OXYGEN",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (state !is HomeForecastPresentationState.ForecastReady) {
+                    Text(
+                        text = state.title,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = state.subtitle,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                    )
+                    OutlinedButton(
+                        onClick = onOpenAbout,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Settings / About")
+                    }
+                    OutlinedButton(
+                        onClick = onChangeLocation,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("home-change-location"),
+                    ) {
+                        Text("Change location")
+                    }
+                }
+                when (state) {
+                    is HomeForecastPresentationState.Loading -> LoadingContent(state)
+                    is HomeForecastPresentationState.NoCacheError -> ErrorContent(
+                        state = state,
+                        onRetry = onRetry,
+                    )
+                    is HomeForecastPresentationState.ForecastReady -> Unit
+                }
+                ProviderDisclosure(state)
+            }
         }
     }
 }
@@ -207,6 +224,7 @@ private fun ReadyContent(
                     label = { Text(page.title) },
                     modifier = Modifier
                         .weight(1f)
+                        .heightIn(min = 48.dp)
                         .testTag(page.tabTag)
                         .semantics {
                             contentDescription = "${page.title} page"
@@ -222,6 +240,26 @@ private fun ReadyContent(
                 .testTag("home-page-container")
                 .semantics {
                     contentDescription = "${currentPage.title}, Page ${pagerState.currentPage + 1} of ${pages.size}"
+                    customActions = buildList {
+                        if (pagerState.currentPage > 0) {
+                            val previousPage = pages[pagerState.currentPage - 1]
+                            add(
+                                CustomAccessibilityAction("Show previous page: ${previousPage.title}") {
+                                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                                    true
+                                },
+                            )
+                        }
+                        if (pagerState.currentPage < pages.lastIndex) {
+                            val nextPage = pages[pagerState.currentPage + 1]
+                            add(
+                                CustomAccessibilityAction("Show next page: ${nextPage.title}") {
+                                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                                    true
+                                },
+                            )
+                        }
+                    }
                 },
         ) { pageIndex ->
             HomePageContainer(page = pages[pageIndex]) {
