@@ -36,16 +36,26 @@ class OfflineLaunchPersistenceInstrumentedTest {
         val context = targetContext()
         val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
         val forecastCacheStorage = RoomForecastCacheStorageFactory.create(context)
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
         val location = weatherLocation(
             id = "android-installed-screenshot",
-            name = "Android Installed Screenshot City",
+            name = "Madison, Wisconsin, United States",
+        )
+        val savedComparison = weatherLocation(
+            id = "android-installed-screenshot-comparison",
+            name = "Madison, Alabama, United States",
+            latitude = 34.6993,
+            longitude = -86.7483,
         )
         val bundle = fullWeatherBundle(location)
 
         selectedLocationStorage.writeSelectedLocation(location)
+        savedLocationStorage.saveLocation(location)
+        savedLocationStorage.saveLocation(savedComparison)
         forecastCacheStorage.replaceBundle(bundle)
 
         assertEquals(location, selectedLocationStorage.readSelectedLocation())
+        assertEquals(listOf(location, savedComparison), savedLocationStorage.listLocations())
         assertEquals(bundle.location, forecastCacheStorage.readBundle(location.id)?.location)
     }
 
@@ -155,6 +165,54 @@ class OfflineLaunchPersistenceInstrumentedTest {
         assertEquals(location, ready.location)
         assertEquals("45 minutes", stale.staleAgeText)
         assertEquals(HomeRefreshFailureMessage.NetworkUnavailable, stale.refreshFailureMessage)
+        context.deleteDatabase("oxygen_forecast_cache.db")
+    }
+
+    @Test
+    fun locationEntryLoadsProductionRoomSavedRowsAndSelectionDrivesHomeByLocalLocationId() {
+        val context = targetContext()
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
+        val forecastCacheStorage = RoomForecastCacheStorageFactory.create(context)
+        val oldLocation = weatherLocation(
+            id = "android-location-entry-old-${System.nanoTime()}",
+            name = "Android Location Entry Old City",
+        )
+        val savedMadison = weatherLocation(
+            id = "android-location-entry-madison-${System.nanoTime()}",
+            name = "Madison, Wisconsin, United States",
+        )
+        val savedChicago = weatherLocation(
+            id = "android-location-entry-chicago-${System.nanoTime()}",
+            name = "Chicago, Illinois, United States",
+            latitude = 41.8781,
+            longitude = -87.6298,
+        )
+        savedLocationStorage.saveLocation(savedMadison)
+        savedLocationStorage.saveLocation(savedChicago)
+        forecastCacheStorage.replaceBundle(fullWeatherBundle(savedChicago))
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            selectedLocationStorage = selectedLocationStorage,
+            savedLocationStorage = savedLocationStorage,
+            forecastCacheStorage = forecastCacheStorage,
+            weatherRepository = FailingWeatherRepository,
+            forecastExecutor = DirectExecutor,
+            clock = java.time.Clock.fixed(Instant.parse("2026-08-22T12:45:00Z"), ZoneId.of("UTC")),
+        )
+
+        stateHolder.onChangeLocation()
+        val savedRows = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        stateHolder.onSavedLocationSelected(savedChicago.id)
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(listOf(savedMadison, savedChicago), savedRows.locations)
+        assertEquals(savedChicago, selectedLocationStorage.readSelectedLocation())
+        assertEquals(savedChicago.id, stateHolder.presentationState.selectedLocation?.id)
+        assertEquals(savedChicago.id, ready.location.id)
+        assertTrue(ready.dashboard.visibleText().contains("Open-Meteo"))
         context.deleteDatabase("oxygen_forecast_cache.db")
     }
 

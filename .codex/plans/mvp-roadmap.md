@@ -1,6 +1,6 @@
 # Oxygen MVP Release Map
 
-Status: specified
+Status: ready
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
@@ -994,7 +994,7 @@ Must prove:
 - refresh remains explicit/provider-neutral;
 - a focused race test covers older completion after newer selection.
 
-### Slice 19C: Saved Locations UI
+### Slice 19C: Saved Location List and Selection UI
 
 Status: specified
 
@@ -1003,22 +1003,112 @@ Prerequisites:
 - Slice 19B.
 - Slice 18I.
 
-Release intent: Expose saved-location management through a finished Oxygen UI.
+Release intent: Show existing saved locations on the location-entry surface and
+let users select one through the committed saved-location app-state path.
 
 Must prove:
 
 - similar place names are disambiguated;
 - current selection is obvious;
-- select/remove controls are visible;
-- destructive removal is not easy to trigger accidentally;
+- select controls are visible;
+- selecting a saved row drives Home through local `LocationId`;
 - manual search remains fully available without permission;
 - compact and large-font layouts work.
 
 Out of scope:
 
+- search-result save UI;
+- saved-location removal UI;
 - drag reorder;
 - folders;
 - automatic multi-location refresh.
+
+### Slice 19D: Save Search Result UI
+
+Status: specified
+
+Prerequisite:
+
+- Slice 19C.
+
+Release intent: Let users save a searched place from the location-entry surface
+without making saving a prerequisite for one-off manual selection.
+
+Must prove:
+
+- search result rows expose a clear save control;
+- saving uses production `SavedLocationStorage`;
+- save success refreshes the saved list;
+- save failure surfaces as a local saved-location failure;
+- manual `Use now` selection still works when saved storage is unavailable or
+  save fails;
+- compact and large-font layouts keep search, save, and use-now controls
+  readable and reachable.
+
+Out of scope:
+
+- saved-location removal UI;
+- drag reorder;
+- folders/groups;
+- automatic multi-location refresh.
+
+### Slice 19E: Remove Saved Location UI
+
+Status: specified
+
+Prerequisite:
+
+- Slice 19D.
+
+Release intent: Let users remove saved locations from the location-entry surface
+without accidentally deleting rows or changing the current Home forecast.
+
+Must prove:
+
+- saved rows expose a visible remove control;
+- removal requires an explicit confirmation/cancel step before production
+  storage deletion;
+- cancel does not delete;
+- confirmed removal refreshes only saved-location list state;
+- removing the currently selected location does not clear or rewrite DataStore
+  selected-location state, forecast-cache rows, or the visible Home forecast;
+- compact and large-font layouts keep remove confirmation readable and
+  reachable.
+
+Out of scope:
+
+- drag reorder;
+- folders/groups;
+- automatic multi-location refresh;
+- automatic replacement when the removed row is currently selected.
+
+### Gate 19F: Saved Locations Documentation Sync
+
+Status: specified
+
+Prerequisite:
+
+- Slice 19E.
+
+Release intent: Align README, roadmap, disclosure, and active-cycle status with
+the saved-location behavior actually verified in Slices 19A through 19E.
+
+Must prove:
+
+- README implemented/not-implemented saved-location claims match verified
+  installed-app behavior;
+- roadmap saved-location sub-slice status does not exceed recorded evidence;
+- data-source, privacy, cache, and provider claims remain unchanged unless a
+  saved-location slice truly changed them;
+- skipped Android commands are named and justified if the gate is
+  documentation-only.
+
+Out of scope:
+
+- app behavior;
+- provider behavior;
+- persistence schema changes;
+- release-readiness or MVP-readiness claims.
 
 ---
 

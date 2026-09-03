@@ -19,6 +19,9 @@ and `docs/data-sources/`.
 - Manual selected-location change from the installed Home screen.
 - Explicit selected-location Open-Meteo forecast retrieval.
 - Last selected location persistence through the local DataStore path.
+- Saved-location storage, saved-location list display, current-location marking,
+  and selection of existing saved rows through the installed location-entry
+  surface.
 - Offline restoration of the last forecast for the selected location through the
   local Room forecast-cache path.
 - Foreground refresh failure handling that keeps a useful cached forecast
@@ -41,7 +44,7 @@ and `docs/data-sources/`.
 
 ## Not implemented yet
 
-- Multiple saved locations and saved-location switching/removal.
+- Search-result save UI and saved-location removal UI.
 - Unit preferences.
 - Official weather alert lookup.
 - Persisted appearance/effects/layout settings.
@@ -149,8 +152,9 @@ location's cached forecast as a stale success with explicit refresh-failed
 metadata. If a live provider refresh succeeds while local forecast-cache
 persistence fails, the live provider forecast remains displayable.
 
-Multiple saved locations, unit preferences, alerts, air quality, radar, and
-installed-app MET Norway fallback behavior are not implemented yet.
+Search-result save UI, saved-location removal UI, unit preferences, alerts, air
+quality, radar, and installed-app MET Norway fallback behavior are not
+implemented yet.
 
 ## Specification
 

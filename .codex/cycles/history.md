@@ -28,11 +28,10 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 18J, Standard Home Visual
-  Convergence, committed at `7950a42`, with Slice 18J-R Open-Meteo ready
-  forecast recovery included in the same implementation sequence.
-- Current active slice: Slice 19A, Saved Location Storage Model, planned in
-  `.codex/plans/current.md`.
+- Last committed implementation slice: Slice 19B, Saved Location Selection and
+  Concurrency, committed at `0f649aa`.
+- Current active slice: Slice 19C, Saved Location List and Selection UI, ready
+  in the working tree and not yet committed.
 - Current documentation drift under review: none. The Base Art Sheet filename,
   specification reference, and visible image title agree on v0.2.
 - Current process correction: the live cycle history was re-trimmed on
@@ -208,3 +207,52 @@ Boundaries:
   forecast-cache format change, provider request change, unit preference,
   alert, air quality, radar, appearance setting, installed-app MET Norway
   fallback, release, or MVP-readiness behavior was added.
+
+### 2026-09-03-saved-location-list-select-ui
+
+Status: ready
+Mode: feature
+Slice: Slice 19C, Saved Location List and Selection UI
+Commit: committed in this changeset
+
+Result:
+- Home's `Location` action now opens the existing location-entry surface with
+  saved locations loaded from production `SavedLocationStorage`.
+- The location-entry screen renders saved rows with city, region/country,
+  coordinate/time-zone detail, a current-location marker, and visible select
+  controls.
+- Saved selection is wired through the Slice 19B app-state path by local
+  `LocationId`; Room/DataStore saved-list work runs off the Compose main thread.
+- Manual search remains usable when saved storage is empty, unavailable, or
+  failing. README/About status now separates saved list/select from save/remove
+  UI, which remains unimplemented.
+
+Evidence:
+- Baseline unit check passed: `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest'`.
+- Initial baseline connected check failed while the emulator was still booting;
+  the retried connected HomeDashboard class later passed.
+- Focused checks passed: app unit tests for Home state, About disclosure, and
+  app contract; `HomeDashboardUiTest` with 29 connected tests; and
+  `OfflineLaunchPersistenceInstrumentedTest` with 7 connected tests including
+  the production Room-backed 19C path.
+- Raw installed-app exercise passed by `adb install`, `am instrument` seeding of
+  production Room/DataStore state, Home launch, Location tap, UI-tree inspection,
+  and default/compact/large-font screenshot capture.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-03-saved-location-list-select-ui/`.
+- Installed screenshots include `installed-saved-locations-default-final.png`,
+  `installed-saved-locations-compact-360dp-scrolled.png`, and
+  `installed-saved-locations-compact-360dp-large-font-deeper-scroll.png`.
+
+Boundaries:
+- No search-result save UI, saved-location remove UI, remove confirmation,
+  reorder/grouping, automatic multi-location refresh, background refresh, unit
+  preference, alert, air quality, radar/map, widget, notification, provider
+  request, Room schema, DataStore format, forecast-cache format, release, or
+  MVP-readiness behavior was added.

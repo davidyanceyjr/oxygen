@@ -41,6 +41,8 @@ fun OxygenApp(
         when (val screen = appState.screen) {
             is OxygenAppScreen.FirstRunLocationEntry -> FirstRunLocationEntryScreen(
                 state = screen,
+                selectedLocation = appState.selectedLocation,
+                savedLocations = appState.savedLocations,
                 onQueryChanged = {
                     stateHolder.onManualLocationQueryChanged(it)
                     appState = stateHolder.presentationState
@@ -55,6 +57,10 @@ fun OxygenApp(
                 },
                 onCandidateSelected = {
                     stateHolder.onManualLocationCandidateSelected(it)
+                    appState = stateHolder.presentationState
+                },
+                onSavedLocationSelected = {
+                    stateHolder.onSavedLocationSelected(it)
                     appState = stateHolder.presentationState
                 },
                 onUseMyLocation = {

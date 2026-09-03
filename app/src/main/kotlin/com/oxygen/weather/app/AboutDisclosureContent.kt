@@ -61,6 +61,7 @@ private val dataSourceSections = listOf(
             "MET Norway forecast is implemented as a provider path and covered as a core fallback-selection capability.",
             "MET Norway is not wired as the active installed-app forecast fallback in this build.",
             "Core forecast-cache persistence and foreground failed-refresh stale retention are implemented at the repository and app-state boundary.",
+            "Saved-location storage, list display, current-location marking, and saved-location selection are implemented for existing saved rows.",
             "Installed-app durable cache wiring, fallback wiring, fallback Home UI verification, and offline cache launch behavior are not implemented or verified yet.",
         ),
     ),
@@ -68,7 +69,7 @@ private val dataSourceSections = listOf(
         heading = "Roadmap Only",
         body = listOf(
             "NOAA/NWS alerts, Environment and Climate Change Canada alerts, and Open-Meteo/CAMS air quality are roadmap-only here.",
-            "Alerts, air quality, radar, saved locations, unit settings, and offline forecast cache behavior are not implemented in this app build.",
+            "Alerts, air quality, radar, saved-location save/remove UI, unit settings, and installed-app forecast fallback behavior are not implemented in this app build.",
         ),
     ),
 )

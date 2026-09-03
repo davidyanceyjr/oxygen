@@ -139,54 +139,65 @@ class OxygenAppStateHolder(
         startHomeForecastLoad(selected.location)
     }
 
-    @Synchronized
     fun loadSavedLocations() {
         val storage = savedLocationStorage ?: return
-        presentationState = presentationState.copy(savedLocations = SavedLocationsPresentationState.Loading)
-        publishState()
-        try {
-            presentationState = presentationState.copy(
-                savedLocations = SavedLocationsPresentationState.Loaded(storage.listLocations()),
-            )
-        } catch (_: Exception) {
-            presentationState = presentationState.copy(
-                savedLocations = SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable),
-            )
+        synchronized(this) {
+            presentationState = presentationState.copy(savedLocations = SavedLocationsPresentationState.Loading)
+            publishState()
         }
-        publishState()
+        forecastExecutor.execute {
+            val nextState = try {
+                SavedLocationsPresentationState.Loaded(storage.listLocations())
+            } catch (_: Exception) {
+                SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable)
+            }
+            synchronized(this) {
+                presentationState = presentationState.copy(savedLocations = nextState)
+                publishState()
+            }
+        }
     }
 
-    @Synchronized
     fun onSavedLocationSelected(locationId: LocationId) {
         val storage = savedLocationStorage ?: return
-        val savedLocation = try {
-            storage.listLocations().firstOrNull { it.id == locationId }
-        } catch (_: Exception) {
-            presentationState = presentationState.copy(
-                savedLocations = SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable),
-            )
-            publishState()
-            return
-        } ?: return
+        forecastExecutor.execute {
+            val savedLocation = try {
+                storage.listLocations().firstOrNull { it.id == locationId }
+            } catch (_: Exception) {
+                synchronized(this) {
+                    presentationState = presentationState.copy(
+                        savedLocations = SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable),
+                    )
+                    publishState()
+                }
+                return@execute
+            } ?: return@execute
 
-        nextForecastRequestId()
-        try {
-            selectedLocationStorage.writeSelectedLocation(savedLocation)
-        } catch (_: Exception) {
-            presentationState = presentationState.copy(
-                savedLocations = SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable),
-            )
-            publishState()
-            return
-        }
+            synchronized(this) {
+                nextForecastRequestId()
+            }
+            try {
+                selectedLocationStorage.writeSelectedLocation(savedLocation)
+            } catch (_: Exception) {
+                synchronized(this) {
+                    presentationState = presentationState.copy(
+                        savedLocations = SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable),
+                    )
+                    publishState()
+                }
+                return@execute
+            }
 
-        val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
-        val currentReady = currentHome?.forecast as? HomeForecastPresentationState.ForecastReady
-        if (currentReady == null || currentReady.location != savedLocation) {
-            setHomeLoading(savedLocation)
-            restoreCachedHomeForecast(savedLocation)
+            synchronized(this) {
+                val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
+                val currentReady = currentHome?.forecast as? HomeForecastPresentationState.ForecastReady
+                if (currentReady == null || currentReady.location != savedLocation) {
+                    setHomeLoading(savedLocation)
+                    restoreCachedHomeForecast(savedLocation)
+                }
+                startHomeForecastLoad(savedLocation)
+            }
         }
-        startHomeForecastLoad(savedLocation)
     }
 
     fun onHomeForecastRetry() {
@@ -210,6 +221,7 @@ class OxygenAppStateHolder(
             screen = OxygenAppScreen.FirstRunLocationEntry(returnScreen = currentHome),
         )
         publishState()
+        loadSavedLocations()
     }
 
     fun onLocationEntryBack() {

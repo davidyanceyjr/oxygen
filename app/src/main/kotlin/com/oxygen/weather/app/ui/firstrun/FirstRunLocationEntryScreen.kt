@@ -31,15 +31,21 @@ import com.oxygen.weather.app.FirstRunLocationMessage
 import com.oxygen.weather.app.ManualLocationCandidate
 import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.app.OxygenAppScreen
+import com.oxygen.weather.app.SavedLocationsPresentationState
 import com.oxygen.weather.core.model.LocationId
+import com.oxygen.weather.core.model.WeatherLocation
+import java.util.Locale
 
 @Composable
 fun FirstRunLocationEntryScreen(
     state: OxygenAppScreen.FirstRunLocationEntry,
+    selectedLocation: WeatherLocation?,
+    savedLocations: SavedLocationsPresentationState,
     onQueryChanged: (String) -> Unit,
     onSearch: () -> Unit,
     onRetry: () -> Unit,
     onCandidateSelected: (LocationId) -> Unit,
+    onSavedLocationSelected: (LocationId) -> Unit,
     onUseMyLocation: () -> Unit,
     onBack: () -> Unit,
     onOpenAbout: () -> Unit,
@@ -89,6 +95,11 @@ fun FirstRunLocationEntryScreen(
                 state.message?.let { message ->
                     FirstRunMessage(message)
                 }
+                SavedLocationsContent(
+                    savedLocations = savedLocations,
+                    selectedLocation = selectedLocation,
+                    onSavedLocationSelected = onSavedLocationSelected,
+                )
                 ManualLocationSearchContent(
                     searchState = state.searchState,
                     retryLabel = state.retryLabel,
@@ -110,6 +121,130 @@ fun FirstRunLocationEntryScreen(
         }
     }
 }
+
+@Composable
+private fun SavedLocationsContent(
+    savedLocations: SavedLocationsPresentationState,
+    selectedLocation: WeatherLocation?,
+    onSavedLocationSelected: (LocationId) -> Unit,
+) {
+    when (savedLocations) {
+        SavedLocationsPresentationState.NotLoaded -> Unit
+        SavedLocationsPresentationState.Loading -> SavedLocationsStatus("Loading saved locations")
+        is SavedLocationsPresentationState.Failure -> SavedLocationsStatus(savedLocations.message.text)
+        is SavedLocationsPresentationState.Loaded -> {
+            if (savedLocations.locations.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.testTag("location-entry-saved-locations"),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = "Saved locations",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    savedLocations.locations.forEachIndexed { index, location ->
+                        SavedLocationRow(
+                            location = location,
+                            index = index,
+                            isSelected = location.id == selectedLocation?.id,
+                            onSelected = { onSavedLocationSelected(location.id) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SavedLocationsStatus(text: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier
+                .padding(14.dp)
+                .testTag("location-entry-saved-location-status"),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+@Composable
+private fun SavedLocationRow(
+    location: WeatherLocation,
+    index: Int,
+    isSelected: Boolean,
+    onSelected: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("location-entry-saved-location-$index"),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = location.savedLocationTitle(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = location.savedLocationSubtitle(),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = "${location.coordinateText()} | ${location.zoneId.id}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+            )
+            if (isSelected) {
+                Text(
+                    text = "Current",
+                    modifier = Modifier.testTag("location-entry-saved-current-$index"),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Button(
+                onClick = onSelected,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("location-entry-saved-location-select-$index"),
+            ) {
+                Text("Select saved location")
+            }
+        }
+    }
+}
+
+private fun WeatherLocation.savedLocationTitle(): String =
+    displayName.split(",")
+        .firstOrNull()
+        ?.trim()
+        ?.ifBlank { null }
+        ?: displayName
+
+private fun WeatherLocation.savedLocationSubtitle(): String =
+    displayName.split(",")
+        .drop(1)
+        .joinToString(", ") { it.trim() }
+        .ifBlank { displayName }
+
+private fun WeatherLocation.coordinateText(): String =
+    String.format(Locale.US, "%.4f, %.4f", point.latitude, point.longitude)
 
 @Composable
 private fun LocationEntryBottomActions(
