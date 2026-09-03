@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
@@ -12,6 +13,9 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.oxygen.weather.core.location.SavedLocationStorage
 import com.oxygen.weather.core.model.CurrentConditions
 import com.oxygen.weather.core.model.DailyForecast
 import com.oxygen.weather.core.model.DataProvenance
@@ -54,7 +58,35 @@ object RoomForecastCacheStorageFactory {
                 context.applicationContext,
                 OxygenForecastCacheDatabase::class.java,
                 "oxygen_forecast_cache.db",
-            ).build(),
+            ).addMigrations(OXYGEN_DATABASE_MIGRATION_1_2).build(),
+        )
+}
+
+class RoomSavedLocationStorage internal constructor(
+    private val database: OxygenForecastCacheDatabase,
+) : SavedLocationStorage {
+    private val dao = database.savedLocationDao()
+
+    override fun saveLocation(location: WeatherLocation) {
+        dao.saveLocation(location)
+    }
+
+    override fun listLocations(): List<WeatherLocation> =
+        dao.listLocations().map { it.toLocation() }
+
+    override fun removeLocation(locationId: LocationId) {
+        dao.removeLocation(locationId.value)
+    }
+}
+
+object RoomSavedLocationStorageFactory {
+    fun create(context: Context): SavedLocationStorage =
+        RoomSavedLocationStorage(
+            Room.databaseBuilder(
+                context.applicationContext,
+                OxygenForecastCacheDatabase::class.java,
+                "oxygen_forecast_cache.db",
+            ).addMigrations(OXYGEN_DATABASE_MIGRATION_1_2).build(),
         )
 }
 
@@ -65,12 +97,34 @@ object RoomForecastCacheStorageFactory {
         CachedCurrentConditionsEntity::class,
         CachedHourlyForecastEntity::class,
         CachedDailyForecastEntity::class,
+        SavedLocationEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 internal abstract class OxygenForecastCacheDatabase : RoomDatabase() {
     abstract fun forecastCacheDao(): ForecastCacheDao
+    abstract fun savedLocationDao(): SavedLocationDao
+}
+
+internal val OXYGEN_DATABASE_MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `saved_locations` (
+                `id` TEXT NOT NULL,
+                `displayName` TEXT NOT NULL,
+                `latitude` REAL NOT NULL,
+                `longitude` REAL NOT NULL,
+                `elevationMeters` REAL,
+                `zoneId` TEXT NOT NULL,
+                `sortOrder` INTEGER NOT NULL,
+                PRIMARY KEY(`id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_saved_locations_sortOrder` ON `saved_locations` (`sortOrder`)")
+    }
 }
 
 @Dao
@@ -144,6 +198,26 @@ internal abstract class ForecastCacheDao {
 
     @Query("SELECT * FROM cached_daily_forecasts WHERE location_id = :locationId ORDER BY row_index ASC")
     protected abstract fun readDaily(locationId: String): List<CachedDailyForecastEntity>
+}
+
+@Dao
+internal abstract class SavedLocationDao {
+    @Transaction
+    open fun saveLocation(location: WeatherLocation) {
+        insertLocation(location.toSavedLocationEntity(nextSortOrder()))
+    }
+
+    @Query("SELECT COALESCE(MAX(sortOrder), 0) + 1 FROM saved_locations")
+    protected abstract fun nextSortOrder(): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    protected abstract fun insertLocation(entity: SavedLocationEntity)
+
+    @Query("SELECT * FROM saved_locations ORDER BY sortOrder ASC")
+    abstract fun listLocations(): List<SavedLocationEntity>
+
+    @Query("DELETE FROM saved_locations WHERE id = :locationId")
+    abstract fun removeLocation(locationId: String)
 }
 
 @Entity(tableName = "cached_forecast_locations")
@@ -273,6 +347,21 @@ internal data class CachedDailyForecastEntity(
     val provenanceLicenseId: String?,
 )
 
+@Entity(
+    tableName = "saved_locations",
+    indices = [Index(value = ["sortOrder"])],
+)
+internal data class SavedLocationEntity(
+    @PrimaryKey
+    val id: String,
+    val displayName: String,
+    val latitude: Double,
+    val longitude: Double,
+    val elevationMeters: Double?,
+    val zoneId: String,
+    val sortOrder: Long,
+)
+
 internal data class CachedBundleRecord(
     val location: CachedForecastLocationEntity,
     val metadata: CachedForecastMetadataEntity,
@@ -312,7 +401,27 @@ private fun WeatherLocation.toEntity(): CachedForecastLocationEntity =
         zoneId = zoneId.id,
     )
 
+private fun WeatherLocation.toSavedLocationEntity(sortOrder: Long): SavedLocationEntity =
+    SavedLocationEntity(
+        id = id.value,
+        displayName = displayName,
+        latitude = point.latitude,
+        longitude = point.longitude,
+        elevationMeters = elevationMeters,
+        zoneId = zoneId.id,
+        sortOrder = sortOrder,
+    )
+
 private fun CachedForecastLocationEntity.toLocation(): WeatherLocation =
+    WeatherLocation(
+        id = LocationId(id),
+        displayName = displayName,
+        point = GeoPoint(latitude, longitude),
+        elevationMeters = elevationMeters,
+        zoneId = ZoneId.of(zoneId),
+    )
+
+private fun SavedLocationEntity.toLocation(): WeatherLocation =
     WeatherLocation(
         id = LocationId(id),
         displayName = displayName,

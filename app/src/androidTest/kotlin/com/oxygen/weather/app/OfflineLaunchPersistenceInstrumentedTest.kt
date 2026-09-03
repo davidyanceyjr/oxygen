@@ -18,6 +18,7 @@ import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import com.oxygen.weather.core.provider.cache.CachedWeatherRepository
 import com.oxygen.weather.core.provider.cache.room.RoomForecastCacheStorageFactory
+import com.oxygen.weather.core.provider.cache.room.RoomSavedLocationStorageFactory
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -62,6 +63,26 @@ class OfflineLaunchPersistenceInstrumentedTest {
         storage.writeSelectedLocation(location)
 
         assertEquals(location, storage.readSelectedLocation())
+    }
+
+    @Test
+    fun removingSavedLocationWithSelectedIdLeavesDataStoreSelectedLocationUnchanged() {
+        val context = targetContext()
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
+        val location = weatherLocation(
+            id = "android-selected-saved-independent-${System.nanoTime()}",
+            name = "Android Selected Saved Independent City",
+        )
+
+        selectedLocationStorage.writeSelectedLocation(location)
+        savedLocationStorage.saveLocation(location)
+        savedLocationStorage.removeLocation(location.id)
+
+        assertEquals(location, selectedLocationStorage.readSelectedLocation())
+        assertEquals(emptyList<WeatherLocation>(), savedLocationStorage.listLocations())
+        context.deleteDatabase("oxygen_forecast_cache.db")
     }
 
     @Test
