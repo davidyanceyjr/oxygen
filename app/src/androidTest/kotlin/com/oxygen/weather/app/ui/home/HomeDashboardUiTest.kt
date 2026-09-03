@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.oxygen.weather.app.HomeForecastMessage
 import com.oxygen.weather.app.HomeForecastPresentationState
+import com.oxygen.weather.app.HomeMetricIdentity
 import com.oxygen.weather.app.HomeSuccessSection
 import com.oxygen.weather.app.AboutSurfaceId
 import com.oxygen.weather.app.OxygenApp
@@ -95,6 +96,7 @@ class HomeDashboardUiTest {
 
         composeRule.setHomeContent(state)
 
+        composeRule.onNodeWithTag("home-weather-scene").assertExists()
         listOf(
             "home-page-tab-now",
             "home-page-tab-hourly",
@@ -430,6 +432,7 @@ class HomeDashboardUiTest {
             appearance = OxygenAppearance(effects = EffectsLevel.OFF),
         )
 
+        composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
         composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
         composeRule.onNodeWithText("Rain showers").assertIsDisplayed()
@@ -610,6 +613,45 @@ class HomeDashboardUiTest {
         composeRule.onAllNodesWithText("Precipitation").assertCountEquals(0)
         composeRule.onAllNodesWithText("0 deg F").assertCountEquals(0)
         composeRule.onAllNodesWithText("0%").assertCountEquals(0)
+    }
+
+    @Test
+    fun detailsAndNowContextUseMetricIdentityWhenDisplayLabelsChange() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        ).let { ready ->
+            ready.copy(
+                dashboard = ready.dashboard.copy(
+                    metrics = ready.dashboard.metrics.map { metric ->
+                        when (metric.identity) {
+                            HomeMetricIdentity.Humidity -> metric.copy(label = "Relative humidity")
+                            HomeMetricIdentity.Wind -> metric.copy(label = "Breeze")
+                            HomeMetricIdentity.ApparentTemperature -> metric.copy(label = "Feels")
+                            HomeMetricIdentity.DewPoint -> metric.copy(label = "Dew")
+                            HomeMetricIdentity.Pressure -> metric.copy(label = "Barometer")
+                            HomeMetricIdentity.Visibility -> metric.copy(label = "Sightline")
+                            HomeMetricIdentity.CloudCover -> metric.copy(label = "Clouds")
+                            HomeMetricIdentity.Precipitation -> metric.copy(label = "Recent rain")
+                        }
+                    },
+                ),
+            )
+        }
+
+        composeRule.setHomeContent(state)
+
+        composeRule.onNodeWithText("Relative humidity").assertIsDisplayed()
+        composeRule.onNodeWithText("Breeze").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-section-comfort").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-wind").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-atmosphere").assertExists()
+        composeRule.onNodeWithContentDescription("Comfort, Feels, 63 deg F, Relative humidity, 72%, Dew, 53 deg F").assertExists()
+        composeRule.onNodeWithContentDescription("Wind, Breeze, 14 km/h, gust 25 km/h, 225 deg").assertExists()
+        composeRule.onNodeWithContentDescription("Atmosphere, Barometer, 1012 hPa, Sightline, 9.5 km, Clouds, 88%, Recent rain, 0.4 mm").assertExists()
     }
 
     @Test
@@ -921,7 +963,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("Search").performClick()
         composeRule.waitForIdle()
         composeRule.onAllNodesWithText("New Compose City").assertCountEquals(2)
-        composeRule.onNodeWithText("Select").performClick()
+        composeRule.onNodeWithText("Select").performScrollTo().performClick()
         composeRule.waitForIdle()
 
         assertEquals(listOf(oldLocation, newLocation), repository.locations)

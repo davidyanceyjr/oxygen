@@ -146,9 +146,21 @@ data class HomeDailyPresentation(
 )
 
 data class HomeMetricPresentation(
+    val identity: HomeMetricIdentity,
     val label: String,
     val value: String,
 )
+
+enum class HomeMetricIdentity {
+    ApparentTemperature,
+    Humidity,
+    Wind,
+    Pressure,
+    Visibility,
+    DewPoint,
+    CloudCover,
+    Precipitation,
+}
 
 data class HomeSunPresentation(
     val sunrise: String,
@@ -213,14 +225,14 @@ private fun DailyForecast.toDailyPresentation(zoneId: ZoneId): HomeDailyPresenta
     )
 
 private fun CurrentConditions.toMetricRows(): List<HomeMetricPresentation> = buildList {
-    add(HomeMetricPresentation("Feels like", apparentTemperatureC.formatFahrenheit()))
-    humidityPercent?.let { add(HomeMetricPresentation("Humidity", "$it%")) }
-    wind?.toMetricText()?.let { add(HomeMetricPresentation("Wind", it)) }
-    pressureHpa?.let { add(HomeMetricPresentation("Pressure", "${it.roundToInt()} hPa")) }
-    visibilityMeters?.let { add(HomeMetricPresentation("Visibility", it.formatVisibility())) }
-    dewPointC?.let { add(HomeMetricPresentation("Dew point", it.formatFahrenheit())) }
-    cloudCoverPercent?.let { add(HomeMetricPresentation("Cloud cover", "$it%")) }
-    precipitationMm?.let { add(HomeMetricPresentation("Precipitation", it.formatMillimeters())) }
+    add(HomeMetricPresentation(HomeMetricIdentity.ApparentTemperature, "Feels like", apparentTemperatureC.formatFahrenheit()))
+    humidityPercent?.let { add(HomeMetricPresentation(HomeMetricIdentity.Humidity, "Humidity", "$it%")) }
+    wind?.toMetricText()?.let { add(HomeMetricPresentation(HomeMetricIdentity.Wind, "Wind", it)) }
+    pressureHpa?.let { add(HomeMetricPresentation(HomeMetricIdentity.Pressure, "Pressure", "${it.roundToInt()} hPa")) }
+    visibilityMeters?.let { add(HomeMetricPresentation(HomeMetricIdentity.Visibility, "Visibility", it.formatVisibility())) }
+    dewPointC?.let { add(HomeMetricPresentation(HomeMetricIdentity.DewPoint, "Dew point", it.formatFahrenheit())) }
+    cloudCoverPercent?.let { add(HomeMetricPresentation(HomeMetricIdentity.CloudCover, "Cloud cover", "$it%")) }
+    precipitationMm?.let { add(HomeMetricPresentation(HomeMetricIdentity.Precipitation, "Precipitation", it.formatMillimeters())) }
 }
 
 private fun Wind.toMetricText(): String? {

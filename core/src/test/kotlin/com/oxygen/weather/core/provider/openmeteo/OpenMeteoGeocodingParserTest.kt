@@ -34,6 +34,13 @@ class OpenMeteoGeocodingParserTest {
     }
 
     @Test
+    fun parsesProviderEmptyBodyWithoutResultsAsEmptyResults() {
+        val response = OpenMeteoGeocodingParser.parseSearch(fixture("search_malformed_envelope.json"))
+
+        assertEquals(emptyList<OpenMeteoGeocodingResult>(), response.results)
+    }
+
+    @Test
     fun preservesMissingOptionalFieldsAsNullOrEmpty() {
         val result = OpenMeteoGeocodingParser.parseSearch(fixture("search_missing_optional.json")).results.single()
 
@@ -48,7 +55,7 @@ class OpenMeteoGeocodingParserTest {
     @Test
     fun reportsMalformedEnvelopeAsInvalidJsonEnvelope() {
         val error = assertThrows(OpenMeteoGeocodingException.InvalidJsonEnvelope::class.java) {
-            OpenMeteoGeocodingParser.parseSearch(fixture("search_malformed_envelope.json"))
+            OpenMeteoGeocodingParser.parseSearch("""{"results":{}}""")
         }
 
         assertEquals("results", error.fieldPath)
