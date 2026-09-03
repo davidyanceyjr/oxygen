@@ -167,3 +167,44 @@ Boundaries:
   provider behavior, forecast mapping, unit preferences, alerts, air quality,
   radar, appearance settings, installed-app MET Norway fallback, release, or
   MVP-readiness behavior was added.
+
+### 2026-09-03-saved-location-selection-state
+
+Status: ready
+Mode: feature
+Slice: Slice 19B, Saved Location Selection and Concurrency
+Commit: committed in this changeset
+
+Result:
+- Added production app-state saved-location loading and saved-location
+  selection by provider-neutral `LocationId`.
+- Preserved DataStore `SelectedLocationStorage` as the selected-location source
+  of truth by writing it before cache restore or provider refresh starts.
+- Reused the existing Home lifecycle for loading, matching-cache restore,
+  provider refresh, stale-after-refresh-failure, retry, and obsolete work
+  isolation.
+- Wired `RoomSavedLocationStorageFactory` into `MainActivity` alongside the
+  Room forecast cache and cached Open-Meteo repository.
+
+Evidence:
+- Focused unit check passed: `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest'`.
+- Connected checks passed on `oxygen_starter`: `:core:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.core.provider.cache.room.RoomSavedLocationStorageInstrumentedTest`
+  and `:app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.OfflineLaunchPersistenceInstrumentedTest`.
+- Installed debug launch passed through `scripts/install-debug.sh`.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-03-saved-location-selection-state/`.
+
+Boundaries:
+- No saved-location picker/list/edit/delete/reorder UI, save button,
+  current-selection badge, Room schema change, DataStore format change,
+  forecast-cache format change, provider request change, unit preference,
+  alert, air quality, radar, appearance setting, installed-app MET Norway
+  fallback, release, or MVP-readiness behavior was added.

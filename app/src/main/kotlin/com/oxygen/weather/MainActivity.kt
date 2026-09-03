@@ -9,6 +9,7 @@ import com.oxygen.weather.app.OxygenApp
 import com.oxygen.weather.app.OxygenAppStateHolder
 import com.oxygen.weather.core.provider.cache.CachedWeatherRepository
 import com.oxygen.weather.core.provider.cache.room.RoomForecastCacheStorageFactory
+import com.oxygen.weather.core.provider.cache.room.RoomSavedLocationStorageFactory
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoWeatherRepository
 
 class MainActivity : ComponentActivity() {
@@ -16,10 +17,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val forecastCacheStorage = remember { RoomForecastCacheStorageFactory.create(this) }
+            val savedLocationStorage = remember { RoomSavedLocationStorageFactory.create(this) }
             val selectedLocationStorage = remember { DataStoreSelectedLocationStorage(this) }
             val stateHolder = remember {
                 OxygenAppStateHolder(
                     selectedLocationStorage = selectedLocationStorage,
+                    savedLocationStorage = savedLocationStorage,
                     forecastCacheStorage = forecastCacheStorage,
                     weatherRepository = CachedWeatherRepository(
                         upstream = OpenMeteoWeatherRepository(),

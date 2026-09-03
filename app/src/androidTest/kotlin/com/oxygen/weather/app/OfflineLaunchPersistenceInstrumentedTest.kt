@@ -123,6 +123,42 @@ class OfflineLaunchPersistenceInstrumentedTest {
     }
 
     @Test
+    fun savedRoomLocationSelectionPersistsSelectedLocationAndRestoresMatchingRoomCache() {
+        val context = targetContext()
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
+        val forecastCacheStorage = RoomForecastCacheStorageFactory.create(context)
+        val location = weatherLocation(
+            id = "android-saved-selection-${System.nanoTime()}",
+            name = "Android Saved Selection City",
+        )
+        savedLocationStorage.saveLocation(location)
+        forecastCacheStorage.replaceBundle(fullWeatherBundle(location))
+
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocationStorage = selectedLocationStorage,
+            savedLocationStorage = savedLocationStorage,
+            forecastCacheStorage = forecastCacheStorage,
+            weatherRepository = FailingWeatherRepository,
+            forecastExecutor = DirectExecutor,
+            clock = java.time.Clock.fixed(Instant.parse("2026-08-22T12:45:00Z"), ZoneId.of("UTC")),
+        )
+
+        stateHolder.onSavedLocationSelected(location.id)
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        val stale = ready.freshness as HomeForecastFreshness.StaleAfterFailedRefresh
+        assertEquals(location, selectedLocationStorage.readSelectedLocation())
+        assertEquals(location, stateHolder.presentationState.selectedLocation)
+        assertEquals(location, ready.location)
+        assertEquals("45 minutes", stale.staleAgeText)
+        assertEquals(HomeRefreshFailureMessage.NetworkUnavailable, stale.refreshFailureMessage)
+        context.deleteDatabase("oxygen_forecast_cache.db")
+    }
+
+    @Test
     fun startupWithSelectedLocationAndNoRoomCacheRendersRetryableNoCacheError() {
         val context = targetContext()
         val selectedLocationStorage = DataStoreSelectedLocationStorage(context)

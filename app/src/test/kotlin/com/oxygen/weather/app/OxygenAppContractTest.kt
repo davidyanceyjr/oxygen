@@ -16,11 +16,13 @@ class OxygenAppContractTest {
     }
 
     @Test
-    fun `main activity wires DataStore selected location and Room cached forecast repository`() {
+    fun `main activity wires DataStore selected location Room saved locations and cached forecast repository`() {
         val source = Files.readString(Path.of("src/main/kotlin/com/oxygen/weather/MainActivity.kt"))
 
         assertTrue(source.contains("DataStoreSelectedLocationStorage"))
         assertTrue(source.contains("RoomForecastCacheStorageFactory"))
+        assertTrue(source.contains("RoomSavedLocationStorageFactory"))
+        assertTrue(source.contains("savedLocationStorage = savedLocationStorage"))
         assertTrue(source.contains("CachedWeatherRepository"))
         assertTrue(source.contains("OpenMeteoWeatherRepository"))
         assertFalse(source.contains("FileForecastCacheStorage"))
