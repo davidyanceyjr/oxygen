@@ -27,13 +27,11 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 18I, Mobile One-Handed Home
-  Ergonomics, commit `02f701`.
-- Current active planned slice: Slice 18J-R, Restore Installed Open-Meteo Ready
-  Forecast Path. Slice 18J Standard Home Visual Convergence is partially
-  covered/implemented but blocked by installed-app invalid-response evidence.
-  Next implementation candidate after 18J-R is resuming Slice 18J installed
-  visual evidence and review; Slice 19A remains blocked until 18J is committed.
+- Last committed implementation slice: Slice 18J, Standard Home Visual
+  Convergence evidence and review, with Slice 18J-R Open-Meteo ready forecast
+  recovery included in the same commit.
+- Current active slice: none. Next implementation candidate is Slice 19A, Saved
+  Location Storage Model.
 - Current documentation drift under review: the tracked art sheet path/spec say
   Base Art Sheet v0.1 while the visible image title says v0.2.
 - Current process correction: cycle history is now tail-limited for normal reads
@@ -359,3 +357,119 @@ Boundaries:
   widget, background refresh, persisted appearance, installed-app MET Norway
   fallback, release readiness, MVP readiness, or sample-weather production
   fallback was added.
+
+### 2026-09-02-open-meteo-ready-forecast-recovery
+
+Status: committed
+Mode: fix
+Slice: Slice 18J-R, Restore Installed Open-Meteo Ready Forecast Path
+Commit: this commit
+
+Result:
+- Restored the installed manual Open-Meteo path needed by Slice 18J evidence:
+  a real Madison geocoding selection now reaches a ready Home forecast.
+- Updated `OpenMeteoGeocodingParser` so a provider empty-search body without a
+  `results` array maps to explicit empty results instead of invalid response.
+- Preserved malformed present non-array `results` as invalid response.
+- Added focused coverage for the current empty geocoding body shape and a
+  representative Madison Open-Meteo forecast repository mapping through
+  current, hourly, daily, and provenance data.
+- No Home visual redesign, saved-location list/switch/remove, unit preference,
+  MET Norway installed fallback, alert, air quality, radar, widget, release, or
+  MVP-readiness behavior was added.
+
+Evidence:
+- Baseline focused Open-Meteo tests passed before production edits.
+- Focused checks passed: `. scripts/android-env.sh && ./gradlew
+  :core:testDebugUnitTest --tests '*OpenMeteoGeocoding*'`;
+  `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests
+  '*OpenMeteo*'`.
+- Installed-app real-path evidence used `scripts/list-avds.sh`,
+  `scripts/start-emulator.sh`, `scripts/install-debug.sh`, manual
+  comma-separated Madison search, real Open-Meteo geocoding result selection,
+  and captured ready Home Now, Hourly, Daily, and Details screens.
+- Room cache behavior was exercised by disabling emulator Wi-Fi/data,
+  relaunching the app, and capturing the same Madison forecast restored from
+  cache with refresh-failed stale status.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- Logs, live diagnostic bodies, screenshots, and hierarchies are under
+  `.codex/test-artifacts/2026-09-02-open-meteo-ready-forecast-recovery/`.
+- Installed evidence includes `installed-home-after-selection.png`/`.xml`,
+  `installed-home-hourly.png`/`.xml`, `installed-home-daily.png`/`.xml`,
+  `installed-home-details.png`/`.xml`, and
+  `installed-home-offline-restored.png`/`.xml`.
+
+Boundaries:
+- The successful ready forecast path used the real Open-Meteo provider path and
+  did not use `SampleWeather.bundle`, mocked provider success, or fabricated
+  fallback data.
+- Resume Slice 18J installed visual evidence/review next. Slice 19A remains
+  blocked until Slice 18J is committed.
+
+### 2026-09-02-standard-home-visual-convergence-resumed
+
+Status: committed
+Mode: feature
+Slice: resumed Slice 18J, Standard Home Visual Convergence evidence and review
+Commit: this commit
+
+Result:
+- Resumed Slice 18J after verified Slice 18J-R removed the installed
+  invalid-response blocker.
+- Installed current debug app on `oxygen_starter`, cleared app data, used the
+  real first-run manual Open-Meteo search path with query `Madison`, selected
+  `Madison, Wisconsin, United States`, and captured ready Home Now, Hourly,
+  Daily, and Details evidence.
+- Disabled emulator Wi-Fi/data, relaunched the app, and captured the same
+  Madison forecast restored from Room cache with explicit refresh-failed stale
+  context; network services were restored afterward.
+- Review found the 18J Home evidence materially more weather-first than the
+  committed Slice 18I reference: the scene foundation is visible across pages,
+  Now is dominated by the condition mark/current temperature, Hourly/Daily are
+  scan-friendly forecast surfaces, Details groups semantic metrics with
+  source/update context, and bottom navigation/actions remain subdued and
+  reachable.
+- No new Home production-code changes were made during this resumed evidence
+  pass. No saved-location list/select/remove behavior, unit preference, device
+  location expansion, MET Norway installed fallback, alert, air quality, radar,
+  widget, background refresh, release, MVP-readiness, sample-weather fallback,
+  or additional provider behavior beyond the verified 18J-R fix was added.
+
+Evidence:
+- Focused checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest --tests '*HomeForecast*'`; `. scripts/android-env.sh
+  && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteo*'`; connected Home
+  instrumentation with
+  `-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`
+  finished 25 tests on `oxygen_starter(AVD) - 17`.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- Logs, screenshots, and hierarchies are under
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/`.
+- Resumed installed evidence includes `installed-resumed-first-run.png`/`.xml`,
+  `installed-resumed-search-results.png`/`.xml`,
+  `installed-resumed-home-now.png`/`.xml`,
+  `installed-resumed-home-hourly.png`/`.xml`,
+  `installed-resumed-home-daily.png`/`.xml`,
+  `installed-resumed-home-details.png`/`.xml`, and
+  `installed-resumed-home-offline-restored.png`/`.xml`.
+- Resumed logs include `install-debug-resumed.log`,
+  `focused-homeforecast-resumed.log`,
+  `focused-openmeteo-resumed.log`,
+  `focused-home-compose-instrumentation-resumed.log`,
+  `broad-compile-debug-kotlin-resumed.log`,
+  `broad-debug-unit-tests-resumed.log`,
+  `broad-assemble-debug-resumed.log`, and
+  `git-diff-check-resumed.log`.
+
+Boundaries:
+- Slice 19A is unblocked after this commit.

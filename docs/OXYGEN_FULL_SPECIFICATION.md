@@ -1830,20 +1830,18 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation candidate is Slice 18J-R: Restore Installed Open-Meteo
-Ready Forecast Path.
+The next implementation candidate is Slice 19A: Saved Location Storage Model.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering,
 installed-app visual baseline, and mobile one-handed Home ergonomics are
-committed through Slice 18I. Slice 18J Standard Home Visual Convergence is
-partially covered/implemented but blocked from completion because the installed
-manual Open-Meteo path selected "Madison, Wisconsin, United States" and rendered
-the invalid-response no-cache error instead of a ready forecast.
+committed through Slice 18J. Slice 18J-R restored the installed manual
+Open-Meteo path that selected "Madison, Wisconsin, United States" and previously
+rendered the invalid-response no-cache error instead of a ready forecast.
 
-Slice 18J-R must restore the production installed path where a manually
+Slice 18J-R restored the production installed path where a manually
 selected Open-Meteo geocoding result fetches, parses, maps, caches, and
-presents a usable ready forecast. The fix must be in the real provider,
+presents a usable ready forecast. The fix is in the real provider,
 request, parser, mapper, repository, cache, or state path responsible for the
 failure, not in UI suppression, sample data, mocked success, or fabricated
 fallback data. Invalid-response classification must remain meaningful for
@@ -1858,17 +1856,16 @@ selected-location persistence, Room forecast-cache, stale/restored,
 refresh/retry, provenance, data-source disclosure, and Home UI semantics must
 remain intact.
 
-After Slice 18J-R is verified, resume Slice 18J only for the remaining
-installed-app visual evidence and review. Slice 18J should make the default
-Standard Oxygen Home feel deliberately weather-first, atmospheric, and
-recognizably Oxygen without changing weather provider behavior, source/update
-and stale communication, provider disclosures, selected-location behavior,
-Room/DataStore persistence, or offline cache behavior. It must preserve the
-semantic Now, Hourly, Daily, and Details page model and the compact phone,
-large-font, TalkBack, touch-target, effects-disabled, and one-handed ergonomics
-guarantees already verified by Slices 18H and 18I. Composables must not parse
-formatted weather strings back into numbers or group metrics by localized
-display labels. Missing values must remain unavailable rather than fabricated.
+Resumed Slice 18J installed-app visual evidence now shows the default Standard
+Oxygen Home as deliberately weather-first, atmospheric, and recognizably Oxygen
+without changing weather provider behavior, source/update and stale
+communication, provider disclosures, selected-location behavior,
+Room/DataStore persistence, or offline cache behavior. It preserves the semantic
+Now, Hourly, Daily, and Details page model and the compact phone, large-font,
+TalkBack, touch-target, effects-disabled, and one-handed ergonomics guarantees
+already verified by Slices 18H and 18I. Composables must not parse formatted
+weather strings back into numbers or group metrics by localized display labels.
+Missing values must remain unavailable rather than fabricated.
 
 After Slice 18J is committed with installed-app visual evidence and no
 unresolved regression against the Slice 18H/18I behavior and accessibility

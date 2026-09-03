@@ -31,7 +31,7 @@ object OpenMeteoGeocodingParser {
         throwIfProviderError(root)
 
         return OpenMeteoGeocodingResponse(
-            results = root.requiredArray("results").mapIndexed(::parseResult),
+            results = root.optionalResultsArray("results").mapIndexed(::parseResult),
         )
     }
 
@@ -69,10 +69,8 @@ object OpenMeteoGeocodingParser {
         )
     }
 
-    private fun JsonObject.requiredArray(field: String): List<JsonElement> {
-        val element = this[field] ?: throw OpenMeteoGeocodingException.InvalidJsonEnvelope(field, "Missing array")
-        return element.jsonArrayOrNull(field)
-    }
+    private fun JsonObject.optionalResultsArray(field: String): List<JsonElement> =
+        this[field]?.jsonArrayOrNull(field) ?: emptyList()
 
     private fun JsonObject.requiredString(fieldPath: String, field: String): String {
         val element = this[field] ?: throw OpenMeteoGeocodingException.MissingRequiredField(fieldPath)

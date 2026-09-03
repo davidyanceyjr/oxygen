@@ -111,6 +111,18 @@ class OpenMeteoGeocodingRepositoryTest {
     }
 
     @Test
+    fun mapsProviderEmptyBodyWithoutResultsToExplicitEmptyState() {
+        val repository = repository(
+            transport = RepositoryGeocodingStaticTransport(OpenMeteoHttpResponse(200, fixture("search_malformed_envelope.json"))),
+        )
+
+        val results = repository.search("No Such Place").toList()
+
+        assertSame(GeocodingRepositoryResult.Loading, results.first())
+        assertSame(GeocodingRepositoryResult.Empty, results.last())
+    }
+
+    @Test
     fun preservesProviderResponseOrderAfterMapping() {
         val repository = repository(
             transport = RepositoryGeocodingStaticTransport(OpenMeteoHttpResponse(200, fixture("search_ambiguous.json"))),

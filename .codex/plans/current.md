@@ -1,168 +1,164 @@
 # Active Cycle
 
-Status: planned
-Cycle ID: 2026-09-02-open-meteo-ready-forecast-recovery
-Mode: fix
-Goal: Plan and implement Slice 18J-R, Restore Installed Open-Meteo Ready
-Forecast Path, as the bounded recovery slice required before completing Slice
-18J visual verification. This cycle restores the production installed-app path
-where a manually selected Open-Meteo geocoding result produces a usable
-`ForecastReady` Home state instead of the current invalid-response no-cache
-error.
-Roadmap context: Slice 18J Standard Home Visual Convergence is partially
-covered/implemented but blocked by installed-app real-path evidence. Selecting
-"Madison, Wisconsin, United States" through the real Open-Meteo manual path
-rendered "Weather data returned in a form Oxygen could not read. Try again
-later." Slice 18J-R is inserted before resuming 18J evidence capture. Slice 19A
-saved-location storage remains blocked until Slice 18J is committed.
+Status: committed
+Cycle ID: 2026-09-02-standard-home-visual-convergence
+Mode: feature
+Goal: Resume Slice 18J, Standard Home Visual Convergence, after verified
+Slice 18J-R restored the installed Open-Meteo ready forecast path. This resumed
+cycle is limited to completing the remaining installed-app visual evidence,
+review, and status record for the already in-progress 18J Home presentation
+slice.
+Roadmap context: Slice 18J is the final Standard Home visual convergence gate
+before Slice 19A saved-location persistence. Slice 18J-R verified that a real
+manual Madison Open-Meteo selection now reaches a ready Home forecast and cached
+stale restore path, so the prior 18J installed-evidence blocker is no longer
+active. Slice 19A remains blocked until Slice 18J is committed.
 
 ## Contract
 
 Selected Behavior:
-- A real manually selected Open-Meteo geocoding result can fetch, parse, map,
-  cache, and present a ready forecast in the installed app.
-- The same installed production path reaches `ForecastReady` without using
-  `SampleWeather.bundle`, mocked provider success, fabricated fallback data, or
-  relaxed error handling.
-- Open-Meteo invalid-response classification remains meaningful for malformed
-  or contract-breaking provider responses.
-- Provider-specific diagnostics remain outside Compose and user-facing Home
-  copy.
-- Existing manual-location, selected-location persistence, Room forecast-cache,
-  stale-cache, refresh/retry, provenance, data-source disclosure, and Home UI
-  semantics remain intact.
-- The already implemented Slice 18J Home presentation changes remain
-  untouched except where a minimal adjustment is required to exercise the
-  restored ready forecast path.
+- The installed Standard Oxygen Home surface is verified through the real
+  Open-Meteo manual-location path for Now, Hourly, Daily, Details, and a
+  restored/stale or refresh-failed cached Home state.
+- The default Home presentation remains weather-first, atmospheric, and
+  recognizably Oxygen compared with the committed Slice 18H/18I reference while
+  preserving semantic page structure and operational state copy.
+- Effects-disabled rendering remains complete and understandable where feasible
+  to exercise during this evidence cycle.
+- Existing provider, repository, Room cache, DataStore selected-location,
+  manual-location, refresh/retry, stale/cache, provenance, data-source
+  disclosure, compact phone, large-font, TalkBack, touch-target, and
+  one-handed ergonomics behavior remains intact.
+- The verified Slice 18J-R Open-Meteo parser/repository recovery remains part
+  of the working tree until committed with this 18J recovery/evidence sequence.
 
 Acceptance Boundary:
-- Focused automated coverage reproduces the production invalid-response cause
-  or the parser/mapper contract gap that caused the installed Madison forecast
-  to fail.
-- The fix is in the real Open-Meteo forecast production path, not in UI
-  suppression, sample data, or a test-only branch.
-- Focused provider/repository/mapper tests prove a representative real
-  Open-Meteo forecast response shape maps to provider-neutral Oxygen forecast
-  data with current, hourly, daily, provenance, and required Home fields.
-- Existing invalid-response behavior remains covered for malformed JSON,
-  missing required envelope/arrays, or unsupported required units/fields where
-  applicable.
-- Installed-app exercise on `oxygen_starter` uses manual location search,
-  selects a real Open-Meteo geocoding result, and reaches a ready Home state
-  with visible location, current weather, hourly, daily, source/update, and
-  Open-Meteo attribution/provenance.
-- The successful live fetch either writes the selected location forecast into
-  the Room cache or records a cache-write failure as a blocker/regression
-  instead of treating the ready screen alone as complete.
-- After the successful live fetch has populated the cache, disabling network
-  and refreshing or relaunching preserves the existing stale/restored behavior
-  for the same selected location.
-- No saved-location list/switching/removal, unit preferences, device-location
-  expansion, MET Norway fallback wiring, alerts, air quality, radar/maps,
-  widgets, persisted appearance settings, or release/MVP readiness behavior is
-  added.
+- Installed-app evidence from `oxygen_starter` shows a real manual
+  Open-Meteo-selected location reaching ready Home states for Now, Hourly,
+  Daily, and Details without `SampleWeather.bundle`, mocked provider success,
+  fabricated fallback data, or UI suppression of provider errors.
+- Installed evidence also shows one cached stale/restored or refresh-failed
+  Home state for the same selected location.
+- Focused Home presentation/state and Open-Meteo recovery tests pass for the
+  behavior already changed in Slice 18J and Slice 18J-R.
+- Broad verification passes:
+  `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
+  `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
+  `git diff --check`
+- Review records concrete visual improvements over the committed Slice 18H/18I
+  reference and confirms no unresolved regression against accessibility,
+  behavior, provider, persistence, cache, or provenance baselines.
 
 Out of Scope:
-- Additional forecast providers or installed-app MET Norway fallback behavior.
-- Saved-location storage/list/select/remove behavior and any schema work not
-  strictly required by the existing selected-location/cache path.
-- Unit conversion or unit preference UI.
-- Device-location permission-flow expansion.
-- Home visual redesign beyond preserving the current in-progress 18J UI state.
-- Data-source disclosure expansion unless the restored behavior reveals an
-  existing factual disclosure error.
-- Broad provider resilience improvements unrelated to the reproduced
-  invalid-response cause.
-- Treating 18J-R completion as Slice 18J visual verification or as permission
-  to start Slice 19A.
+- Saved-location persistence, saved-location list/select/remove UI, or
+  concurrency behavior.
+- Unit preference persistence or conversion.
+- Device-location expansion.
+- Official alert provider implementation.
+- Persisted theme/layout/effects settings.
+- Paper/Terminal theme completion.
+- New weather-provider fields added solely for richer decoration.
+- Radar, maps, air quality, pollen, widgets, background refresh, notifications,
+  release readiness, or MVP readiness.
+- Additional Open-Meteo recovery behavior beyond preserving the verified 18J-R
+  fix.
+- Rewriting completed 18-series history.
 
 ## Implementation Plan
 
-1. Discover and baseline:
-   - Read this active plan, the live recent history summary and most recent
-     entries, roadmap/spec sections for 18J-R/18J/19A, Open-Meteo forecast and
-     geocoding provider contracts, and the current Open-Meteo DTO/client,
-     parser/mapper, repository/cache, selected-location, and Home state-holder
-     tests.
-   - Record `git status --short` before production edits and preserve unrelated
-     existing 18J worktree changes.
-   - Inspect the saved failed installed evidence under
-     `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/`,
-     especially `installed-real-path-forecast-invalid-response.png`,
-     `installed-home-after-selection.xml`, and
-     `installed-home-network-restored.xml`.
-   - Capture or log the real provider response shape only if needed to identify
-     the parser/mapper gap; store logs under the cycle artifact directory and
-     keep provider-specific details out of UI state.
+1. Confirm resumed baseline:
+   - Read Slice 18J roadmap/spec sections, active plan, live recent cycle
+     history, prior 18J blocked artifacts, and verified 18J-R artifacts.
+   - Record `git status --short` before any production edits and preserve
+     unrelated existing changes.
 
-2. Red or baseline:
-   - Add the smallest focused failing test at the provider DTO/parser/mapper or
-     repository boundary that reproduces the invalid-response cause from a
-     representative Open-Meteo forecast response.
-   - If the failure is due to request construction, add focused coverage for
-     the generated forecast request parameters instead.
-   - Run the focused test command needed for that boundary and save the log.
+2. Real-path evidence:
+   - Build/install the current debug app on `oxygen_starter`.
+   - Use the real manual location path to search/select Madison, Wisconsin,
+     United States, unless provider availability requires a documented alternate
+     real result.
+   - Capture installed screenshots and hierarchies for Now, Hourly, Daily, and
+     Details under
+     `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/`.
+   - Exercise one cached stale/restored or refresh-failed Home state for the
+     same selected location and capture screenshot/hierarchy evidence.
+   - Capture Effects Off evidence if reachable without adding new behavior.
 
-3. Build:
-   - Fix the real Open-Meteo forecast path at the narrowest responsible layer:
-     DTO parsing, request fields, unit handling, mapper tolerance for optional
-     values, or repository error classification.
-   - Preserve required-value validation; do not convert unknown/missing values
-     to zero or sample defaults.
-   - Keep provider DTO/query names isolated from Composables and app UI models.
-
-4. Focused green:
-   - Run the focused provider/repository/mapper tests that failed or were added.
-   - Run existing HomeForecast-focused state tests if the mapped Home state
-     contract changes.
-   - Save logs under
-     `.codex/test-artifacts/2026-09-02-open-meteo-ready-forecast-recovery/`.
-
-5. Real-path exercise:
-   - Build/install the debug app on `oxygen_starter`.
-   - Use manual search and select a real Open-Meteo geocoding result, starting
-     with "Madison, Wisconsin, United States" because that is the known failed
-     path unless provider availability requires another documented real result.
-   - Capture installed ready Home screenshot/hierarchy evidence for Now,
-     Hourly, Daily, and Details.
-   - Confirm the successful live fetch populated the Room cache, then exercise
-     one stale/restored or refresh-failed path for the same selected location.
-     Treat a cache-write failure as a blocker/regression to diagnose rather
-     than optional evidence to skip.
-
-6. Broad checks:
-   - Run:
-     `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-   - Run:
-     `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-   - Run:
-     `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
-   - Run:
-     `git diff --check`
+3. Focused checks:
+   - Run focused Home presentation/state checks relevant to 18J.
+   - Run focused Open-Meteo checks to preserve the 18J-R unblocker.
    - Save logs under the cycle artifact directory.
 
-7. Review and handoff:
-   - Confirm no saved-location, unit, fallback, alert, provider-disclosure,
-     UI-redesign, or release/MVP scope leaked into the fix.
-   - Record changed production/test files, focused evidence, broad evidence,
-     installed-app evidence, and remaining risks.
-   - If verified, leave Slice 18J-R ready and identify the immediate next step
-     as resuming Slice 18J installed visual evidence capture, not starting
-     Slice 19A.
+4. Broad checks:
+   - Run the required broad verification commands and save logs under the cycle
+     artifact directory.
+
+5. Review and handoff:
+   - Compare installed 18J evidence with committed Slice 18H/18I reference
+     screenshots and record visible improvements.
+   - Confirm no scope leakage into saved locations, unit preferences,
+     provider behavior beyond 18J-R, fallback wiring, alerts, air quality,
+     radar/maps, widgets, background refresh, release, or MVP readiness.
+   - If verified, update this file, append concise cycle history evidence, and
+     leave Slice 18J ready for commit. Slice 19A remains deferred until that
+     commit exists.
 
 ## Phase Results
 
-- specified: Slice 18J-R is specified in `.codex/plans/mvp-roadmap.md` as the
-  Open-Meteo ready forecast recovery slice inserted after blocked Slice 18J
-  discovery and before resuming 18J visual verification.
-- planned: This document selects only Slice 18J-R. The behavior boundary is the
-  production installed Open-Meteo manual-location forecast path reaching a ready
-  Home state again.
-- covered: not started.
-- implemented: not started.
-- verified: not started.
+- specified: Slice 18J is specified in `.codex/plans/mvp-roadmap.md` and
+  `docs/OXYGEN_FULL_SPECIFICATION.md` as the Standard Home visual convergence
+  gate before saved-location persistence.
+- planned: This document resumes only the remaining Slice 18J installed-app
+  visual evidence and review after Slice 18J-R removed the provider-path
+  blocker.
+- covered: Focused HomeForecast state checks, focused Home Compose
+  instrumentation, and focused Open-Meteo recovery checks passed for the
+  already implemented 18J presentation behavior and the 18J-R provider-path
+  unblocker.
+- implemented: Slice 18J Home presentation behavior was already in progress at
+  commit `15fc10e`; this resumed cycle made no new Home production-code changes.
+  The 18J-R Open-Meteo parser/repository recovery remains in the working tree
+  and is required for the installed 18J real-path evidence.
+- verified: The installed app on `oxygen_starter` used the real manual
+  Open-Meteo path to search `Madison`, selected `Madison, Wisconsin, United
+  States`, reached ready Now, Hourly, Daily, and Details Home states, and
+  restored the same selected forecast from Room cache with refresh-failed stale
+  context after emulator network was disabled. Focused and broad checks passed.
+- committed: This commit records the verified Slice 18J-R provider recovery and
+  resumed Slice 18J installed-app evidence/review.
 - artifacts target:
-  `.codex/test-artifacts/2026-09-02-open-meteo-ready-forecast-recovery/`.
-- deferred: Slice 18J visual verification remains blocked until this recovery
-  slice restores a real ready forecast path. Slice 19A remains deferred until
-  Slice 18J is committed.
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/`.
+- focused evidence:
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/focused-homeforecast-resumed.log`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/focused-home-compose-instrumentation-resumed.log`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/focused-openmeteo-resumed.log`.
+- broad evidence:
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/broad-compile-debug-kotlin-resumed.log`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/broad-debug-unit-tests-resumed.log`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/broad-assemble-debug-resumed.log`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/git-diff-check-resumed.log`.
+- installed evidence:
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-first-run.png`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-first-run.xml`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-search-results.png`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-search-results.xml`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-home-now.png`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-home-now.xml`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-home-hourly.png`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-home-hourly.xml`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-home-daily.png`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-home-daily.xml`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-home-details.png`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-home-details.xml`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-home-offline-restored.png`;
+  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/installed-resumed-home-offline-restored.xml`.
+- review: Compared with the committed Slice 18I reference evidence, the resumed
+  18J installed screenshots show the Home surface reading less like a standard
+  Material scaffold: the scene foundation is visible behind all pages, Now is
+  dominated by the condition mark and current temperature, Hourly and Daily are
+  scan-friendly forecast grids/lists, Details groups semantic metrics with
+  source/update context, and the bottom navigation/actions remain reachable and
+  subdued. No overlap, provider-path regression, stale-cache regression, or
+  accessibility-test regression was found in the captured evidence.
+- deferred: Slice 19A remains deferred until Slice 18J is committed.

@@ -783,13 +783,16 @@ Verification boundary:
 
 Current committed boundary:
 
-All implementation planning now moves forward from Slice 18I. Slice 18J completes the intended Standard Oxygen visual convergence, but its installed-app evidence is currently blocked by the real Open-Meteo ready-forecast path returning an invalid-response no-cache error. Slice 18J-R restores that provider path before 18J visual verification resumes. Slice 19A is blocked until 18J is committed.
+All implementation planning now moves forward from Slice 18J. Slice 18J-R
+restored the Open-Meteo ready forecast path, and Slice 18J has ready Home Now,
+Hourly, Daily, Details, and cached refresh-failed installed evidence through the
+real Open-Meteo manual-location path.
 
 ---
 
 ## Slice 18J: Standard Home Visual Convergence
 
-Status: blocked
+Status: committed
 
 Prerequisites:
 
@@ -875,7 +878,7 @@ Slice 19A must not begin until Slice 18J is committed with installed-app visual 
 
 ## Slice 18J-R: Restore Installed Open-Meteo Ready Forecast Path
 
-Status: planned
+Status: committed
 
 Prerequisites:
 
@@ -1736,35 +1739,33 @@ Remote `main` is reconciled through merge `ca28c2c`. The latest completed implem
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
-1. Slice 18J-R — Restore Installed Open-Meteo Ready Forecast Path
-2. Resume Slice 18J — Standard Home Visual Convergence evidence and review
-3. Slice 19A — Saved Location Storage Model
-4. Slice 19B — Saved Location Selection and Concurrency
-5. Slice 19C — Saved Locations UI
-6. Slice 31A — Installed-App Fallback Wiring
-7. Slice 31B — Fallback Cache and Provenance
-8. Slice 32 — Fallback Real-Path Verification
-9. Slice 20A — Unit Preference Contract
-10. Gate 20-0 — Presentation Semantics and Localization Safety
-11. Slice 20B — Unit Conversion Presentation Boundary
-12. Slice 25A — Settings Information Architecture
-13. Slice 20C — Persisted Units UI
-14. Slice 21 — Optional Device Location
-15. Slice 22 — NWS Alert Provider Contract
-16. Slice 23A — NWS Fixtures/Parsing/Mapping
-17. Slice 23B — NWS Client/Error Classification
-18. Slice 23C — Alert Repository Merge
-19. Slice 24A — Alert Summary/Banner UI
-20. Slice 24B — Alert Detail UI
-21. Gate 25 — Disclosure Baseline Check
-22. Slice 26 — Effects Preference
-23. Slice 27A / 27B — Simple Layout Definition and Selection
-24. Slice 28A / 28B — Theme Translation and Selection
-25. Slice 29 — High Contrast
-26. Gate 30 — Accessibility Presentation Verification
-27. Slice 33 — Privacy and Dependency Audit
-28. Gate 34 — About/Settings/Data-Source Release Check
-29. Gate 35 — MVP Release Candidate Verification
+1. Slice 19A — Saved Location Storage Model
+2. Slice 19B — Saved Location Selection and Concurrency
+3. Slice 19C — Saved Locations UI
+4. Slice 31A — Installed-App Fallback Wiring
+5. Slice 31B — Fallback Cache and Provenance
+6. Slice 32 — Fallback Real-Path Verification
+7. Slice 20A — Unit Preference Contract
+8. Gate 20-0 — Presentation Semantics and Localization Safety
+9. Slice 20B — Unit Conversion Presentation Boundary
+10. Slice 25A — Settings Information Architecture
+11. Slice 20C — Persisted Units UI
+12. Slice 21 — Optional Device Location
+13. Slice 22 — NWS Alert Provider Contract
+14. Slice 23A — NWS Fixtures/Parsing/Mapping
+15. Slice 23B — NWS Client/Error Classification
+16. Slice 23C — Alert Repository Merge
+17. Slice 24A — Alert Summary/Banner UI
+18. Slice 24B — Alert Detail UI
+19. Gate 25 — Disclosure Baseline Check
+20. Slice 26 — Effects Preference
+21. Slice 27A / 27B — Simple Layout Definition and Selection
+22. Slice 28A / 28B — Theme Translation and Selection
+23. Slice 29 — High Contrast
+24. Gate 30 — Accessibility Presentation Verification
+25. Slice 33 — Privacy and Dependency Audit
+26. Gate 34 — About/Settings/Data-Source Release Check
+27. Gate 35 — MVP Release Candidate Verification
 
 Run recurring documentation-sync gates at the defined cadence.
 
@@ -1782,19 +1783,20 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 18J-R: Restore Installed Open-Meteo Ready Forecast Path.
+Candidate: Slice 19A: Saved Location Storage Model.
 
 Immediate planning boundary:
 
 ```text
 18I committed
--> 18J-R restore installed Open-Meteo ready forecast path
--> resume 18J Standard Home visual convergence evidence and review
+-> 18J-R committed
+-> resumed 18J Standard Home visual convergence evidence committed
 -> 19A saved-location storage model
 -> 19B selection/concurrency
 -> 19C finished saved-locations UI
 ```
 
-Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate. Those implementation boundaries are historical and already committed. Slice 18J-R is a provider-path recovery slice required by the blocked Slice 18J evidence boundary, not a new visual gate.
+Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate. Those implementation boundaries are historical and already committed. Slice 18J-R was a provider-path recovery slice required by the blocked Slice 18J evidence boundary, not a new visual gate.
 
-To start work, replace `.codex/plans/current.md` with one bounded Slice 18J-R plan. Do not treat later roadmap entries as active work.
+To start work, replace `.codex/plans/current.md` with one bounded Slice 19A
+plan. Do not treat later roadmap entries as active work.
