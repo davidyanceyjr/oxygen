@@ -55,4 +55,16 @@ class OxygenAppContractTest {
         assertFalse(source.contains("OpenMeteoForecastClientResult"))
         assertFalse(source.contains("providerId"))
     }
+
+    @Test
+    fun `home UI semantic decisions do not depend on metric display labels or formatted numeric parsing`() {
+        val source = Files.readString(Path.of("src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt"))
+
+        assertFalse(source.contains("it.label =="))
+        assertFalse(source.contains("label =="))
+        assertFalse(source.contains("firstOrNull { it.label"))
+        assertFalse(source.contains("toDouble("))
+        assertFalse(source.contains("toInt("))
+        assertFalse(source.contains("Regex("))
+    }
 }

@@ -21,4 +21,8 @@ else
 fi
 
 export GRADLE_USER_HOME="$PROJECT_ROOT/.gradle"
+case " ${GRADLE_OPTS:-} " in
+    *" --enable-native-access=ALL-UNNAMED "*) ;;
+    *) export GRADLE_OPTS="${GRADLE_OPTS:+$GRADLE_OPTS }--enable-native-access=ALL-UNNAMED" ;;
+esac
 export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"

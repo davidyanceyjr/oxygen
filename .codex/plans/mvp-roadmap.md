@@ -5,6 +5,7 @@ Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
 Revised: 2026-09-02
+Reconciled against remote `main`: `ca28c2c`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -75,7 +76,7 @@ For MVP user-facing slices:
 
 There is no future generic "make the UI good" phase.
 
-Standard Home must be visually approved before its design decisions are consolidated into a design system, and every later user-facing feature must carry its own finished UI obligations.
+Slices 18G and 18H already consolidated and verified the Standard Home design baseline, and Slice 18I completed the bounded mobile-ergonomics follow-up. Future user-facing features must build forward from that committed baseline and carry their own finished UI obligations rather than reopening completed 18-series work.
 
 ## Presentation Data Rule
 
@@ -658,418 +659,279 @@ The committed Slice 18E cycle verified structured Comfort, Wind, Atmosphere, Sou
 
 ## Slice 18F: Home Operational State Integration
 
-Status: specified
+Status: committed
+Implementation commit: `79bd830`
 
 Prerequisites:
 
 - Slices 18A through 18E committed.
-- Existing offline restoration path remains intact.
+- Existing offline restoration path intact.
 
-Release intent: Prove that the paged Standard Home architecture works correctly across operational states, not only fresh success.
+Release intent: Verify and tighten the Standard Home pager across existing operational states without redesigning providers, persistence, or the established page visuals.
 
-Must prove:
+Committed result:
 
-- loading remains understandable;
-- refresh-in-progress does not destabilize page state;
-- fresh success works across semantic pages;
-- cached/stale success remains usable;
-- refresh failure while cache remains useful remains usable;
-- retryable no-cache error remains actionable;
-- refresh/retry controls remain accessible;
-- source/update/stale communication remains semantically appropriate;
-- operational state changes do not strand the user on meaningless pages;
-- page state does not corrupt selected location or forecast state;
-- no sample/fabricated production success appears;
-- focused Compose/state tests cover applicable transitions;
-- installed-app screenshot evidence covers representative non-happy paths.
+- duplicate Home refresh calls are ignored while ready-state refresh is already in progress;
+- restored/stale cached Home content remains visible as stale-after-failed-refresh when foreground refresh fails;
+- fresh, cached/stale, refresh-failed, loading, retryable no-cache, source/update, and page-navigation behavior remain observable;
+- Now, Hourly, Daily, and Details remain reachable in restored-cache state;
+- provider, Room, DataStore, fallback, saved-location, units, alerts, and appearance-persistence behavior were not expanded.
 
-Functional invariants:
+Verification boundary:
 
-Do not redesign:
+- focused HomeForecast state tests;
+- focused Home Compose instrumentation;
+- installed cached/offline Home evidence;
+- installed retryable no-cache evidence;
+- broad Android compile/unit/assemble checks;
+- `git diff --check`.
 
-- providers;
-- fallback policy;
-- repository selection;
-- Room/DataStore schemas;
-- weather semantics;
-- selected-location identity.
+Historical note:
 
-Out of scope:
-
-- visual-language redesign;
-- theme engine;
-- design-system consolidation;
-- saved locations;
-- units;
-- new provider capabilities.
-
----
-
-## Gate 18F-V: Standard Home Visual Convergence Review
-
-Status: specified
-
-Prerequisite:
-
-- Slice 18F committed.
-
-Release intent: Decide whether the default Standard Oxygen Home is visually strong enough to become the basis of the design system.
-
-Why this gate exists:
-
-The repository already contains an art direction, theme palettes, a glass primitive, procedural weather marks, and an atmospheric scene. Those primitives must not be consolidated while production Home still reads as framework-default/scaffold UI.
-
-Must prove:
-
-A screenshot review of Now, Hourly, Daily, Details, and at least one operational state explicitly evaluates:
-
-- Home background/scene composition;
-- condition/weather marks;
-- page navigation chrome;
-- primary typography hierarchy;
-- control prominence;
-- Hourly information density;
-- Daily comparison efficiency;
-- Details metric identity/grouping;
-- surface/card vocabulary;
-- source/stale/error prominence;
-- effects-off completeness.
-
-The review records which visual decisions are:
-
-- approved;
-- provisional;
-- rejected;
-- blocked by presentation-data limitations.
-
-Gate result:
-
-- If the default Standard Home is already strong enough, proceed to Gate 18G-0.
-- If not, select only the bounded 18F.x slices actually justified by evidence.
-
-Do not use Slice 18G as a hidden visual redesign phase.
-
----
-
-## Slice 18F.1: Oxygen Home Composition Convergence
-
-Status: specified
-
-Prerequisites:
-
-- Slice 18F committed.
-- Gate 18F-V identifies concrete composition problems.
-
-Release intent: Make Standard Home look deliberately like Oxygen rather than a themed Material scaffold without changing weather behavior.
-
-Must prove:
-
-- weather content dominates application chrome;
-- location/settings/refresh controls remain accessible but visually subordinate;
-- atmospheric visual language is used intentionally;
-- surfaces have semantic distinction rather than every region becoming the same card;
-- operational status remains distinct from decorative weather surfaces;
-- effects-off presentation remains complete;
-- compact phone and large-font presentation remain usable;
-- screenshot comparison against the Base Art Sheet shows meaningful convergence.
-
-Preferred direction where supported:
-
-- make `WeatherScene` or an equivalent scene role a real Home foundation;
-- use glass/translucent surfaces selectively rather than universally;
-- reduce stock Material appearance in page navigation while preserving semantics/accessibility;
-- preserve weather meaning independently from decoration.
-
-Out of scope:
-
-- persisted themes;
-- Paper/Terminal completion;
-- saved locations;
-- units;
-- provider additions;
-- speculative animation expansion.
-
----
-
-## Slice 18F.2: Weather Mark Semantic Vocabulary
-
-Status: specified
-
-Prerequisites:
-
-- Slice 18F committed.
-- Gate 18F-V identifies weather-mark differentiation as insufficient.
-
-Release intent: Create a recognizably Oxygen weather-mark family that distinguishes provider-neutral weather conditions.
-
-Must prove visually distinct treatment for meaningful condition families including:
-
-- clear / mostly clear;
-- partly cloudy / cloudy;
-- fog;
-- drizzle;
-- rain / rain showers;
-- freezing drizzle / freezing rain;
-- snow / snow showers;
-- sleet;
-- hail;
-- thunderstorm / thunderstorm with hail;
-- unknown.
-
-Preferred primitive vocabulary:
-
-- sun/glow;
-- cloud masses;
-- fog bands;
-- drizzle points;
-- rain strokes;
-- snow marks;
-- ice/sleet marks;
-- hail;
-- lightning.
-
-Accessibility rule:
-
-Condition meaning remains available through text/semantics. Iconography is reinforcement, not the sole carrier of meaning.
-
-Boundary:
-
-Do not invent day/night semantics unless provider-neutral state can determine them correctly.
-
----
-
-## Slice 18F.3: Home Presentation Semantics Boundary
-
-Status: specified
-
-Prerequisites:
-
-- Slice 18F committed.
-- May be selected directly when later visualization/localization/theme work would otherwise depend on strings.
-
-Release intent: Remove brittle UI behavior based on formatted English strings and expose semantic/numeric presentation data intentionally.
-
-Must prove:
-
-- metric presentation carries semantic identity;
-- Details grouping does not depend on exact English labels;
-- visualization-required values are available numerically alongside display text;
-- display formatting remains presentation-layer behavior;
-- provider DTOs remain isolated;
-- missing values remain missing.
-
-Recommended semantic metric identity:
-
-```kotlin
-enum class HomeMetricKind {
-    APPARENT_TEMPERATURE,
-    HUMIDITY,
-    DEW_POINT,
-    WIND,
-    PRESSURE,
-    VISIBILITY,
-    CLOUD_COVER,
-    PRECIPITATION
-}
-```
-
-Must not:
-
-- parse `"73°F"`, `"40%"`, or similar display strings in Composables;
-- group by labels such as `"Humidity"` or `"Wind"`;
-- add fake values for visual completeness.
-
-Localization boundary:
-
-Move reusable Home UI text toward Android string resources as touched. This is not a full translation slice.
-
----
-
-## Slice 18F.4: Daily Comparative Visualization
-
-Status: specified when selected by Gate 18F-V
-
-Prerequisites:
-
-- semantic numeric high/low presentation data exists.
-
-Release intent: Use existing daily numeric data to make multi-day comparison faster.
-
-Must prove:
-
-- several days remain visible at ordinary phone size;
-- high/low relationship is immediately comparable;
-- precipitation remains visible where available;
-- missing values do not receive fake positions;
-- textual/accessibility high-low meaning remains available;
-- Composables do not parse display strings.
-
-A normalized temperature-range track is permitted but not required.
-
----
-
-## Slice 18F.5: Hourly Forecast Visualization
-
-Status: specified when selected by Gate 18F-V
-
-Prerequisites:
-
-- semantic numeric hourly values required by the chosen visualization are present.
-
-Release intent: Make Hourly answer "what happens next?" more efficiently than a grid of independent cards.
-
-Must prove:
-
-- time, condition, temperature, and precipitation remain readable;
-- useful near-term temporal context increases;
-- the page does not become a long document;
-- numeric visualization uses semantic presentation fields;
-- missing precipitation remains honestly unavailable;
-- accessibility exposes equivalent textual meaning;
-- effects-off remains complete.
-
-Boundary:
-
-Do not add provider fields solely to make a chart richer.
-
----
-
-## Slice 18F.6: Home Navigation Visual Language
-
-Status: specified when selected by Gate 18F-V
-
-Release intent: Retain semantic Now/Hourly/Daily/Details navigation while giving pager chrome an Oxygen identity.
-
-Must prove:
-
-- current page remains obvious;
-- direct page selection remains available;
-- horizontal paging remains available;
-- TalkBack retains page identity and position;
-- visible implementation-like `"Page n of 4"` text is not required if equivalent visible and accessibility state exists;
-- child controls do not accidentally page;
-- semantic page model is unchanged.
-
----
-
-## Gate 18G-0: Standard Oxygen Visual Baseline Approval
-
-Status: specified
-
-Prerequisites:
-
-- Slice 18F committed.
-- Gate 18F-V completed.
-- Any selected 18F.x convergence slices committed.
-
-Release intent: Approve the default Standard Oxygen Home before design-system extraction.
-
-Must prove final reviewable screenshots exist for:
-
-- Now;
-- Hourly;
-- Daily;
-- Details;
-- representative stale/error state.
-
-The gate explicitly approves:
-
-- typography hierarchy;
-- spacing rhythm;
-- surface vocabulary;
-- weather marks;
-- atmospheric treatment;
-- navigation;
-- information density;
-- operational-state prominence;
-- effects-off completeness.
-
-If any major item remains knowingly provisional, create another bounded visual slice instead of hiding it inside 18G.
+This slice is complete. Do not create new 18F.x implementation slices or insert new gates before 18G. Any future improvement inspired by 18F must be planned after the current committed boundary.
 
 ---
 
 ## Slice 18G: Oxygen Home Design-System Consolidation
 
-Status: specified
+Status: committed
+Implementation commit: `fae63b3`
 
 Prerequisites:
 
-- Gate 18G-0 passed.
+- Slice 18F committed.
 
-Release intent: Extract proven visual decisions into reusable semantic Oxygen design-system roles.
+Release intent: Consolidate repeated Standard Home visual choices into app-local Oxygen design roles and make the Base Art Sheet direction visibly present in the installed Home UI.
 
-Must prove:
+Committed result:
 
-Centralized roles exist where repeated patterns justify them, including as appropriate:
+- app-local Home spacing, card shape/padding, glass surface, outline/accent, weather-mark, and typography roles were introduced;
+- generic blob-like weather marks were replaced by provider-neutral gold-line marks for existing `WeatherCondition` values;
+- roles were applied across Now, Hourly, Daily, Details, status, metrics, source, and shared glass surfaces;
+- provider, repository, Room, DataStore, weather mapping, units, saved locations, alerts, and persisted appearance behavior were unchanged;
+- the full theme engine and persisted appearance selection remained deferred.
 
-- spacing;
-- typography;
-- shapes;
-- surfaces;
-- atmospheric scene;
-- primary weather number;
-- secondary weather number;
-- forecast mark;
-- forecast track;
-- operational status;
-- warning status;
-- quiet metadata;
-- page navigation.
+Verification boundary:
 
-Design-system rule:
+- focused HomeForecast tests;
+- focused Home Compose instrumentation including rendered weather-mark treatment;
+- installed Now/Hourly/Daily/Details/stale screenshots;
+- broad Android checks;
+- `git diff --check`.
 
-Do not create one generic component that erases semantic distinctions among Now, Hourly, Daily, and Details.
+Known documentation drift:
 
-Theme rule:
-
-Roles must remain theme-independent. The design system must not assume every future theme uses glass, gradients, atmospheric effects, the same corner radius, or the same font family.
-
-Out of scope:
-
-- persisted appearance selection;
-- Simple/Detailed/Meteorologist layouts;
-- full theme editor;
-- community theme format.
+The tracked asset path/specification says Base Art Sheet v0.1 while the rendered image title says v0.2. Resolve this naming mismatch during a documentation/asset-governance sync; it does not reopen Slice 18G.
 
 ---
 
 ## Slice 18H: Standard Home Accessibility and Visual Verification Gate
 
-Status: specified
+Status: committed
+Implementation commit: `4f5f383`
 
 Prerequisites:
 
 - Slice 18G committed.
 
-Release intent: Freeze Standard Home as the verified reference architecture for later features and appearance variants.
+Release intent: Establish the completed Standard Home as the verified interaction/visual reference architecture for later MVP work.
+
+Committed result:
+
+- named previous/next accessibility actions were added to the existing pager;
+- tabs and swipe remain the visible navigation model;
+- Standard Home page tabs meet the 48dp minimum touch-height target;
+- an app-local non-persisted `OxygenAppearance` input permits `EffectsLevel.OFF` to render opaque surfaces while preserving weather semantics;
+- child-control isolation, compact width, large font, stale/source/error meaning, and effects-disabled meaning were exercised;
+- installed Now, Hourly, Daily, Details, and stale refresh-failed evidence was captured;
+- no persisted layout/theme/effects selection or new feature domain was added.
+
+Historical rule:
+
+Slice 18H freezes the Standard Home baseline for forward planning. Later feature work may extend the UI, but should not silently redefine the verified page architecture.
+
+---
+
+## Slice 18I: Mobile One-Handed Home Ergonomics
+
+Status: committed
+Implementation commit: `02f701`
+
+Prerequisites:
+
+- Slice 18H committed.
+
+Release intent: Apply a bounded handheld ergonomics follow-up before Saved Locations without changing weather, provider, or persistence semantics.
+
+Committed result:
+
+- first-run and change-location content scroll above bottom-aligned Search, Use my location, Settings/About, and Back actions;
+- About overview/detail content scrolls above a bottom Back action;
+- scrollable Home pages receive footer clearance;
+- Now keeps current weather visually ahead of stale/refresh status while preserving operational visibility;
+- Details presents metrics and source/update before stale status/provenance;
+- compact/large-font non-overlap, touch targets, return behavior, and About recovery were covered;
+- no saved-location management, schema changes, provider changes, units, alerts, persisted appearance, installed-app MET Norway fallback, or release-readiness behavior was added.
+
+Verification boundary:
+
+- focused HomeForecast unit tests;
+- 24 focused Home Compose instrumentation tests on `oxygen_starter`;
+- installed first-run, location-result, Now, Hourly, Daily, Details, change-location return, About overview, and Privacy detail evidence;
+- broad Android compile/unit/assemble checks;
+- `git diff --check`.
+
+Current committed boundary:
+
+All implementation planning now moves forward from Slice 18I. Slice 18J completes the intended Standard Oxygen visual convergence, but its installed-app evidence is currently blocked by the real Open-Meteo ready-forecast path returning an invalid-response no-cache error. Slice 18J-R restores that provider path before 18J visual verification resumes. Slice 19A is blocked until 18J is committed.
+
+---
+
+## Slice 18J: Standard Home Visual Convergence
+
+Status: blocked
+
+Prerequisites:
+
+- Slice 18I committed.
+- The committed Slice 18G design roles remain the design-system boundary.
+- The committed Slice 18H/18I installed screenshots remain the behavioral and accessibility baseline.
+
+Release intent: Complete the default Standard Oxygen Home presentation so it feels deliberately weather-first, atmospheric, and recognizably Oxygen before Saved Locations introduces another major user-facing surface.
+
+This is a forward-only visual-convergence slice. It does not reopen or invalidate Slices 18F through 18I.
 
 Must prove:
 
-- semantic page navigation;
-- identifiable current page;
-- deliberate next/previous behavior;
-- adequate touch targets;
-- logical TalkBack order;
-- compact phone support;
-- large-font support;
-- no important clipping/overlap;
-- safe accessibility overflow;
-- long location names;
-- effects-disabled completeness;
-- source/stale/error communication;
-- coherent typography/spacing across pages;
-- final installed screenshots for all four pages;
-- representative operational-state screenshot;
-- focused UI checks;
-- broad Android verification.
+- Standard Oxygen Home uses an atmospheric weather scene or equivalent scene role as a deliberate visual foundation rather than reading primarily as a normal Material `Surface`.
+- Weather condition and current temperature dominate the Now page more strongly than application chrome.
+- Weather marks integrate naturally with the surrounding composition rather than appearing as isolated decorative icons inside generic cards.
+- Home page navigation remains semantic and accessible but no longer looks like unmodified Material scaffold/navigation chrome.
+- Glass/translucent surfaces are used selectively and semantically rather than making every content block visually identical.
+- Typography hierarchy is weather-first: primary forecast values dominate; source/update/provenance and application controls remain appropriately quiet.
+- Hourly answers “what happens next?” more efficiently than a collection of independent generic tiles. A compact temporal visualization may be introduced when supported by semantic numeric presentation data.
+- Daily supports fast multi-day comparison. A temperature-range visualization may be introduced using existing semantic high/low numeric values.
+- Details groups metrics by semantic identity rather than exact English display-label matching.
+- Composables do not parse formatted display strings back into numeric values.
+- Metric grouping and visualization do not depend on strings such as `"Humidity"` or `"Wind"`.
+- Missing weather values remain missing/unknown/omitted rather than fabricated.
+- Effects-disabled rendering remains complete and understandable.
+- Current provider, repository, Room, DataStore, selected-location, cache, refresh/retry, and provenance behavior remain unchanged.
+- Compact phone, large-font, TalkBack, and touch-target behavior established by Slice 18H/18I remain intact.
+- Installed-app screenshots show a material visual improvement over the committed 18H/18I Standard Home reference for Now, Hourly, Daily, and Details.
 
-It must not implement:
+Preferred implementation direction:
 
-- Simple layout;
-- Detailed layout;
-- Meteorologist layout;
-- persisted theme/layout/effects choices;
-- foldable-specific UI.
+- Use `WeatherScene` or an equivalent semantic scene foundation in production Home where it improves the result.
+- Preserve `OxygenHomeDesignRoles` as the semantic design-system boundary and extend roles only when repeated visual decisions justify it.
+- Evolve Home presentation models deliberately when semantic metric identity or numeric visualization data is required.
+- Prefer custom Oxygen navigation/surface composition over stock Material appearance while keeping Material accessibility semantics where useful.
+- Keep weather marks procedural/vector where practical.
+- Keep decoration independent from weather meaning.
+
+Focused evidence:
+
+- Home presentation/state tests for any presentation-model changes.
+- Compose tests for semantic metric grouping, navigation semantics, compact/large-font non-overlap, effects-off meaning, and any new hourly/daily visualization semantics.
+- Static or focused checks proving production Home does not group metrics by localized display labels or parse formatted weather strings.
+
+Real-path evidence:
+
+- Installed-app screenshots and hierarchy evidence for:
+  - Now;
+  - Hourly;
+  - Daily;
+  - Details;
+  - one restored/stale or refresh-failed Home state;
+  - Effects Off where feasible.
+- Compare against the committed Slice 18H/18I reference screenshots and record the concrete visible improvements.
+
+Broad verification:
+
+```sh
+. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
+. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
+. scripts/android-env.sh && ./gradlew :app:assembleDebug
+git diff --check
+```
+
+Explicitly out of scope:
+
+- Saved-location persistence, selection, list UI, or concurrency behavior.
+- Unit preference persistence or conversion.
+- Device-location expansion.
+- Official alert provider implementation.
+- Persisted theme/layout/effects settings.
+- Paper/Terminal theme completion.
+- New weather-provider fields added solely for richer decoration.
+- Radar, maps, air quality, pollen, widgets, background refresh, or notifications.
+- Rewriting completed 18-series history.
+
+Completion gate:
+
+Slice 19A must not begin until Slice 18J is committed with installed-app visual evidence and no unresolved regression against the Slice 18H/18I accessibility/behavior baseline.
+
+---
+
+## Slice 18J-R: Restore Installed Open-Meteo Ready Forecast Path
+
+Status: planned
+
+Prerequisites:
+
+- Slice 18J installed-app evidence attempt identified a real Open-Meteo invalid-response blocker.
+- Existing Open-Meteo forecast and geocoding provider contracts remain authoritative.
+
+Release intent: Restore the production installed-app path where a manually selected Open-Meteo geocoding result fetches, parses, maps, caches, and presents a usable ready forecast.
+
+Why this recovery slice exists:
+
+Slice 18J automated checks passed for its covered Home presentation changes, but the installed app could not capture final visual evidence because selecting "Madison, Wisconsin, United States" through the real manual Open-Meteo path rendered "Weather data returned in a form Oxygen could not read. Try again later." Provider/forecast parsing behavior was out of scope for 18J, so the fix is separated here.
+
+Must prove:
+
+- the known real manual-location path reaches `ForecastReady` without sample data, mocked provider success, or fabricated fallback data;
+- a representative real Open-Meteo response shape is covered at the provider, mapper, repository, or state boundary responsible for the failure;
+- current, hourly, daily, source/update, provenance, and required Home fields remain available after mapping;
+- invalid-response classification still applies to malformed or contract-breaking provider responses;
+- provider-specific diagnostics do not cross into Compose or user-facing Home copy;
+- the successful live fetch writes the selected location forecast into the Room cache, or a cache-write failure is recorded as a blocker/regression;
+- selected-location persistence, Room forecast cache, stale/restored behavior, refresh/retry behavior, and Open-Meteo attribution remain intact.
+
+Out of scope:
+
+- MET Norway installed-app fallback wiring;
+- saved-location list/switching/removal behavior;
+- unit preferences or conversion UI;
+- device-location expansion;
+- Home visual redesign beyond preserving the current in-progress 18J state;
+- alerts, air quality, radar/maps, widgets, background refresh, persisted appearance, release readiness, or MVP readiness.
+
+Focused evidence:
+
+- a focused failing-then-passing provider/parser/mapper/repository test, or request-construction test if request parameters caused the invalid response;
+- existing invalid-response coverage remains passing;
+- HomeForecast-focused state tests if the mapped Home contract changes.
+
+Real-path evidence:
+
+- installed debug app on `oxygen_starter`;
+- manual Open-Meteo geocoding selection, starting with Madison, Wisconsin unless provider availability requires a documented equivalent real result;
+- installed ready Home screenshot/hierarchy evidence for Now, Hourly, Daily, and Details;
+- stale/restored or refresh-failed cached Home evidence for the same selected location after confirming the successful live fetch populated the Room cache.
+
+Broad verification:
+
+```sh
+. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
+. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
+. scripts/android-env.sh && ./gradlew :app:assembleDebug
+git diff --check
+```
+
+Completion gate:
+
+After Slice 18J-R is verified, resume Slice 18J only for the remaining installed-app visual evidence and review. Slice 19A remains blocked until Slice 18J itself is committed.
 
 ---
 
@@ -1085,6 +947,7 @@ Status: specified
 
 Prerequisites:
 
+- Slice 18J committed.
 - Persistence Architecture Gate.
 - Slice 18.
 
@@ -1133,7 +996,7 @@ Status: specified
 Prerequisites:
 
 - Slice 19B.
-- Slice 18H.
+- Slice 18I.
 
 Release intent: Expose saved-location management through a finished Oxygen UI.
 
@@ -1180,6 +1043,33 @@ Must prove explicit preference behavior for:
 
 Metric, US, UK, and custom behavior must be defined without changing canonical stored values.
 
+## Gate 20-0: Presentation Semantics and Localization Safety
+
+Status: specified
+
+Recommended timing:
+
+- after Slice 20A defines the unit contract;
+- before Slice 20B adds conversion behavior;
+- before theme/layout variants proliferate.
+
+Release intent: Ensure presentation behavior depends on semantic data rather than English labels or formatted strings before units and alternate appearance modes multiply those paths.
+
+Must prove:
+
+- metric grouping does not depend on exact localized display labels;
+- metric identity needed for grouping, iconography, emphasis, units, or themes is represented semantically;
+- Composables do not parse formatted temperature, percentage, pressure, distance, precipitation, or wind strings back into numbers;
+- numeric values needed for visualization/conversion are deliberately exposed by presentation models alongside display text;
+- reusable touched Home/Settings strings move toward Android resources;
+- accessibility descriptions are not reconstructed by parsing English display text;
+- provider DTOs remain outside Composables;
+- missing values remain missing.
+
+This gate does not require shipping translations.
+
+---
+
 ### Slice 20B: Unit Conversion Presentation Boundary
 
 Status: specified
@@ -1187,7 +1077,7 @@ Status: specified
 Prerequisites:
 
 - Slice 20A.
-- Slice 18F.3 recommended.
+- Gate 20-0.
 
 Release intent: Convert canonical weather values only for presentation.
 
@@ -1208,7 +1098,7 @@ Status: specified
 Prerequisites:
 
 - Slice 20B.
-- Slice 18H.
+- Slice 18I.
 - Slice 25A recommended before or with this UI.
 
 Release intent: Users can persist units without destabilizing Home.
@@ -1342,7 +1232,7 @@ Status: specified
 Prerequisites:
 
 - Slice 23C.
-- Slice 18H.
+- Slice 18I.
 
 Release intent: Expose active official alerts on Home without overwhelming normal weather.
 
@@ -1406,7 +1296,7 @@ Status: specified
 
 Prerequisite:
 
-- Slice 18H.
+- Slice 18I.
 
 Release intent: Create a scalable Settings architecture before multiple preference families accumulate.
 
@@ -1451,7 +1341,7 @@ Must prove:
 
 Status: specified
 
-Slice 18H establishes the canonical Standard Home reference. Later effects, layout, theme, and contrast variants must translate that architecture without changing weather semantics, source/stale/error behavior, alerts, or accessibility guarantees.
+Slice 18H establishes the canonical Standard Home reference and Slice 18I is the committed handheld-ergonomics follow-up. Later effects, layout, theme, and contrast variants must translate that current baseline without changing weather semantics, source/stale/error behavior, alerts, or accessibility guarantees.
 
 Appearance work is not a generic polish backlog.
 
@@ -1463,7 +1353,7 @@ Status: specified
 
 Prerequisites:
 
-- Slice 18H.
+- Slice 18I.
 - Slice 25A.
 - small-state persistence.
 
@@ -1538,7 +1428,7 @@ Status: specified
 Prerequisites:
 
 - Slice 18G.
-- Slice 18H.
+- Slice 18I.
 
 Release intent: Make every MVP theme a deliberate translation of semantic design roles.
 
@@ -1581,7 +1471,7 @@ Status: specified
 Prerequisites:
 
 - Slice 18G.
-- Slice 18H.
+- Slice 18I.
 - Slice 25A.
 
 Must prove:
@@ -1793,75 +1683,19 @@ CI must pass before CI is cited as durable release evidence.
 
 ---
 
-## Gate A: Presentation String and Localization Safety
+## Cross-Cutting Forward Rules
 
-Status: specified
+### Async location and forecast race safety
 
-Recommended timing:
+Slice 19B must prove that obsolete requests cannot replace current-location state, refresh results are scoped to local location identity, lifecycle/cancellation behavior is explicit, and rapid location switching is deterministic.
 
-- before units/themes/layout variants proliferate;
-- may be satisfied by Slice 18F.3 plus resource cleanup evidence.
+### Standard Home visual reference maintenance
 
-Must prove:
+Use the committed Slice 18H/18I installed screenshots as the baseline reference set for later user-facing changes. This is review evidence, not pixel-perfect screenshot testing. Later UI slices should capture comparable installed evidence when they materially change Home, Settings, Locations, Alerts, or appearance.
 
-- semantic grouping never depends on localized labels;
-- reusable Home strings move toward Android resources as touched;
-- accessibility descriptions are not built by parsing English display text;
-- formatting remains presentation-layer behavior.
+### Feature-surface completion rule
 
-This does not require shipping translations.
-
----
-
-## Gate B: Async Location and Forecast Race Safety
-
-Status: specified
-
-Recommended timing:
-
-- as part of Slice 19B or earlier if architecture changes.
-
-Must prove:
-
-- obsolete requests cannot replace current-location state;
-- refresh results are scoped to location identity;
-- cancellation/lifecycle behavior is explicit;
-- rapid location switching is deterministic.
-
----
-
-## Gate C: Standard Home Visual Regression Reference Set
-
-Status: specified
-
-Recommended timing:
-
-- immediately after Slice 18H.
-
-Maintain a small authoritative installed-app screenshot set for:
-
-- Standard Oxygen Now;
-- Hourly;
-- Daily;
-- Details;
-- stale/operational state;
-- large-font state.
-
-This is review evidence, not pixel-perfect screenshot testing.
-
----
-
-## Gate D: Feature-Surface Design Rule
-
-Status: specified
-
-Applies:
-
-- to all post-18H user-facing feature slices.
-
-A feature is not complete merely because its backend path exists.
-
-Its user-facing slice must include:
+For every post-18I user-facing feature, backend completion is insufficient. The corresponding UI slice must include:
 
 - final Oxygen composition;
 - semantic state;
@@ -1870,7 +1704,7 @@ Its user-facing slice must include:
 - operational/error behavior;
 - installed screenshot evidence where applicable.
 
-This prevents Saved Locations, Units, Alerts, and Settings from recreating scaffold-looking UI outside Home.
+This rule applies especially to Saved Locations, Units, Alerts, Settings, and appearance controls.
 
 ---
 
@@ -1898,61 +1732,69 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 
 ## Recommended Sequence From Current Committed State
 
+Remote `main` is reconciled through merge `ca28c2c`. The latest completed implementation slice is Slice 18I at `02f701`.
+
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
-1. Slice 18F — Home Operational State Integration
-2. Gate 18F-V — Standard Home Visual Convergence Review
-3. Select only the 18F.x visual slices the review proves necessary
-4. Gate 18G-0 — Standard Oxygen Visual Baseline Approval
-5. Slice 18G — Oxygen Home Design-System Consolidation
-6. Slice 18H — Standard Home Accessibility and Visual Verification Gate
-7. Gate C — establish the Standard Home visual reference set
-8. Slice 19A — Saved Location Storage Model
-9. Slice 19B — Saved Location Selection and Concurrency
-10. Slice 19C — Saved Locations UI
-11. Slice 31A — Installed-App Fallback Wiring
-12. Slice 31B — Fallback Cache and Provenance
-13. Slice 32 — Fallback Real-Path Verification
-14. Slice 20A — Unit Preference Contract
-15. Slice 20B — Unit Conversion Presentation Boundary
-16. Slice 25A — Settings Information Architecture
-17. Slice 20C — Persisted Units UI
-18. Slice 21 — Optional Device Location
-19. Slice 22 — NWS Alert Provider Contract
-20. Slice 23A — NWS Fixtures/Parsing/Mapping
-21. Slice 23B — NWS Client/Error Classification
-22. Slice 23C — Alert Repository Merge
-23. Slice 24A — Alert Summary/Banner UI
-24. Slice 24B — Alert Detail UI
-25. Gate 25 — Disclosure Baseline Check
-26. Slice 26 — Effects Preference
-27. Slice 27A / 27B — Simple Layout Definition and Selection
-28. Slice 28A / 28B — Theme Translation and Selection
-29. Slice 29 — High Contrast
-30. Gate 30 — Accessibility Presentation Verification
-31. Slice 33 — Privacy and Dependency Audit
-32. Gate 34 — About/Settings/Data-Source Release Check
-33. Gate 35 — MVP Release Candidate Verification
+1. Slice 18J-R — Restore Installed Open-Meteo Ready Forecast Path
+2. Resume Slice 18J — Standard Home Visual Convergence evidence and review
+3. Slice 19A — Saved Location Storage Model
+4. Slice 19B — Saved Location Selection and Concurrency
+5. Slice 19C — Saved Locations UI
+6. Slice 31A — Installed-App Fallback Wiring
+7. Slice 31B — Fallback Cache and Provenance
+8. Slice 32 — Fallback Real-Path Verification
+9. Slice 20A — Unit Preference Contract
+10. Gate 20-0 — Presentation Semantics and Localization Safety
+11. Slice 20B — Unit Conversion Presentation Boundary
+12. Slice 25A — Settings Information Architecture
+13. Slice 20C — Persisted Units UI
+14. Slice 21 — Optional Device Location
+15. Slice 22 — NWS Alert Provider Contract
+16. Slice 23A — NWS Fixtures/Parsing/Mapping
+17. Slice 23B — NWS Client/Error Classification
+18. Slice 23C — Alert Repository Merge
+19. Slice 24A — Alert Summary/Banner UI
+20. Slice 24B — Alert Detail UI
+21. Gate 25 — Disclosure Baseline Check
+22. Slice 26 — Effects Preference
+23. Slice 27A / 27B — Simple Layout Definition and Selection
+24. Slice 28A / 28B — Theme Translation and Selection
+25. Slice 29 — High Contrast
+26. Gate 30 — Accessibility Presentation Verification
+27. Slice 33 — Privacy and Dependency Audit
+28. Gate 34 — About/Settings/Data-Source Release Check
+29. Gate 35 — MVP Release Candidate Verification
 
 Run recurring documentation-sync gates at the defined cadence.
+
+Sequencing rationale:
+
+- Slice 18J-R restores the real installed Open-Meteo ready forecast path needed to verify the in-progress Slice 18J UI against production data.
+- Slice 18J completes the originally intended Standard Oxygen visual convergence before another major user-facing surface is added.
+- Saved-location persistence/switching follows immediately after 18J.
+- Installed-app MET Norway fallback is pulled forward immediately after Saved Locations because fallback is an MVP acceptance requirement and repository-only fallback evidence is insufficient for release.
+- Unit conversion follows once location switching and fallback provenance are stable.
+- Settings information architecture is established before multiple preference families make the current Settings/About surface too broad.
+- Appearance persistence remains after the Standard Home design system and accessibility baseline, which are already committed.
 
 ---
 
 ## Next Candidate Slice
 
-Candidate: Slice 18F: Home Operational State Integration.
+Candidate: Slice 18J-R: Restore Installed Open-Meteo Ready Forecast Path.
 
-Recommended immediate sequence:
+Immediate planning boundary:
 
 ```text
-18F
--> 18F-V visual convergence review
--> only necessary 18F.x visual convergence slices
--> 18G-0 visual approval
--> 18G design-system consolidation
--> 18H verification
+18I committed
+-> 18J-R restore installed Open-Meteo ready forecast path
+-> resume 18J Standard Home visual convergence evidence and review
+-> 19A saved-location storage model
+-> 19B selection/concurrency
+-> 19C finished saved-locations UI
 ```
 
-Do not begin the persisted theme engine before the Standard Oxygen default passes the visual approval gate.
+Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate. Those implementation boundaries are historical and already committed. Slice 18J-R is a provider-path recovery slice required by the blocked Slice 18J evidence boundary, not a new visual gate.
 
-To start work, update `.codex/plans/current.md` to one single bounded gate or slice. Do not treat later roadmap entries as planned active work.
+To start work, replace `.codex/plans/current.md` with one bounded Slice 18J-R plan. Do not treat later roadmap entries as active work.

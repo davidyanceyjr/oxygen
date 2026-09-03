@@ -2,6 +2,7 @@ package com.oxygen.weather.app.ui.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -48,6 +50,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.HomeDailyPresentation
 import com.oxygen.weather.app.HomeHourlyPresentation
+import com.oxygen.weather.app.HomeMetricIdentity
 import com.oxygen.weather.app.HomeMetricPresentation
 import com.oxygen.weather.app.HomeForecastFreshness
 import com.oxygen.weather.app.HomeForecastPresentationState
@@ -57,6 +60,8 @@ import com.oxygen.weather.app.ui.theme.EffectsLevel
 import com.oxygen.weather.app.ui.theme.LocalOxygenHomeDesign
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
+import com.oxygen.weather.app.ui.weather.WeatherScene
+import com.oxygen.weather.core.model.WeatherCondition
 import kotlinx.coroutines.launch
 
 @Composable
@@ -83,6 +88,7 @@ fun HomeLoadingScreen(
             if (state is HomeForecastPresentationState.ForecastReady) {
                 ReadyContent(
                     state = state,
+                    appearance = appearance,
                     onRefresh = onRefresh,
                     onChangeLocation = onChangeLocation,
                     onOpenAbout = onOpenAbout,
@@ -188,6 +194,7 @@ private fun ErrorContent(
 @Composable
 private fun ReadyContent(
     state: HomeForecastPresentationState.ForecastReady,
+    appearance: OxygenAppearance,
     onRefresh: () -> Unit,
     onChangeLocation: () -> Unit,
     onOpenAbout: () -> Unit,
@@ -199,72 +206,80 @@ private fun ReadyContent(
     val scope = rememberCoroutineScope()
     val currentPage = pages[pagerState.currentPage]
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .padding(horizontal = roles.pageMarginHorizontal, vertical = roles.pageMarginVertical)
-            .testTag("home-dashboard"),
-        verticalArrangement = Arrangement.spacedBy(roles.pageGap),
-    ) {
-        ReadyHeader(
-            currentPage = currentPage,
-            pageIndex = pagerState.currentPage,
-            pageCount = pages.size,
-        )
-        HorizontalPager(
-            state = pagerState,
+    Box(Modifier.fillMaxSize()) {
+        if (appearance.effects != EffectsLevel.OFF) {
+            WeatherScene(
+                condition = dashboard.current?.conditionIdentity ?: WeatherCondition.UNKNOWN,
+                modifier = Modifier.testTag("home-weather-scene"),
+            )
+        }
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .testTag("home-page-container")
-                .semantics {
-                    contentDescription = "${currentPage.title}, Page ${pagerState.currentPage + 1} of ${pages.size}"
-                    customActions = buildList {
-                        if (pagerState.currentPage > 0) {
-                            val previousPage = pages[pagerState.currentPage - 1]
-                            add(
-                                CustomAccessibilityAction("Show previous page: ${previousPage.title}") {
-                                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
-                                    true
-                                },
-                            )
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .padding(horizontal = roles.pageMarginHorizontal, vertical = roles.pageMarginVertical)
+                .testTag("home-dashboard"),
+            verticalArrangement = Arrangement.spacedBy(roles.pageGap),
+        ) {
+            ReadyHeader(
+                currentPage = currentPage,
+                pageIndex = pagerState.currentPage,
+                pageCount = pages.size,
+            )
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .testTag("home-page-container")
+                    .semantics {
+                        contentDescription = "${currentPage.title}, Page ${pagerState.currentPage + 1} of ${pages.size}"
+                        customActions = buildList {
+                            if (pagerState.currentPage > 0) {
+                                val previousPage = pages[pagerState.currentPage - 1]
+                                add(
+                                    CustomAccessibilityAction("Show previous page: ${previousPage.title}") {
+                                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                                        true
+                                    },
+                                )
+                            }
+                            if (pagerState.currentPage < pages.lastIndex) {
+                                val nextPage = pages[pagerState.currentPage + 1]
+                                add(
+                                    CustomAccessibilityAction("Show next page: ${nextPage.title}") {
+                                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                                        true
+                                    },
+                                )
+                            }
                         }
-                        if (pagerState.currentPage < pages.lastIndex) {
-                            val nextPage = pages[pagerState.currentPage + 1]
-                            add(
-                                CustomAccessibilityAction("Show next page: ${nextPage.title}") {
-                                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
-                                    true
-                                },
-                            )
-                        }
+                    },
+            ) { pageIndex ->
+                HomePageContainer(page = pages[pageIndex]) {
+                    when (pages[pageIndex]) {
+                        HomePage.Now -> NowPage(
+                            state = state,
+                        )
+                        HomePage.Hourly -> HourlyPage(state)
+                        HomePage.Daily -> DailyPage(state)
+                        HomePage.Details -> DetailsPage(state)
                     }
-                },
-        ) { pageIndex ->
-            HomePageContainer(page = pages[pageIndex]) {
-                when (pages[pageIndex]) {
-                    HomePage.Now -> NowPage(
-                        state = state,
-                    )
-                    HomePage.Hourly -> HourlyPage(state)
-                    HomePage.Daily -> DailyPage(state)
-                    HomePage.Details -> DetailsPage(state)
                 }
             }
+            HomeFooterNavigation(
+                pages = pages,
+                selectedPageIndex = pagerState.currentPage,
+                isRefreshEnabled = state.canRefresh && !state.isRefreshInProgress,
+                refreshLabel = state.refreshLabel,
+                onPageSelected = { pageIndex ->
+                    scope.launch { pagerState.animateScrollToPage(pageIndex) }
+                },
+                onRefresh = onRefresh,
+                onChangeLocation = onChangeLocation,
+                onOpenAbout = onOpenAbout,
+            )
         }
-        HomeFooterNavigation(
-            pages = pages,
-            selectedPageIndex = pagerState.currentPage,
-            isRefreshEnabled = state.canRefresh && !state.isRefreshInProgress,
-            refreshLabel = state.refreshLabel,
-            onPageSelected = { pageIndex ->
-                scope.launch { pagerState.animateScrollToPage(pageIndex) }
-            },
-            onRefresh = onRefresh,
-            onChangeLocation = onChangeLocation,
-            onOpenAbout = onOpenAbout,
-        )
     }
 }
 
@@ -293,18 +308,35 @@ private fun HomeFooterNavigation(
             horizontalArrangement = Arrangement.spacedBy(roles.tileGap - 2.dp),
         ) {
             pages.forEachIndexed { index, page ->
-                FilterChip(
-                    selected = index == selectedPageIndex,
-                    onClick = { onPageSelected(index) },
-                    label = { Text(page.title) },
+                val isSelected = index == selectedPageIndex
+                Surface(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 48.dp)
                         .testTag(page.tabTag)
+                        .clickable { onPageSelected(index) }
                         .semantics {
                             contentDescription = "${page.title} page"
+                            selected = isSelected
                         },
-                )
+                    shape = RoundedCornerShape(roles.homeCardCorner),
+                    color = if (isSelected) roles.strongGlassSurface else roles.ambientGlassSurface,
+                    border = BorderStroke(
+                        width = if (isSelected) 2.dp else 1.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else roles.outlineAccent.copy(alpha = 0.46f),
+                    ),
+                    shadowElevation = 0.dp,
+                ) {
+                    Text(
+                        text = page.title,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 14.dp),
+                        style = roles.supportingLabel,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
         Row(
@@ -429,7 +461,7 @@ private fun NowPage(
         )
     }
 
-    DashboardCard(tag = "home-section-current") {
+    DashboardHero(tag = "home-section-current") {
         if (dashboard.current == null) {
             Text("Current conditions", style = roles.sectionHeading)
             Text(
@@ -443,7 +475,7 @@ private fun NowPage(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(112.dp)
+                        .size(132.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .semantics {
                             contentDescription = dashboard.current.condition
@@ -451,7 +483,7 @@ private fun NowPage(
                 ) {
                     WeatherConditionMark(
                         condition = dashboard.current.conditionIdentity,
-                        modifier = Modifier.size(112.dp),
+                        modifier = Modifier.size(132.dp),
                     )
                 }
                 Column(
@@ -465,7 +497,10 @@ private fun NowPage(
                     )
                     Text(
                         text = dashboard.current.temperature,
-                        style = roles.displayWeatherValue,
+                        style = roles.displayWeatherValue.copy(
+                            fontSize = roles.displayWeatherValue.fontSize * 1.22,
+                            lineHeight = roles.displayWeatherValue.lineHeight * 1.16,
+                        ),
                     )
                 }
             }
@@ -480,8 +515,8 @@ private fun NowPage(
             NowContextGrid(
                 items = listOfNotNull(
                     range?.let { "Today" to it },
-                    dashboard.metrics.firstOrNull { it.label == "Humidity" }?.let { it.label to it.value },
-                    dashboard.metrics.firstOrNull { it.label == "Wind" }?.let { it.label to it.value },
+                    dashboard.metrics.firstOrNull { it.identity == HomeMetricIdentity.Humidity }?.let { it.label to it.value },
+                    dashboard.metrics.firstOrNull { it.identity == HomeMetricIdentity.Wind }?.let { it.label to it.value },
                 ),
             )
             Text("${dashboard.current.updatedTime} | ${dashboard.current.dataTypeLabel}", style = roles.supportingLabel)
@@ -878,24 +913,33 @@ private data class DetailsMetricGroup(
 }
 
 private fun List<HomeMetricPresentation>.toDetailsGroups(): List<DetailsMetricGroup> {
-    fun metricsFor(vararg labels: String): List<HomeMetricPresentation> =
-        labels.mapNotNull { label -> firstOrNull { it.label == label } }
+    fun metricsFor(vararg identities: HomeMetricIdentity): List<HomeMetricPresentation> =
+        identities.mapNotNull { identity -> firstOrNull { it.identity == identity } }
 
     return listOf(
         DetailsMetricGroup(
             title = "Comfort",
             tag = "home-section-comfort",
-            metrics = metricsFor("Feels like", "Humidity", "Dew point"),
+            metrics = metricsFor(
+                HomeMetricIdentity.ApparentTemperature,
+                HomeMetricIdentity.Humidity,
+                HomeMetricIdentity.DewPoint,
+            ),
         ),
         DetailsMetricGroup(
             title = "Wind",
             tag = "home-section-wind",
-            metrics = metricsFor("Wind"),
+            metrics = metricsFor(HomeMetricIdentity.Wind),
         ),
         DetailsMetricGroup(
             title = "Atmosphere",
             tag = "home-section-atmosphere",
-            metrics = metricsFor("Pressure", "Visibility", "Cloud cover", "Precipitation"),
+            metrics = metricsFor(
+                HomeMetricIdentity.Pressure,
+                HomeMetricIdentity.Visibility,
+                HomeMetricIdentity.CloudCover,
+                HomeMetricIdentity.Precipitation,
+            ),
         ),
     ).filter { it.metrics.isNotEmpty() }
 }
@@ -1063,6 +1107,21 @@ private fun DashboardCard(
             content = content,
         )
     }
+}
+
+@Composable
+private fun DashboardHero(
+    tag: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val roles = LocalOxygenHomeDesign.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(tag),
+        verticalArrangement = Arrangement.spacedBy(roles.tileGap),
+        content = content,
+    )
 }
 
 @Composable

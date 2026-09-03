@@ -27,11 +27,13 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 18H, Standard Home Accessibility
-  and Visual Verification Gate, commit `4f5f383`.
-- Last implementation slice: Slice 18I, Mobile One-Handed Home Ergonomics, is
-  committed in this changeset. Next implementation candidate returns to Slice
-  19, Saved Locations Persistence.
+- Last committed implementation slice: Slice 18I, Mobile One-Handed Home
+  Ergonomics, commit `02f701`.
+- Current active planned slice: Slice 18J-R, Restore Installed Open-Meteo Ready
+  Forecast Path. Slice 18J Standard Home Visual Convergence is partially
+  covered/implemented but blocked by installed-app invalid-response evidence.
+  Next implementation candidate after 18J-R is resuming Slice 18J installed
+  visual evidence and review; Slice 19A remains blocked until 18J is committed.
 - Current documentation drift under review: the tracked art sheet path/spec say
   Base Art Sheet v0.1 while the visible image title says v0.2.
 - Current process correction: cycle history is now tail-limited for normal reads
