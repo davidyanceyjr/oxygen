@@ -948,7 +948,7 @@ Planning note: the original Slice 19 was too broad for one active cycle. Use one
 
 ### Slice 19A: Saved Location Storage Model
 
-Status: specified
+Status: committed at `d97e2ea`
 
 Prerequisites:
 
@@ -976,7 +976,7 @@ Out of scope:
 
 ### Slice 19B: Saved Location Selection and Concurrency
 
-Status: specified
+Status: committed at `0f649aa`
 
 Prerequisite:
 
@@ -996,7 +996,7 @@ Must prove:
 
 ### Slice 19C: Saved Location List and Selection UI
 
-Status: specified
+Status: committed at `e2efdd3`
 
 Prerequisites:
 
@@ -1612,7 +1612,7 @@ Planning note: split wiring from cache/provenance.
 
 ### Slice 31A: Installed-App Fallback Wiring
 
-Status: specified
+Status: ready
 
 Prerequisites:
 
@@ -1827,7 +1827,8 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 
 ## Recommended Sequence From Current Committed State
 
-Remote `main` is reconciled through merge `ca28c2c`. The latest completed implementation slice is Slice 18I at `02f701`.
+Remote `main` is reconciled through merge `ca28c2c`. The latest completed local
+implementation slice is Slice 19C at `e2efdd3`.
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
@@ -1875,20 +1876,26 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 19A: Saved Location Storage Model.
+Candidate: Slice 31B: Fallback Cache and Provenance.
 
 Immediate planning boundary:
 
 ```text
-18I committed
--> 18J-R committed
--> resumed 18J Standard Home visual convergence evidence committed
--> 19A saved-location storage model
--> 19B selection/concurrency
--> 19C finished saved-locations UI
+18I committed at 02f701
+-> 18J-R committed at 15fc10e
+-> resumed 18J Standard Home visual convergence evidence committed at 7950a42
+-> 19A saved-location storage model committed at d97e2ea
+-> 19B selection/concurrency committed at 0f649aa
+-> 19C saved-location list/select UI committed at e2efdd3
+-> 31A installed-app fallback wiring ready in working tree
+-> next candidate after commit: 31B fallback cache and provenance
 ```
 
-Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate. Those implementation boundaries are historical and already committed. Slice 18J-R was a provider-path recovery slice required by the blocked Slice 18J evidence boundary, not a new visual gate.
+Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
+Those implementation boundaries are historical and already committed. Slice
+18J-R was a provider-path recovery slice required by the blocked Slice 18J
+evidence boundary, not a new visual gate.
 
-To start work, replace `.codex/plans/current.md` with one bounded Slice 19A
-plan. Do not treat later roadmap entries as active work.
+To start the next implementation slice after committing Slice 31A, replace
+`.codex/plans/current.md` with one bounded Slice 31B plan. Do not treat later
+roadmap entries as active work.

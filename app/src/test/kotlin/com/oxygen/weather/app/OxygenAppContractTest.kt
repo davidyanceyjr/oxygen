@@ -16,16 +16,27 @@ class OxygenAppContractTest {
     }
 
     @Test
-    fun `main activity wires DataStore selected location Room saved locations and cached forecast repository`() {
+    fun `main activity wires DataStore selected location Room saved locations and installed fallback repository`() {
         val source = Files.readString(Path.of("src/main/kotlin/com/oxygen/weather/MainActivity.kt"))
 
         assertTrue(source.contains("DataStoreSelectedLocationStorage"))
         assertTrue(source.contains("RoomForecastCacheStorageFactory"))
         assertTrue(source.contains("RoomSavedLocationStorageFactory"))
         assertTrue(source.contains("savedLocationStorage = savedLocationStorage"))
-        assertTrue(source.contains("CachedWeatherRepository"))
-        assertTrue(source.contains("OpenMeteoWeatherRepository"))
+        assertTrue(source.contains("InstalledForecastRepositoryFactory.create"))
         assertFalse(source.contains("FileForecastCacheStorage"))
+        assertFalse(source.contains("SampleWeather"))
+    }
+
+    @Test
+    fun `installed forecast repository factory composes default fallback and cache repositories`() {
+        val source = Files.readString(Path.of("src/main/kotlin/com/oxygen/weather/app/InstalledForecastRepositoryFactory.kt"))
+
+        assertTrue(source.contains("OpenMeteoWeatherRepository"))
+        assertTrue(source.contains("MetNoWeatherRepository"))
+        assertTrue(source.contains("FallbackWeatherRepository"))
+        assertTrue(source.contains("CachedWeatherRepository"))
+        assertTrue(source.contains("MetNoForecastClient.DEFAULT_USER_AGENT"))
         assertFalse(source.contains("SampleWeather"))
     }
 

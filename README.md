@@ -26,6 +26,8 @@ and `docs/data-sources/`.
   local Room forecast-cache path.
 - Foreground refresh failure handling that keeps a useful cached forecast
   visible with stale/source/update context where available.
+- Installed-app MET Norway fallback after eligible Open-Meteo terminal forecast
+  failures, with MET Norway provenance shown through the normal Home surface.
 - Provider-neutral Home loading, error/retry, success, source, update,
   provenance, and disclosure presentation.
 - Standard Home paged interaction foundation with Now, Hourly, Daily, and
@@ -48,7 +50,6 @@ and `docs/data-sources/`.
 - Unit preferences.
 - Official weather alert lookup.
 - Persisted appearance/effects/layout settings.
-- Installed-app MET Norway fallback wiring.
 - Release-candidate verification.
 
 ## Repository structure
@@ -141,20 +142,24 @@ search and selected-location forecasts. The retained sample weather bundle is
 scaffold/preview data only, not the production Home path.
 
 MET Norway is implemented as a forecast provider path with verified core
-fallback-selection behavior, but it is not wired as the active installed-app
-forecast fallback in this build.
+fallback-selection behavior and is wired as the active installed-app fallback
+after eligible Open-Meteo terminal forecast failures. Open-Meteo success,
+offline/network failure, and provider-rejected requests remain terminal and do
+not call MET Norway.
 
 The installed app persists the last selected location locally and wraps the
-active Open-Meteo forecast path with a Room-backed forecast cache. It can
-restore the selected location's last cached forecast when launched without
-network, and a foreground refresh failure can retain the same selected
-location's cached forecast as a stale success with explicit refresh-failed
-metadata. If a live provider refresh succeeds while local forecast-cache
-persistence fails, the live provider forecast remains displayable.
+active Open-Meteo-plus-MET-Norway fallback forecast path with a Room-backed
+forecast cache. It can restore the selected location's last cached forecast when
+launched without network, and a foreground refresh failure can retain the same
+selected location's cached forecast as a stale success with explicit
+refresh-failed metadata. If a live provider refresh succeeds while local
+forecast-cache persistence fails, the live provider forecast remains
+displayable. Provider-specific MET Norway cache-header persistence, conditional
+GET metadata, cached fallback restore claims, and stale fallback provenance
+remain later work.
 
 Search-result save UI, saved-location removal UI, unit preferences, alerts, air
-quality, radar, and installed-app MET Norway fallback behavior are not
-implemented yet.
+quality, radar, and release-candidate verification are not implemented yet.
 
 ## Specification
 

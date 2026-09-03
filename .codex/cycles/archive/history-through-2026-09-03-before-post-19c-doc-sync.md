@@ -28,14 +28,12 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 19C, Saved Location List and
-  Selection UI, committed at `e2efdd3`.
-- Current active slice: Slice 31A, Installed-App Fallback Wiring, ready in the
-  working tree and not yet committed.
-- Current documentation drift under review: the post-19C status sync remains in
-  the working tree, and Slice 31A has updated status surfaces to report the
-  verified installed-app MET Norway fallback wiring while leaving cache-header
-  and fallback-provenance follow-up work unclaimed.
+- Last committed implementation slice: Slice 19B, Saved Location Selection and
+  Concurrency, committed at `0f649aa`.
+- Current active slice: Slice 19C, Saved Location List and Selection UI, ready
+  in the working tree and not yet committed.
+- Current documentation drift under review: none. The Base Art Sheet filename,
+  specification reference, and visible image title agree on v0.2.
 - Current process correction: the live cycle history was re-trimmed on
   2026-09-03 after archiving the previous 511-line live file at
   `.codex/cycles/archive/history-through-2026-09-03-before-19a-tail-refresh.md`.
@@ -258,78 +256,3 @@ Boundaries:
   preference, alert, air quality, radar/map, widget, notification, provider
   request, Room schema, DataStore format, forecast-cache format, release, or
   MVP-readiness behavior was added.
-
-### 2026-09-03-post-19c-doc-sync
-
-Status: ready
-Mode: documentation-only
-Slice: Post-19C documentation sync
-Commit: not yet committed
-
-Result:
-- Updated the live history summary to reflect committed Slice 19C at `e2efdd3`.
-- Synchronized the roadmap saved-location sub-slice statuses through 19C and
-  moved the next candidate from stale Slice 19A text to Slice 31A.
-- Replaced the active cycle file with this bounded documentation-only sync
-  record.
-- Corrected Data Sources and Privacy local-data text so installed Room forecast
-  cache and saved-location persistence match verified behavior, while
-  save/remove UI and installed-app MET Norway fallback remain not implemented.
-
-Evidence:
-- `git diff --check` passed.
-
-Artifacts:
-- `.codex/test-artifacts/2026-09-03-post-19c-doc-sync/git-diff-check.log`.
-
-Boundaries:
-- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
-  DataStore format, forecast-cache format, UI, saved-location save/remove,
-  unit preference, alert, air quality, radar, release, or MVP behavior changed.
-- Android compile, unit tests, connected tests, and assemble were not run
-  because this was a documentation-only status sync.
-
-### 2026-09-03-installed-app-fallback-wiring
-
-Status: ready
-Mode: feature
-Slice: Slice 31A, Installed-App Fallback Wiring
-Commit: not yet committed
-
-Result:
-- Added an installed forecast repository factory that composes Open-Meteo as
-  default, MET Norway as fallback, and the existing Room-backed cache wrapper
-  for MainActivity's selected-location Home path.
-- Preserved core fallback eligibility: Open-Meteo success, network/offline
-  failure, and provider-rejected requests do not call MET Norway; eligible
-  terminal provider failures can call MET Norway.
-- Verified MET Norway fallback success reaches the provider-neutral Home ready
-  presentation with MET Norway source/provenance text and an identifying
-  Oxygen User-Agent.
-- Updated README, Data Sources, Privacy, roadmap, active cycle, and About
-  disclosure text to report active installed-app fallback truthfully while
-  leaving MET Norway cache-header/provenance follow-up work unclaimed.
-
-Evidence:
-- Baseline checks passed: core `FallbackWeatherRepositoryTest`, app
-  `HomeForecastStateHolderTest`, and connected
-  `OfflineLaunchPersistenceInstrumentedTest`.
-- Focused checks passed: app `InstalledForecastRepositoryFactoryTest`,
-  `OxygenAppContractTest`, `AboutDisclosureStateHolderTest`,
-  `HomeForecastStateHolderTest`, and core `FallbackWeatherRepositoryTest`.
-- Connected real-path exercise passed:
-  `:app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.InstalledFallbackRepositoryInstrumentedTest`.
-- Broad checks passed: `. scripts/android-env.sh && ./gradlew
-  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
-  ./gradlew :app:assembleDebug`; `git diff --check`.
-
-Artifacts:
-- `.codex/test-artifacts/2026-09-03-installed-app-fallback-wiring/`.
-
-Boundaries:
-- No saved-location save/remove UI, provider preference UI, unit preference,
-  alerts, air quality, radar/map, Room schema change, DataStore format change,
-  provider-specific MET Norway cache-header persistence, conditional GET
-  metadata, cached fallback restore claim, stale fallback provenance,
-  release-candidate status, or MVP-readiness behavior was added.

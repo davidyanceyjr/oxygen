@@ -6,10 +6,11 @@ source-code licensing.
 
 ## Active App Providers
 
-### Forecasts: Open-Meteo
+### Forecasts: Open-Meteo With MET Norway Fallback
 
 - Purpose: Installed-app default forecast provider for explicit selected
-  locations.
+  locations, with MET Norway fallback after eligible Open-Meteo terminal
+  forecast failures.
 - Data shown by current production path: provider-neutral Home forecast success
   presentation with source, update, data type, and license provenance from the
   served provider data.
@@ -33,20 +34,18 @@ source-code licensing.
   attribution license, as recorded in docs/data-sources/OPEN_METEO_GEOCODING.md.
 - Last terms review date: 2026-08-19.
 
-## Implemented Provider Paths And Capabilities
-
 ### Forecasts: MET Norway
 
-- Purpose: Implemented forecast provider path and core fallback-selection
-  capability.
-- Current app status: not wired as the active installed-app forecast fallback in
-  this build.
-- Verified capability: Slice 14 covers repository-level fallback selection with
-  MET Norway provenance preserved when the controlled fallback repository serves
-  forecast data.
-- Not yet implemented or verified: installed-app fallback wiring, live fallback
-  Home UI screenshots, installed-app cache wiring, stale offline UI, provider
-  health or backoff state, and release-candidate fallback behavior.
+- Purpose: Active installed-app forecast fallback after eligible Open-Meteo
+  terminal failures, using the provider-neutral fallback repository path.
+- Current app status: wired behind Open-Meteo in the installed selected-location
+  Home refresh path.
+- Verified capability: Slice 31A covers installed factory fallback composition,
+  Home ready presentation with MET Norway provenance, and identifying
+  User-Agent behavior with controlled provider responses.
+- Not yet implemented or verified: provider-specific cache-header persistence,
+  conditional GET metadata, cached fallback restore claims, provider health or
+  backoff state, and release-candidate fallback behavior.
 - Request data when this provider path is used: selected location latitude and
   longitude, optional altitude when present, an identifying User-Agent/contact
   header, and normal client network metadata such as IP address.
@@ -70,9 +69,16 @@ provider-served forecast bundle as provider-neutral current/hourly/daily rows
 scoped by local `LocationId`. When that wrapper is used, a foreground refresh
 failure can retain the same selected location's cached forecast as a stale
 success with explicit refresh-failed metadata at the repository and app-state
-boundary. The installed app does not yet wire that durable cache and does not
-implement offline forecast cache behavior, saved-location persistence, unit
-preferences, official alert lookup, air-quality lookup, or radar.
+boundary. The installed app wires that durable Room cache for selected-location
+forecasts and supports offline restoration of the last cached forecast for the
+selected local `LocationId`.
+
+The installed app also persists saved locations locally, shows saved rows on the
+location-entry surface, marks the current saved location, and can select an
+existing saved row through the local selected-location path. It does not yet
+implement search-result save UI, saved-location removal UI, unit preferences,
+official alert lookup, air-quality lookup, radar, provider-specific MET Norway
+cache-header persistence, or release-candidate fallback behavior.
 
 Before any additional provider becomes active, document its current terms,
 attribution, rate/caching requirements, privacy implications, and last review
