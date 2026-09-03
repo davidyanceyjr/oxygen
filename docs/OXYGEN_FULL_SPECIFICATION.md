@@ -52,10 +52,10 @@ A rainy morning should feel different from a clear winter night before the user 
 The initial look-and-feel foundation is captured in:
 
 ```text
-docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png
+docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.2.png
 ```
 
-![Oxygen Weather Visual Language Base Art Sheet v0.1](assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png)
+![Oxygen Weather Visual Language Base Art Sheet v0.2](assets/oxygen-weather-visual-language-base-art-sheet-v0.2.png)
 
 This art sheet is a product-design authority for Slice 18D and subsequent Home
 visual implementation slices. It establishes the initial direction for:
@@ -667,8 +667,8 @@ A theme never owns business logic.
 
 The default theme is **Oxygen**.
 
-The initial Oxygen visual direction is defined by the Base Art Sheet v0.1 at
-`docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png`.
+The initial Oxygen visual direction is defined by the Base Art Sheet v0.2 at
+`docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.2.png`.
 
 Characteristics:
 
@@ -685,7 +685,7 @@ Characteristics:
 
 The default should be visually distinctive without demanding configuration.
 
-Initial palette references from the Base Art Sheet v0.1:
+Initial palette references from the Base Art Sheet v0.2:
 
 | Role | Color |
 |---|---|
@@ -1335,10 +1335,10 @@ Create specifically for Oxygen:
 
 ### 36.1.1 Visual-language reference asset
 
-Retain the Base Art Sheet v0.1 as a reviewable source artifact:
+Retain the Base Art Sheet v0.2 as a reviewable source artifact:
 
 ```text
-docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png
+docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.2.png
 ```
 
 This file is not an app runtime asset. It should be used to guide implementation

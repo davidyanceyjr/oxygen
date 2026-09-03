@@ -47,10 +47,10 @@ Every user-facing active slice must carry the relevant UI specification with it.
 The initial Home look-and-feel direction is a reviewable product artifact:
 
 ```text
-docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png
+docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.2.png
 ```
 
-Use Base Art Sheet v0.1 as visual-direction authority for Standard Home visual work. It guides weather marks, atmospheric scene language, glass-like surfaces, strong numerals, palette references, forecast/metric/alert composition, and Oxygen/Paper/Terminal translation.
+Use Base Art Sheet v0.2 as visual-direction authority for Standard Home visual work. It guides weather marks, atmospheric scene language, glass-like surfaces, strong numerals, palette references, forecast/metric/alert composition, and Oxygen/Paper/Terminal translation.
 
 It does not:
 
@@ -719,9 +719,11 @@ Verification boundary:
 - broad Android checks;
 - `git diff --check`.
 
-Known documentation drift:
+Documentation governance note:
 
-The tracked asset path/specification says Base Art Sheet v0.1 while the rendered image title says v0.2. Resolve this naming mismatch during a documentation/asset-governance sync; it does not reopen Slice 18G.
+The tracked asset path and specification use Base Art Sheet v0.2 to match the
+visible title in the reviewable source image. This naming cleanup does not
+reopen Slice 18G.
 
 ---
 

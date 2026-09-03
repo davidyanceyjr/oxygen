@@ -32,8 +32,8 @@ ledger states.
   recovery included in the same commit.
 - Current active slice: none. Next implementation candidate is Slice 19A, Saved
   Location Storage Model.
-- Current documentation drift under review: the tracked art sheet path/spec say
-  Base Art Sheet v0.1 while the visible image title says v0.2.
+- Current documentation drift under review: none. The Base Art Sheet filename,
+  specification reference, and visible image title now agree on v0.2.
 - Current process correction: cycle history is now tail-limited for normal reads
   and older detailed ledger content has been archived.
 
@@ -473,3 +473,39 @@ Artifacts:
 
 Boundaries:
 - Slice 19A is unblocked after this commit.
+
+### 2026-09-03-art-sheet-version-doc-cleanup
+
+Status: ready
+Mode: documentation-only
+Slice: Art-sheet version documentation cleanup
+Commit: not committed in this turn
+
+Result:
+- Renamed the reviewable visual-language source artifact from
+  `docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png` to
+  `docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.2.png` so the
+  tracked filename matches the visible image title.
+- Updated `docs/OXYGEN_FULL_SPECIFICATION.md` and `.codex/plans/mvp-roadmap.md`
+  to reference Base Art Sheet v0.2.
+- Updated the live recent state summary to report no active art-sheet
+  documentation drift.
+- Replaced the stale committed Slice 18J active-cycle file with this bounded
+  documentation-only cycle record.
+
+Evidence:
+- `git diff --check` passed.
+
+Artifacts:
+- Evidence log is under
+  `.codex/test-artifacts/2026-09-03-art-sheet-version-doc-cleanup/git-diff-check.log`.
+
+Boundaries:
+- No Kotlin, Compose, Gradle, manifest, provider, cache, selected-location,
+  saved-location, unit preference, alert, appearance setting, release, or MVP
+  behavior changed.
+- Historical cycle entries that documented the drift before this cleanup were
+  left intact.
+- Android compile, unit tests, and assemble were not run because this was a
+  documentation/asset-governance cleanup only.
+- Slice 19A remains the next implementation candidate.
