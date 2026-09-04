@@ -13,6 +13,11 @@ Older detailed history is retained in:
 
 ```text
 .codex/cycles/archive/history-through-2026-09-01-before-tail-limited-history.md
+.codex/cycles/archive/history-through-2026-09-03-before-19a-tail-refresh.md
+.codex/cycles/archive/history-through-2026-09-03-before-post-19c-doc-sync.md
+.codex/cycles/archive/history-through-2026-09-03-before-slice-32-planning.md
+.codex/cycles/archive/history-through-2026-09-04-before-plan-gap-fixes.md
+.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md
 ```
 
 When adding a new history entry, append it to this file as a self-contained
@@ -27,485 +32,349 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 18J, Standard Home Visual
-  Convergence evidence and review, with Slice 18J-R Open-Meteo ready forecast
-  recovery included in the same commit.
-- Current active slice: none. Next implementation candidate is Slice 19A, Saved
-  Location Storage Model.
-- Current documentation drift under review: none. The Base Art Sheet filename,
-  specification reference, and visible image title now agree on v0.2.
-- Current process correction: cycle history is now tail-limited for normal reads
-  and older detailed ledger content has been archived.
+- Last committed implementation slice: Slice 19E, Remove Saved Location UI,
+  committed at `00cb88a`.
+- Last committed documentation sync: Gate 19F, Saved Locations Documentation
+  Sync, committed at `8386484`.
+- Current active planning target: Slice 20A, Unit Preference Contract. Keep it
+  bounded to preference-contract behavior before conversion/UI work.
+- Current process correction: the live cycle history was compressed on
+  2026-09-04 after archiving the previous live file at
+  `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
 
 ## Recent Cycles
 
-### 2026-09-01-cycle-history-tail-read-contract
-
-Status: ready
-Mode: documentation-only
-Slice: Cycle history token-size and archive contract
-Commit: committed in this changeset
-
-Result:
-- Archived the previous full cycle ledger at
-  `.codex/cycles/archive/history-through-2026-09-01-before-tail-limited-history.md`.
-- Replaced the live `.codex/cycles/history.md` with a recent-history contract,
-  current summary, and self-contained recent entries.
-- Updated `AGENTS.md` so normal discovery reads only the live recent history and
-  at most the most recent three cycle entries unless older evidence is
-  specifically required.
-- Clarified that full archive copies are required before replacing or
-  compressing live history, not before ordinary append-only history writes.
-
-Evidence:
-- `git diff --check` passed.
-- Android build/test/emulator commands were not run because this
-  documentation-only process change touched only Markdown files and no Kotlin,
-  Compose, Gradle, manifest, resources, provider, persistence, or test behavior.
-
-### 2026-09-01-home-design-system-art-sheet-consolidation
+### 2026-09-03-fallback-cache-provenance
 
 Status: committed
 Mode: feature
-Slice: Slice 18G, Oxygen Home Design-System Consolidation
-Commit: `fae63b3`
+Slice: Slice 31B, Fallback Cache and Provenance
+Commit: `4028044`
 
 Result:
-- Added static app-local Home design roles for spacing, card shape/padding,
-  glass surfaces, outline accents, weather-mark colors, and Home typography.
-- Replaced the generic blob-like `WeatherConditionMark` with provider-neutral
-  gold-line marks for all current `WeatherCondition` values.
-- Applied the Home roles across the installed Home Now, Hourly, Daily, Details,
-  stale/status, metric/list, source, and shared glass-panel surfaces without
-  changing provider, repository, Room, DataStore, weather mapping, Gradle,
-  app identity, saved-location, unit-preference, or alert behavior.
+- Added cache-only forecast metadata for provider cache headers and provider
+  response metadata without adding raw headers to `WeatherBundle` or Home UI.
+- MET Norway repository success now carries Expires, Last-Modified, ETag,
+  fetch time, response coordinates/elevation, provider updated time, and
+  provider ID for cache storage.
+- Room forecast cache storage persists that metadata with a v2-to-v3 migration,
+  clears stale provider cache metadata on non-metadata replacement, and still
+  restores cached MET Norway forecasts with MET Norway provenance.
 
 Evidence:
-- Baseline focused HomeForecast unit tests passed before production edits.
-- Initial baseline connected Home instrumentation failed with `No connected
-  devices`; after starting `oxygen_starter`, focused Home instrumentation
-  passed 16 tests, including the new rendered-pixel gold-line weather-mark test.
-- Final focused checks passed: `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest --tests '*HomeForecast*'`; `. scripts/android-env.sh
-  && ./gradlew :app:connectedDebugAndroidTest
-  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
-- Broad checks passed: `. scripts/android-env.sh && ./gradlew
-  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
-  ./gradlew :app:assembleDebug`; `git diff --check`.
+- Baseline checks passed: `InstalledForecastRepositoryFactoryTest`,
+  `HomeForecastStateHolderTest`, and `CachedWeatherRepositoryTest`.
+- Focused checks passed: core `CachedWeatherRepositoryTest` plus
+  `MetNoWeatherRepositoryTest`, app `AboutDisclosureStateHolderTest`, connected
+  `RoomForecastCacheStorageInstrumentedTest`, and connected
+  `RoomSavedLocationStorageInstrumentedTest`.
+- Broad checks passed: compileDebugKotlin, app/core debug unit tests,
+  assembleDebug, and `git diff --check`.
 
 Artifacts:
-- Logs and screenshots are under
-  `.codex/test-artifacts/2026-09-01-home-design-system-art-sheet-consolidation/`.
-- Valid installed Home evidence: `installed-final-home-now.png`/`.xml`,
-  `installed-final-home-hourly.png`/`.xml`,
-  `installed-final-home-daily.png`/`.xml`,
-  `installed-final-home-details.png`/`.xml`, and
-  `installed-final-cached-stale-now.png`/`.xml`.
-- Final focused logs: `focused-homeforecast-unit.log`,
-  `focused-home-compose-instrumentation-final.log`.
-- Broad logs: `broad-compile-debug-kotlin.log`,
-  `broad-debug-unit-tests.log`, `broad-assemble-debug.log`,
-  `git-diff-check.log`.
+- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/`.
+
+Blockers:
+- Initial connected Room attempt found no connected devices. The repo-local
+  `oxygen_starter` emulator was started. A parallel connected rerun then
+  crashed instrumentation/uninstall; sequential reruns passed.
 
 Boundaries:
-- The art-sheet naming drift remains documented only: the tracked path/spec say
-  Base Art Sheet v0.1 while the rendered image title says v0.2.
-- Atmospheric scene imagery, production bitmap scenes, downloaded fonts, full
-  icon packs, persisted presentation settings, full theme engine, installed-app
-  MET Norway fallback, saved-location switching, unit preferences, release
-  readiness, and MVP readiness were not added or claimed.
-- A final installed retryable no-cache screenshot was not captured; the attempt
-  failed after the targeted instrumentation run left the debug activity
-  unavailable. No-cache behavior remains covered by passing Home instrumentation,
-  state-holder, and offline persistence instrumentation boundaries.
-
-### 2026-09-01-project-status-sync-after-home-design-system-consolidation
-
-Status: ready
-Mode: documentation-only
-Slice: Project status sync after Slice 18G
-Commit: committed in this changeset
-
-Result:
-- Compared README, specification section 53, roadmap Slice 18G/18H status,
-  roadmap next-candidate guidance, active-cycle state, cycle history, `git log`,
-  and worktree status after committed Slice 18G `fae63b3`.
-- README now records the installed Home art-sheet-aligned weather marks,
-  surface roles, typography roles, and app-local design roles.
-- Roadmap/spec next-candidate guidance now points to Slice 18H: Standard Home
-  Accessibility and Visual Verification Gate.
-- Live cycle history now records Slice 18G as committed at `fae63b3`.
-
-Evidence:
-- `git diff --check` passed.
-- Android build/test/emulator commands were not run because this
-  documentation-only sync changed only Markdown files and no Kotlin, Compose,
-  Gradle, manifest, resources, provider, persistence, or test behavior.
-
-### 2026-09-01-standard-home-accessibility-visual-verification-gate
-
-Status: committed
-Mode: feature
-Slice: Slice 18H, Standard Home Accessibility and Visual Verification Gate
-Commit: `4f5f383`
-
-Result:
-- Added named previous/next custom accessibility actions to the existing
-  Standard Home pager container and kept page tabs/swipes as the visible
-  navigation model.
-- Added an app-local, non-persisted `OxygenAppearance` input to
-  `HomeLoadingScreen` so `EffectsLevel.OFF` renders opaque Home surfaces while
-  preserving the same production Home composable path and weather semantics.
-- Raised Standard Home page tabs to a 48dp minimum height.
-- Added focused Home instrumentation coverage for named pager actions,
-  child-control page isolation, 48dp control bounds, and effects-disabled
-  stale/source/weather meaning.
-- Preserved provider, repository, Room, DataStore, forecast mapping,
-  selected-location, manual-search, stale-cache, retry/refresh, disclosure,
-  Gradle, manifest, saved-location, unit-preference, fallback, alert, air
-  quality, radar, release, and MVP-readiness behavior.
-
-Evidence:
-- Baseline focused state tests passed:
-  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecast*'`.
-- Focused Home instrumentation passed 19 tests on `oxygen_starter(AVD) - 17`:
-  `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest
-  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
-- Installed-app real-path evidence used `scripts/list-avds.sh`,
-  `scripts/start-emulator.sh`, and `scripts/install-debug.sh`, then selected a
-  real Open-Meteo geocoding result and captured Now, Hourly, Daily, and Details.
-- Installed stale refresh-failed cached Home was reached by disabling device
-  Wi-Fi/data with `adb shell svc wifi disable` and `adb shell svc data disable`,
-  tapping Refresh, then restoring services.
-- Broad checks passed: `. scripts/android-env.sh && ./gradlew
-  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
-  ./gradlew :app:assembleDebug`; `git diff --check`.
-
-Artifacts:
-- Logs and screenshots are under
-  `.codex/test-artifacts/2026-09-01-standard-home-accessibility-visual-verification-gate/`.
-- Installed screenshots/hierarchies: `installed-final-home-now.png`/`.xml`,
-  `installed-final-home-hourly.png`/`.xml`,
-  `installed-final-home-daily.png`/`.xml`,
-  `installed-final-home-details.png`/`.xml`, and
-  `installed-operational-refresh-failed-attempt.png`/`.xml`.
-- Focused/broad logs: `baseline-homeforecast-unit.log`,
-  `focused-home-compose-instrumentation.log`,
-  `broad-compile-debug-kotlin.log`, `broad-debug-unit-tests.log`,
-  `broad-assemble-debug.log`, and `git-diff-check.log`.
-
-Boundaries:
-- Android shell denied direct airplane-mode broadcasts during operational setup;
-  Wi-Fi/data service toggles were sufficient to capture stale refresh-failed
-  cached Home, and network services were restored afterward.
-- No subjective visual inconsistency was found in the installed Now, Hourly,
-  Daily, and Details screenshots during review.
-
-### 2026-09-01-project-status-sync-after-home-accessibility-gate
-
-Status: ready
-Mode: documentation-only
-Slice: Project status sync after Slice 18H
-Commit: not committed in this turn
-
-Result:
-- Reconciled active-cycle and recent-history status with committed Slice 18H at
-  `4f5f383`.
-- Updated roadmap and specification next-candidate guidance from Slice 18H to
-  Slice 19: Saved Locations Persistence.
-- Preserved the boundary that saved-location behavior is not implemented or
-  planned until a new active Slice 19 cycle is selected.
-
-Evidence:
-- `git log --oneline -5` showed `4f5f383 Complete Slice 18H Home accessibility
-  gate`.
-- `git diff --check` passed.
-- Android build/test/emulator commands were not run because this
-  documentation-only sync changed only Markdown files and no Kotlin, Compose,
-  Gradle, manifest, resources, provider, persistence, or test behavior.
-
-### 2026-09-02-location-card-return-path
-
-Status: committed
-Mode: fix
-Slice: Location card return path from Home
-Commit: this commit
-
-Result:
-- Opening Location from Home now preserves the current Home screen as a return
-  target and shows a visible Back action on the Location card.
-- Tapping Back from that Location card restores the previous Home without
-  starting a new search or forecast request.
-- Selecting a new manual search result from the same Location card still
-  replaces the selected Home location through the existing manual-selection
-  path.
-
-Evidence:
-- Focused state tests passed: `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest' --tests
-  '*FirstRunLocationStateHolderTest'`.
-- Focused Home Compose instrumentation passed 20 tests on
-  `oxygen_starter(AVD) - 17`: `. scripts/android-env.sh && ./gradlew
-  :app:connectedDebugAndroidTest
-  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
-- Broad checks passed: `. scripts/android-env.sh && ./gradlew
-  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
-  ./gradlew :app:assembleDebug`; `git diff --check`.
-
-Artifacts:
-- Logs are under
-  `.codex/test-artifacts/2026-09-02-location-card-return-path/`.
-
-Boundaries:
-- This did not add saved-location management, device-location lookup, provider
-  behavior, Room/DataStore schema behavior, unit preferences, alerts, air
-  quality, radar, release readiness, or MVP readiness.
-- The active saved-location persistence plan in `.codex/plans/current.md`
-  predated this fix and was left untouched.
-
-### 2026-09-02-mobile-one-handed-home-ergonomics-plan
-
-Status: ready
-Mode: documentation-only
-Slice: Slice 18I planning and roadmap/spec sequencing
-Commit: not committed in this turn
-
-Result:
-- Added Slice 18I, Mobile One-Handed Home Ergonomics, to
-  `.codex/plans/mvp-roadmap.md` as a bounded follow-up to the committed Slice
-  18H Standard Home baseline.
-- Updated `docs/OXYGEN_FULL_SPECIFICATION.md` section 53 so the immediate next
-  candidate is Slice 18I before returning to Slice 19 Saved Locations
-  Persistence.
-- Replaced the active `.codex/plans/current.md` cycle with a planned Slice 18I
-  implementation contract covering bottom thumb-zone actions, Home footer
-  clearance, stale-status visual weight, Details provenance ordering, About
-  recovery placement, focused Compose tests, and installed-app screenshots.
-- Preserved the boundary that operational provenance remains reachable from
-  Home and full provider/privacy/license explanation remains in About.
-
-Evidence:
-- `git diff --check` passed.
-- Android build/test/emulator commands were not run because this planning/status
-  sync changed only Markdown files and no Kotlin, Compose, Gradle, manifest,
-  resources, provider, persistence, or test behavior.
-
-Artifacts:
-- Planning check log:
-  `.codex/test-artifacts/2026-09-02-mobile-ui-ergonomics-review/planning-git-diff-check.log`.
-- Baseline UI review artifacts:
-  `.codex/test-artifacts/2026-09-02-mobile-ui-ergonomics-review/`.
-
-Boundaries:
-- No production UI, provider, repository, Room/DataStore, forecast mapping,
-  saved-location, unit-preference, alert, air-quality, radar, background
-  refresh, persisted appearance, installed-app MET Norway fallback, release, or
-  MVP-readiness behavior was changed.
-
-### 2026-09-02-mobile-one-handed-home-ergonomics
-
-Status: ready
-Mode: feature
-Slice: Slice 18I, Mobile One-Handed Home Ergonomics
-Commit: not committed in this turn
-
-Result:
-- First-run and change-location screens now keep manual search/disclosure
-  content scrollable above bottom-aligned Search, Use my location,
-  Settings/About, and return Back actions.
-- About overview/detail content now scrolls above a bottom Back action.
-- Home Now keeps current weather visually before refresh/stale status, while
-  keeping cached/refresh-failed context visible and reachable.
-- Details presents metric groups and source/update information before stale
-  status/provenance footer; operational provenance remains reachable from Home
-  and full explanations remain in About.
-- Scrollable Home pages have footer clearance; compact Daily retains its
-  established fixed page composition.
-
-Evidence:
-- Baseline focused unit tests passed: `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest --tests '*HomeForecast*'`.
-- Focused Home Compose instrumentation passed 24 tests on
-  `oxygen_starter(AVD) - 17`: `. scripts/android-env.sh && ./gradlew
-  :app:connectedDebugAndroidTest
-  -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
-- Installed-app real path used `scripts/list-avds.sh`, `scripts/start-emulator.sh`,
-  `scripts/install-debug.sh`, clean app data, first-run capture, manual
-  Open-Meteo geocoding search/select for Madison, Home Now/Hourly/Daily/Details,
-  change-location Back/return, About overview, and About Privacy detail.
-- Broad checks passed: `. scripts/android-env.sh && ./gradlew
-  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
-  ./gradlew :app:assembleDebug`; `git diff --check`.
-
-Artifacts:
-- Logs, screenshots, and hierarchies are under
-  `.codex/test-artifacts/2026-09-02-mobile-one-handed-home-ergonomics/`.
-- Installed evidence includes `installed-first-run-location.png`/`.xml`,
-  `installed-location-results.png`/`.xml`, `installed-home-now.png`/`.xml`,
-  `installed-home-hourly.png`/`.xml`, `installed-home-daily.png`/`.xml`,
-  `installed-home-details.png`/`.xml`, `installed-change-location.png`/`.xml`,
-  `installed-after-location-back.xml`, `installed-about-overview.png`/`.xml`,
-  and `installed-about-privacy.png`/`.xml`.
-
-Boundaries:
-- No saved-location management, Room/DataStore schema behavior, provider
-  behavior, forecast mapping, unit preferences, alerts, air quality, radar,
-  widget, background refresh, persisted appearance, installed-app MET Norway
-  fallback, release readiness, MVP readiness, or sample-weather production
-  fallback was added.
-
-### 2026-09-02-open-meteo-ready-forecast-recovery
-
-Status: committed
-Mode: fix
-Slice: Slice 18J-R, Restore Installed Open-Meteo Ready Forecast Path
-Commit: this commit
-
-Result:
-- Restored the installed manual Open-Meteo path needed by Slice 18J evidence:
-  a real Madison geocoding selection now reaches a ready Home forecast.
-- Updated `OpenMeteoGeocodingParser` so a provider empty-search body without a
-  `results` array maps to explicit empty results instead of invalid response.
-- Preserved malformed present non-array `results` as invalid response.
-- Added focused coverage for the current empty geocoding body shape and a
-  representative Madison Open-Meteo forecast repository mapping through
-  current, hourly, daily, and provenance data.
-- No Home visual redesign, saved-location list/switch/remove, unit preference,
-  MET Norway installed fallback, alert, air quality, radar, widget, release, or
+- No conditional GET request, 304 not-modified handling, provider health or
+  backoff state, provider preference UI, saved-location save/remove UI, unit
+  preference, alert, air quality, radar, release-candidate status, or
   MVP-readiness behavior was added.
 
-Evidence:
-- Baseline focused Open-Meteo tests passed before production edits.
-- Focused checks passed: `. scripts/android-env.sh && ./gradlew
-  :core:testDebugUnitTest --tests '*OpenMeteoGeocoding*'`;
-  `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests
-  '*OpenMeteo*'`.
-- Installed-app real-path evidence used `scripts/list-avds.sh`,
-  `scripts/start-emulator.sh`, `scripts/install-debug.sh`, manual
-  comma-separated Madison search, real Open-Meteo geocoding result selection,
-  and captured ready Home Now, Hourly, Daily, and Details screens.
-- Room cache behavior was exercised by disabling emulator Wi-Fi/data,
-  relaunching the app, and capturing the same Madison forecast restored from
-  cache with refresh-failed stale status.
-- Broad checks passed: `. scripts/android-env.sh && ./gradlew
-  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
-  ./gradlew :app:assembleDebug`; `git diff --check`.
-
-Artifacts:
-- Logs, live diagnostic bodies, screenshots, and hierarchies are under
-  `.codex/test-artifacts/2026-09-02-open-meteo-ready-forecast-recovery/`.
-- Installed evidence includes `installed-home-after-selection.png`/`.xml`,
-  `installed-home-hourly.png`/`.xml`, `installed-home-daily.png`/`.xml`,
-  `installed-home-details.png`/`.xml`, and
-  `installed-home-offline-restored.png`/`.xml`.
-
-Boundaries:
-- The successful ready forecast path used the real Open-Meteo provider path and
-  did not use `SampleWeather.bundle`, mocked provider success, or fabricated
-  fallback data.
-- Resume Slice 18J installed visual evidence/review next. Slice 19A remains
-  blocked until Slice 18J is committed.
-
-### 2026-09-02-standard-home-visual-convergence-resumed
+### 2026-09-03-fallback-real-path-verification
 
 Status: committed
 Mode: feature
-Slice: resumed Slice 18J, Standard Home Visual Convergence evidence and review
-Commit: this commit
+Slice: Slice 32, Fallback Real-Path Verification
+Commit: `9b9d706`
 
 Result:
-- Resumed Slice 18J after verified Slice 18J-R removed the installed
-  invalid-response blocker.
-- Installed current debug app on `oxygen_starter`, cleared app data, used the
-  real first-run manual Open-Meteo search path with query `Madison`, selected
-  `Madison, Wisconsin, United States`, and captured ready Home Now, Hourly,
-  Daily, and Details evidence.
-- Disabled emulator Wi-Fi/data, relaunched the app, and captured the same
-  Madison forecast restored from Room cache with explicit refresh-failed stale
-  context; network services were restored afterward.
-- Review found the 18J Home evidence materially more weather-first than the
-  committed Slice 18I reference: the scene foundation is visible across pages,
-  Now is dominated by the condition mark/current temperature, Hourly/Daily are
-  scan-friendly forecast surfaces, Details groups semantic metrics with
-  source/update context, and bottom navigation/actions remain subdued and
-  reachable.
-- No new Home production-code changes were made during this resumed evidence
-  pass. No saved-location list/select/remove behavior, unit preference, device
-  location expansion, MET Norway installed fallback, alert, air quality, radar,
-  widget, background refresh, release, MVP-readiness, sample-weather fallback,
-  or additional provider behavior beyond the verified 18J-R fix was added.
+- Added deterministic connected installed-boundary tests for fallback-served
+  Room restore and later Open-Meteo replacement using
+  `RoomForecastCacheStorageFactory.create(...)`,
+  `DataStoreSelectedLocationStorage`,
+  `InstalledForecastRepositoryFactory.create(...)`, and
+  `OxygenAppStateHolder`.
+- Verified fallback-served Home state keeps MET Norway source, combined
+  NLOD/CC-BY license, issued/fetched/model-estimate provenance, no sample data,
+  empty alert state, and no rendered alert section.
+- Verified a later Open-Meteo success replaces cached MET Norway data through
+  the normal selected-location refresh/cache path.
+- Reconciled `docs/data-sources/MET_NORWAY_FORECAST.md` with active
+  installed-app fallback status while leaving conditional GET/304, provider
+  health/backoff, and release-candidate fallback behavior unclaimed.
 
 Evidence:
-- Focused checks passed: `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest --tests '*HomeForecast*'`; `. scripts/android-env.sh
-  && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteo*'`; connected Home
-  instrumentation with
-  `-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`
-  finished 25 tests on `oxygen_starter(AVD) - 17`.
-- Broad checks passed: `. scripts/android-env.sh && ./gradlew
-  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
-  ./gradlew :app:assembleDebug`; `git diff --check`.
+- Baseline checks passed: app `InstalledForecastRepositoryFactoryTest`, app
+  `HomeForecastStateHolderTest`, core `FallbackWeatherRepositoryTest`, and
+  `scripts/list-avds.sh`.
+- Focused checks passed: app installed factory, app Home forecast state, core
+  fallback repository, connected `InstalledFallbackRepositoryInstrumentedTest`,
+  and connected `RoomForecastCacheStorageInstrumentedTest`.
+- Real-path exercise passed: `scripts/start-emulator.sh` and
+  `scripts/install-debug.sh` on `oxygen_starter`.
+- Broad checks passed: compileDebugKotlin, app/core debug unit tests,
+  assembleDebug, and `git diff --check`.
 
 Artifacts:
-- Logs, screenshots, and hierarchies are under
-  `.codex/test-artifacts/2026-09-02-standard-home-visual-convergence/`.
-- Resumed installed evidence includes `installed-resumed-first-run.png`/`.xml`,
-  `installed-resumed-search-results.png`/`.xml`,
-  `installed-resumed-home-now.png`/`.xml`,
-  `installed-resumed-home-hourly.png`/`.xml`,
-  `installed-resumed-home-daily.png`/`.xml`,
-  `installed-resumed-home-details.png`/`.xml`, and
-  `installed-resumed-home-offline-restored.png`/`.xml`.
-- Resumed logs include `install-debug-resumed.log`,
-  `focused-homeforecast-resumed.log`,
-  `focused-openmeteo-resumed.log`,
-  `focused-home-compose-instrumentation-resumed.log`,
-  `broad-compile-debug-kotlin-resumed.log`,
-  `broad-debug-unit-tests-resumed.log`,
-  `broad-assemble-debug-resumed.log`, and
-  `git-diff-check-resumed.log`.
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/`.
+
+Blockers:
+- Initial focused connected run failed because no device was connected. After
+  starting `oxygen_starter`, the first rerun exposed a test expectation mismatch
+  for MET Norway's combined license string; the corrected rerun passed.
 
 Boundaries:
-- Slice 19A is unblocked after this commit.
+- No production Kotlin behavior, provider semantics, Home copy, UI layout,
+  Room schema, DataStore format, selected-location behavior, saved-location
+  behavior, official alert provider behavior, conditional GET/304 handling,
+  provider health/backoff, unit preference, appearance setting, release, or
+  MVP-readiness behavior changed.
+- Live manual Open-Meteo geocoding selection was not run; deterministic
+  connected installed-boundary coverage exercised the default Open-Meteo
+  success/replacement path without relying on provider/network availability.
 
-### 2026-09-03-art-sheet-version-doc-cleanup
+### 2026-09-04-pre-19d-authority-drift-cleanup
 
-Status: ready
+Status: committed
 Mode: documentation-only
-Slice: Art-sheet version documentation cleanup
-Commit: not committed in this turn
+Slice: Pre-19D authority drift cleanup
+Commit: `2c779cc`
 
 Result:
-- Renamed the reviewable visual-language source artifact from
-  `docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.1.png` to
-  `docs/assets/oxygen-weather-visual-language-base-art-sheet-v0.2.png` so the
-  tracked filename matches the visible image title.
-- Updated `docs/OXYGEN_FULL_SPECIFICATION.md` and `.codex/plans/mvp-roadmap.md`
-  to reference Base Art Sheet v0.2.
-- Updated the live recent state summary to report no active art-sheet
-  documentation drift.
-- Replaced the stale committed Slice 18J active-cycle file with this bounded
-  documentation-only cycle record.
+- Updated specification section 53 so it no longer points future work at
+  already committed Slice 19A and now identifies Slice 19D as the next
+  implementation candidate.
+- Updated the MVP roadmap tail so Slice 32 is committed at `9b9d706`, the next
+  candidate remains Slice 19D, and startup guidance no longer asks for a Slice
+  32 plan.
+- Archived the pre-compression live cycle history and kept this live file to
+  the reading contract plus three recent cycle entries.
 
 Evidence:
 - `git diff --check` passed.
 
 Artifacts:
-- Evidence log is under
-  `.codex/test-artifacts/2026-09-03-art-sheet-version-doc-cleanup/git-diff-check.log`.
+- `.codex/test-artifacts/2026-09-04-pre-19d-authority-drift-cleanup/git-diff-check.log`.
 
 Boundaries:
-- No Kotlin, Compose, Gradle, manifest, provider, cache, selected-location,
-  saved-location, unit preference, alert, appearance setting, release, or MVP
-  behavior changed.
-- Historical cycle entries that documented the drift before this cleanup were
-  left intact.
-- Android compile, unit tests, and assemble were not run because this was a
-  documentation/asset-governance cleanup only.
-- Slice 19A remains the next implementation candidate.
+- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
+  DataStore format, forecast-cache format, UI behavior, saved-location
+  behavior, provider behavior, unit preference, alert, air quality, radar,
+  release, or MVP behavior changed.
+- Android compile, unit, connected, and assemble commands were not run because
+  this was a Markdown-only authority cleanup.
+
+### 2026-09-04-slice-19d-save-search-result-ui
+
+Status: committed
+Mode: feature
+Slice: Slice 19D, Save Search Result UI
+Commit: `8599640`
+
+Result:
+- Added a search-result save event to `OxygenAppStateHolder` that saves the
+  provider-neutral `WeatherLocation` through `SavedLocationStorage`, refreshes
+  saved rows, and reports local saved-location failures without selecting the
+  location or starting a forecast.
+- Added separate per-result `Save` and `Use now` controls to the location-entry
+  Compose surface with stable tags such as `location-entry-result-save-0` and
+  `location-entry-result-use-now-0`.
+- Hid search-result save controls when saved-location storage is unavailable.
+- Updated README status so search-result save UI is no longer listed as not
+  implemented.
+
+Evidence:
+- Baseline focused unit passed:
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRunLocationStateHolderTest' --tests '*HomeForecastStateHolderTest'`.
+- Red focused unit failed on missing `onManualLocationCandidateSaved`, then the
+  same focused unit command passed after implementation.
+- Connected Room/app-state evidence passed on rerun:
+  `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.OfflineLaunchPersistenceInstrumentedTest`.
+- Connected Compose evidence passed:
+  `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+- Installed-app exercise passed on `oxygen_starter`: searched live Open-Meteo
+  geocoding for Chicago, saw Save and Use now controls, saved Chicago into the
+  visible saved-location list without leaving location entry, then Use now
+  opened Home with Open-Meteo forecast data.
+- Broad checks passed: compileDebugKotlin, app/core debug unit tests,
+  assembleDebug, and `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/`.
+
+Blockers:
+- Initial connected Room/app-state run failed because the new test used
+  persistent DataStore selected-location state and started on Home. The test was
+  corrected to isolate selected-location storage while still using production
+  `RoomSavedLocationStorageFactory.create(...)` for the save path.
+- The installed-app exercise initially hit an emulator Pixel Launcher ANR
+  dialog. Dismissing the system dialog allowed the Oxygen installed path to be
+  exercised.
+
+Boundaries:
+- No saved-location removal UI, saved-location reordering/favorites, provider
+  changes, forecast cache/Room schema changes, DataStore format changes, unit
+  preferences, alerts, air quality, radar/maps, appearance settings, widgets,
+  background refresh, notifications, release, or MVP-readiness behavior was
+  added.
+
+### 2026-09-04-post-19d-authority-sync
+
+Status: committed
+Mode: documentation-only
+Slice: Post-19D Authority Sync
+Commit: `0fb2ce6`
+
+Result:
+- Updated specification section 53 so it no longer identifies already committed
+  Slice 19D as the next implementation candidate and now points to Slice 19E.
+- Updated the MVP roadmap so Slice 19D is committed at `8599640`, the latest
+  completed local implementation slice is Slice 19D, and the next-candidate
+  startup guidance selects Slice 19E.
+- Updated this live history summary to reflect the post-19D authority sync.
+
+Evidence:
+- `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-post-19d-authority-sync/git-diff-check.log`.
+
+Boundaries:
+- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
+  DataStore format, forecast-cache format, UI behavior, saved-location
+  behavior, provider behavior, unit preference, alert, air quality, radar,
+  release, or MVP behavior changed.
+- Android compile, unit, connected, and assemble commands were not run because
+  this was a Markdown-only authority sync.
+
+### 2026-09-04-slice-19e-remove-saved-location-ui
+
+Status: committed
+Mode: feature
+Slice: Slice 19E, Remove Saved Location UI
+Commit: committed in this changeset
+
+Result:
+- Added explicit saved-location removal handling to the installed
+  location-entry path.
+- Saved rows now expose separate select/remove controls; removal requires an
+  inline confirmation/cancel step before calling production
+  `SavedLocationStorage.removeLocation(...)`.
+- Confirmed removal refreshes only saved-location presentation state. Removing
+  the current saved location leaves selected-location storage, Room forecast
+  cache data, provider refresh requests, and the visible Home forecast
+  unchanged.
+- Updated README and About disclosure copy so saved-location removal UI is no
+  longer listed as unimplemented.
+
+Evidence:
+- Baseline focused app-state unit check passed before production edits.
+- Focused checks passed: `:app:testDebugUnitTest --tests
+  '*FirstRunLocationStateHolderTest' --tests '*HomeForecastStateHolderTest'`,
+  connected `OfflineLaunchPersistenceInstrumentedTest`, and connected
+  `HomeDashboardUiTest`.
+- Real-path exercise: `scripts/list-avds.sh`, `scripts/start-emulator.sh`, and
+  `scripts/install-debug.sh` passed on `oxygen_starter`; installed launch was
+  captured after dismissing an emulator System UI ANR dialog.
+- Broad checks passed: `:app:compileDebugKotlin`,
+  `:app:testDebugUnitTest :core:testDebugUnitTest`, `:app:assembleDebug`, and
+  `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-slice-19e-remove-saved-location-ui/`.
+
+Blockers:
+- Full manual live-geocoding creation/removal was not claimed. Deterministic
+  connected installed-boundary tests seeded production Room/DataStore/cache
+  state and exercised the app-state removal path.
+
+Boundaries:
+- No Room schema, DataStore format, forecast-cache format, provider request,
+  forecast repository, fallback-selection, unit preference, alert, air quality,
+  radar/map, appearance setting, release, or MVP-readiness behavior changed.
+
+### 2026-09-04-gate-19f-saved-locations-doc-sync
+
+Status: committed
+Mode: documentation-only
+Slice: Gate 19F, Saved Locations Documentation Sync
+Commit: `8386484`
+
+Result:
+- Replaced the completed Slice 19E active plan with a bounded Gate 19F
+  documentation-sync plan and results.
+- Updated specification section 53 so it reflects saved-location behavior
+  committed through Slice 19E at `00cb88a`, identifies Gate 19F as the current
+  documentation sync, and names Slice 20A as the next implementation candidate
+  after the sync is committed.
+- Updated the MVP roadmap so Slice 19E is committed at `00cb88a`, Gate 19F is
+  committed at `8386484`, and next-candidate guidance advances to Slice 20A.
+- Updated this live history summary to remove stale claims that 19E is
+  uncommitted or next.
+
+Evidence:
+- `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-gate-19f-saved-locations-doc-sync/git-diff-check.log`.
+
+Blockers:
+- None.
+
+Boundaries:
+- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
+  DataStore format, forecast-cache format, UI behavior, saved-location
+  behavior, provider behavior, unit preference, alert, air quality, radar,
+  release, or MVP behavior changed.
+- Android compile, unit, connected, assemble, emulator, and install commands
+  were not run because this was a Markdown-only status sync.
+
+### 2026-09-04-slice-20a-unit-preference-contract
+
+Status: committed
+Mode: feature
+Slice: Slice 20A, Unit Preference Contract
+Commit: committed in this changeset
+
+Result:
+- Added provider-neutral unit preference contract types in `:core` for
+  temperature, wind speed, pressure, precipitation, and visibility.
+- Added deterministic resolution for Metric, US, UK, and Custom preferences;
+  Custom carries explicit choices for every category.
+- Documented Metric, US, UK, and Custom preset behavior in specification
+  section 38.
+
+Evidence:
+- Baseline provider canonical check passed:
+  `:core:testDebugUnitTest --tests '*OpenMeteoForecastClientTest' --tests
+  '*OpenMeteoForecastMapperTest' --tests '*MetNoForecastMapperTest'`.
+- Red focused check failed before implementation on unresolved unit preference
+  symbols; rerun after implementation passed with
+  `:core:testDebugUnitTest --tests '*UnitPreferenceTest'`.
+- Broad checks passed: `:app:compileDebugKotlin`,
+  `:app:testDebugUnitTest :core:testDebugUnitTest`, `:app:assembleDebug`, and
+  `git diff --check`.
+- Static review found unit preference symbols only under `core.model`, with no
+  provider, cache, Room, DataStore, app UI, Home formatting, or provider request
+  adoption.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-slice-20a-unit-preference-contract/`.
+
+Blockers:
+- None.
+
+Boundaries:
+- No unit conversion math, persisted unit preference storage, Settings/Home UI,
+  Home presentation formatting, provider request units, Room schema, DataStore
+  format, forecast-cache format, saved-location storage, installed-app runtime
+  behavior, alert, air quality, radar, release, or MVP-readiness behavior
+  changed.
+- Emulator, install, connected Android tests, and screenshot capture were not
+  run because this pure provider-neutral contract slice intentionally does not
+  change installed UI or runtime behavior.

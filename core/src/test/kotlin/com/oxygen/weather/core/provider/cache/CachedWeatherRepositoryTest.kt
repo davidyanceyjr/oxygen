@@ -91,6 +91,34 @@ class CachedWeatherRepositoryTest {
     }
 
     @Test
+    fun providerSuccessWritesCacheMetadataWhenStorageSupportsIt() {
+        val providerBundle = bundle(chicago, "met-norway", sourceName = "MET Norway")
+        val cacheMetadata = ForecastCacheMetadata(
+            providerId = "met-norway",
+            expires = "Sun, 23 Aug 2026 15:00:00 GMT",
+            lastModified = "Sun, 23 Aug 2026 14:00:00 GMT",
+            etag = "\"metno-forecast\"",
+            fetchedAt = Instant.parse("2026-08-26T10:20:00Z"),
+            responseLatitude = 41.875,
+            responseLongitude = -87.625,
+            responseElevationMeters = 181.0,
+            providerUpdatedAt = Instant.parse("2026-08-26T10:15:00Z"),
+        )
+        val storage = RecordingMetadataForecastCacheStorage(storedReads = mapOf(chicago.id to providerBundle))
+
+        val success = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(
+                WeatherRepositoryResult.Success(providerBundle, cacheMetadata = cacheMetadata),
+            ),
+            storage = storage,
+        ).refresh(chicago).terminalSuccess()
+
+        assertEquals(providerBundle, success.weather)
+        assertEquals(listOf(providerBundle to cacheMetadata), storage.metadataReplacements)
+        assertEquals(cacheMetadata, storage.readCacheMetadata(chicago.id))
+    }
+
+    @Test
     fun locationIdScopesReadback() {
         val chicagoBundle = bundle(chicago, "open-meteo", temperatureC = 22.0)
         val madisonBundle = bundle(madison, "open-meteo", temperatureC = 18.0)
@@ -182,6 +210,49 @@ class CachedWeatherRepositoryTest {
         val freshness = retainedSuccess.freshness as ForecastFreshness.StaleAfterFailedRefresh
         assertEquals(Duration.ofMinutes(45), freshness.staleAge)
         assertSame(ForecastError.NetworkUnavailable, freshness.refreshFailure)
+    }
+
+    @Test
+    fun failedRefreshRetainsMetNorwayCachedForecastWithTruthfulProvenance() {
+        val cachedBundle = bundle(
+            location = chicago,
+            providerId = "met-norway",
+            sourceName = "MET Norway",
+            temperatureC = 13.0,
+        )
+        val failure = ForecastError.ProviderUnavailable("open-meteo")
+
+        val success = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Failure(failure)),
+            storage = RecordingForecastCacheStorage(storedReads = mapOf(chicago.id to cachedBundle)),
+            clock = fixedClock("2026-08-26T11:05:00Z"),
+        ).refresh(chicago).terminalSuccess()
+
+        val provenance = requireNotNull(success.weather.current).provenance
+        assertEquals("met-norway", provenance.providerId)
+        assertEquals("MET Norway", provenance.sourceName)
+        assertEquals("CC-BY-4.0", provenance.licenseId)
+        val freshness = success.freshness as ForecastFreshness.StaleAfterFailedRefresh
+        assertEquals(Duration.ofMinutes(45), freshness.staleAge)
+        assertSame(failure, freshness.refreshFailure)
+    }
+
+    @Test
+    fun openMeteoRefreshReplacesCachedMetNorwayForecastThroughCacheStorage() {
+        val metNorwayBundle = bundle(chicago, "met-norway", sourceName = "MET Norway", temperatureC = 13.0)
+        val openMeteoBundle = bundle(chicago, "open-meteo", sourceName = "Open-Meteo", temperatureC = 21.0)
+        val storage = MutableForecastCacheStorage().apply {
+            replaceBundle(metNorwayBundle)
+        }
+
+        val success = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(openMeteoBundle)),
+            storage = storage,
+        ).refresh(chicago).terminalSuccess()
+
+        assertEquals(openMeteoBundle, success.weather)
+        assertEquals(openMeteoBundle, storage.readBundle(chicago.id))
+        assertEquals("open-meteo", requireNotNull(success.weather.current).provenance.providerId)
     }
 
     @Test
@@ -414,6 +485,29 @@ private class RecordingForecastCacheStorage(
         reads += locationId
         return storedReads[locationId]
     }
+}
+
+private class RecordingMetadataForecastCacheStorage(
+    private val storedReads: Map<LocationId, WeatherBundle>,
+) : ForecastCacheMetadataStorage {
+    private val metadata = mutableMapOf<LocationId, ForecastCacheMetadata>()
+    val metadataReplacements = mutableListOf<Pair<WeatherBundle, ForecastCacheMetadata>>()
+
+    override fun replaceBundle(bundle: WeatherBundle) {
+        error("Expected metadata-aware replacement")
+    }
+
+    override fun replaceBundle(
+        bundle: WeatherBundle,
+        cacheMetadata: ForecastCacheMetadata,
+    ) {
+        metadataReplacements += bundle to cacheMetadata
+        metadata[bundle.location.id] = cacheMetadata
+    }
+
+    override fun readBundle(locationId: LocationId): WeatherBundle? = storedReads[locationId]
+
+    override fun readCacheMetadata(locationId: LocationId): ForecastCacheMetadata? = metadata[locationId]
 }
 
 private fun Sequence<WeatherRepositoryResult>.terminalSuccess(): WeatherRepositoryResult.Success =

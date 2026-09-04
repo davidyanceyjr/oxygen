@@ -9,10 +9,32 @@ import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 
 interface ForecastCacheStorage {
     fun replaceBundle(bundle: WeatherBundle)
     fun readBundle(locationId: LocationId): WeatherBundle?
+}
+
+data class ForecastCacheMetadata(
+    val providerId: String,
+    val expires: String? = null,
+    val lastModified: String? = null,
+    val etag: String? = null,
+    val fetchedAt: Instant,
+    val responseLatitude: Double? = null,
+    val responseLongitude: Double? = null,
+    val responseElevationMeters: Double? = null,
+    val providerUpdatedAt: Instant? = null,
+)
+
+interface ForecastCacheMetadataStorage : ForecastCacheStorage {
+    fun replaceBundle(
+        bundle: WeatherBundle,
+        cacheMetadata: ForecastCacheMetadata,
+    )
+
+    fun readCacheMetadata(locationId: LocationId): ForecastCacheMetadata?
 }
 
 class CachedWeatherRepository(
@@ -27,7 +49,11 @@ class CachedWeatherRepository(
                 is WeatherRepositoryResult.Failure -> yield(retainCacheAfterEligibleFailure(location, result))
                 is WeatherRepositoryResult.Success -> {
                     val readback = try {
-                        storage.replaceBundle(result.weather)
+                        if (result.cacheMetadata != null && storage is ForecastCacheMetadataStorage) {
+                            storage.replaceBundle(result.weather, result.cacheMetadata)
+                        } else {
+                            storage.replaceBundle(result.weather)
+                        }
                         storage.readBundle(location.id)
                     } catch (_: Exception) {
                         null

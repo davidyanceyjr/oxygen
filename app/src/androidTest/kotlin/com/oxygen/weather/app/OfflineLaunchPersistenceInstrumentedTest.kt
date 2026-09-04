@@ -2,6 +2,7 @@ package com.oxygen.weather.app
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.core.model.CurrentConditions
 import com.oxygen.weather.core.model.DailyForecast
 import com.oxygen.weather.core.model.DataProvenance
@@ -14,10 +15,13 @@ import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.ForecastError
+import com.oxygen.weather.core.provider.GeocodingRepository
+import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import com.oxygen.weather.core.provider.cache.CachedWeatherRepository
 import com.oxygen.weather.core.provider.cache.room.RoomForecastCacheStorageFactory
+import com.oxygen.weather.core.provider.cache.room.RoomSavedLocationStorageFactory
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -35,16 +39,26 @@ class OfflineLaunchPersistenceInstrumentedTest {
         val context = targetContext()
         val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
         val forecastCacheStorage = RoomForecastCacheStorageFactory.create(context)
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
         val location = weatherLocation(
             id = "android-installed-screenshot",
-            name = "Android Installed Screenshot City",
+            name = "Madison, Wisconsin, United States",
+        )
+        val savedComparison = weatherLocation(
+            id = "android-installed-screenshot-comparison",
+            name = "Madison, Alabama, United States",
+            latitude = 34.6993,
+            longitude = -86.7483,
         )
         val bundle = fullWeatherBundle(location)
 
         selectedLocationStorage.writeSelectedLocation(location)
+        savedLocationStorage.saveLocation(location)
+        savedLocationStorage.saveLocation(savedComparison)
         forecastCacheStorage.replaceBundle(bundle)
 
         assertEquals(location, selectedLocationStorage.readSelectedLocation())
+        assertEquals(listOf(location, savedComparison), savedLocationStorage.listLocations())
         assertEquals(bundle.location, forecastCacheStorage.readBundle(location.id)?.location)
     }
 
@@ -62,6 +76,26 @@ class OfflineLaunchPersistenceInstrumentedTest {
         storage.writeSelectedLocation(location)
 
         assertEquals(location, storage.readSelectedLocation())
+    }
+
+    @Test
+    fun removingSavedLocationWithSelectedIdLeavesDataStoreSelectedLocationUnchanged() {
+        val context = targetContext()
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
+        val location = weatherLocation(
+            id = "android-selected-saved-independent-${System.nanoTime()}",
+            name = "Android Selected Saved Independent City",
+        )
+
+        selectedLocationStorage.writeSelectedLocation(location)
+        savedLocationStorage.saveLocation(location)
+        savedLocationStorage.removeLocation(location.id)
+
+        assertEquals(location, selectedLocationStorage.readSelectedLocation())
+        assertEquals(emptyList<WeatherLocation>(), savedLocationStorage.listLocations())
+        context.deleteDatabase("oxygen_forecast_cache.db")
     }
 
     @Test
@@ -102,6 +136,177 @@ class OfflineLaunchPersistenceInstrumentedTest {
     }
 
     @Test
+    fun savedRoomLocationSelectionPersistsSelectedLocationAndRestoresMatchingRoomCache() {
+        val context = targetContext()
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
+        val forecastCacheStorage = RoomForecastCacheStorageFactory.create(context)
+        val location = weatherLocation(
+            id = "android-saved-selection-${System.nanoTime()}",
+            name = "Android Saved Selection City",
+        )
+        savedLocationStorage.saveLocation(location)
+        forecastCacheStorage.replaceBundle(fullWeatherBundle(location))
+
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocationStorage = selectedLocationStorage,
+            savedLocationStorage = savedLocationStorage,
+            forecastCacheStorage = forecastCacheStorage,
+            weatherRepository = FailingWeatherRepository,
+            forecastExecutor = DirectExecutor,
+            clock = java.time.Clock.fixed(Instant.parse("2026-08-22T12:45:00Z"), ZoneId.of("UTC")),
+        )
+
+        stateHolder.onSavedLocationSelected(location.id)
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        val stale = ready.freshness as HomeForecastFreshness.StaleAfterFailedRefresh
+        assertEquals(location, selectedLocationStorage.readSelectedLocation())
+        assertEquals(location, stateHolder.presentationState.selectedLocation)
+        assertEquals(location, ready.location)
+        assertEquals("45 minutes", stale.staleAgeText)
+        assertEquals(HomeRefreshFailureMessage.NetworkUnavailable, stale.refreshFailureMessage)
+        context.deleteDatabase("oxygen_forecast_cache.db")
+    }
+
+    @Test
+    fun locationEntryLoadsProductionRoomSavedRowsAndSelectionDrivesHomeByLocalLocationId() {
+        val context = targetContext()
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
+        val forecastCacheStorage = RoomForecastCacheStorageFactory.create(context)
+        val oldLocation = weatherLocation(
+            id = "android-location-entry-old-${System.nanoTime()}",
+            name = "Android Location Entry Old City",
+        )
+        val savedMadison = weatherLocation(
+            id = "android-location-entry-madison-${System.nanoTime()}",
+            name = "Madison, Wisconsin, United States",
+        )
+        val savedChicago = weatherLocation(
+            id = "android-location-entry-chicago-${System.nanoTime()}",
+            name = "Chicago, Illinois, United States",
+            latitude = 41.8781,
+            longitude = -87.6298,
+        )
+        savedLocationStorage.saveLocation(savedMadison)
+        savedLocationStorage.saveLocation(savedChicago)
+        forecastCacheStorage.replaceBundle(fullWeatherBundle(savedChicago))
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            selectedLocationStorage = selectedLocationStorage,
+            savedLocationStorage = savedLocationStorage,
+            forecastCacheStorage = forecastCacheStorage,
+            weatherRepository = FailingWeatherRepository,
+            forecastExecutor = DirectExecutor,
+            clock = java.time.Clock.fixed(Instant.parse("2026-08-22T12:45:00Z"), ZoneId.of("UTC")),
+        )
+
+        stateHolder.onChangeLocation()
+        val savedRows = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        stateHolder.onSavedLocationSelected(savedChicago.id)
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(listOf(savedMadison, savedChicago), savedRows.locations)
+        assertEquals(savedChicago, selectedLocationStorage.readSelectedLocation())
+        assertEquals(savedChicago.id, stateHolder.presentationState.selectedLocation?.id)
+        assertEquals(savedChicago.id, ready.location.id)
+        assertTrue(ready.dashboard.visibleText().contains("Open-Meteo"))
+        context.deleteDatabase("oxygen_forecast_cache.db")
+    }
+
+    @Test
+    fun locationEntryRemovalUsesProductionRoomStorageWithoutChangingSelectedLocationOrForecastCache() {
+        val context = targetContext()
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
+        val forecastCacheStorage = RoomForecastCacheStorageFactory.create(context)
+        val selected = weatherLocation(
+            id = "android-remove-current-${System.nanoTime()}",
+            name = "Android Remove Current City",
+        )
+        val other = weatherLocation(
+            id = "android-remove-other-${System.nanoTime()}",
+            name = "Android Remove Other City",
+            latitude = 41.8781,
+            longitude = -87.6298,
+        )
+        val cachedBundle = fullWeatherBundle(selected)
+        selectedLocationStorage.writeSelectedLocation(selected)
+        savedLocationStorage.saveLocation(selected)
+        savedLocationStorage.saveLocation(other)
+        forecastCacheStorage.replaceBundle(cachedBundle)
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = selected,
+            selectedLocationStorage = selectedLocationStorage,
+            savedLocationStorage = savedLocationStorage,
+            forecastCacheStorage = forecastCacheStorage,
+            weatherRepository = FailingWeatherRepository,
+            forecastExecutor = DirectExecutor,
+            clock = java.time.Clock.fixed(Instant.parse("2026-08-22T12:45:00Z"), ZoneId.of("UTC")),
+        )
+        val readyBefore = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        stateHolder.loadSavedLocations()
+        stateHolder.onSavedLocationRemoveRequested(selected.id)
+        stateHolder.onSavedLocationRemoveCanceled(selected.id)
+        assertEquals(listOf(selected, other), savedLocationStorage.listLocations())
+        stateHolder.onSavedLocationRemoveRequested(selected.id)
+        stateHolder.onSavedLocationRemoveConfirmed(selected.id)
+
+        val loaded = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        val readyAfter = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(listOf(other), savedLocationStorage.listLocations())
+        assertEquals(listOf(other), loaded.locations)
+        assertEquals(selected, selectedLocationStorage.readSelectedLocation())
+        assertEquals(cachedBundle, forecastCacheStorage.readBundle(selected.id))
+        assertEquals(selected.id, stateHolder.presentationState.selectedLocation?.id)
+        assertEquals(readyBefore, readyAfter)
+        context.deleteDatabase("oxygen_forecast_cache.db")
+    }
+
+    @Test
+    fun searchResultSaveUsesProductionRoomStorageAndRefreshesSavedRowsWithoutSelecting() {
+        val context = targetContext()
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val selectedLocationStorage = RecordingSelectedLocationStorage()
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
+        val searched = weatherLocation(
+            id = "android-search-save-${System.nanoTime()}",
+            name = "Android Search Save City",
+        )
+        val stateHolder = OxygenAppStateHolder(
+            geocodingRepository = StaticGeocodingRepository(searched),
+            selectedLocationStorage = selectedLocationStorage,
+            savedLocationStorage = savedLocationStorage,
+            weatherRepository = FailingWeatherRepository,
+            searchExecutor = DirectExecutor,
+            forecastExecutor = DirectExecutor,
+        )
+
+        stateHolder.onManualLocationQueryChanged("Android Search Save City")
+        stateHolder.onManualLocationSearchSubmitted()
+        val result = ((stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry)
+            .searchState as ManualLocationSearchState.Results).candidates.single()
+        stateHolder.onManualLocationCandidateSaved(result.id)
+
+        val loaded = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        assertEquals(listOf(searched), savedLocationStorage.listLocations())
+        assertEquals(listOf(searched), loaded.locations)
+        assertEquals(emptyList<WeatherLocation>(), selectedLocationStorage.writes)
+        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertFalse(stateHolder.presentationState.isShowingHome)
+        context.deleteDatabase("oxygen_forecast_cache.db")
+    }
+
+    @Test
     fun startupWithSelectedLocationAndNoRoomCacheRendersRetryableNoCacheError() {
         val context = targetContext()
         val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
@@ -137,6 +342,41 @@ private object FailingWeatherRepository : WeatherRepository {
         sequenceOf(
             WeatherRepositoryResult.Loading,
             WeatherRepositoryResult.Failure(ForecastError.NetworkUnavailable),
+        )
+}
+
+private class RecordingSelectedLocationStorage : SelectedLocationStorage {
+    val writes = mutableListOf<WeatherLocation>()
+
+    override fun readSelectedLocation(): WeatherLocation? = null
+
+    override fun writeSelectedLocation(location: WeatherLocation) {
+        writes += location
+    }
+}
+
+private class StaticGeocodingRepository(
+    private val location: WeatherLocation,
+) : GeocodingRepository {
+    override fun search(
+        query: String,
+        count: Int,
+        language: String?,
+        countryCode: String?,
+    ): Sequence<GeocodingRepositoryResult> =
+        sequenceOf(
+            GeocodingRepositoryResult.Success(
+                listOf(
+                    com.oxygen.weather.core.model.GeocodingLocationCandidate(
+                        locationId = location.id,
+                        displayName = location.displayName,
+                        point = location.point,
+                        zoneId = location.zoneId,
+                        country = "United States",
+                        countryCode = "US",
+                    ),
+                ),
+            ),
         )
 }
 

@@ -52,23 +52,27 @@ private val dataSourceSections = listOf(
         heading = "Active App Providers",
         body = listOf(
             "Forecasts: Open-Meteo is the installed-app default forecast provider for selected locations.",
+            "MET Norway can serve Home forecasts after eligible Open-Meteo terminal forecast failures.",
             "Location search: Open-Meteo Geocoding API, based on GeoNames data, powers manual place search.",
         ),
     ),
     AboutSection(
         heading = "Implemented Provider Paths",
         body = listOf(
-            "MET Norway forecast is implemented as a provider path and covered as a core fallback-selection capability.",
-            "MET Norway is not wired as the active installed-app forecast fallback in this build.",
+            "MET Norway fallback is wired through the provider-neutral installed Home forecast path.",
+            "Open-Meteo success, offline/network failure, and provider-rejected requests do not call MET Norway.",
             "Core forecast-cache persistence and foreground failed-refresh stale retention are implemented at the repository and app-state boundary.",
-            "Installed-app durable cache wiring, fallback wiring, fallback Home UI verification, and offline cache launch behavior are not implemented or verified yet.",
+            "Saved-location storage, list display, current-location marking, saved-location selection, search-result save, and confirmed saved-location removal are implemented through the installed location-entry surface.",
+            "Installed-app durable Room cache wiring and offline cache launch behavior are implemented for the selected forecast path.",
+            "Provider-specific MET Norway cache headers are persisted with cached fallback forecasts and cached fallback provenance remains provider-neutral.",
+            "Conditional GET requests, 304 not-modified handling, and release-candidate fallback verification are not implemented yet.",
         ),
     ),
     AboutSection(
         heading = "Roadmap Only",
         body = listOf(
             "NOAA/NWS alerts, Environment and Climate Change Canada alerts, and Open-Meteo/CAMS air quality are roadmap-only here.",
-            "Alerts, air quality, radar, saved locations, unit settings, and offline forecast cache behavior are not implemented in this app build.",
+            "Alerts, air quality, radar, unit settings, and release-candidate fallback behavior are not implemented.",
         ),
     ),
 )
@@ -85,15 +89,16 @@ private val privacySections = listOf(
         heading = "Active Requests",
         body = listOf(
             "Open-Meteo forecast requests send the selected coordinates, timezone, requested weather variables, and normal network metadata such as IP address.",
+            "MET Norway fallback requests send selected coordinates, optional altitude, an identifying User-Agent/contact header, and normal network metadata.",
             "Open-Meteo geocoding requests send the typed place query, bounded result count, optional locale/filter parameters where implemented, and normal network metadata such as IP address.",
             "Open-Meteo geocoding data is based on GeoNames.",
         ),
     ),
     AboutSection(
-        heading = "Implemented MET Norway Capability",
+        heading = "MET Norway Fallback",
         body = listOf(
-            "The implemented MET Norway forecast path would send selected coordinates, optional altitude when present, an identifying User-Agent/contact header, and normal network metadata such as IP address.",
-            "MET Norway provider logs and privacy handling are governed by its service terms and privacy statement. This build does not use MET Norway as active installed-app forecast fallback.",
+            "MET Norway is used only after eligible Open-Meteo terminal forecast failures.",
+            "MET Norway provider logs and privacy handling are governed by its service terms and privacy statement.",
         ),
     ),
 )

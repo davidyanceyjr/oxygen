@@ -4,8 +4,9 @@ Status: specified
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-02
+Revised: 2026-09-04
 Reconciled against remote `main`: `ca28c2c`
+Synchronized through local commit: `00cb88a`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -122,7 +123,7 @@ Release verification must prove:
 
 ## Repository Engineering Gate
 
-Status: specified
+Status: ready
 
 Release intent: Repository hygiene and durable verification are established before major persistence work and before any release, beta, contributor-readiness, or MVP-complete claim.
 
@@ -948,7 +949,7 @@ Planning note: the original Slice 19 was too broad for one active cycle. Use one
 
 ### Slice 19A: Saved Location Storage Model
 
-Status: specified
+Status: committed at `d97e2ea`
 
 Prerequisites:
 
@@ -976,7 +977,7 @@ Out of scope:
 
 ### Slice 19B: Saved Location Selection and Concurrency
 
-Status: specified
+Status: committed at `0f649aa`
 
 Prerequisite:
 
@@ -994,31 +995,121 @@ Must prove:
 - refresh remains explicit/provider-neutral;
 - a focused race test covers older completion after newer selection.
 
-### Slice 19C: Saved Locations UI
+### Slice 19C: Saved Location List and Selection UI
 
-Status: specified
+Status: committed at `e2efdd3`
 
 Prerequisites:
 
 - Slice 19B.
 - Slice 18I.
 
-Release intent: Expose saved-location management through a finished Oxygen UI.
+Release intent: Show existing saved locations on the location-entry surface and
+let users select one through the committed saved-location app-state path.
 
 Must prove:
 
 - similar place names are disambiguated;
 - current selection is obvious;
-- select/remove controls are visible;
-- destructive removal is not easy to trigger accidentally;
+- select controls are visible;
+- selecting a saved row drives Home through local `LocationId`;
 - manual search remains fully available without permission;
 - compact and large-font layouts work.
 
 Out of scope:
 
+- search-result save UI;
+- saved-location removal UI;
 - drag reorder;
 - folders;
 - automatic multi-location refresh.
+
+### Slice 19D: Save Search Result UI
+
+Status: committed at `8599640`
+
+Prerequisite:
+
+- Slice 19C.
+
+Release intent: Let users save a searched place from the location-entry surface
+without making saving a prerequisite for one-off manual selection.
+
+Must prove:
+
+- search result rows expose a clear save control;
+- saving uses production `SavedLocationStorage`;
+- save success refreshes the saved list;
+- save failure surfaces as a local saved-location failure;
+- manual `Use now` selection still works when saved storage is unavailable or
+  save fails;
+- compact and large-font layouts keep search, save, and use-now controls
+  readable and reachable.
+
+Out of scope:
+
+- saved-location removal UI;
+- drag reorder;
+- folders/groups;
+- automatic multi-location refresh.
+
+### Slice 19E: Remove Saved Location UI
+
+Status: committed at `00cb88a`
+
+Prerequisite:
+
+- Slice 19D.
+
+Release intent: Let users remove saved locations from the location-entry surface
+without accidentally deleting rows or changing the current Home forecast.
+
+Must prove:
+
+- saved rows expose a visible remove control;
+- removal requires an explicit confirmation/cancel step before production
+  storage deletion;
+- cancel does not delete;
+- confirmed removal refreshes only saved-location list state;
+- removing the currently selected location does not clear or rewrite DataStore
+  selected-location state, forecast-cache rows, or the visible Home forecast;
+- compact and large-font layouts keep remove confirmation readable and
+  reachable.
+
+Out of scope:
+
+- drag reorder;
+- folders/groups;
+- automatic multi-location refresh;
+- automatic replacement when the removed row is currently selected.
+
+### Gate 19F: Saved Locations Documentation Sync
+
+Status: committed at `8386484`
+
+Prerequisite:
+
+- Slice 19E.
+
+Release intent: Align README, roadmap, disclosure, and active-cycle status with
+the saved-location behavior actually verified in Slices 19A through 19E.
+
+Must prove:
+
+- README implemented/not-implemented saved-location claims match verified
+  installed-app behavior;
+- roadmap saved-location sub-slice status does not exceed recorded evidence;
+- data-source, privacy, cache, and provider claims remain unchanged unless a
+  saved-location slice truly changed them;
+- skipped Android commands are named and justified if the gate is
+  documentation-only.
+
+Out of scope:
+
+- app behavior;
+- provider behavior;
+- persistence schema changes;
+- release-readiness or MVP-readiness claims.
 
 ---
 
@@ -1522,7 +1613,7 @@ Planning note: split wiring from cache/provenance.
 
 ### Slice 31A: Installed-App Fallback Wiring
 
-Status: specified
+Status: committed at `4cdecdd`
 
 Prerequisites:
 
@@ -1546,7 +1637,7 @@ Saved Locations is not a prerequisite unless implementation genuinely touches sa
 
 ### Slice 31B: Fallback Cache and Provenance
 
-Status: specified
+Status: committed at `4028044`
 
 Prerequisites:
 
@@ -1564,7 +1655,7 @@ Must prove:
 
 ## Slice 32: Fallback Real-Path Verification
 
-Status: specified
+Status: committed
 
 Prerequisite:
 
@@ -1578,7 +1669,7 @@ Must prove at installed Android boundary:
 - correct source/update/provenance;
 - offline restoration of fallback-served data;
 - later successful Open-Meteo refresh;
-- official alert lookup remains independent.
+- fallback/cache replacement does not create or mutate official alert state.
 
 ---
 
@@ -1737,7 +1828,8 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 
 ## Recommended Sequence From Current Committed State
 
-Remote `main` is reconciled through merge `ca28c2c`. The latest completed implementation slice is Slice 18I at `02f701`.
+Remote `main` is reconciled through merge `ca28c2c`. The latest completed local
+implementation slice is Slice 19E, committed at `00cb88a`.
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
@@ -1747,27 +1839,30 @@ Use this as sequencing guidance, not permission to work multiple slices at once.
 4. Slice 31A — Installed-App Fallback Wiring
 5. Slice 31B — Fallback Cache and Provenance
 6. Slice 32 — Fallback Real-Path Verification
-7. Slice 20A — Unit Preference Contract
-8. Gate 20-0 — Presentation Semantics and Localization Safety
-9. Slice 20B — Unit Conversion Presentation Boundary
-10. Slice 25A — Settings Information Architecture
-11. Slice 20C — Persisted Units UI
-12. Slice 21 — Optional Device Location
-13. Slice 22 — NWS Alert Provider Contract
-14. Slice 23A — NWS Fixtures/Parsing/Mapping
-15. Slice 23B — NWS Client/Error Classification
-16. Slice 23C — Alert Repository Merge
-17. Slice 24A — Alert Summary/Banner UI
-18. Slice 24B — Alert Detail UI
-19. Gate 25 — Disclosure Baseline Check
-20. Slice 26 — Effects Preference
-21. Slice 27A / 27B — Simple Layout Definition and Selection
-22. Slice 28A / 28B — Theme Translation and Selection
-23. Slice 29 — High Contrast
-24. Gate 30 — Accessibility Presentation Verification
-25. Slice 33 — Privacy and Dependency Audit
-26. Gate 34 — About/Settings/Data-Source Release Check
-27. Gate 35 — MVP Release Candidate Verification
+7. Slice 19D — Save Search Result UI
+8. Slice 19E — Remove Saved Location UI
+9. Gate 19F — Saved Locations Documentation Sync
+10. Slice 20A — Unit Preference Contract
+11. Gate 20-0 — Presentation Semantics and Localization Safety
+12. Slice 20B — Unit Conversion Presentation Boundary
+13. Slice 25A — Settings Information Architecture
+14. Slice 20C — Persisted Units UI
+15. Slice 21 — Optional Device Location
+16. Slice 22 — NWS Alert Provider Contract
+17. Slice 23A — NWS Fixtures/Parsing/Mapping
+18. Slice 23B — NWS Client/Error Classification
+19. Slice 23C — Alert Repository Merge
+20. Slice 24A — Alert Summary/Banner UI
+21. Slice 24B — Alert Detail UI
+22. Gate 25 — Disclosure Baseline Check
+23. Slice 26 — Effects Preference
+24. Slice 27A / 27B — Simple Layout Definition and Selection
+25. Slice 28A / 28B — Theme Translation and Selection
+26. Slice 29 — High Contrast
+27. Gate 30 — Accessibility Presentation Verification
+28. Slice 33 — Privacy and Dependency Audit
+29. Gate 34 — About/Settings/Data-Source Release Check
+30. Gate 35 — MVP Release Candidate Verification
 
 Run recurring documentation-sync gates at the defined cadence.
 
@@ -1776,7 +1871,8 @@ Sequencing rationale:
 - Slice 18J-R restores the real installed Open-Meteo ready forecast path needed to verify the in-progress Slice 18J UI against production data.
 - Slice 18J completes the originally intended Standard Oxygen visual convergence before another major user-facing surface is added.
 - Saved-location persistence/switching follows immediately after 18J.
-- Installed-app MET Norway fallback is pulled forward immediately after Saved Locations because fallback is an MVP acceptance requirement and repository-only fallback evidence is insufficient for release.
+- Installed-app MET Norway fallback is pulled forward after the saved-location list/select UI because fallback is an MVP acceptance requirement and repository-only fallback evidence is insufficient for release.
+- Save-result and remove-location UI return after fallback real-path verification so Saved Locations can complete before Units.
 - Unit conversion follows once location switching and fallback provenance are stable.
 - Settings information architecture is established before multiple preference families make the current Settings/About surface too broad.
 - Appearance persistence remains after the Standard Home design system and accessibility baseline, which are already committed.
@@ -1785,20 +1881,31 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 19A: Saved Location Storage Model.
+Candidate: Slice 20A: Unit Preference Contract.
 
 Immediate planning boundary:
 
 ```text
-18I committed
--> 18J-R committed
--> resumed 18J Standard Home visual convergence evidence committed
--> 19A saved-location storage model
--> 19B selection/concurrency
--> 19C finished saved-locations UI
+18I committed at 02f701
+-> 18J-R committed at 15fc10e
+-> resumed 18J Standard Home visual convergence evidence committed at 7950a42
+-> 19A saved-location storage model committed at d97e2ea
+-> 19B selection/concurrency committed at 0f649aa
+-> 19C saved-location list/select UI committed at e2efdd3
+-> 31A installed-app fallback wiring committed at 4cdecdd
+-> 31B fallback cache and provenance committed at 4028044
+-> 32 fallback real-path verification committed at 9b9d706
+-> 19D save search result UI committed at 8599640
+-> 19E remove saved location UI committed at 00cb88a
+-> 19F saved locations documentation sync committed at 8386484
+-> next candidate: 20A unit preference contract
 ```
 
-Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate. Those implementation boundaries are historical and already committed. Slice 18J-R was a provider-path recovery slice required by the blocked Slice 18J evidence boundary, not a new visual gate.
+Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
+Those implementation boundaries are historical and already committed. Slice
+18J-R was a provider-path recovery slice required by the blocked Slice 18J
+evidence boundary, not a new visual gate.
 
-To start work, replace `.codex/plans/current.md` with one bounded Slice 19A
-plan. Do not treat later roadmap entries as active work.
+To start the next implementation slice after this authority sync is committed,
+replace `.codex/plans/current.md` with one bounded Slice 20A plan. Do not treat
+later roadmap entries as active work.

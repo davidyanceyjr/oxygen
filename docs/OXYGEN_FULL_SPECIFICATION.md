@@ -1408,10 +1408,29 @@ Visibility: km / mi
 Presets:
 
 ```text
-Metric
-US
-UK
-Custom
+Metric:
+  Temperature: °C
+  Wind: km/h
+  Pressure: hPa
+  Precipitation: mm
+  Visibility: km
+
+US:
+  Temperature: °F
+  Wind: mph
+  Pressure: inHg
+  Precipitation: in
+  Visibility: mi
+
+UK:
+  Temperature: °C
+  Wind: mph
+  Pressure: hPa
+  Precipitation: mm
+  Visibility: mi
+
+Custom:
+  Explicit user choice for every category.
 ```
 
 Unit conversion requires unit tests.
@@ -1830,7 +1849,8 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation candidate is Slice 19A: Saved Location Storage Model.
+Gate 19F: Saved Locations Documentation Sync is committed. The next
+implementation candidate is Slice 20A: Unit Preference Contract.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering,
@@ -1839,50 +1859,43 @@ committed through Slice 18J. Slice 18J-R restored the installed manual
 Open-Meteo path that selected "Madison, Wisconsin, United States" and previously
 rendered the invalid-response no-cache error instead of a ready forecast.
 
-Slice 18J-R restored the production installed path where a manually
-selected Open-Meteo geocoding result fetches, parses, maps, caches, and
-presents a usable ready forecast. The fix is in the real provider,
-request, parser, mapper, repository, cache, or state path responsible for the
-failure, not in UI suppression, sample data, mocked success, or fabricated
-fallback data. Invalid-response classification must remain meaningful for
-malformed or contract-breaking provider responses, and provider-specific
-diagnostics must not cross into Compose or user-facing Home copy.
+Saved-location storage, selected-location switching and concurrency protection,
+the installed saved-location list/select surface, search-result save UI, and
+saved-location removal UI are committed through Slices 19A, 19B, 19C, 19D, and
+19E. The installed app can persist saved locations, mark the current saved
+location, list saved rows, select an existing saved row, save a searched place,
+and remove saved rows after explicit confirmation through the local Room
+saved-location model and persisted selected local `LocationId`. Provider IDs
+must not become user-facing location identity, and switching locations must
+continue to control the Home forecast through the same lifecycle-aware app
+boundary used for selected-location and offline launch behavior so obsolete
+refreshes or stale cache emissions cannot update the wrong Home. Removing the
+currently selected saved row must continue to leave selected-location state,
+forecast-cache rows, and the visible Home forecast unchanged.
 
-Slice 18J-R must not add saved-location list/switching/removal behavior, unit
-preferences, device-location expansion, installed-app MET Norway fallback
-wiring, alerts, air quality, radar/maps, widgets, persisted appearance settings,
-release readiness, or MVP readiness. Existing manual-location,
-selected-location persistence, Room forecast-cache, stale/restored,
-refresh/retry, provenance, data-source disclosure, and Home UI semantics must
-remain intact.
+Installed-app MET Norway fallback wiring, fallback cache provenance, and
+fallback real-path verification are committed through Slices 31A, 31B, and 32.
+The installed Home path uses Open-Meteo as the default forecast provider, can
+fall back to MET Norway after eligible Open-Meteo terminal forecast failures,
+preserves truthful MET Norway source/provenance through Room cache restoration,
+and can replace fallback-served cached data with a later successful Open-Meteo
+refresh through the normal selected-location path. Conditional GET requests,
+304 not-modified handling, provider health/backoff behavior, and
+release-candidate fallback verification remain unimplemented.
 
-Resumed Slice 18J installed-app visual evidence now shows the default Standard
-Oxygen Home as deliberately weather-first, atmospheric, and recognizably Oxygen
-without changing weather provider behavior, source/update and stale
-communication, provider disclosures, selected-location behavior,
-Room/DataStore persistence, or offline cache behavior. It preserves the semantic
-Now, Hourly, Daily, and Details page model and the compact phone, large-font,
-TalkBack, touch-target, effects-disabled, and one-handed ergonomics guarantees
-already verified by Slices 18H and 18I. Composables must not parse formatted
-weather strings back into numbers or group metrics by localized display labels.
-Missing values must remain unavailable rather than fabricated.
+Gate 19F must keep README, roadmap, disclosure, and active-cycle status aligned
+with verified saved-location behavior without changing app behavior or claiming
+release readiness. Slice 20A must define unit preference behavior before unit
+conversion or persisted units UI begins. It must specify the preference model
+for temperature, wind speed, pressure, precipitation, and visibility units, and
+must not treat existing enum/scaffold values as implemented user preferences.
 
-After Slice 18J is committed with installed-app visual evidence and no
-unresolved regression against the Slice 18H/18I behavior and accessibility
-baseline, the next implementation candidate is Slice 19A: Saved Location
-Storage Model. Saved-location work must let users save, list, select, and
-remove multiple forecast locations while preserving the manual-location path
-without location permission. Saved locations must reuse the production Room
-location model and persisted selected local `LocationId`; provider IDs must not
-become user-facing location identity. Switching locations must control the Home
-forecast through the same lifecycle-aware app boundary used for
-selected-location and offline launch behavior, so obsolete refreshes or stale
-cache emissions cannot update the wrong Home.
-
-Implementation must not add unit preferences, device-location permission flow,
-alert lookup, persisted appearance settings, installed-app MET Norway fallback
-wiring, Paper/Terminal theme completion, radar, maps, air quality, widgets,
-background refresh, notifications, release-readiness, or MVP-readiness claims.
+Gate 19F must not add unit preferences, device-location permission flow, alert
+lookup, persisted appearance settings, additional provider wiring,
+Paper/Terminal theme completion, radar, maps, air quality, widgets, background
+refresh, notifications, release-readiness, or MVP-readiness claims. Slice 20A
+must remain a preference contract slice and must not add unit conversion,
+persisted units UI, provider changes, or MVP-readiness claims.
 
 ---
 

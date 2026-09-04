@@ -31,15 +31,26 @@ import com.oxygen.weather.app.FirstRunLocationMessage
 import com.oxygen.weather.app.ManualLocationCandidate
 import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.app.OxygenAppScreen
+import com.oxygen.weather.app.SavedLocationsPresentationState
 import com.oxygen.weather.core.model.LocationId
+import com.oxygen.weather.core.model.WeatherLocation
+import java.util.Locale
 
 @Composable
 fun FirstRunLocationEntryScreen(
     state: OxygenAppScreen.FirstRunLocationEntry,
+    selectedLocation: WeatherLocation?,
+    savedLocations: SavedLocationsPresentationState,
+    canSaveSearchResults: Boolean = false,
     onQueryChanged: (String) -> Unit,
     onSearch: () -> Unit,
     onRetry: () -> Unit,
     onCandidateSelected: (LocationId) -> Unit,
+    onCandidateSaved: (LocationId) -> Unit = {},
+    onSavedLocationSelected: (LocationId) -> Unit,
+    onSavedLocationRemoveRequested: (LocationId) -> Unit = {},
+    onSavedLocationRemoveCanceled: (LocationId) -> Unit = {},
+    onSavedLocationRemoveConfirmed: (LocationId) -> Unit = {},
     onUseMyLocation: () -> Unit,
     onBack: () -> Unit,
     onOpenAbout: () -> Unit,
@@ -89,11 +100,21 @@ fun FirstRunLocationEntryScreen(
                 state.message?.let { message ->
                     FirstRunMessage(message)
                 }
+                SavedLocationsContent(
+                    savedLocations = savedLocations,
+                    selectedLocation = selectedLocation,
+                    onSavedLocationSelected = onSavedLocationSelected,
+                    onSavedLocationRemoveRequested = onSavedLocationRemoveRequested,
+                    onSavedLocationRemoveCanceled = onSavedLocationRemoveCanceled,
+                    onSavedLocationRemoveConfirmed = onSavedLocationRemoveConfirmed,
+                )
                 ManualLocationSearchContent(
                     searchState = state.searchState,
                     retryLabel = state.retryLabel,
+                    canSaveSearchResults = canSaveSearchResults,
                     onRetry = onRetry,
                     onCandidateSelected = onCandidateSelected,
+                    onCandidateSaved = onCandidateSaved,
                 )
                 SearchDisclosure(
                     disclosure = state.geocodingDisclosure,
@@ -110,6 +131,194 @@ fun FirstRunLocationEntryScreen(
         }
     }
 }
+
+@Composable
+private fun SavedLocationsContent(
+    savedLocations: SavedLocationsPresentationState,
+    selectedLocation: WeatherLocation?,
+    onSavedLocationSelected: (LocationId) -> Unit,
+    onSavedLocationRemoveRequested: (LocationId) -> Unit,
+    onSavedLocationRemoveCanceled: (LocationId) -> Unit,
+    onSavedLocationRemoveConfirmed: (LocationId) -> Unit,
+) {
+    when (savedLocations) {
+        SavedLocationsPresentationState.NotLoaded -> Unit
+        SavedLocationsPresentationState.Loading -> SavedLocationsStatus("Loading saved locations")
+        is SavedLocationsPresentationState.Failure -> SavedLocationsStatus(savedLocations.message.text)
+        is SavedLocationsPresentationState.Loaded -> {
+            if (savedLocations.locations.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.testTag("location-entry-saved-locations"),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = "Saved locations",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    savedLocations.locations.forEachIndexed { index, location ->
+                        SavedLocationRow(
+                            location = location,
+                            index = index,
+                            isSelected = location.id == selectedLocation?.id,
+                            isPendingRemoval = location.id == savedLocations.pendingRemovalLocationId,
+                            onSelected = { onSavedLocationSelected(location.id) },
+                            onRemoveRequested = { onSavedLocationRemoveRequested(location.id) },
+                            onRemoveCanceled = { onSavedLocationRemoveCanceled(location.id) },
+                            onRemoveConfirmed = { onSavedLocationRemoveConfirmed(location.id) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SavedLocationsStatus(text: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier
+                .padding(14.dp)
+                .testTag("location-entry-saved-location-status"),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+@Composable
+private fun SavedLocationRow(
+    location: WeatherLocation,
+    index: Int,
+    isSelected: Boolean,
+    isPendingRemoval: Boolean,
+    onSelected: () -> Unit,
+    onRemoveRequested: () -> Unit,
+    onRemoveCanceled: () -> Unit,
+    onRemoveConfirmed: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("location-entry-saved-location-$index"),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = location.savedLocationTitle(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = location.savedLocationSubtitle(),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = "${location.coordinateText()} | ${location.zoneId.id}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+            )
+            if (isSelected) {
+                Text(
+                    text = "Current",
+                    modifier = Modifier.testTag("location-entry-saved-current-$index"),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Button(
+                onClick = onSelected,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("location-entry-saved-location-select-$index"),
+            ) {
+                Text("Select saved location")
+            }
+            OutlinedButton(
+                onClick = onRemoveRequested,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("location-entry-saved-location-remove-$index"),
+            ) {
+                Text("Remove saved location")
+            }
+            if (isPendingRemoval) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("location-entry-saved-remove-confirmation-$index"),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Remove ${location.savedLocationTitle()} from saved locations?",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = onRemoveCanceled,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp)
+                                    .testTag("location-entry-saved-remove-cancel-$index"),
+                            ) {
+                                Text("Cancel")
+                            }
+                            Button(
+                                onClick = onRemoveConfirmed,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp)
+                                    .testTag("location-entry-saved-remove-confirm-$index"),
+                            ) {
+                                Text("Remove")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun WeatherLocation.savedLocationTitle(): String =
+    displayName.split(",")
+        .firstOrNull()
+        ?.trim()
+        ?.ifBlank { null }
+        ?: displayName
+
+private fun WeatherLocation.savedLocationSubtitle(): String =
+    displayName.split(",")
+        .drop(1)
+        .joinToString(", ") { it.trim() }
+        .ifBlank { displayName }
+
+private fun WeatherLocation.coordinateText(): String =
+    String.format(Locale.US, "%.4f, %.4f", point.latitude, point.longitude)
 
 @Composable
 private fun LocationEntryBottomActions(
@@ -170,8 +379,10 @@ private fun LocationEntryBottomActions(
 private fun ManualLocationSearchContent(
     searchState: ManualLocationSearchState,
     retryLabel: String,
+    canSaveSearchResults: Boolean,
     onRetry: () -> Unit,
     onCandidateSelected: (LocationId) -> Unit,
+    onCandidateSaved: (LocationId) -> Unit,
 ) {
     when (searchState) {
         ManualLocationSearchState.Idle -> Unit
@@ -187,9 +398,12 @@ private fun ManualLocationSearchContent(
         is ManualLocationSearchState.Results -> Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            searchState.candidates.forEach { candidate ->
+            searchState.candidates.forEachIndexed { index, candidate ->
                 ManualLocationCandidateRow(
                     candidate = candidate,
+                    index = index,
+                    canSave = canSaveSearchResults,
+                    onSaved = { onCandidateSaved(candidate.id) },
                     onSelected = { onCandidateSelected(candidate.id) },
                 )
             }
@@ -212,10 +426,15 @@ private fun ManualLocationSearchContent(
 @Composable
 private fun ManualLocationCandidateRow(
     candidate: ManualLocationCandidate,
+    index: Int,
+    canSave: Boolean,
+    onSaved: () -> Unit,
     onSelected: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("location-entry-result-$index"),
         color = MaterialTheme.colorScheme.surfaceVariant,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
@@ -238,11 +457,25 @@ private fun ManualLocationCandidateRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
             )
+            if (canSave) {
+                OutlinedButton(
+                    onClick = onSaved,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .testTag("location-entry-result-save-$index"),
+                ) {
+                    Text("Save")
+                }
+            }
             Button(
                 onClick = onSelected,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("location-entry-result-use-now-$index"),
             ) {
-                Text("Select")
+                Text("Use now")
             }
         }
     }

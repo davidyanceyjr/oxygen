@@ -41,6 +41,9 @@ fun OxygenApp(
         when (val screen = appState.screen) {
             is OxygenAppScreen.FirstRunLocationEntry -> FirstRunLocationEntryScreen(
                 state = screen,
+                selectedLocation = appState.selectedLocation,
+                savedLocations = appState.savedLocations,
+                canSaveSearchResults = stateHolder.canSaveSearchResults,
                 onQueryChanged = {
                     stateHolder.onManualLocationQueryChanged(it)
                     appState = stateHolder.presentationState
@@ -55,6 +58,26 @@ fun OxygenApp(
                 },
                 onCandidateSelected = {
                     stateHolder.onManualLocationCandidateSelected(it)
+                    appState = stateHolder.presentationState
+                },
+                onCandidateSaved = {
+                    stateHolder.onManualLocationCandidateSaved(it)
+                    appState = stateHolder.presentationState
+                },
+                onSavedLocationSelected = {
+                    stateHolder.onSavedLocationSelected(it)
+                    appState = stateHolder.presentationState
+                },
+                onSavedLocationRemoveRequested = {
+                    stateHolder.onSavedLocationRemoveRequested(it)
+                    appState = stateHolder.presentationState
+                },
+                onSavedLocationRemoveCanceled = {
+                    stateHolder.onSavedLocationRemoveCanceled(it)
+                    appState = stateHolder.presentationState
+                },
+                onSavedLocationRemoveConfirmed = {
+                    stateHolder.onSavedLocationRemoveConfirmed(it)
                     appState = stateHolder.presentationState
                 },
                 onUseMyLocation = {

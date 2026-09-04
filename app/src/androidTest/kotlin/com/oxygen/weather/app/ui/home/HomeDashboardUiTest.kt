@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
@@ -44,15 +45,20 @@ import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.HomeMetricIdentity
 import com.oxygen.weather.app.HomeSuccessSection
 import com.oxygen.weather.app.AboutSurfaceId
+import com.oxygen.weather.app.ManualLocationCandidate
+import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.app.OxygenApp
 import com.oxygen.weather.app.OxygenAppScreen
 import com.oxygen.weather.app.OxygenAppStateHolder
+import com.oxygen.weather.app.SavedLocationsMessage
+import com.oxygen.weather.app.SavedLocationsPresentationState
 import com.oxygen.weather.app.ui.about.AboutScreen
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
 import com.oxygen.weather.app.ui.firstrun.FirstRunLocationEntryScreen
 import com.oxygen.weather.app.ui.theme.EffectsLevel
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenTheme
+import com.oxygen.weather.core.location.SavedLocationStorage
 import com.oxygen.weather.core.model.AlertSeverity
 import com.oxygen.weather.core.model.CurrentConditions
 import com.oxygen.weather.core.model.DailyForecast
@@ -268,10 +274,13 @@ class HomeDashboardUiTest {
         composeRule.setCompactContent {
             FirstRunLocationEntryScreen(
                 state = OxygenAppScreen.FirstRunLocationEntry(query = "Madison"),
+                selectedLocation = null,
+                savedLocations = SavedLocationsPresentationState.NotLoaded,
                 onQueryChanged = {},
                 onSearch = {},
                 onRetry = {},
                 onCandidateSelected = {},
+                onSavedLocationSelected = {},
                 onUseMyLocation = {},
                 onBack = {},
                 onOpenAbout = {},
@@ -292,6 +301,358 @@ class HomeDashboardUiTest {
             "location-entry-search-field",
             "location-entry-actions",
         )
+    }
+
+    @Test
+    fun savedLocationRowsDisambiguateCurrentSelectionAndExposeSelectControls() {
+        val madisonWisconsin = weatherLocation(
+            id = "saved-madison-wi",
+            name = "Madison, Wisconsin, United States",
+        )
+        val madisonAlabama = weatherLocation(
+            id = "saved-madison-al",
+            name = "Madison, Alabama, United States",
+        ).copy(point = GeoPoint(34.6993, -86.7483))
+        val selectedIds = mutableListOf<LocationId>()
+
+        composeRule.setCompactContent(heightDp = 900) {
+            FirstRunLocationEntryScreen(
+                state = OxygenAppScreen.FirstRunLocationEntry(query = "Madison"),
+                selectedLocation = madisonWisconsin,
+                savedLocations = SavedLocationsPresentationState.Loaded(
+                    listOf(madisonWisconsin, madisonAlabama),
+                ),
+                onQueryChanged = {},
+                onSearch = {},
+                onRetry = {},
+                onCandidateSelected = {},
+                onSavedLocationSelected = { selectedIds += it },
+                onUseMyLocation = {},
+                onBack = {},
+                onOpenAbout = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("location-entry-saved-locations").assertIsDisplayed()
+        composeRule.onNodeWithTag("location-entry-saved-location-0").assertIsDisplayed()
+        composeRule.onNodeWithTag("location-entry-saved-location-1").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Madison").assertCountEquals(3)
+        composeRule.onNodeWithText("Wisconsin, United States").assertIsDisplayed()
+        composeRule.onNodeWithText("Alabama, United States").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("43.0731, -89.4012 | America/Chicago").assertExists()
+        composeRule.onNodeWithTag("location-entry-saved-current-0").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("location-entry-saved-current-1").assertCountEquals(0)
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "location-entry-saved-location-select-0",
+            "location-entry-saved-location-select-1",
+        )
+
+        composeRule.onNodeWithTag("location-entry-saved-location-select-1")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(madisonAlabama.id), selectedIds)
+    }
+
+    @Test
+    fun savedLocationRowsExposeRemoveConfirmationCancelAndConfirmControls() {
+        val madison = weatherLocation(
+            id = "saved-remove-ui-madison",
+            name = "Madison, Wisconsin, United States",
+        )
+        val confirmedIds = mutableListOf<LocationId>()
+        val pendingRemoval = mutableStateOf<LocationId?>(null)
+
+        composeRule.setCompactContent(heightDp = 920, fontScale = 1.35f) {
+            FirstRunLocationEntryScreen(
+                state = OxygenAppScreen.FirstRunLocationEntry(query = "Madison"),
+                selectedLocation = madison,
+                savedLocations = SavedLocationsPresentationState.Loaded(
+                    locations = listOf(madison),
+                    pendingRemovalLocationId = pendingRemoval.value,
+                ),
+                onQueryChanged = {},
+                onSearch = {},
+                onRetry = {},
+                onCandidateSelected = {},
+                onSavedLocationSelected = {},
+                onSavedLocationRemoveRequested = { pendingRemoval.value = it },
+                onSavedLocationRemoveCanceled = { pendingRemoval.value = null },
+                onSavedLocationRemoveConfirmed = { confirmedIds += it },
+                onUseMyLocation = {},
+                onBack = {},
+                onOpenAbout = {},
+            )
+        }
+
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "location-entry-saved-location-select-0",
+            "location-entry-saved-location-remove-0",
+        )
+        composeRule.onNodeWithTag("location-entry-saved-location-remove-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("location-entry-saved-remove-confirmation-0")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "location-entry-saved-remove-cancel-0",
+            "location-entry-saved-remove-confirm-0",
+        )
+        composeRule.onNodeWithTag("location-entry-saved-remove-cancel-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onAllNodesWithTag("location-entry-saved-remove-confirmation-0").assertCountEquals(0)
+        composeRule.onNodeWithTag("location-entry-saved-location-0").performScrollTo().assertIsDisplayed()
+        assertEquals(emptyList<LocationId>(), confirmedIds)
+
+        composeRule.onNodeWithTag("location-entry-saved-location-remove-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("location-entry-saved-remove-confirm-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(madison.id), confirmedIds)
+    }
+
+    @Test
+    fun emptySavedLocationListDoesNotRenderFakeRowsAndKeepsManualSearchUsable() {
+        composeRule.setCompactContent(heightDp = 760) {
+            FirstRunLocationEntryScreen(
+                state = OxygenAppScreen.FirstRunLocationEntry(query = "Milwaukee"),
+                selectedLocation = null,
+                savedLocations = SavedLocationsPresentationState.Loaded(emptyList()),
+                onQueryChanged = {},
+                onSearch = {},
+                onRetry = {},
+                onCandidateSelected = {},
+                onSavedLocationSelected = {},
+                onUseMyLocation = {},
+                onBack = {},
+                onOpenAbout = {},
+            )
+        }
+
+        composeRule.onAllNodesWithTag("location-entry-saved-locations").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("location-entry-saved-location-0").assertCountEquals(0)
+        composeRule.onNodeWithTag("location-entry-search-field").assertIsDisplayed()
+        composeRule.onNodeWithTag("location-entry-search").assertIsDisplayed()
+        composeRule.onNodeWithText("Use my location").assertIsDisplayed()
+    }
+
+    @Test
+    fun searchResultRowsExposeSeparateSaveAndUseNowControlsWithStableTags() {
+        val madison = weatherLocation(
+            id = "result-save-ui-madison",
+            name = "Madison, Wisconsin, United States",
+        )
+        val savedIds = mutableListOf<LocationId>()
+        val selectedIds = mutableListOf<LocationId>()
+
+        composeRule.setCompactContent(heightDp = 900, fontScale = 1.4f) {
+            FirstRunLocationEntryScreen(
+                state = OxygenAppScreen.FirstRunLocationEntry(
+                    query = "Madison",
+                    submittedQuery = "Madison",
+                    searchState = ManualLocationSearchState.Results(
+                        query = "Madison",
+                        candidates = listOf(manualCandidate(madison)),
+                    ),
+                ),
+                selectedLocation = null,
+                savedLocations = SavedLocationsPresentationState.Loaded(emptyList()),
+                canSaveSearchResults = true,
+                onQueryChanged = {},
+                onSearch = {},
+                onRetry = {},
+                onCandidateSelected = { selectedIds += it },
+                onCandidateSaved = { savedIds += it },
+                onSavedLocationSelected = {},
+                onUseMyLocation = {},
+                onBack = {},
+                onOpenAbout = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("location-entry-result-0").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Madison, Wisconsin, United States").assertIsDisplayed()
+        composeRule.onNodeWithText("43.0731, -89.4012 | America/Chicago").assertExists()
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "location-entry-result-save-0",
+            "location-entry-result-use-now-0",
+        )
+
+        composeRule.onNodeWithTag("location-entry-result-save-0").performScrollTo().performClick()
+        composeRule.onNodeWithTag("location-entry-result-use-now-0").performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(madison.id), savedIds)
+        assertEquals(listOf(madison.id), selectedIds)
+    }
+
+    @Test
+    fun searchResultRowsHideSaveControlWhenSavedStorageIsUnavailable() {
+        val madison = weatherLocation(
+            id = "result-no-save-ui-madison",
+            name = "Madison, Wisconsin, United States",
+        )
+
+        composeRule.setCompactContent(heightDp = 820) {
+            FirstRunLocationEntryScreen(
+                state = OxygenAppScreen.FirstRunLocationEntry(
+                    query = "Madison",
+                    submittedQuery = "Madison",
+                    searchState = ManualLocationSearchState.Results(
+                        query = "Madison",
+                        candidates = listOf(manualCandidate(madison)),
+                    ),
+                ),
+                selectedLocation = null,
+                savedLocations = SavedLocationsPresentationState.NotLoaded,
+                canSaveSearchResults = false,
+                onQueryChanged = {},
+                onSearch = {},
+                onRetry = {},
+                onCandidateSelected = {},
+                onCandidateSaved = {},
+                onSavedLocationSelected = {},
+                onUseMyLocation = {},
+                onBack = {},
+                onOpenAbout = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("location-entry-result-0").performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithTag("location-entry-result-save-0").assertCountEquals(0)
+        composeRule.onNodeWithTag("location-entry-result-use-now-0").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun savedLocationFailureIsVisibleAndManualSearchCanStillSelect() {
+        val oldLocation = weatherLocation(id = "manual-old-after-saved-failure", name = "Old Saved Failure City")
+        val searchedLocation = weatherLocation(id = "manual-new-after-saved-failure", name = "Manual Result City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation))),
+            listOf(WeatherRepositoryResult.Loading),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            geocodingRepository = StaticGeocodingRepository(searchedLocation),
+            weatherRepository = repository,
+            savedLocationStorage = FailingSavedLocationStorage,
+            searchExecutor = DirectExecutor,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            OxygenApp(stateHolder = stateHolder)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-change-location").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText(SavedLocationsMessage.LocalStateUnavailable.text).assertIsDisplayed()
+        composeRule.onNodeWithTag("location-entry-search-field").performTextInput("Manual Result City")
+        composeRule.onNodeWithTag("location-entry-search").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Use now").performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(oldLocation, searchedLocation), repository.locations)
+        composeRule.onNodeWithText("Loading weather for Manual Result City").assertIsDisplayed()
+    }
+
+    @Test
+    fun oxygenAppLocationActionLoadsSavedRowsAndSavedSelectRequestsHomeForecast() {
+        val oldLocation = weatherLocation(id = "old-saved-ui", name = "Old Saved UI City")
+        val savedMadison = weatherLocation(id = "saved-ui-madison", name = "Madison, Wisconsin, United States")
+        val savedChicago = weatherLocation(id = "saved-ui-chicago", name = "Chicago, Illinois, United States")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation))),
+            listOf(WeatherRepositoryResult.Loading),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            weatherRepository = repository,
+            savedLocationStorage = RecordingSavedLocationStorage(listOf(savedMadison, savedChicago)),
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            OxygenApp(stateHolder = stateHolder)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-change-location").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("location-entry-saved-locations").assertIsDisplayed()
+        composeRule.onNodeWithText("Madison").assertIsDisplayed()
+        composeRule.onNodeWithText("Wisconsin, United States").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Chicago").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Illinois, United States").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("location-entry-saved-location-select-1")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(oldLocation, savedChicago), repository.locations)
+        composeRule.onNodeWithText("Loading weather for Chicago, Illinois, United States").assertIsDisplayed()
+    }
+
+    @Test
+    fun oxygenAppSavedLocationRemoveCancelPreservesRowAndConfirmRefreshesSavedListOnly() {
+        val oldLocation = weatherLocation(id = "old-saved-remove-ui", name = "Old Saved Remove UI City")
+        val savedMadison = weatherLocation(id = "saved-remove-ui-app-madison", name = "Madison, Wisconsin, United States")
+        val savedChicago = weatherLocation(id = "saved-remove-ui-app-chicago", name = "Chicago, Illinois, United States")
+        val repository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation))))
+        val storage = RecordingSavedLocationStorage(listOf(savedMadison, savedChicago))
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            weatherRepository = repository,
+            savedLocationStorage = storage,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            OxygenApp(stateHolder = stateHolder)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-change-location").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("location-entry-saved-location-remove-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.onNodeWithTag("location-entry-saved-remove-cancel-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Madison").performScrollTo().assertIsDisplayed()
+        assertEquals(emptyList<LocationId>(), storage.removals)
+
+        composeRule.onNodeWithTag("location-entry-saved-location-remove-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.onNodeWithTag("location-entry-saved-remove-confirm-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onAllNodesWithText("Madison").assertCountEquals(0)
+        composeRule.onNodeWithText("Chicago").performScrollTo().assertIsDisplayed()
+        assertEquals(listOf(savedMadison.id), storage.removals)
+        assertEquals(listOf(oldLocation), repository.locations)
     }
 
     @Test
@@ -963,7 +1324,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("Search").performClick()
         composeRule.waitForIdle()
         composeRule.onAllNodesWithText("New Compose City").assertCountEquals(2)
-        composeRule.onNodeWithText("Select").performScrollTo().performClick()
+        composeRule.onNodeWithText("Use now").performScrollTo().performClick()
         composeRule.waitForIdle()
 
         assertEquals(listOf(oldLocation, newLocation), repository.locations)
@@ -1018,6 +1379,16 @@ private fun ComposeContentTestRule.setCompactContent(
     }
 }
 
+private fun manualCandidate(location: WeatherLocation): ManualLocationCandidate =
+    ManualLocationCandidate(
+        id = location.id,
+        title = location.displayName,
+        subtitle = "Wisconsin, United States",
+        coordinateText = "43.0731, -89.4012",
+        timezoneText = location.zoneId.id,
+        location = location,
+    )
+
 private object DirectExecutor : Executor {
     override fun execute(command: Runnable) = command.run()
 }
@@ -1059,6 +1430,33 @@ private class StaticGeocodingRepository(
                 ),
             ),
         )
+}
+
+private class RecordingSavedLocationStorage(
+    initialLocations: List<WeatherLocation>,
+) : SavedLocationStorage {
+    private val locations = initialLocations.toMutableList()
+    val removals = mutableListOf<LocationId>()
+
+    override fun saveLocation(location: WeatherLocation) {
+        locations.removeAll { it.id == location.id }
+        locations += location
+    }
+
+    override fun listLocations(): List<WeatherLocation> = locations.toList()
+
+    override fun removeLocation(locationId: LocationId) {
+        removals += locationId
+        locations.removeAll { it.id == locationId }
+    }
+}
+
+private object FailingSavedLocationStorage : SavedLocationStorage {
+    override fun saveLocation(location: WeatherLocation) = error("saved-location save failed")
+
+    override fun listLocations(): List<WeatherLocation> = error("saved-location list failed")
+
+    override fun removeLocation(locationId: LocationId) = error("saved-location remove failed")
 }
 
 private fun ComposeTestRule.assertVerticalOrder(vararg tags: String) {
@@ -1103,6 +1501,15 @@ private fun ComposeTestRule.assertWithinRootBounds(vararg tags: String) {
 
 private fun ComposeTestRule.assertMinimumTouchTarget(vararg tags: String) {
     tags.forEach { tag ->
+        val rect = onAllNodesWithTag(tag).fetchSemanticsNodes().single().boundsInRoot
+        assertTrue("$tag should be at least 48dp wide", rect.width >= 48f)
+        assertTrue("$tag should be at least 48dp tall", rect.height >= 48f)
+    }
+}
+
+private fun ComposeTestRule.assertMinimumTouchTargetAfterScroll(vararg tags: String) {
+    tags.forEach { tag ->
+        onNodeWithTag(tag).performScrollTo()
         val rect = onAllNodesWithTag(tag).fetchSemanticsNodes().single().boundsInRoot
         assertTrue("$tag should be at least 48dp wide", rect.width >= 48f)
         assertTrue("$tag should be at least 48dp tall", rect.height >= 48f)
