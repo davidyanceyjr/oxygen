@@ -36,7 +36,8 @@ ledger states.
   committed at `00cb88a`.
 - Last committed documentation sync: Gate 19F, Saved Locations Documentation
   Sync, committed at `8386484`.
-- Current next implementation candidate: Slice 20A, Unit Preference Contract.
+- Current active planning target: Slice 20A, Unit Preference Contract. Keep it
+  bounded to preference-contract behavior before conversion/UI work.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -332,3 +333,48 @@ Boundaries:
   release, or MVP behavior changed.
 - Android compile, unit, connected, assemble, emulator, and install commands
   were not run because this was a Markdown-only status sync.
+
+### 2026-09-04-slice-20a-unit-preference-contract
+
+Status: committed
+Mode: feature
+Slice: Slice 20A, Unit Preference Contract
+Commit: committed in this changeset
+
+Result:
+- Added provider-neutral unit preference contract types in `:core` for
+  temperature, wind speed, pressure, precipitation, and visibility.
+- Added deterministic resolution for Metric, US, UK, and Custom preferences;
+  Custom carries explicit choices for every category.
+- Documented Metric, US, UK, and Custom preset behavior in specification
+  section 38.
+
+Evidence:
+- Baseline provider canonical check passed:
+  `:core:testDebugUnitTest --tests '*OpenMeteoForecastClientTest' --tests
+  '*OpenMeteoForecastMapperTest' --tests '*MetNoForecastMapperTest'`.
+- Red focused check failed before implementation on unresolved unit preference
+  symbols; rerun after implementation passed with
+  `:core:testDebugUnitTest --tests '*UnitPreferenceTest'`.
+- Broad checks passed: `:app:compileDebugKotlin`,
+  `:app:testDebugUnitTest :core:testDebugUnitTest`, `:app:assembleDebug`, and
+  `git diff --check`.
+- Static review found unit preference symbols only under `core.model`, with no
+  provider, cache, Room, DataStore, app UI, Home formatting, or provider request
+  adoption.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-slice-20a-unit-preference-contract/`.
+
+Blockers:
+- None.
+
+Boundaries:
+- No unit conversion math, persisted unit preference storage, Settings/Home UI,
+  Home presentation formatting, provider request units, Room schema, DataStore
+  format, forecast-cache format, saved-location storage, installed-app runtime
+  behavior, alert, air quality, radar, release, or MVP-readiness behavior
+  changed.
+- Emulator, install, connected Android tests, and screenshot capture were not
+  run because this pure provider-neutral contract slice intentionally does not
+  change installed UI or runtime behavior.

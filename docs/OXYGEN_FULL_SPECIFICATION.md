@@ -1408,10 +1408,29 @@ Visibility: km / mi
 Presets:
 
 ```text
-Metric
-US
-UK
-Custom
+Metric:
+  Temperature: °C
+  Wind: km/h
+  Pressure: hPa
+  Precipitation: mm
+  Visibility: km
+
+US:
+  Temperature: °F
+  Wind: mph
+  Pressure: inHg
+  Precipitation: in
+  Visibility: mi
+
+UK:
+  Temperature: °C
+  Wind: mph
+  Pressure: hPa
+  Precipitation: mm
+  Visibility: mi
+
+Custom:
+  Explicit user choice for every category.
 ```
 
 Unit conversion requires unit tests.
