@@ -1,11 +1,12 @@
 # Oxygen MVP Release Map
 
-Status: committed in this changeset
+Status: specified
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-02
+Revised: 2026-09-04
 Reconciled against remote `main`: `ca28c2c`
+Synchronized through local commit: `9b9d706`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -1654,7 +1655,7 @@ Must prove:
 
 ## Slice 32: Fallback Real-Path Verification
 
-Status: ready
+Status: committed
 
 Prerequisite:
 
@@ -1828,7 +1829,7 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 ## Recommended Sequence From Current Committed State
 
 Remote `main` is reconciled through merge `ca28c2c`. The latest completed local
-implementation slice is Slice 32, committed in this changeset.
+implementation slice is Slice 32, committed at `9b9d706`.
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
@@ -1893,7 +1894,7 @@ Immediate planning boundary:
 -> 19C saved-location list/select UI committed at e2efdd3
 -> 31A installed-app fallback wiring committed at 4cdecdd
 -> 31B fallback cache and provenance committed at 4028044
--> 32 fallback real-path verification committed in this changeset
+-> 32 fallback real-path verification committed at 9b9d706
 -> next candidate: 19D save search result UI
 -> then 19E remove saved location UI and 19F saved locations documentation sync
 ```
@@ -1903,6 +1904,6 @@ Those implementation boundaries are historical and already committed. Slice
 18J-R was a provider-path recovery slice required by the blocked Slice 18J
 evidence boundary, not a new visual gate.
 
-To start the next implementation slice after committing Slice 31B, replace
-`.codex/plans/current.md` with one bounded Slice 32 plan. Do not treat later
+To start the next implementation slice after this authority cleanup, replace
+`.codex/plans/current.md` with one bounded Slice 19D plan. Do not treat later
 roadmap entries as active work.

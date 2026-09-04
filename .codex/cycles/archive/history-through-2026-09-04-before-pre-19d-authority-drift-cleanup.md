@@ -17,7 +17,6 @@ Older detailed history is retained in:
 .codex/cycles/archive/history-through-2026-09-03-before-post-19c-doc-sync.md
 .codex/cycles/archive/history-through-2026-09-03-before-slice-32-planning.md
 .codex/cycles/archive/history-through-2026-09-04-before-plan-gap-fixes.md
-.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md
 ```
 
 When adding a new history entry, append it to this file as a self-contained
@@ -32,16 +31,84 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 32, Fallback Real-Path
-  Verification, committed at `9b9d706`.
-- Current documentation drift under review: none known after pre-19D authority
-  cleanup reconciled stale specification, roadmap, and live-history wording
-  that still pointed at already committed Slice 19A/Slice 32 work.
+- Last committed implementation slice: Slice 31B, Fallback Cache and
+  Provenance, committed at `4028044`.
+- Latest ready-to-commit slice: Slice 32, Fallback Real-Path Verification,
+  committed in this changeset.
+- Current documentation drift under review: none known. Slice 32 reconciled the
+  MET Norway provider contract with verified active installed-app fallback
+  status while leaving conditional GET/304, provider health/backoff, and
+  release-candidate fallback behavior unclaimed.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
-  `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
+  `.codex/cycles/archive/history-through-2026-09-04-before-plan-gap-fixes.md`.
 
 ## Recent Cycles
+
+### 2026-09-03-post-19c-doc-sync
+
+Status: committed
+Mode: documentation-only
+Slice: Post-19C documentation sync
+Commit: committed in `4cdecdd`
+
+Result:
+- Updated the live history summary to reflect committed Slice 19C at `e2efdd3`.
+- Synchronized the roadmap saved-location sub-slice statuses through 19C and
+  moved the next candidate from stale Slice 19A text to Slice 31A.
+- Corrected Data Sources and Privacy local-data text so installed Room forecast
+  cache and saved-location persistence matched verified behavior, while
+  save/remove UI and installed-app MET Norway fallback remained not implemented.
+
+Evidence:
+- `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-03-post-19c-doc-sync/git-diff-check.log`.
+
+Boundaries:
+- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
+  DataStore format, forecast-cache format, UI, saved-location save/remove,
+  unit preference, alert, air quality, radar, release, or MVP behavior changed.
+- Android compile, unit tests, connected tests, and assemble were not run
+  because this was a documentation-only status sync.
+
+### 2026-09-03-installed-app-fallback-wiring
+
+Status: committed
+Mode: feature
+Slice: Slice 31A, Installed-App Fallback Wiring
+Commit: `4cdecdd`
+
+Result:
+- Added an installed forecast repository factory that composes Open-Meteo as
+  default, MET Norway as fallback, and the existing Room-backed cache wrapper
+  for MainActivity's selected-location Home path.
+- Preserved core fallback eligibility: Open-Meteo success, network/offline
+  failure, and provider-rejected requests do not call MET Norway; eligible
+  terminal provider failures can call MET Norway.
+- Verified MET Norway fallback success reaches the provider-neutral Home ready
+  presentation with MET Norway source/provenance text and an identifying
+  Oxygen User-Agent.
+
+Evidence:
+- Focused checks passed: app `InstalledForecastRepositoryFactoryTest`,
+  `OxygenAppContractTest`, `AboutDisclosureStateHolderTest`,
+  `HomeForecastStateHolderTest`, and core `FallbackWeatherRepositoryTest`.
+- Connected real-path exercise passed:
+  `:app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.InstalledFallbackRepositoryInstrumentedTest`.
+- Broad checks passed: compileDebugKotlin, app/core debug unit tests,
+  assembleDebug, and `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-03-installed-app-fallback-wiring/`.
+
+Boundaries:
+- No saved-location save/remove UI, provider preference UI, unit preference,
+  alerts, air quality, radar/map, Room schema change, DataStore format change,
+  provider-specific MET Norway cache-header persistence, conditional GET
+  metadata, cached fallback restore claim, stale fallback provenance,
+  release-candidate status, or MVP-readiness behavior was added.
 
 ### 2026-09-03-fallback-cache-provenance
 
@@ -89,7 +156,7 @@ Boundaries:
 Status: committed
 Mode: feature
 Slice: Slice 32, Fallback Real-Path Verification
-Commit: `9b9d706`
+Commit: committed in this changeset
 
 Result:
 - Added deterministic connected installed-boundary tests for fallback-served
@@ -136,34 +203,3 @@ Boundaries:
 - Live manual Open-Meteo geocoding selection was not run; deterministic
   connected installed-boundary coverage exercised the default Open-Meteo
   success/replacement path without relying on provider/network availability.
-
-### 2026-09-04-pre-19d-authority-drift-cleanup
-
-Status: verified
-Mode: documentation-only
-Slice: Pre-19D authority drift cleanup
-Commit: not committed
-
-Result:
-- Updated specification section 53 so it no longer points future work at
-  already committed Slice 19A and now identifies Slice 19D as the next
-  implementation candidate.
-- Updated the MVP roadmap tail so Slice 32 is committed at `9b9d706`, the next
-  candidate remains Slice 19D, and startup guidance no longer asks for a Slice
-  32 plan.
-- Archived the pre-compression live cycle history and kept this live file to
-  the reading contract plus three recent cycle entries.
-
-Evidence:
-- `git diff --check` passed.
-
-Artifacts:
-- `.codex/test-artifacts/2026-09-04-pre-19d-authority-drift-cleanup/git-diff-check.log`.
-
-Boundaries:
-- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
-  DataStore format, forecast-cache format, UI behavior, saved-location
-  behavior, provider behavior, unit preference, alert, air quality, radar,
-  release, or MVP behavior changed.
-- Android compile, unit, connected, and assemble commands were not run because
-  this was a Markdown-only authority cleanup.
