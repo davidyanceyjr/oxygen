@@ -1,6 +1,6 @@
 # Oxygen MVP Release Map
 
-Status: ready
+Status: committed in this changeset
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
@@ -122,7 +122,7 @@ Release verification must prove:
 
 ## Repository Engineering Gate
 
-Status: specified
+Status: ready
 
 Release intent: Repository hygiene and durable verification are established before major persistence work and before any release, beta, contributor-readiness, or MVP-complete claim.
 
@@ -1612,7 +1612,7 @@ Planning note: split wiring from cache/provenance.
 
 ### Slice 31A: Installed-App Fallback Wiring
 
-Status: ready
+Status: committed at `4cdecdd`
 
 Prerequisites:
 
@@ -1636,7 +1636,7 @@ Saved Locations is not a prerequisite unless implementation genuinely touches sa
 
 ### Slice 31B: Fallback Cache and Provenance
 
-Status: specified
+Status: committed at `4028044`
 
 Prerequisites:
 
@@ -1654,7 +1654,7 @@ Must prove:
 
 ## Slice 32: Fallback Real-Path Verification
 
-Status: specified
+Status: ready
 
 Prerequisite:
 
@@ -1668,7 +1668,7 @@ Must prove at installed Android boundary:
 - correct source/update/provenance;
 - offline restoration of fallback-served data;
 - later successful Open-Meteo refresh;
-- official alert lookup remains independent.
+- fallback/cache replacement does not create or mutate official alert state.
 
 ---
 
@@ -1828,7 +1828,7 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 ## Recommended Sequence From Current Committed State
 
 Remote `main` is reconciled through merge `ca28c2c`. The latest completed local
-implementation slice is Slice 31B, committed in this changeset.
+implementation slice is Slice 32, committed in this changeset.
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
@@ -1838,27 +1838,30 @@ Use this as sequencing guidance, not permission to work multiple slices at once.
 4. Slice 31A — Installed-App Fallback Wiring
 5. Slice 31B — Fallback Cache and Provenance
 6. Slice 32 — Fallback Real-Path Verification
-7. Slice 20A — Unit Preference Contract
-8. Gate 20-0 — Presentation Semantics and Localization Safety
-9. Slice 20B — Unit Conversion Presentation Boundary
-10. Slice 25A — Settings Information Architecture
-11. Slice 20C — Persisted Units UI
-12. Slice 21 — Optional Device Location
-13. Slice 22 — NWS Alert Provider Contract
-14. Slice 23A — NWS Fixtures/Parsing/Mapping
-15. Slice 23B — NWS Client/Error Classification
-16. Slice 23C — Alert Repository Merge
-17. Slice 24A — Alert Summary/Banner UI
-18. Slice 24B — Alert Detail UI
-19. Gate 25 — Disclosure Baseline Check
-20. Slice 26 — Effects Preference
-21. Slice 27A / 27B — Simple Layout Definition and Selection
-22. Slice 28A / 28B — Theme Translation and Selection
-23. Slice 29 — High Contrast
-24. Gate 30 — Accessibility Presentation Verification
-25. Slice 33 — Privacy and Dependency Audit
-26. Gate 34 — About/Settings/Data-Source Release Check
-27. Gate 35 — MVP Release Candidate Verification
+7. Slice 19D — Save Search Result UI
+8. Slice 19E — Remove Saved Location UI
+9. Gate 19F — Saved Locations Documentation Sync
+10. Slice 20A — Unit Preference Contract
+11. Gate 20-0 — Presentation Semantics and Localization Safety
+12. Slice 20B — Unit Conversion Presentation Boundary
+13. Slice 25A — Settings Information Architecture
+14. Slice 20C — Persisted Units UI
+15. Slice 21 — Optional Device Location
+16. Slice 22 — NWS Alert Provider Contract
+17. Slice 23A — NWS Fixtures/Parsing/Mapping
+18. Slice 23B — NWS Client/Error Classification
+19. Slice 23C — Alert Repository Merge
+20. Slice 24A — Alert Summary/Banner UI
+21. Slice 24B — Alert Detail UI
+22. Gate 25 — Disclosure Baseline Check
+23. Slice 26 — Effects Preference
+24. Slice 27A / 27B — Simple Layout Definition and Selection
+25. Slice 28A / 28B — Theme Translation and Selection
+26. Slice 29 — High Contrast
+27. Gate 30 — Accessibility Presentation Verification
+28. Slice 33 — Privacy and Dependency Audit
+29. Gate 34 — About/Settings/Data-Source Release Check
+30. Gate 35 — MVP Release Candidate Verification
 
 Run recurring documentation-sync gates at the defined cadence.
 
@@ -1867,7 +1870,8 @@ Sequencing rationale:
 - Slice 18J-R restores the real installed Open-Meteo ready forecast path needed to verify the in-progress Slice 18J UI against production data.
 - Slice 18J completes the originally intended Standard Oxygen visual convergence before another major user-facing surface is added.
 - Saved-location persistence/switching follows immediately after 18J.
-- Installed-app MET Norway fallback is pulled forward immediately after Saved Locations because fallback is an MVP acceptance requirement and repository-only fallback evidence is insufficient for release.
+- Installed-app MET Norway fallback is pulled forward after the saved-location list/select UI because fallback is an MVP acceptance requirement and repository-only fallback evidence is insufficient for release.
+- Save-result and remove-location UI return after fallback real-path verification so Saved Locations can complete before Units.
 - Unit conversion follows once location switching and fallback provenance are stable.
 - Settings information architecture is established before multiple preference families make the current Settings/About surface too broad.
 - Appearance persistence remains after the Standard Home design system and accessibility baseline, which are already committed.
@@ -1876,7 +1880,7 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 32: Fallback Real-Path Verification.
+Candidate: Slice 19D: Save Search Result UI.
 
 Immediate planning boundary:
 
@@ -1888,8 +1892,10 @@ Immediate planning boundary:
 -> 19B selection/concurrency committed at 0f649aa
 -> 19C saved-location list/select UI committed at e2efdd3
 -> 31A installed-app fallback wiring committed at 4cdecdd
--> 31B fallback cache and provenance committed in this changeset
--> next candidate: 32 fallback real-path verification
+-> 31B fallback cache and provenance committed at 4028044
+-> 32 fallback real-path verification committed in this changeset
+-> next candidate: 19D save search result UI
+-> then 19E remove saved location UI and 19F saved locations documentation sync
 ```
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.

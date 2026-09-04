@@ -1,72 +1,98 @@
 # Active Cycle
 
 Status: committed
-Cycle ID: 2026-09-03-fallback-cache-provenance
+Cycle ID: 2026-09-03-fallback-real-path-verification
 Mode: feature
-Slice: Slice 31B, Fallback Cache and Provenance
+Slice: Slice 32, Fallback Real-Path Verification
 
-Goal: Preserve truthful provider identity, source/license/update timestamps,
-and MET Norway cache metadata across fallback success, Room cache persistence,
-offline restore, later Open-Meteo replacement, and foreground refresh failure.
+Goal: Verify the already-implemented Open-Meteo plus MET Norway fallback path
+at the installed Android boundary, including cache restoration and later
+Open-Meteo replacement, without adding new product behavior or widening the
+provider architecture.
 
 Basis:
 - Slice 31A installed-app fallback wiring is committed at `4cdecdd`.
-- The installed app now composes Open-Meteo as default, MET Norway as fallback,
-  and the existing Room-backed cache wrapper for the selected-location Home path.
-- `.codex/plans/mvp-roadmap.md` selects Slice 31B as the next candidate after
-  Slice 31A.
-- `docs/data-sources/MET_NORWAY_FORECAST.md` requires MET Norway fallback
-  success to keep MET Norway attribution, license, source/update, stale/cache
-  metadata, and provider ID.
+- Slice 31B fallback cache and provenance is committed at `4028044`.
+- `.codex/plans/mvp-roadmap.md` selects Slice 32 as the next candidate after
+  Slice 31B.
+- The README reports installed-app MET Norway fallback, Room cache restoration,
+  stale refresh failure context, and MET Norway cache-header/provenance
+  persistence as implemented, while conditional GET/304, official alerts, and
+  release-candidate fallback verification remain unimplemented.
+- Current drift closed in this cycle: `.codex/plans/mvp-roadmap.md` required
+  real-path fallback verification before MET Norway was described as active in
+  Data Sources. Connected Slice 32 evidence now verifies the installed-boundary
+  fallback/cache/replacement path, and `docs/data-sources/MET_NORWAY_FORECAST.md`
+  has been reconciled with the active installed-app fallback status while
+  leaving conditional GET/304, provider health/backoff, and release-candidate
+  fallback verification unclaimed.
 
 ## Contract
 
 Selected behavior:
-- A MET Norway fallback success stores and restores as a MET Norway forecast,
-  with provider-neutral provenance still identifying MET Norway.
-- MET Norway provider-specific cache metadata is persisted with the cached
-  forecast where needed for truthful restore and later revalidation behavior.
-- Cached MET Norway restore must not be relabeled as Open-Meteo, generic cached
-  data, or unavailable source.
-- A later successful Open-Meteo refresh replaces a cached MET Norway forecast
-  only through the normal verified cache replacement transaction.
-- A failed foreground refresh while a MET Norway fallback forecast is visible
-  retains the visible forecast as stale with truthful MET Norway source,
-  license, update, and refresh-failure context.
-- UI, app state, and cache consumers continue to receive provider-neutral
-  domain/provenance/freshness state. Raw MET Norway headers, endpoint details,
-  symbol codes, and provider-specific errors stay in provider/cache code.
+- The installed app can still reach a normal Open-Meteo Home success by default
+  for a manually selected location.
+- A controlled fallback-eligible Open-Meteo terminal failure drives the
+  installed factory through MET Norway fallback success.
+- The fallback-served Home state exposes provider-neutral data with truthful
+  MET Norway source, license, issued/update, fetched, model-estimate, and
+  freshness/provenance text.
+- A Room-cached fallback-served forecast restores offline as MET Norway data
+  and remains visibly distinct from Open-Meteo and sample data.
+- A later successful Open-Meteo refresh replaces a previously cached MET Norway
+  forecast through the normal selected-location refresh/cache path.
+- Fallback and cache replacement do not create, mutate, fake, couple, or claim
+  official alert provider behavior.
 
 Acceptance boundary:
-- Extend the current forecast cache/storage path only as much as required to
-  preserve provider identity/provenance and MET Norway cache metadata
-  truthfully.
-- Keep existing selected-location, saved-location, manual search, retry, and
-  fallback eligibility behavior unchanged.
-- Add focused tests that prove MET Norway fallback cache write/read,
-  Open-Meteo replacement after cached MET Norway data, stale failed-refresh
-  provenance retention, and provider-neutral UI/app-state exposure.
-- Add Room/instrumented coverage if schema or persisted metadata changes.
-- Save logs under
-  `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/`.
+- Deterministic connected/instrumented tests that run the same installed
+  factory, Room forecast cache, DataStore selected-location storage, and Home
+  presentation path used by `MainActivity` are the required proof.
+- Slice 32 connected tests must use `RoomForecastCacheStorageFactory.create(...)`,
+  `DataStoreSelectedLocationStorage`, `InstalledForecastRepositoryFactory.create(...)`,
+  and `OxygenAppStateHolder` so the exercised path matches `MainActivity` wiring
+  as closely as controllable tests allow.
+- Add only test seams or production wiring needed to make the installed
+  boundary controllable; do not change provider semantics, Home copy, cache
+  schema, selected-location behavior, saved-location behavior, or UI layout
+  unless a failing Slice 32 test proves a real defect.
+- Prefer existing controllability first: `InstalledForecastRepositoryFactory.create(...)`
+  already accepts injected default and fallback repositories, so new production
+  seams are out of scope unless connected tests expose a real gap.
+- Use provider fixtures/controlled transports for fallback failure/success
+  scenarios. Use the real Open-Meteo path only for the default-success
+  installed exercise if network is available and record that as environmental
+  evidence, not as required or sole automated proof.
+- Save logs and any screenshots/UI-tree dumps under
+  `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/`.
 
 Out of scope:
-- Provider preference UI, saved-location save/remove UI, background refresh,
-  unit preferences, official alerts, air quality, radar/maps, widgets,
-  notifications, release-candidate status, MVP-readiness claims, or a broad
-  provider-selection framework.
+- Conditional GET requests, 304 not-modified handling, provider health/backoff,
+  provider preference UI, alert provider implementation, saved-location
+  save/remove UI, unit preferences, appearance/effects settings, background
+  refresh, widgets, notifications, release-candidate status, MVP-readiness
+  claims, or broad provider-selection abstractions.
 
 ## Design
 
-- Prefer extending existing cache DTO/entity mapping over adding a parallel
-  fallback cache.
-- Keep MET Norway HTTP cache directives provider-specific at the storage or
-  provider boundary; expose only normalized cache/freshness/provenance state to
-  Home.
-- If a Room schema change is required, add an explicit migration and connected
-  migration coverage.
-- Preserve the existing `CachedWeatherRepository` wrapper shape unless the
-  current interface cannot carry required metadata without provider leakage.
+- Start by extending `InstalledFallbackRepositoryInstrumentedTest` or adding a
+  neighboring connected test class that composes `OxygenAppStateHolder` and
+  `OxygenApp` with `InstalledForecastRepositoryFactory.create(...)`, production
+  Room cache storage, and controlled Open-Meteo/MET Norway repositories injected
+  through the factory's existing parameters.
+- Keep controlled failures at the `WeatherRepository` boundary unless HTTP
+  request assertions are required; keep MET Norway User-Agent/provenance checks
+  where the existing client transport seam already supports them.
+- Exercise Room persistence by writing fallback success through the factory,
+  constructing a fresh state holder with an offline failing upstream, and
+  asserting the restored Home state still reports MET Norway.
+- Exercise later replacement by starting from cached MET Norway data, refreshing
+  with a controlled Open-Meteo success, and asserting Home/source/cache readback
+  switch to Open-Meteo for the same selected location.
+- For official-alert independence, assert fallback success, offline fallback
+  restore, and later Open-Meteo replacement all keep `dashboard.alerts.isEmpty()`,
+  render no Home alert section, and preserve Room's forecast-only rejection for
+  bundles that contain alerts.
 
 ## Workflow
 
@@ -74,19 +100,31 @@ Baseline:
 - `git status --short`
 - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*InstalledForecastRepositoryFactoryTest'`
 - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest'`
-- `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*CachedWeatherRepositoryTest'`
+- `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*FallbackWeatherRepositoryTest'`
+- `scripts/list-avds.sh`
 
 Build and focused evidence:
-- Inspect current Room forecast-cache schema and domain cache model.
-- Add focused failing coverage for MET Norway provenance/cache restoration and
-  stale failed-refresh retention before production edits.
-- Implement the smallest cache/storage/domain changes required by those tests.
-- Run affected app/core unit tests.
+- Add failing connected coverage for fallback-served Room restore and later
+  Open-Meteo replacement through the installed factory path.
+- Add focused assertions to existing installed fallback coverage for source,
+  update/provenance, no sample data, empty Home alert state, no rendered alert
+  section, and Room forecast-only alert rejection if they are not already
+  observable.
+- Implement only the smallest production/test-seam changes required by those
+  tests.
+- Run affected app unit tests and the focused connected Slice 32 test class.
 
 Real-path exercise:
-- If Room schema or metadata persistence changes, run connected Room/cache
-  coverage and an installed/state-holder restore path that observes MET Norway
-  source/provenance after cache restore.
+- Run `scripts/start-emulator.sh` and `scripts/install-debug.sh`.
+- If network is available, use the installed app to select a real Open-Meteo
+  geocoding result and capture Home evidence showing default Open-Meteo
+  success.
+- If live Open-Meteo is unavailable, record the exact network/provider blocker
+  and continue with deterministic installed-boundary proof.
+- Run the controlled connected fallback scenario to capture deterministic
+  fallback success, offline fallback restore, and Open-Meteo replacement
+  evidence. Prefer UI-tree dumps plus screenshots only where they add
+  externally observable value.
 
 Broad checks:
 - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
@@ -95,61 +133,69 @@ Broad checks:
 - `git diff --check`
 
 Artifacts target:
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/`
+
+Planned artifact target:
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/planning-git-diff-check.log`
 
 ## Phase Results
 
-- specified: Slice 31B is defined by the roadmap as fallback cache and
-  provenance after committed installed-app fallback wiring.
-- planned: Bounded to cache/provenance truthfulness for MET Norway fallback,
-  replacement by later Open-Meteo success, stale failed-refresh retention, and
-  provider-neutral exposure.
-- covered: Added focused core repository tests for cache metadata write-through,
-  MET Norway cache metadata on repository success, stale MET Norway cache
-  retention, and Open-Meteo replacement after cached MET Norway data. Added
-  connected Room tests for MET Norway cache-header metadata persistence and
-  clearing on non-metadata replacement. Updated disclosure tests for truthful
-  implemented/unimplemented cache status.
-- implemented: `WeatherRepositoryResult.Success` can carry cache-only
-  `ForecastCacheMetadata`; `CachedWeatherRepository` writes that metadata only
-  when the storage boundary supports it. `MetNoWeatherRepository` maps MET
-  Norway response cache headers, response coordinates/elevation, provider
-  updated time, provider ID, and fetch time into cache metadata. Room forecast
-  cache storage now persists that metadata with a v2-to-v3 migration.
-- verified: Baseline checks passed for installed forecast factory, Home
-  forecast state, and cached weather repository. Focused core unit checks,
-  About disclosure checks, connected Room forecast-cache checks, and connected
-  saved-location migration checks passed. Broad compile, app/core unit tests,
+- specified: Slice 32 is defined by the roadmap as installed Android boundary
+  verification for Open-Meteo default success, controlled fallback success,
+  fallback provenance, offline fallback restore, later Open-Meteo replacement,
+  and proof that fallback/cache replacement does not create or mutate alert
+  state. It also carries the active Data Sources wording gate for MET Norway:
+  verify the installed-boundary fallback behavior and reconcile
+  `docs/data-sources/MET_NORWAY_FORECAST.md`, or downgrade the active-provider
+  wording before ready.
+- planned: Bounded to deterministic installed-boundary verification and minimal
+  test seams for already-implemented fallback/cache behavior.
+- covered: Extended `InstalledFallbackRepositoryInstrumentedTest` with
+  deterministic connected coverage that uses
+  `RoomForecastCacheStorageFactory.create(...)`,
+  `DataStoreSelectedLocationStorage`,
+  `InstalledForecastRepositoryFactory.create(...)`, and
+  `OxygenAppStateHolder` for fallback-served Room restore and later
+  Open-Meteo replacement. The connected tests assert MET Norway/Open-Meteo
+  source, license, issued/fetched/model-estimate provenance, no sample data,
+  empty Home alert state, and no rendered alert section. Existing
+  `RoomForecastCacheStorageInstrumentedTest` covers Room forecast-only alert
+  rejection.
+- implemented: No production Kotlin behavior changed. The MET Norway provider
+  contract wording now reflects the verified active installed-app fallback
+  status and keeps later conditional GET/304, provider health/backoff, and
+  release-candidate fallback behavior out of scope.
+- verified: Baseline checks passed for app installed factory, app Home forecast
+  state, core fallback repository, and `scripts/list-avds.sh`. Focused checks
+  passed for app installed factory, app Home forecast state, core fallback
+  repository, connected installed fallback class, and connected Room forecast
+  cache class. `scripts/start-emulator.sh` and `scripts/install-debug.sh`
+  passed against `oxygen_starter`. Broad compile, app/core unit tests,
   assemble, and `git diff --check` passed.
 - committed: committed in this changeset.
 
 Artifacts:
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/baseline-git-status.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/baseline-installed-forecast-factory.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/baseline-home-forecast-state.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/baseline-cached-weather-repository.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/red-cache-metadata-storage.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/red-metno-cache-metadata.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/focused-cache-metadata-unit.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/focused-core-cache-metno-unit.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/focused-room-forecast-cache-rerun-2.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/focused-room-saved-location-migration-rerun.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/focused-about-disclosure.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/broad-compile-debug-kotlin.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/broad-unit-tests.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/broad-assemble-debug-rerun.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/broad-git-diff-check-rerun.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/broad-compile-debug-kotlin-doc-sync.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/broad-unit-tests-doc-sync.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/broad-assemble-debug-doc-sync.log`
-- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/broad-git-diff-check-doc-sync.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/baseline-installed-forecast-repository-factory-test.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/baseline-home-forecast-state-holder-test.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/baseline-fallback-weather-repository-test.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/baseline-list-avds.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/focused-installed-forecast-repository-factory-test.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/focused-home-forecast-state-holder-test.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/focused-fallback-weather-repository-test.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/focused-installed-fallback-connected-test-final.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/focused-room-forecast-cache-connected-test.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/start-emulator.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/install-debug.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/broad-compile-debug-kotlin.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/broad-debug-unit-tests.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/broad-assemble-debug.log`
+- `.codex/test-artifacts/2026-09-03-fallback-real-path-verification/broad-git-diff-check.log`
 
 Notes:
-- Initial connected Room attempts failed before useful assertions when no
-  device was connected, then again when two connected Gradle invocations ran in
-  parallel and the instrumentation process crashed. Sequential reruns passed on
-  `oxygen_starter(AVD) - 17`.
-- Conditional GET requests, 304 not-modified handling, provider health/backoff,
-  release-candidate fallback verification, saved-location save/remove UI, unit
-  preferences, alerts, air quality, and radar remain out of scope and
-  unimplemented.
+- Initial focused connected run failed because no connected device was
+  available. After `scripts/start-emulator.sh` brought up `oxygen_starter`, a
+  rerun exposed a test expectation mismatch for MET Norway's actual combined
+  license string; the corrected connected rerun passed.
+- Live manual Open-Meteo geocoding selection was not run; deterministic
+  connected installed-boundary coverage exercised the default Open-Meteo
+  success/replacement path without relying on provider/network availability.
