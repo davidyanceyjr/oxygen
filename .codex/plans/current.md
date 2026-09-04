@@ -1,9 +1,10 @@
 # Active Cycle
 
-Status: verified
+Status: committed
 Cycle ID: 2026-09-04-slice-19d-save-search-result-ui
 Mode: feature
 Slice: Slice 19D, Save Search Result UI
+Commit: `8599640`
 
 Goal: Let users save a searched place from the location-entry surface through
 the production saved-location path without making save required for one-off

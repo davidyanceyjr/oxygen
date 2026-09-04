@@ -32,11 +32,11 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 32, Fallback Real-Path
-  Verification, committed at `9b9d706`.
+- Last committed implementation slice: Slice 19D, Save Search Result UI,
+  committed at `8599640`.
 - Last committed documentation cleanup: Pre-19D Authority Drift Cleanup,
   committed at `2c779cc`.
-- Current planned implementation slice: Slice 19D, Save Search Result UI.
+- Current planned implementation slice: none selected.
 - Current documentation drift under review: none known after pre-19D authority
   cleanup reconciled stale specification, roadmap, and live-history wording
   that still pointed at already committed Slice 19A/Slice 32 work.
@@ -173,10 +173,10 @@ Boundaries:
 
 ### 2026-09-04-slice-19d-save-search-result-ui
 
-Status: verified
+Status: committed
 Mode: feature
 Slice: Slice 19D, Save Search Result UI
-Commit: not committed
+Commit: `8599640`
 
 Result:
 - Added a search-result save event to `OxygenAppStateHolder` that saves the
