@@ -1830,9 +1830,8 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The current documentation sync is Gate 19F: Saved Locations Documentation Sync.
-After Gate 19F is committed, the next implementation candidate is Slice 20A:
-Unit Preference Contract.
+Gate 19F: Saved Locations Documentation Sync is committed. The next
+implementation candidate is Slice 20A: Unit Preference Contract.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering,

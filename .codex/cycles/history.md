@@ -34,10 +34,9 @@ ledger states.
 
 - Last committed implementation slice: Slice 19E, Remove Saved Location UI,
   committed at `00cb88a`.
-- Current documentation sync: Gate 19F, Saved Locations Documentation Sync, is
-  ready in this changeset.
-- Current next implementation candidate after Gate 19F is committed: Slice 20A,
-  Unit Preference Contract.
+- Last committed documentation sync: Gate 19F, Saved Locations Documentation
+  Sync, committed at `8386484`.
+- Current next implementation candidate: Slice 20A, Unit Preference Contract.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -300,10 +299,10 @@ Boundaries:
 
 ### 2026-09-04-gate-19f-saved-locations-doc-sync
 
-Status: ready
+Status: committed
 Mode: documentation-only
 Slice: Gate 19F, Saved Locations Documentation Sync
-Commit: uncommitted
+Commit: `8386484`
 
 Result:
 - Replaced the completed Slice 19E active plan with a bounded Gate 19F
@@ -313,7 +312,7 @@ Result:
   documentation sync, and names Slice 20A as the next implementation candidate
   after the sync is committed.
 - Updated the MVP roadmap so Slice 19E is committed at `00cb88a`, Gate 19F is
-  ready in this changeset, and next-candidate guidance advances to Slice 20A.
+  committed at `8386484`, and next-candidate guidance advances to Slice 20A.
 - Updated this live history summary to remove stale claims that 19E is
   uncommitted or next.
 

@@ -1085,7 +1085,7 @@ Out of scope:
 
 ### Gate 19F: Saved Locations Documentation Sync
 
-Status: ready in this changeset
+Status: committed at `8386484`
 
 Prerequisite:
 
@@ -1897,7 +1897,7 @@ Immediate planning boundary:
 -> 32 fallback real-path verification committed at 9b9d706
 -> 19D save search result UI committed at 8599640
 -> 19E remove saved location UI committed at 00cb88a
--> 19F saved locations documentation sync ready in this changeset
+-> 19F saved locations documentation sync committed at 8386484
 -> next candidate: 20A unit preference contract
 ```
 

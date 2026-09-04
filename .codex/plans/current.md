@@ -1,10 +1,10 @@
 # Active Cycle
 
-Status: ready
+Status: committed
 Cycle ID: 2026-09-04-gate-19f-saved-locations-doc-sync
 Mode: documentation-only
 Slice: Gate 19F, Saved Locations Documentation Sync
-Commit: uncommitted
+Commit: `8386484`
 
 Goal: Align README, specification, roadmap, disclosure/status history, and
 active-cycle state with the saved-location behavior verified and committed
@@ -30,7 +30,7 @@ Selected documentation behavior:
   Slice 20A, Unit Preference Contract, as the next implementation candidate
   after the sync.
 - Roadmap saved-location status must mark Slice 19E committed at `00cb88a` and
-  Gate 19F ready in this changeset, without upgrading later slices.
+  Gate 19F committed at `8386484`, without upgrading later slices.
 - Roadmap sequencing and next-candidate guidance must move from 19E to Slice
   20A after Gate 19F.
 - Live history summary must identify Slice 19E as the last committed
@@ -83,11 +83,11 @@ Review:
 - planned: Bounded to documentation/status alignment across the specification,
   roadmap, active plan, and live history.
 - documented: Specification, roadmap, active plan, and live history were
-  aligned to Slice 19E committed at `00cb88a`, Gate 19F ready, and Slice 20A as
-  the next implementation candidate.
+  aligned to Slice 19E committed at `00cb88a`, Gate 19F committed at `8386484`,
+  and Slice 20A as the next implementation candidate.
 - verified: `git diff --check` passed; log saved under
   `.codex/test-artifacts/2026-09-04-gate-19f-saved-locations-doc-sync/`.
-- ready: Documentation-only sync is ready for review and commit.
+- committed: Documentation-only sync is committed at `8386484`.
 
 Skipped commands:
 - Android compile, unit, connected, assemble, emulator, and install commands
