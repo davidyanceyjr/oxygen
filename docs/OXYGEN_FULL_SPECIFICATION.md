@@ -1830,7 +1830,9 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation candidate is Slice 19E: Remove Saved Location UI.
+The current documentation sync is Gate 19F: Saved Locations Documentation Sync.
+After Gate 19F is committed, the next implementation candidate is Slice 20A:
+Unit Preference Contract.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering,
@@ -1840,15 +1842,18 @@ Open-Meteo path that selected "Madison, Wisconsin, United States" and previously
 rendered the invalid-response no-cache error instead of a ready forecast.
 
 Saved-location storage, selected-location switching and concurrency protection,
-the installed saved-location list/select surface, and search-result save UI are
-committed through Slices 19A, 19B, 19C, and 19D. The installed app can persist
-saved locations, mark the current saved location, list saved rows, select an
-existing saved row, and save a searched place through the local Room
+the installed saved-location list/select surface, search-result save UI, and
+saved-location removal UI are committed through Slices 19A, 19B, 19C, 19D, and
+19E. The installed app can persist saved locations, mark the current saved
+location, list saved rows, select an existing saved row, save a searched place,
+and remove saved rows after explicit confirmation through the local Room
 saved-location model and persisted selected local `LocationId`. Provider IDs
 must not become user-facing location identity, and switching locations must
 continue to control the Home forecast through the same lifecycle-aware app
 boundary used for selected-location and offline launch behavior so obsolete
-refreshes or stale cache emissions cannot update the wrong Home.
+refreshes or stale cache emissions cannot update the wrong Home. Removing the
+currently selected saved row must continue to leave selected-location state,
+forecast-cache rows, and the visible Home forecast unchanged.
 
 Installed-app MET Norway fallback wiring, fallback cache provenance, and
 fallback real-path verification are committed through Slices 31A, 31B, and 32.
@@ -1860,20 +1865,19 @@ refresh through the normal selected-location path. Conditional GET requests,
 304 not-modified handling, provider health/backoff behavior, and
 release-candidate fallback verification remain unimplemented.
 
-Slice 19E must let users remove saved locations from the location-entry surface
-without accidentally deleting rows or changing the current Home forecast. Saved
-rows must expose a visible remove control, removal must require an explicit
-confirmation/cancel step before production storage deletion, cancel must not
-delete, confirmed removal must refresh only saved-location list state, and
-removing the currently selected location must not clear or rewrite DataStore
-selected-location state, forecast-cache rows, or the visible Home forecast.
-Compact and large-font layouts must keep remove confirmation readable and
-reachable.
+Gate 19F must keep README, roadmap, disclosure, and active-cycle status aligned
+with verified saved-location behavior without changing app behavior or claiming
+release readiness. Slice 20A must define unit preference behavior before unit
+conversion or persisted units UI begins. It must specify the preference model
+for temperature, wind speed, pressure, precipitation, and visibility units, and
+must not treat existing enum/scaffold values as implemented user preferences.
 
-Implementation must not add unit preferences, device-location permission flow,
-alert lookup, persisted appearance settings, additional provider wiring,
+Gate 19F must not add unit preferences, device-location permission flow, alert
+lookup, persisted appearance settings, additional provider wiring,
 Paper/Terminal theme completion, radar, maps, air quality, widgets, background
-refresh, notifications, release-readiness, or MVP-readiness claims.
+refresh, notifications, release-readiness, or MVP-readiness claims. Slice 20A
+must remain a preference contract slice and must not add unit conversion,
+persisted units UI, provider changes, or MVP-readiness claims.
 
 ---
 

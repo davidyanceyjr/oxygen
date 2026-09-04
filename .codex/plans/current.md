@@ -1,206 +1,95 @@
 # Active Cycle
 
-Status: committed
-Cycle ID: 2026-09-04-slice-19e-remove-saved-location-ui
-Mode: feature
-Slice: Slice 19E, Remove Saved Location UI
-Commit: committed in this changeset
+Status: ready
+Cycle ID: 2026-09-04-gate-19f-saved-locations-doc-sync
+Mode: documentation-only
+Slice: Gate 19F, Saved Locations Documentation Sync
+Commit: uncommitted
 
-Goal: Let users remove saved locations from the location-entry surface through
-the production saved-location path without accidental deletion and without
-changing the current Home forecast, selected-location DataStore row, or forecast
-cache rows.
+Goal: Align README, specification, roadmap, disclosure/status history, and
+active-cycle state with the saved-location behavior verified and committed
+through Slice 19E without changing app behavior or making MVP/release-readiness
+claims.
 
 Basis:
-- `docs/OXYGEN_FULL_SPECIFICATION.md` section 53 and
-  `.codex/plans/mvp-roadmap.md` identify Slice 19E as the next implementation
-  candidate.
-- Slice 19D committed search-result save UI at `8599640`; the post-19D
-  authority sync is committed at `0fb2ce6`.
-- `SavedLocationStorage.removeLocation(...)` and
-  `RoomSavedLocationStorageFactory.create(...)` already exist and have core Room
-  removal coverage.
-- The installed location-entry UI lists/selects saved rows but does not expose
-  remove controls or confirmation.
-- README correctly lists saved-location removal UI as not implemented. About
-  still uses the coarse phrase `saved-location save/remove UI`; the 19E review
-  must split or update that wording after removal behavior is verified without
-  claiming broader saved-location completion before Gate 19F.
+- Slice 19E, Remove Saved Location UI, is committed at `00cb88a`.
+- `.codex/plans/mvp-roadmap.md` defines Gate 19F after Slice 19E to align
+  saved-location documentation and status surfaces.
+- README already lists saved-location removal UI as implemented and no longer
+  lists it as not implemented.
+- `AboutDisclosureStateHolderTest` asserts the stale
+  `saved-location save/remove UI` phrase is absent.
+- `docs/OXYGEN_FULL_SPECIFICATION.md`, `.codex/plans/mvp-roadmap.md`, and the
+  live `.codex/cycles/history.md` summary still referenced Slice 19E as next or
+  uncommitted.
 
 ## Contract
 
-Selected behavior:
-- Saved-location rows expose a visible, per-row remove control alongside the
-  existing select action.
-- Activating remove opens an explicit confirmation/cancel step for that saved
-  row before any production storage deletion.
-- Cancel dismisses confirmation and does not call
-  `SavedLocationStorage.removeLocation(...)`.
-- Confirmed removal calls production `SavedLocationStorage.removeLocation(...)`
-  for the row's provider-neutral `LocationId`, then refreshes only
-  `SavedLocationsPresentationState`.
-- Remove failure surfaces
-  `SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable)`.
-- Removing the currently selected location does not clear or rewrite
-  `DataStoreSelectedLocationStorage`, remove or rewrite `ForecastCacheStorage`,
-  start a provider refresh, or replace the visible Home forecast.
-- Selecting saved rows, saving searched rows, manual use-now selection,
-  offline restore, fallback provenance, and Data Sources/Privacy provider
-  claims remain behaviorally unchanged. About saved-location status copy may
-  change only after verified removal behavior.
-- Compact and large-font layouts keep saved-row select/remove controls and the
-  confirmation/cancel step readable, reachable, and tagged for tests.
+Selected documentation behavior:
+- Specification section 53 must identify Gate 19F as the current sync and
+  Slice 20A, Unit Preference Contract, as the next implementation candidate
+  after the sync.
+- Roadmap saved-location status must mark Slice 19E committed at `00cb88a` and
+  Gate 19F ready in this changeset, without upgrading later slices.
+- Roadmap sequencing and next-candidate guidance must move from 19E to Slice
+  20A after Gate 19F.
+- Live history summary must identify Slice 19E as the last committed
+  implementation slice and Gate 19F as the current documentation sync.
+- README, data-source, privacy, cache, provider, and About disclosure claims
+  must remain truthful and unchanged unless review finds saved-location drift.
 
 Acceptance boundary:
-- Production changes are limited to `OxygenAppStateHolder`, `OxygenApp`, and
-  `FirstRunLocationEntryScreen` unless a focused test exposes a necessary
-  smaller supporting change.
-- The installed app continues to use `RoomSavedLocationStorageFactory.create(...)`
-  from `MainActivity`; no fake, sample, or UI-only delete path may satisfy the
-  behavior.
-- No Room schema, forecast-cache storage, DataStore format, provider request,
-  forecast repository, fallback-selection, or Home forecast presentation change
-  is allowed for this slice.
-- Stable test tags should identify saved rows, remove controls, confirmation,
-  confirm, and cancel actions, for example
-  `location-entry-saved-location-remove-0`,
-  `location-entry-saved-remove-confirmation-0`,
-  `location-entry-saved-remove-confirm-0`, and
-  `location-entry-saved-remove-cancel-0`.
+- Documentation-only changes are allowed in:
+  - `docs/OXYGEN_FULL_SPECIFICATION.md`
+  - `.codex/plans/mvp-roadmap.md`
+  - `.codex/plans/current.md`
+  - `.codex/cycles/history.md`
+- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
+  DataStore format, forecast-cache format, or production app behavior changes
+  are allowed.
 - Evidence belongs under
-  `.codex/test-artifacts/2026-09-04-slice-19e-remove-saved-location-ui/`.
+  `.codex/test-artifacts/2026-09-04-gate-19f-saved-locations-doc-sync/`.
 
 Out of scope:
-- Saved-location drag reorder, folders, favorites, search/filter management, or
-  automatic multi-location refresh.
-- Automatic replacement when the removed row is currently selected.
-- Clearing selected-location state, forecast cache cleanup, provider preference
-  UI, unit preferences, device-location permission expansion, official alerts,
-  air quality, radar/maps, appearance settings, widgets, background refresh,
-  notifications, release readiness, or MVP-readiness claims.
-
-## Design
-
-- Add app-state removal handling such as `onSavedLocationRemoveRequested(...)`,
-  `onSavedLocationRemoveCanceled(...)`, and
-  `onSavedLocationRemoveConfirmed(...)`, or an equivalent single explicit
-  confirmation state that keeps deletion impossible until confirm.
-- Store pending confirmation as presentation state, not as hidden UI-only
-  mutation. The state should identify one saved `LocationId` and clear on cancel,
-  successful removal refresh, or failure.
-- Implement confirmed removal on the existing forecast executor because saved
-  location storage is synchronous and already used there. Do not call
-  `nextForecastRequestId()`, selected-location storage, forecast cache storage,
-  or weather repository from the remove path.
-- Extend saved-row Compose UI with separate full-width or otherwise minimum
-  48dp select/remove actions. Use Material destructive styling only as
-  reinforcement; the confirmation text/action labels must carry the meaning.
-- Keep confirmation inline with the row or as a simple dialog only if Compose
-  tests can exercise cancel/confirm reliably at compact and large-font sizes.
-  Prefer the smallest UI addition that remains readable and testable.
-- Update README removal status and split/update the stale About
-  `saved-location save/remove UI` wording only after verification proves removal
-  UI is implemented. Defer broader saved-location status reconciliation to
-  Gate 19F.
+- Unit preferences, unit conversion, device-location permission flow, official
+  alert lookup, persisted appearance settings, provider changes, radar/maps,
+  air quality, widgets, background refresh, notifications, release readiness,
+  or MVP-readiness claims.
+- Reopening Slice 19E implementation or changing saved-location production
+  behavior.
 
 ## Workflow
 
-Baseline:
-- `git status --short`
-- Inspect `OxygenAppStateHolder`, `OxygenApp`, `FirstRunLocationEntryScreen`,
-  `HomeForecastStateHolderTest`, `HomeDashboardUiTest`,
-  `OfflineLaunchPersistenceInstrumentedTest`, and Room saved-location storage
-  tests.
-- Existing direct-storage connected coverage already proves Room saved-location
-  removal does not clear DataStore selected-location state; 19E must add
-  app-state/UI-path coverage.
-- Run focused baseline checks for current saved-location list/select/save
-  behavior before production edits.
+Discover:
+- Read required authorities and inspect stale saved-location/next-candidate
+  references.
+- Confirm clean worktree and local commit evidence for Slice 19E.
 
-Red:
-- Add state-holder tests proving remove request only enters confirmation,
-  cancel does not call storage, confirm calls `removeLocation(...)` and
-  refreshes saved rows, failure reports local saved-location failure, unknown
-  IDs do not mutate state, and removing the currently selected row leaves
-  selected-location writes, forecast cache calls, weather repository calls, and
-  visible Home forecast unchanged.
-- Add Compose tests proving saved rows expose separate select/remove controls,
-  confirmation/cancel/confirm are visible with stable tags, cancel preserves the
-  row, confirm invokes the callback, and large-font compact layout keeps
-  controls reachable.
-- Add connected installed-boundary evidence using
-  `RoomSavedLocationStorageFactory.create(...)` that removes a saved row through
-  `OxygenAppStateHolder`, refreshes the saved list, and leaves
-  `DataStoreSelectedLocationStorage` plus forecast cache data unchanged when the
-  removed ID is also the selected ID.
-
-Build:
-- Implement the smallest app-state confirmation/removal path and Compose
-  callback wiring required by the failing tests.
-- Keep existing selection/save handlers intact and avoid shared refactors unless
-  needed to remove real duplication introduced by the slice.
-
-Focused green:
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRunLocationStateHolderTest' --tests '*HomeForecastStateHolderTest'`
-- `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.OfflineLaunchPersistenceInstrumentedTest`
-- `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`
-
-Real-path exercise:
-- `scripts/list-avds.sh`
-- `scripts/start-emulator.sh`
-- `scripts/install-debug.sh`
-- In the installed app, create or reuse two saved locations, open the
-  location-entry surface, start removal for one saved row, cancel and confirm
-  the row remains, start removal again, confirm, verify only that row leaves the
-  saved list, then verify the current Home forecast is still visible/unchanged
-  when the removed row was current.
-- If live geocoding/provider access blocks creating saved rows, seed production
-  Room saved-location storage through existing deterministic test/app-state
-  paths and record the blocker. Do not claim live provider verification for any
-  step that was not exercised.
-
-Broad checks:
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-- `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
-- `git diff --check`
+Document:
+- Replace this active plan with Gate 19F scope and evidence.
+- Update spec, roadmap, and live history summary to reflect Slice 19E commit
+  `00cb88a`, Gate 19F documentation sync, and Slice 20A as the next
+  implementation candidate.
+- Append a concise Gate 19F history entry.
 
 Review:
-- Confirm changed production files are limited to the planned app-state and
-  location-entry UI surface unless evidence justifies a small support change.
-- Confirm README/About removal status is updated only after verified behavior
-  exists, and that Data Sources/Privacy/provider claims remain unchanged.
-- Confirm no generated build outputs, SDK files, Gradle caches, emulator state,
-  or local runtime directories are staged.
-
-Artifacts target:
-- `.codex/test-artifacts/2026-09-04-slice-19e-remove-saved-location-ui/`
+- Run `git diff --check`.
+- Inspect the diff for accidental behavior changes or unearned status claims.
 
 ## Phase Results
 
-- specified: Slice 19E is defined by the specification and roadmap as removing
-  saved locations from the location-entry surface with explicit confirmation
-  and without changing current Home forecast state.
-- planned: Bounded to app-state confirmation/removal handling, saved-row Compose
-  UI, focused state/UI tests, connected Room/DataStore/cache evidence, installed
-  real-path exercise, broad Android checks, and narrow status documentation
-  updates after verification.
-- covered: Added app-state unit coverage for remove request, cancel, confirm,
-  failure, unknown ID, and current-selected preservation; connected Compose
-  coverage for row remove controls, confirmation/cancel/confirm tags, compact
-  large-font reachability, and app callback behavior; connected persistence
-  coverage through `RoomSavedLocationStorageFactory.create(...)`,
-  `DataStoreSelectedLocationStorage`, and Room forecast cache storage.
-- implemented: `OxygenAppStateHolder` now tracks a pending saved-location
-  removal in `SavedLocationsPresentationState.Loaded`, deletes only on explicit
-  confirmation through `SavedLocationStorage.removeLocation(...)`, refreshes
-  only saved-location presentation state, and leaves selected-location,
-  forecast cache, provider refresh, and visible Home forecast paths untouched.
-  `FirstRunLocationEntryScreen` exposes separate select/remove controls and an
-  inline confirmation/cancel step with stable test tags.
-- verified: Focused state-holder unit tests, connected persistence tests,
-  connected Compose UI tests, broad compile/unit/assemble checks, `git diff
-  --check`, and installed debug launch passed. Evidence logs and screenshots
-  are under
-  `.codex/test-artifacts/2026-09-04-slice-19e-remove-saved-location-ui/`.
-- committed: Verified Slice 19E work is committed in this changeset.
+- specified: Gate 19F is defined in the MVP roadmap as the saved-locations
+  documentation sync after Slice 19E.
+- planned: Bounded to documentation/status alignment across the specification,
+  roadmap, active plan, and live history.
+- documented: Specification, roadmap, active plan, and live history were
+  aligned to Slice 19E committed at `00cb88a`, Gate 19F ready, and Slice 20A as
+  the next implementation candidate.
+- verified: `git diff --check` passed; log saved under
+  `.codex/test-artifacts/2026-09-04-gate-19f-saved-locations-doc-sync/`.
+- ready: Documentation-only sync is ready for review and commit.
+
+Skipped commands:
+- Android compile, unit, connected, assemble, emulator, and install commands
+  were not run because this cycle changed only Markdown documentation/status
+  files and did not change production or test code.

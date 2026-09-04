@@ -32,16 +32,12 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 19D, Save Search Result UI,
-  committed at `8599640`.
-- Last committed documentation cleanup: Post-19D Authority Sync, committed at
-  `0fb2ce6`.
-- Current planned implementation slice: Slice 19E, Remove Saved Location UI,
-  currently uncommitted.
-- Current documentation drift under review: About disclosure copy still uses the
-  coarse phrase `saved-location save/remove UI`; the 19E review must split or
-  update that wording after removal behavior is verified. Specification,
-  roadmap, and README are aligned to Slice 19E as the next candidate.
+- Last committed implementation slice: Slice 19E, Remove Saved Location UI,
+  committed at `00cb88a`.
+- Current documentation sync: Gate 19F, Saved Locations Documentation Sync, is
+  ready in this changeset.
+- Current next implementation candidate after Gate 19F is committed: Slice 20A,
+  Unit Preference Contract.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -301,3 +297,39 @@ Boundaries:
 - No Room schema, DataStore format, forecast-cache format, provider request,
   forecast repository, fallback-selection, unit preference, alert, air quality,
   radar/map, appearance setting, release, or MVP-readiness behavior changed.
+
+### 2026-09-04-gate-19f-saved-locations-doc-sync
+
+Status: ready
+Mode: documentation-only
+Slice: Gate 19F, Saved Locations Documentation Sync
+Commit: uncommitted
+
+Result:
+- Replaced the completed Slice 19E active plan with a bounded Gate 19F
+  documentation-sync plan and results.
+- Updated specification section 53 so it reflects saved-location behavior
+  committed through Slice 19E at `00cb88a`, identifies Gate 19F as the current
+  documentation sync, and names Slice 20A as the next implementation candidate
+  after the sync is committed.
+- Updated the MVP roadmap so Slice 19E is committed at `00cb88a`, Gate 19F is
+  ready in this changeset, and next-candidate guidance advances to Slice 20A.
+- Updated this live history summary to remove stale claims that 19E is
+  uncommitted or next.
+
+Evidence:
+- `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-gate-19f-saved-locations-doc-sync/git-diff-check.log`.
+
+Blockers:
+- None.
+
+Boundaries:
+- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
+  DataStore format, forecast-cache format, UI behavior, saved-location
+  behavior, provider behavior, unit preference, alert, air quality, radar,
+  release, or MVP behavior changed.
+- Android compile, unit, connected, assemble, emulator, and install commands
+  were not run because this was a Markdown-only status sync.
