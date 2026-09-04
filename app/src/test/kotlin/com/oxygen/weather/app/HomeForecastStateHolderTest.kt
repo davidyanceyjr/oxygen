@@ -486,6 +486,145 @@ class HomeForecastStateHolderTest {
     }
 
     @Test
+    fun `request saved location removal only enters confirmation without deleting`() {
+        val saved = weatherLocation("saved-remove-request", "Saved Remove Request City")
+        val savedStorage = RecordingSavedLocationStorage(listOf(saved))
+        val stateHolder = OxygenAppStateHolder(
+            savedLocationStorage = savedStorage,
+            forecastExecutor = DirectForecastExecutor,
+        )
+        stateHolder.loadSavedLocations()
+
+        stateHolder.onSavedLocationRemoveRequested(saved.id)
+
+        val loaded = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        assertEquals(saved.id, loaded.pendingRemovalLocationId)
+        assertEquals(listOf(saved), loaded.locations)
+        assertEquals(emptyList<LocationId>(), savedStorage.removals)
+    }
+
+    @Test
+    fun `cancel saved location removal clears confirmation without deleting`() {
+        val saved = weatherLocation("saved-remove-cancel", "Saved Remove Cancel City")
+        val savedStorage = RecordingSavedLocationStorage(listOf(saved))
+        val stateHolder = OxygenAppStateHolder(
+            savedLocationStorage = savedStorage,
+            forecastExecutor = DirectForecastExecutor,
+        )
+        stateHolder.loadSavedLocations()
+        stateHolder.onSavedLocationRemoveRequested(saved.id)
+
+        stateHolder.onSavedLocationRemoveCanceled(saved.id)
+
+        val loaded = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        assertEquals(null, loaded.pendingRemovalLocationId)
+        assertEquals(listOf(saved), loaded.locations)
+        assertEquals(emptyList<LocationId>(), savedStorage.removals)
+    }
+
+    @Test
+    fun `confirmed saved location removal deletes through saved storage and refreshes saved rows only`() {
+        val removed = weatherLocation("saved-remove-confirm", "Saved Remove Confirm City")
+        val kept = weatherLocation("saved-remove-kept", "Saved Remove Kept City")
+        val selectedStorage = RecordingSelectedLocationStorage()
+        val weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Loading))
+        val cacheStorage = RecordingForecastCacheStorage()
+        val savedStorage = RecordingSavedLocationStorage(listOf(removed, kept))
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocationStorage = selectedStorage,
+            savedLocationStorage = savedStorage,
+            forecastCacheStorage = cacheStorage,
+            weatherRepository = weatherRepository,
+            forecastExecutor = DirectForecastExecutor,
+        )
+        stateHolder.loadSavedLocations()
+        stateHolder.onSavedLocationRemoveRequested(removed.id)
+
+        stateHolder.onSavedLocationRemoveConfirmed(removed.id)
+
+        val loaded = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        assertEquals(listOf(removed.id), savedStorage.removals)
+        assertEquals(listOf(kept), loaded.locations)
+        assertEquals(null, loaded.pendingRemovalLocationId)
+        assertEquals(emptyList<WeatherLocation>(), selectedStorage.writes)
+        assertEquals(emptyList<WeatherLocation>(), weatherRepository.locations)
+        assertEquals(emptyList<LocationId>(), cacheStorage.readLocationIds)
+        assertEquals(emptyList<WeatherBundle>(), cacheStorage.replacements)
+        assertFalse(stateHolder.presentationState.isShowingHome)
+    }
+
+    @Test
+    fun `saved location removal failure surfaces local saved-location failure`() {
+        val saved = weatherLocation("saved-remove-fails", "Saved Remove Fails City")
+        val stateHolder = OxygenAppStateHolder(
+            savedLocationStorage = FailingSavedLocationStorage(removeFails = true, listedLocations = listOf(saved)),
+            forecastExecutor = DirectForecastExecutor,
+        )
+        stateHolder.loadSavedLocations()
+        stateHolder.onSavedLocationRemoveRequested(saved.id)
+
+        stateHolder.onSavedLocationRemoveConfirmed(saved.id)
+
+        val failure = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Failure
+        assertEquals(SavedLocationsMessage.LocalStateUnavailable, failure.message)
+    }
+
+    @Test
+    fun `removing currently selected saved location leaves selected storage cache provider and visible forecast unchanged`() {
+        val selected = weatherLocation("saved-remove-current", "Saved Remove Current City")
+        val weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(fullWeatherBundle(selected))))
+        val selectedStorage = RecordingSelectedLocationStorage(readLocation = selected)
+        val cacheStorage = RecordingForecastCacheStorage()
+        val savedStorage = RecordingSavedLocationStorage(listOf(selected))
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = selected,
+            selectedLocationStorage = selectedStorage,
+            savedLocationStorage = savedStorage,
+            forecastCacheStorage = cacheStorage,
+            weatherRepository = weatherRepository,
+            forecastExecutor = DirectForecastExecutor,
+        )
+        val readyBefore = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        val providerLocationsBeforeRemoval = weatherRepository.locations.toList()
+        val cacheReadsBeforeRemoval = cacheStorage.readLocationIds.toList()
+        val cacheReplacementsBeforeRemoval = cacheStorage.replacements.toList()
+        stateHolder.loadSavedLocations()
+        stateHolder.onSavedLocationRemoveRequested(selected.id)
+
+        stateHolder.onSavedLocationRemoveConfirmed(selected.id)
+
+        val loaded = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        val readyAfter = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(emptyList<WeatherLocation>(), loaded.locations)
+        assertEquals(listOf(selected.id), savedStorage.removals)
+        assertEquals(emptyList<WeatherLocation>(), selectedStorage.writes)
+        assertEquals(providerLocationsBeforeRemoval, weatherRepository.locations)
+        assertEquals(cacheReadsBeforeRemoval, cacheStorage.readLocationIds)
+        assertEquals(cacheReplacementsBeforeRemoval, cacheStorage.replacements)
+        assertSame(selected, stateHolder.presentationState.selectedLocation)
+        assertEquals(readyBefore, readyAfter)
+    }
+
+    @Test
+    fun `unknown saved location removal request does not mutate saved state`() {
+        val saved = weatherLocation("saved-remove-known", "Saved Remove Known City")
+        val savedStorage = RecordingSavedLocationStorage(listOf(saved))
+        val stateHolder = OxygenAppStateHolder(
+            savedLocationStorage = savedStorage,
+            forecastExecutor = DirectForecastExecutor,
+        )
+        stateHolder.loadSavedLocations()
+        val before = stateHolder.presentationState
+
+        stateHolder.onSavedLocationRemoveRequested(LocationId("saved-remove-unknown"))
+
+        assertEquals(before, stateHolder.presentationState)
+        assertEquals(emptyList<LocationId>(), savedStorage.removals)
+    }
+
+    @Test
     fun `select saved location persists selection restores matching cache and starts provider refresh`() {
         val saved = weatherLocation("saved-cache", "Saved Cache City")
         val cachedBundle = fullWeatherBundle(saved)
@@ -1306,6 +1445,8 @@ private class RecordingSavedLocationStorage(
 private class FailingSavedLocationStorage(
     private val listFails: Boolean = false,
     private val saveFails: Boolean = false,
+    private val removeFails: Boolean = false,
+    private val listedLocations: List<WeatherLocation> = emptyList(),
 ) : SavedLocationStorage {
     override fun saveLocation(location: WeatherLocation) {
         if (saveFails) error("saved-location save failed")
@@ -1313,10 +1454,12 @@ private class FailingSavedLocationStorage(
 
     override fun listLocations(): List<WeatherLocation> {
         if (listFails) error("saved-location list failed")
-        return emptyList()
+        return listedLocations
     }
 
-    override fun removeLocation(locationId: LocationId) = Unit
+    override fun removeLocation(locationId: LocationId) {
+        if (removeFails) error("saved-location remove failed")
+    }
 }
 
 private class RecordingForecastCacheStorage(

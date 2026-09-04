@@ -220,6 +220,59 @@ class OfflineLaunchPersistenceInstrumentedTest {
     }
 
     @Test
+    fun locationEntryRemovalUsesProductionRoomStorageWithoutChangingSelectedLocationOrForecastCache() {
+        val context = targetContext()
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
+        val forecastCacheStorage = RoomForecastCacheStorageFactory.create(context)
+        val selected = weatherLocation(
+            id = "android-remove-current-${System.nanoTime()}",
+            name = "Android Remove Current City",
+        )
+        val other = weatherLocation(
+            id = "android-remove-other-${System.nanoTime()}",
+            name = "Android Remove Other City",
+            latitude = 41.8781,
+            longitude = -87.6298,
+        )
+        val cachedBundle = fullWeatherBundle(selected)
+        selectedLocationStorage.writeSelectedLocation(selected)
+        savedLocationStorage.saveLocation(selected)
+        savedLocationStorage.saveLocation(other)
+        forecastCacheStorage.replaceBundle(cachedBundle)
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = selected,
+            selectedLocationStorage = selectedLocationStorage,
+            savedLocationStorage = savedLocationStorage,
+            forecastCacheStorage = forecastCacheStorage,
+            weatherRepository = FailingWeatherRepository,
+            forecastExecutor = DirectExecutor,
+            clock = java.time.Clock.fixed(Instant.parse("2026-08-22T12:45:00Z"), ZoneId.of("UTC")),
+        )
+        val readyBefore = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        stateHolder.loadSavedLocations()
+        stateHolder.onSavedLocationRemoveRequested(selected.id)
+        stateHolder.onSavedLocationRemoveCanceled(selected.id)
+        assertEquals(listOf(selected, other), savedLocationStorage.listLocations())
+        stateHolder.onSavedLocationRemoveRequested(selected.id)
+        stateHolder.onSavedLocationRemoveConfirmed(selected.id)
+
+        val loaded = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        val readyAfter = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(listOf(other), savedLocationStorage.listLocations())
+        assertEquals(listOf(other), loaded.locations)
+        assertEquals(selected, selectedLocationStorage.readSelectedLocation())
+        assertEquals(cachedBundle, forecastCacheStorage.readBundle(selected.id))
+        assertEquals(selected.id, stateHolder.presentationState.selectedLocation?.id)
+        assertEquals(readyBefore, readyAfter)
+        context.deleteDatabase("oxygen_forecast_cache.db")
+    }
+
+    @Test
     fun searchResultSaveUsesProductionRoomStorageAndRefreshesSavedRowsWithoutSelecting() {
         val context = targetContext()
         context.deleteDatabase("oxygen_forecast_cache.db")

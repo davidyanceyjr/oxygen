@@ -68,6 +68,18 @@ fun OxygenApp(
                     stateHolder.onSavedLocationSelected(it)
                     appState = stateHolder.presentationState
                 },
+                onSavedLocationRemoveRequested = {
+                    stateHolder.onSavedLocationRemoveRequested(it)
+                    appState = stateHolder.presentationState
+                },
+                onSavedLocationRemoveCanceled = {
+                    stateHolder.onSavedLocationRemoveCanceled(it)
+                    appState = stateHolder.presentationState
+                },
+                onSavedLocationRemoveConfirmed = {
+                    stateHolder.onSavedLocationRemoveConfirmed(it)
+                    appState = stateHolder.presentationState
+                },
                 onUseMyLocation = {
                     stateHolder.onUseMyLocation()
                     stateHolder.consumeNextCommand()?.let { command ->

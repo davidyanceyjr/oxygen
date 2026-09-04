@@ -99,7 +99,7 @@ class AboutDisclosureStateHolderTest {
         assertTrue(text.contains("cache persistence"))
         assertTrue(text.contains("foreground failed-refresh stale retention"))
         assertTrue(text.contains("Saved-location storage, list display"))
-        assertTrue(text.contains("saved-location selection are implemented"))
+        assertTrue(text.contains("confirmed saved-location removal are implemented"))
         assertTrue(text.contains("Installed-app durable Room cache wiring"))
         assertTrue(text.contains("offline cache launch behavior are implemented"))
         assertTrue(text.contains("Provider-specific MET Norway cache headers are persisted"))
@@ -109,7 +109,7 @@ class AboutDisclosureStateHolderTest {
         assertTrue(text.contains("Environment and Climate Change Canada alerts"))
         assertTrue(text.contains("Open-Meteo/CAMS air quality"))
         assertTrue(text.contains("roadmap-only"))
-        assertTrue(text.contains("saved-location save/remove UI"))
+        assertFalse(text.contains("saved-location save/remove UI"))
         assertFalse(text.contains("unit settings are implemented"))
         assertFalse(text.contains("alerts are implemented"))
     }

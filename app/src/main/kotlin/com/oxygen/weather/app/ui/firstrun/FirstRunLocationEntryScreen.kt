@@ -48,6 +48,9 @@ fun FirstRunLocationEntryScreen(
     onCandidateSelected: (LocationId) -> Unit,
     onCandidateSaved: (LocationId) -> Unit = {},
     onSavedLocationSelected: (LocationId) -> Unit,
+    onSavedLocationRemoveRequested: (LocationId) -> Unit = {},
+    onSavedLocationRemoveCanceled: (LocationId) -> Unit = {},
+    onSavedLocationRemoveConfirmed: (LocationId) -> Unit = {},
     onUseMyLocation: () -> Unit,
     onBack: () -> Unit,
     onOpenAbout: () -> Unit,
@@ -101,6 +104,9 @@ fun FirstRunLocationEntryScreen(
                     savedLocations = savedLocations,
                     selectedLocation = selectedLocation,
                     onSavedLocationSelected = onSavedLocationSelected,
+                    onSavedLocationRemoveRequested = onSavedLocationRemoveRequested,
+                    onSavedLocationRemoveCanceled = onSavedLocationRemoveCanceled,
+                    onSavedLocationRemoveConfirmed = onSavedLocationRemoveConfirmed,
                 )
                 ManualLocationSearchContent(
                     searchState = state.searchState,
@@ -131,6 +137,9 @@ private fun SavedLocationsContent(
     savedLocations: SavedLocationsPresentationState,
     selectedLocation: WeatherLocation?,
     onSavedLocationSelected: (LocationId) -> Unit,
+    onSavedLocationRemoveRequested: (LocationId) -> Unit,
+    onSavedLocationRemoveCanceled: (LocationId) -> Unit,
+    onSavedLocationRemoveConfirmed: (LocationId) -> Unit,
 ) {
     when (savedLocations) {
         SavedLocationsPresentationState.NotLoaded -> Unit
@@ -152,7 +161,11 @@ private fun SavedLocationsContent(
                             location = location,
                             index = index,
                             isSelected = location.id == selectedLocation?.id,
+                            isPendingRemoval = location.id == savedLocations.pendingRemovalLocationId,
                             onSelected = { onSavedLocationSelected(location.id) },
+                            onRemoveRequested = { onSavedLocationRemoveRequested(location.id) },
+                            onRemoveCanceled = { onSavedLocationRemoveCanceled(location.id) },
+                            onRemoveConfirmed = { onSavedLocationRemoveConfirmed(location.id) },
                         )
                     }
                 }
@@ -184,7 +197,11 @@ private fun SavedLocationRow(
     location: WeatherLocation,
     index: Int,
     isSelected: Boolean,
+    isPendingRemoval: Boolean,
     onSelected: () -> Unit,
+    onRemoveRequested: () -> Unit,
+    onRemoveCanceled: () -> Unit,
+    onRemoveConfirmed: () -> Unit,
 ) {
     Surface(
         modifier = Modifier
@@ -229,6 +246,59 @@ private fun SavedLocationRow(
                     .testTag("location-entry-saved-location-select-$index"),
             ) {
                 Text("Select saved location")
+            }
+            OutlinedButton(
+                onClick = onRemoveRequested,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("location-entry-saved-location-remove-$index"),
+            ) {
+                Text("Remove saved location")
+            }
+            if (isPendingRemoval) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("location-entry-saved-remove-confirmation-$index"),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Remove ${location.savedLocationTitle()} from saved locations?",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = onRemoveCanceled,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp)
+                                    .testTag("location-entry-saved-remove-cancel-$index"),
+                            ) {
+                                Text("Cancel")
+                            }
+                            Button(
+                                onClick = onRemoveConfirmed,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp)
+                                    .testTag("location-entry-saved-remove-confirm-$index"),
+                            ) {
+                                Text("Remove")
+                            }
+                        }
+                    }
+                }
             }
         }
     }

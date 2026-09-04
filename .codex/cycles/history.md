@@ -34,12 +34,14 @@ ledger states.
 
 - Last committed implementation slice: Slice 19D, Save Search Result UI,
   committed at `8599640`.
-- Last committed documentation cleanup: Post-19D Authority Sync, currently
-  uncommitted.
-- Current planned implementation slice: none selected.
-- Current documentation drift under review: none known after post-19D authority
-  sync reconciled stale specification and roadmap wording that still pointed at
-  already committed Slice 19D work.
+- Last committed documentation cleanup: Post-19D Authority Sync, committed at
+  `0fb2ce6`.
+- Current planned implementation slice: Slice 19E, Remove Saved Location UI,
+  currently uncommitted.
+- Current documentation drift under review: About disclosure copy still uses the
+  coarse phrase `saved-location save/remove UI`; the 19E review must split or
+  update that wording after removal behavior is verified. Specification,
+  roadmap, and README are aligned to Slice 19E as the next candidate.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -227,10 +229,10 @@ Boundaries:
 
 ### 2026-09-04-post-19d-authority-sync
 
-Status: ready
+Status: committed
 Mode: documentation-only
 Slice: Post-19D Authority Sync
-Commit: uncommitted
+Commit: `0fb2ce6`
 
 Result:
 - Updated specification section 53 so it no longer identifies already committed
@@ -253,3 +255,49 @@ Boundaries:
   release, or MVP behavior changed.
 - Android compile, unit, connected, and assemble commands were not run because
   this was a Markdown-only authority sync.
+
+### 2026-09-04-slice-19e-remove-saved-location-ui
+
+Status: committed
+Mode: feature
+Slice: Slice 19E, Remove Saved Location UI
+Commit: committed in this changeset
+
+Result:
+- Added explicit saved-location removal handling to the installed
+  location-entry path.
+- Saved rows now expose separate select/remove controls; removal requires an
+  inline confirmation/cancel step before calling production
+  `SavedLocationStorage.removeLocation(...)`.
+- Confirmed removal refreshes only saved-location presentation state. Removing
+  the current saved location leaves selected-location storage, Room forecast
+  cache data, provider refresh requests, and the visible Home forecast
+  unchanged.
+- Updated README and About disclosure copy so saved-location removal UI is no
+  longer listed as unimplemented.
+
+Evidence:
+- Baseline focused app-state unit check passed before production edits.
+- Focused checks passed: `:app:testDebugUnitTest --tests
+  '*FirstRunLocationStateHolderTest' --tests '*HomeForecastStateHolderTest'`,
+  connected `OfflineLaunchPersistenceInstrumentedTest`, and connected
+  `HomeDashboardUiTest`.
+- Real-path exercise: `scripts/list-avds.sh`, `scripts/start-emulator.sh`, and
+  `scripts/install-debug.sh` passed on `oxygen_starter`; installed launch was
+  captured after dismissing an emulator System UI ANR dialog.
+- Broad checks passed: `:app:compileDebugKotlin`,
+  `:app:testDebugUnitTest :core:testDebugUnitTest`, `:app:assembleDebug`, and
+  `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-slice-19e-remove-saved-location-ui/`.
+
+Blockers:
+- Full manual live-geocoding creation/removal was not claimed. Deterministic
+  connected installed-boundary tests seeded production Room/DataStore/cache
+  state and exercised the app-state removal path.
+
+Boundaries:
+- No Room schema, DataStore format, forecast-cache format, provider request,
+  forecast repository, fallback-selection, unit preference, alert, air quality,
+  radar/map, appearance setting, release, or MVP-readiness behavior changed.

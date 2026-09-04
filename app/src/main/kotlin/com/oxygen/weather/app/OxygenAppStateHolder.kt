@@ -235,6 +235,44 @@ class OxygenAppStateHolder(
         }
     }
 
+    @Synchronized
+    fun onSavedLocationRemoveRequested(locationId: LocationId) {
+        val loaded = presentationState.savedLocations as? SavedLocationsPresentationState.Loaded ?: return
+        if (loaded.locations.none { it.id == locationId }) return
+        presentationState = presentationState.copy(
+            savedLocations = loaded.copy(pendingRemovalLocationId = locationId),
+        )
+        publishState()
+    }
+
+    @Synchronized
+    fun onSavedLocationRemoveCanceled(locationId: LocationId) {
+        val loaded = presentationState.savedLocations as? SavedLocationsPresentationState.Loaded ?: return
+        if (loaded.pendingRemovalLocationId != locationId) return
+        presentationState = presentationState.copy(
+            savedLocations = loaded.copy(pendingRemovalLocationId = null),
+        )
+        publishState()
+    }
+
+    fun onSavedLocationRemoveConfirmed(locationId: LocationId) {
+        val storage = savedLocationStorage ?: return
+        val loaded = presentationState.savedLocations as? SavedLocationsPresentationState.Loaded ?: return
+        if (loaded.pendingRemovalLocationId != locationId) return
+        forecastExecutor.execute {
+            val nextState = try {
+                storage.removeLocation(locationId)
+                SavedLocationsPresentationState.Loaded(storage.listLocations())
+            } catch (_: Exception) {
+                SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable)
+            }
+            synchronized(this) {
+                presentationState = presentationState.copy(savedLocations = nextState)
+                publishState()
+            }
+        }
+    }
+
     fun onHomeForecastRetry() {
         val selectedLocation = presentationState.selectedLocation ?: return
         startHomeForecastLoad(selectedLocation)
@@ -592,6 +630,7 @@ sealed interface SavedLocationsPresentationState {
 
     data class Loaded(
         val locations: List<WeatherLocation>,
+        val pendingRemovalLocationId: LocationId? = null,
     ) : SavedLocationsPresentationState
 
     data class Failure(

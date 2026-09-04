@@ -1,120 +1,144 @@
 # Active Cycle
 
 Status: committed
-Cycle ID: 2026-09-04-slice-19d-save-search-result-ui
+Cycle ID: 2026-09-04-slice-19e-remove-saved-location-ui
 Mode: feature
-Slice: Slice 19D, Save Search Result UI
-Commit: `8599640`
+Slice: Slice 19E, Remove Saved Location UI
+Commit: committed in this changeset
 
-Goal: Let users save a searched place from the location-entry surface through
-the production saved-location path without making save required for one-off
-manual selection.
+Goal: Let users remove saved locations from the location-entry surface through
+the production saved-location path without accidental deletion and without
+changing the current Home forecast, selected-location DataStore row, or forecast
+cache rows.
 
 Basis:
 - `docs/OXYGEN_FULL_SPECIFICATION.md` section 53 and
-  `.codex/plans/mvp-roadmap.md` identify Slice 19D as the next implementation
+  `.codex/plans/mvp-roadmap.md` identify Slice 19E as the next implementation
   candidate.
-- Slice 19C committed saved-location list/display/current marking/select UI for
-  existing saved rows.
-- `SavedLocationStorage.saveLocation(...)` and
-  `RoomSavedLocationStorageFactory.create(...)` already exist; the installed UI
-  does not yet expose save controls for search results.
-- README still correctly lists search-result save UI as not implemented.
+- Slice 19D committed search-result save UI at `8599640`; the post-19D
+  authority sync is committed at `0fb2ce6`.
+- `SavedLocationStorage.removeLocation(...)` and
+  `RoomSavedLocationStorageFactory.create(...)` already exist and have core Room
+  removal coverage.
+- The installed location-entry UI lists/selects saved rows but does not expose
+  remove controls or confirmation.
+- README correctly lists saved-location removal UI as not implemented. About
+  still uses the coarse phrase `saved-location save/remove UI`; the 19E review
+  must split or update that wording after removal behavior is verified without
+  claiming broader saved-location completion before Gate 19F.
 
 ## Contract
 
 Selected behavior:
-- Search result rows expose a clear save control alongside the existing manual
-  use-now/select action.
-- Saving a result calls production `SavedLocationStorage.saveLocation(...)` with
-  the candidate's provider-neutral `WeatherLocation`.
-- Save success refreshes the saved-location list shown on the location-entry
-  surface and does not select the location, write selected-location storage, or
-  start a forecast by itself.
-- Save failure surfaces as
+- Saved-location rows expose a visible, per-row remove control alongside the
+  existing select action.
+- Activating remove opens an explicit confirmation/cancel step for that saved
+  row before any production storage deletion.
+- Cancel dismisses confirmation and does not call
+  `SavedLocationStorage.removeLocation(...)`.
+- Confirmed removal calls production `SavedLocationStorage.removeLocation(...)`
+  for the row's provider-neutral `LocationId`, then refreshes only
+  `SavedLocationsPresentationState`.
+- Remove failure surfaces
   `SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable)`.
-- Manual use-now selection still works when saved-location storage is absent,
-  unavailable, or a previous save failed.
-- When saved-location storage is absent, search-result save controls are not
-  offered on the installed UI; if the app-state save handler is called anyway,
-  it surfaces `SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable)`
-  without selecting the location, writing selected-location storage, or starting
-  a forecast.
-- Saving an already-saved `WeatherLocation` refreshes the saved-location list
-  without creating duplicate visible rows, preserving the Slice 19A storage
-  duplicate policy.
-- Compact and large-font layouts keep search, save, and use-now controls
-  readable, reachable, and tagged for tests.
+- Removing the currently selected location does not clear or rewrite
+  `DataStoreSelectedLocationStorage`, remove or rewrite `ForecastCacheStorage`,
+  start a provider refresh, or replace the visible Home forecast.
+- Selecting saved rows, saving searched rows, manual use-now selection,
+  offline restore, fallback provenance, and Data Sources/Privacy provider
+  claims remain behaviorally unchanged. About saved-location status copy may
+  change only after verified removal behavior.
+- Compact and large-font layouts keep saved-row select/remove controls and the
+  confirmation/cancel step readable, reachable, and tagged for tests.
 
 Acceptance boundary:
-- Production changes are limited to app state/event handling and the
-  location-entry Compose surface unless a focused test exposes a necessary
+- Production changes are limited to `OxygenAppStateHolder`, `OxygenApp`, and
+  `FirstRunLocationEntryScreen` unless a focused test exposes a necessary
   smaller supporting change.
 - The installed app continues to use `RoomSavedLocationStorageFactory.create(...)`
-  from `MainActivity`; no fake or sample save path may satisfy production UI.
-- Existing saved-location selection, selected-location persistence, forecast
-  loading/cache/fallback behavior, provider disclosures, and About text remain
-  behaviorally unchanged except where About/README status is updated after the
-  slice is verified.
-- Stable test tags include search-result rows and per-row controls, using names
-  such as `location-entry-result-save-0` and
-  `location-entry-result-use-now-0`.
-- Save evidence under
-  `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/`.
+  from `MainActivity`; no fake, sample, or UI-only delete path may satisfy the
+  behavior.
+- No Room schema, forecast-cache storage, DataStore format, provider request,
+  forecast repository, fallback-selection, or Home forecast presentation change
+  is allowed for this slice.
+- Stable test tags should identify saved rows, remove controls, confirmation,
+  confirm, and cancel actions, for example
+  `location-entry-saved-location-remove-0`,
+  `location-entry-saved-remove-confirmation-0`,
+  `location-entry-saved-remove-confirm-0`, and
+  `location-entry-saved-remove-cancel-0`.
+- Evidence belongs under
+  `.codex/test-artifacts/2026-09-04-slice-19e-remove-saved-location-ui/`.
 
 Out of scope:
-- Adding saved-location removal UI.
-- Saved-location reordering, folders, favorites, or automatic multi-location
-  refresh.
-- Unit preferences, device-location permission expansion, official alerts, air
-  quality, radar/maps, appearance settings, widgets, background refresh,
-  notifications, provider changes, release readiness, or MVP-readiness claims.
+- Saved-location drag reorder, folders, favorites, search/filter management, or
+  automatic multi-location refresh.
+- Automatic replacement when the removed row is currently selected.
+- Clearing selected-location state, forecast cache cleanup, provider preference
+  UI, unit preferences, device-location permission expansion, official alerts,
+  air quality, radar/maps, appearance settings, widgets, background refresh,
+  notifications, release readiness, or MVP-readiness claims.
 
 ## Design
 
-- Add an app-state handler such as `onManualLocationCandidateSaved(candidateId)`
-  that finds the candidate in current search results, writes it to
-  `SavedLocationStorage`, then reloads the saved-location list.
-- Keep `onManualLocationCandidateSelected(...)` as the manual use-now path; it
-  must not depend on saved-location storage.
-- Extend `FirstRunLocationEntryScreen` result rows with two full-width
-  minimum-48dp actions: save and use now. Preserve title, subtitle,
-  coordinates, timezone, and disclosure text.
-- Prefer focused additions to existing `FirstRunLocationStateHolderTest` for
-  search-result save behavior, `HomeForecastStateHolderTest` for saved-location
-  regression coverage, and `HomeDashboardUiTest` for Compose coverage; add a
-  dedicated location-entry UI test only if it keeps Compose coverage clearer.
-- Add or extend connected evidence through an installed-boundary path using
-  `RoomSavedLocationStorageFactory.create(...)` to prove search-result save
-  persists into Room and appears in the refreshed saved list.
+- Add app-state removal handling such as `onSavedLocationRemoveRequested(...)`,
+  `onSavedLocationRemoveCanceled(...)`, and
+  `onSavedLocationRemoveConfirmed(...)`, or an equivalent single explicit
+  confirmation state that keeps deletion impossible until confirm.
+- Store pending confirmation as presentation state, not as hidden UI-only
+  mutation. The state should identify one saved `LocationId` and clear on cancel,
+  successful removal refresh, or failure.
+- Implement confirmed removal on the existing forecast executor because saved
+  location storage is synchronous and already used there. Do not call
+  `nextForecastRequestId()`, selected-location storage, forecast cache storage,
+  or weather repository from the remove path.
+- Extend saved-row Compose UI with separate full-width or otherwise minimum
+  48dp select/remove actions. Use Material destructive styling only as
+  reinforcement; the confirmation text/action labels must carry the meaning.
+- Keep confirmation inline with the row or as a simple dialog only if Compose
+  tests can exercise cancel/confirm reliably at compact and large-font sizes.
+  Prefer the smallest UI addition that remains readable and testable.
+- Update README removal status and split/update the stale About
+  `saved-location save/remove UI` wording only after verification proves removal
+  UI is implemented. Defer broader saved-location status reconciliation to
+  Gate 19F.
 
 ## Workflow
 
 Baseline:
 - `git status --short`
 - Inspect `OxygenAppStateHolder`, `OxygenApp`, `FirstRunLocationEntryScreen`,
-  `FirstRunLocationStateHolderTest`, `HomeForecastStateHolderTest`,
-  `HomeDashboardUiTest`, and connected Room saved-location tests.
-- Run focused baseline tests for current location-entry and saved-location
-  behavior before edits.
+  `HomeForecastStateHolderTest`, `HomeDashboardUiTest`,
+  `OfflineLaunchPersistenceInstrumentedTest`, and Room saved-location storage
+  tests.
+- Existing direct-storage connected coverage already proves Room saved-location
+  removal does not clear DataStore selected-location state; 19E must add
+  app-state/UI-path coverage.
+- Run focused baseline checks for current saved-location list/select/save
+  behavior before production edits.
 
 Red:
-- Add focused state-holder tests for save success list refresh, save failure
-  local saved-location failure, no selected-location write/forecast load on
-  save, duplicate save list behavior, absent saved-location storage behavior,
-  and use-now independence after save failure.
-- Add Compose test coverage that each search result row displays separate save
-  and use-now controls with stable tags and reachable text at large
-  density/font settings.
-- Add connected Room evidence that saving a searched result through the app
-  state holder uses `RoomSavedLocationStorageFactory.create(...)` and refreshes
-  the saved list.
+- Add state-holder tests proving remove request only enters confirmation,
+  cancel does not call storage, confirm calls `removeLocation(...)` and
+  refreshes saved rows, failure reports local saved-location failure, unknown
+  IDs do not mutate state, and removing the currently selected row leaves
+  selected-location writes, forecast cache calls, weather repository calls, and
+  visible Home forecast unchanged.
+- Add Compose tests proving saved rows expose separate select/remove controls,
+  confirmation/cancel/confirm are visible with stable tags, cancel preserves the
+  row, confirm invokes the callback, and large-font compact layout keeps
+  controls reachable.
+- Add connected installed-boundary evidence using
+  `RoomSavedLocationStorageFactory.create(...)` that removes a saved row through
+  `OxygenAppStateHolder`, refreshes the saved list, and leaves
+  `DataStoreSelectedLocationStorage` plus forecast cache data unchanged when the
+  removed ID is also the selected ID.
 
 Build:
-- Implement the smallest app-state event and UI callback wiring required by the
-  failing tests.
-- Keep changes out of provider, forecast cache, Room schema, DataStore format,
-  and Home forecast presentation unless a test proves a real regression.
+- Implement the smallest app-state confirmation/removal path and Compose
+  callback wiring required by the failing tests.
+- Keep existing selection/save handlers intact and avoid shared refactors unless
+  needed to remove real duplication introduced by the slice.
 
 Focused green:
 - `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRunLocationStateHolderTest' --tests '*HomeForecastStateHolderTest'`
@@ -125,13 +149,15 @@ Real-path exercise:
 - `scripts/list-avds.sh`
 - `scripts/start-emulator.sh`
 - `scripts/install-debug.sh`
-- In the installed app, search for a real place, save the result, confirm it
-  appears in saved locations, and confirm use-now still opens Home for a
-  searched result.
-- If live provider/network access blocks the real-place search, record the
-  exact blocker and do not report the manual installed-app real-path exercise as
-  verified; deterministic connected Room evidence may still support covered and
-  implemented status for the production save path.
+- In the installed app, create or reuse two saved locations, open the
+  location-entry surface, start removal for one saved row, cancel and confirm
+  the row remains, start removal again, confirm, verify only that row leaves the
+  saved list, then verify the current Home forecast is still visible/unchanged
+  when the removed row was current.
+- If live geocoding/provider access blocks creating saved rows, seed production
+  Room saved-location storage through existing deterministic test/app-state
+  paths and record the blocker. Do not claim live provider verification for any
+  step that was not exercised.
 
 Broad checks:
 - `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
@@ -140,93 +166,41 @@ Broad checks:
 - `git diff --check`
 
 Review:
-- Update README and any user-visible About/Data Sources/Privacy status text only
-  if they contain claims affected by verified Slice 19D behavior. Do not add
-  About status prose just to mirror the plan.
+- Confirm changed production files are limited to the planned app-state and
+  location-entry UI surface unless evidence justifies a small support change.
+- Confirm README/About removal status is updated only after verified behavior
+  exists, and that Data Sources/Privacy/provider claims remain unchanged.
 - Confirm no generated build outputs, SDK files, Gradle caches, emulator state,
   or local runtime directories are staged.
 
 Artifacts target:
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/`
+- `.codex/test-artifacts/2026-09-04-slice-19e-remove-saved-location-ui/`
 
 ## Phase Results
 
-- specified: Slice 19D is defined by the specification and roadmap as saving a
-  searched place from the location-entry surface without making save required
-  for one-off manual selection.
-- planned: Bounded to app state/event handling, location-entry Compose UI,
-  focused state/UI tests, connected Room saved-location evidence, installed
-  real-path exercise, and broad Android checks.
-- covered: Focused app state tests cover search-result save success, save
-  failure, absent saved-location storage, duplicate save refresh behavior, and
-  no selected-location write or forecast load on save. Connected Compose tests
-  cover separate search-result Save and Use now controls with stable tags and
-  hidden Save controls when saved-location storage is unavailable. Connected
-  app-state evidence covers saving a searched result through
-  `RoomSavedLocationStorageFactory.create(...)`.
-- implemented: `OxygenAppStateHolder.onManualLocationCandidateSaved(...)`
-  writes the candidate `WeatherLocation` to `SavedLocationStorage`, refreshes
-  saved rows, reports local saved-location failures, and leaves the manual
-  Use now path as the only selected-location/forecast handoff. The
-  location-entry screen renders per-result Save and Use now controls with
-  stable row/control tags.
-- verified: Baseline, red, focused, connected, installed-app, and broad checks
-  were run. The installed app searched live Open-Meteo geocoding for Chicago,
-  showed per-result Save and Use now controls, saved Chicago into the visible
-  saved-location list without leaving location entry, then Use now opened Home
-  with an Open-Meteo forecast for Chicago.
-
-Evidence artifacts:
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/baseline-focused-unit.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/red-focused-unit.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/focused-unit.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/list-avds.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/start-emulator.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/connected-offline-persistence-rerun.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/connected-home-dashboard-ui.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/install-debug.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/installed-chicago-results-clean-window.xml`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/installed-after-save-window.xml`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/installed-after-use-now-window.xml`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/installed-after-use-now-home.png`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/compile-debug-kotlin.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/debug-unit-tests.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/assemble-debug.log`
-- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/git-diff-check.log`
-
-Command results:
-- `git status --short`: showed pre-existing modified `.codex/plans/current.md`
-  and `.codex/cycles/history.md`; later implementation files were modified for
-  this cycle.
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRunLocationStateHolderTest' --tests '*HomeForecastStateHolderTest'`:
-  baseline passed before production edits.
-- Same focused unit command after red tests failed at compile on missing
-  `onManualLocationCandidateSaved`.
-- Same focused unit command after implementation passed.
-- `scripts/list-avds.sh`: found `oxygen_starter`.
-- `scripts/start-emulator.sh`: started the emulator after no connected device
-  was present.
-- `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.OfflineLaunchPersistenceInstrumentedTest`:
-  first run failed because the new connected test used persistent DataStore
-  state and started on Home; rerun passed after isolating selected-location
-  storage while preserving production Room saved-location storage.
-- `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`:
-  passed.
-- `scripts/install-debug.sh`: passed and launched the installed app.
-- Installed-app exercise: passed after dismissing an emulator Pixel Launcher
-  ANR dialog unrelated to Oxygen.
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`: passed.
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`:
-  passed.
-- `. scripts/android-env.sh && ./gradlew :app:assembleDebug`: passed.
-- `git diff --check`: passed.
-
-Changed files:
-- Production: `app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt`,
-  `app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt`,
-  `app/src/main/kotlin/com/oxygen/weather/app/ui/firstrun/FirstRunLocationEntryScreen.kt`.
-- Tests: `app/src/test/kotlin/com/oxygen/weather/app/HomeForecastStateHolderTest.kt`,
-  `app/src/androidTest/kotlin/com/oxygen/weather/app/OfflineLaunchPersistenceInstrumentedTest.kt`,
-  `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`.
-- Documentation/status: `README.md`, `.codex/plans/current.md`,
-  `.codex/cycles/history.md`.
+- specified: Slice 19E is defined by the specification and roadmap as removing
+  saved locations from the location-entry surface with explicit confirmation
+  and without changing current Home forecast state.
+- planned: Bounded to app-state confirmation/removal handling, saved-row Compose
+  UI, focused state/UI tests, connected Room/DataStore/cache evidence, installed
+  real-path exercise, broad Android checks, and narrow status documentation
+  updates after verification.
+- covered: Added app-state unit coverage for remove request, cancel, confirm,
+  failure, unknown ID, and current-selected preservation; connected Compose
+  coverage for row remove controls, confirmation/cancel/confirm tags, compact
+  large-font reachability, and app callback behavior; connected persistence
+  coverage through `RoomSavedLocationStorageFactory.create(...)`,
+  `DataStoreSelectedLocationStorage`, and Room forecast cache storage.
+- implemented: `OxygenAppStateHolder` now tracks a pending saved-location
+  removal in `SavedLocationsPresentationState.Loaded`, deletes only on explicit
+  confirmation through `SavedLocationStorage.removeLocation(...)`, refreshes
+  only saved-location presentation state, and leaves selected-location,
+  forecast cache, provider refresh, and visible Home forecast paths untouched.
+  `FirstRunLocationEntryScreen` exposes separate select/remove controls and an
+  inline confirmation/cancel step with stable test tags.
+- verified: Focused state-holder unit tests, connected persistence tests,
+  connected Compose UI tests, broad compile/unit/assemble checks, `git diff
+  --check`, and installed debug launch passed. Evidence logs and screenshots
+  are under
+  `.codex/test-artifacts/2026-09-04-slice-19e-remove-saved-location-ui/`.
+- committed: Verified Slice 19E work is committed in this changeset.

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
@@ -337,7 +338,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("location-entry-saved-location-1").assertIsDisplayed()
         composeRule.onAllNodesWithText("Madison").assertCountEquals(3)
         composeRule.onNodeWithText("Wisconsin, United States").assertIsDisplayed()
-        composeRule.onNodeWithText("Alabama, United States").assertIsDisplayed()
+        composeRule.onNodeWithText("Alabama, United States").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("43.0731, -89.4012 | America/Chicago").assertExists()
         composeRule.onNodeWithTag("location-entry-saved-current-0").assertIsDisplayed()
         composeRule.onAllNodesWithTag("location-entry-saved-current-1").assertCountEquals(0)
@@ -352,6 +353,74 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         assertEquals(listOf(madisonAlabama.id), selectedIds)
+    }
+
+    @Test
+    fun savedLocationRowsExposeRemoveConfirmationCancelAndConfirmControls() {
+        val madison = weatherLocation(
+            id = "saved-remove-ui-madison",
+            name = "Madison, Wisconsin, United States",
+        )
+        val confirmedIds = mutableListOf<LocationId>()
+        val pendingRemoval = mutableStateOf<LocationId?>(null)
+
+        composeRule.setCompactContent(heightDp = 920, fontScale = 1.35f) {
+            FirstRunLocationEntryScreen(
+                state = OxygenAppScreen.FirstRunLocationEntry(query = "Madison"),
+                selectedLocation = madison,
+                savedLocations = SavedLocationsPresentationState.Loaded(
+                    locations = listOf(madison),
+                    pendingRemovalLocationId = pendingRemoval.value,
+                ),
+                onQueryChanged = {},
+                onSearch = {},
+                onRetry = {},
+                onCandidateSelected = {},
+                onSavedLocationSelected = {},
+                onSavedLocationRemoveRequested = { pendingRemoval.value = it },
+                onSavedLocationRemoveCanceled = { pendingRemoval.value = null },
+                onSavedLocationRemoveConfirmed = { confirmedIds += it },
+                onUseMyLocation = {},
+                onBack = {},
+                onOpenAbout = {},
+            )
+        }
+
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "location-entry-saved-location-select-0",
+            "location-entry-saved-location-remove-0",
+        )
+        composeRule.onNodeWithTag("location-entry-saved-location-remove-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("location-entry-saved-remove-confirmation-0")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "location-entry-saved-remove-cancel-0",
+            "location-entry-saved-remove-confirm-0",
+        )
+        composeRule.onNodeWithTag("location-entry-saved-remove-cancel-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onAllNodesWithTag("location-entry-saved-remove-confirmation-0").assertCountEquals(0)
+        composeRule.onNodeWithTag("location-entry-saved-location-0").performScrollTo().assertIsDisplayed()
+        assertEquals(emptyList<LocationId>(), confirmedIds)
+
+        composeRule.onNodeWithTag("location-entry-saved-location-remove-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("location-entry-saved-remove-confirm-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(madison.id), confirmedIds)
     }
 
     @Test
@@ -538,6 +607,52 @@ class HomeDashboardUiTest {
 
         assertEquals(listOf(oldLocation, savedChicago), repository.locations)
         composeRule.onNodeWithText("Loading weather for Chicago, Illinois, United States").assertIsDisplayed()
+    }
+
+    @Test
+    fun oxygenAppSavedLocationRemoveCancelPreservesRowAndConfirmRefreshesSavedListOnly() {
+        val oldLocation = weatherLocation(id = "old-saved-remove-ui", name = "Old Saved Remove UI City")
+        val savedMadison = weatherLocation(id = "saved-remove-ui-app-madison", name = "Madison, Wisconsin, United States")
+        val savedChicago = weatherLocation(id = "saved-remove-ui-app-chicago", name = "Chicago, Illinois, United States")
+        val repository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(fullWeatherBundle(oldLocation))))
+        val storage = RecordingSavedLocationStorage(listOf(savedMadison, savedChicago))
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = oldLocation,
+            weatherRepository = repository,
+            savedLocationStorage = storage,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            OxygenApp(stateHolder = stateHolder)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-change-location").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("location-entry-saved-location-remove-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.onNodeWithTag("location-entry-saved-remove-cancel-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Madison").performScrollTo().assertIsDisplayed()
+        assertEquals(emptyList<LocationId>(), storage.removals)
+
+        composeRule.onNodeWithTag("location-entry-saved-location-remove-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.onNodeWithTag("location-entry-saved-remove-confirm-0")
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onAllNodesWithText("Madison").assertCountEquals(0)
+        composeRule.onNodeWithText("Chicago").performScrollTo().assertIsDisplayed()
+        assertEquals(listOf(savedMadison.id), storage.removals)
+        assertEquals(listOf(oldLocation), repository.locations)
     }
 
     @Test
@@ -1318,13 +1433,22 @@ private class StaticGeocodingRepository(
 }
 
 private class RecordingSavedLocationStorage(
-    private val locations: List<WeatherLocation>,
+    initialLocations: List<WeatherLocation>,
 ) : SavedLocationStorage {
-    override fun saveLocation(location: WeatherLocation) = Unit
+    private val locations = initialLocations.toMutableList()
+    val removals = mutableListOf<LocationId>()
 
-    override fun listLocations(): List<WeatherLocation> = locations
+    override fun saveLocation(location: WeatherLocation) {
+        locations.removeAll { it.id == location.id }
+        locations += location
+    }
 
-    override fun removeLocation(locationId: LocationId) = Unit
+    override fun listLocations(): List<WeatherLocation> = locations.toList()
+
+    override fun removeLocation(locationId: LocationId) {
+        removals += locationId
+        locations.removeAll { it.id == locationId }
+    }
 }
 
 private object FailingSavedLocationStorage : SavedLocationStorage {
