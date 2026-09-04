@@ -22,6 +22,8 @@ and `docs/data-sources/`.
 - Saved-location storage, saved-location list display, current-location marking,
   and selection of existing saved rows through the installed location-entry
   surface.
+- Search-result save UI through the installed location-entry surface, backed by
+  the production saved-location storage path.
 - Offline restoration of the last forecast for the selected location through the
   local Room forecast-cache path.
 - Foreground refresh failure handling that keeps a useful cached forecast
@@ -46,7 +48,7 @@ and `docs/data-sources/`.
 
 ## Not implemented yet
 
-- Search-result save UI and saved-location removal UI.
+- Saved-location removal UI.
 - Unit preferences.
 - Official weather alert lookup.
 - Persisted appearance/effects/layout settings.
@@ -159,8 +161,8 @@ cached fallback forecasts, and cached/stale MET Norway forecasts retain
 MET Norway provenance. Conditional GET requests, 304 not-modified handling, and
 release-candidate fallback verification remain later work.
 
-Search-result save UI, saved-location removal UI, unit preferences, alerts, air
-quality, radar, and release-candidate verification are not implemented yet.
+Saved-location removal UI, unit preferences, alerts, air quality, radar, and
+release-candidate verification are not implemented yet.
 
 ## Specification
 

@@ -43,6 +43,7 @@ fun OxygenApp(
                 state = screen,
                 selectedLocation = appState.selectedLocation,
                 savedLocations = appState.savedLocations,
+                canSaveSearchResults = stateHolder.canSaveSearchResults,
                 onQueryChanged = {
                     stateHolder.onManualLocationQueryChanged(it)
                     appState = stateHolder.presentationState
@@ -57,6 +58,10 @@ fun OxygenApp(
                 },
                 onCandidateSelected = {
                     stateHolder.onManualLocationCandidateSelected(it)
+                    appState = stateHolder.presentationState
+                },
+                onCandidateSaved = {
+                    stateHolder.onManualLocationCandidateSaved(it)
                     appState = stateHolder.presentationState
                 },
                 onSavedLocationSelected = {

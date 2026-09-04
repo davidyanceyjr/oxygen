@@ -38,6 +38,7 @@ class OxygenAppStateHolder(
 ) {
     private var startupLocationReadFailed = false
     private val initialSelectedLocation: WeatherLocation? = selectedLocation
+    val canSaveSearchResults: Boolean = savedLocationStorage != null
 
     @Volatile
     var presentationState: OxygenAppPresentationState = if (initialSelectedLocation == null) {
@@ -137,6 +138,40 @@ class OxygenAppStateHolder(
             return
         }
         startHomeForecastLoad(selected.location)
+    }
+
+    fun onManualLocationCandidateSaved(candidateId: LocationId) {
+        val firstRun = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.FirstRunLocationEntry
+            ?: return
+        val results = firstRun.searchState as? ManualLocationSearchState.Results ?: return
+        val selected = results.candidates.firstOrNull { it.id == candidateId } ?: return
+        val storage = savedLocationStorage
+        if (storage == null) {
+            synchronized(this) {
+                presentationState = presentationState.copy(
+                    savedLocations = SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable),
+                )
+                publishState()
+            }
+            return
+        }
+
+        synchronized(this) {
+            presentationState = presentationState.copy(savedLocations = SavedLocationsPresentationState.Loading)
+            publishState()
+        }
+        forecastExecutor.execute {
+            val nextState = try {
+                storage.saveLocation(selected.location)
+                SavedLocationsPresentationState.Loaded(storage.listLocations())
+            } catch (_: Exception) {
+                SavedLocationsPresentationState.Failure(SavedLocationsMessage.LocalStateUnavailable)
+            }
+            synchronized(this) {
+                presentationState = presentationState.copy(savedLocations = nextState)
+                publishState()
+            }
+        }
     }
 
     fun loadSavedLocations() {

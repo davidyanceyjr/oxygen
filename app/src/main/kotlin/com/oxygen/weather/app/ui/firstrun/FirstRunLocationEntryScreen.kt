@@ -41,10 +41,12 @@ fun FirstRunLocationEntryScreen(
     state: OxygenAppScreen.FirstRunLocationEntry,
     selectedLocation: WeatherLocation?,
     savedLocations: SavedLocationsPresentationState,
+    canSaveSearchResults: Boolean = false,
     onQueryChanged: (String) -> Unit,
     onSearch: () -> Unit,
     onRetry: () -> Unit,
     onCandidateSelected: (LocationId) -> Unit,
+    onCandidateSaved: (LocationId) -> Unit = {},
     onSavedLocationSelected: (LocationId) -> Unit,
     onUseMyLocation: () -> Unit,
     onBack: () -> Unit,
@@ -103,8 +105,10 @@ fun FirstRunLocationEntryScreen(
                 ManualLocationSearchContent(
                     searchState = state.searchState,
                     retryLabel = state.retryLabel,
+                    canSaveSearchResults = canSaveSearchResults,
                     onRetry = onRetry,
                     onCandidateSelected = onCandidateSelected,
+                    onCandidateSaved = onCandidateSaved,
                 )
                 SearchDisclosure(
                     disclosure = state.geocodingDisclosure,
@@ -305,8 +309,10 @@ private fun LocationEntryBottomActions(
 private fun ManualLocationSearchContent(
     searchState: ManualLocationSearchState,
     retryLabel: String,
+    canSaveSearchResults: Boolean,
     onRetry: () -> Unit,
     onCandidateSelected: (LocationId) -> Unit,
+    onCandidateSaved: (LocationId) -> Unit,
 ) {
     when (searchState) {
         ManualLocationSearchState.Idle -> Unit
@@ -322,9 +328,12 @@ private fun ManualLocationSearchContent(
         is ManualLocationSearchState.Results -> Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            searchState.candidates.forEach { candidate ->
+            searchState.candidates.forEachIndexed { index, candidate ->
                 ManualLocationCandidateRow(
                     candidate = candidate,
+                    index = index,
+                    canSave = canSaveSearchResults,
+                    onSaved = { onCandidateSaved(candidate.id) },
                     onSelected = { onCandidateSelected(candidate.id) },
                 )
             }
@@ -347,10 +356,15 @@ private fun ManualLocationSearchContent(
 @Composable
 private fun ManualLocationCandidateRow(
     candidate: ManualLocationCandidate,
+    index: Int,
+    canSave: Boolean,
+    onSaved: () -> Unit,
     onSelected: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("location-entry-result-$index"),
         color = MaterialTheme.colorScheme.surfaceVariant,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
@@ -373,11 +387,25 @@ private fun ManualLocationCandidateRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
             )
+            if (canSave) {
+                OutlinedButton(
+                    onClick = onSaved,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .testTag("location-entry-result-save-$index"),
+                ) {
+                    Text("Save")
+                }
+            }
             Button(
                 onClick = onSelected,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("location-entry-result-use-now-$index"),
             ) {
-                Text("Select")
+                Text("Use now")
             }
         }
     }

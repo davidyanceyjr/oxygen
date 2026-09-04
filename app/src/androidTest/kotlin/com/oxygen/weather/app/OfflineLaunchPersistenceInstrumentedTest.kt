@@ -2,6 +2,7 @@ package com.oxygen.weather.app
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.core.model.CurrentConditions
 import com.oxygen.weather.core.model.DailyForecast
 import com.oxygen.weather.core.model.DataProvenance
@@ -14,6 +15,8 @@ import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.ForecastError
+import com.oxygen.weather.core.provider.GeocodingRepository
+import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import com.oxygen.weather.core.provider.cache.CachedWeatherRepository
@@ -217,6 +220,40 @@ class OfflineLaunchPersistenceInstrumentedTest {
     }
 
     @Test
+    fun searchResultSaveUsesProductionRoomStorageAndRefreshesSavedRowsWithoutSelecting() {
+        val context = targetContext()
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val selectedLocationStorage = RecordingSelectedLocationStorage()
+        val savedLocationStorage = RoomSavedLocationStorageFactory.create(context)
+        val searched = weatherLocation(
+            id = "android-search-save-${System.nanoTime()}",
+            name = "Android Search Save City",
+        )
+        val stateHolder = OxygenAppStateHolder(
+            geocodingRepository = StaticGeocodingRepository(searched),
+            selectedLocationStorage = selectedLocationStorage,
+            savedLocationStorage = savedLocationStorage,
+            weatherRepository = FailingWeatherRepository,
+            searchExecutor = DirectExecutor,
+            forecastExecutor = DirectExecutor,
+        )
+
+        stateHolder.onManualLocationQueryChanged("Android Search Save City")
+        stateHolder.onManualLocationSearchSubmitted()
+        val result = ((stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry)
+            .searchState as ManualLocationSearchState.Results).candidates.single()
+        stateHolder.onManualLocationCandidateSaved(result.id)
+
+        val loaded = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        assertEquals(listOf(searched), savedLocationStorage.listLocations())
+        assertEquals(listOf(searched), loaded.locations)
+        assertEquals(emptyList<WeatherLocation>(), selectedLocationStorage.writes)
+        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertFalse(stateHolder.presentationState.isShowingHome)
+        context.deleteDatabase("oxygen_forecast_cache.db")
+    }
+
+    @Test
     fun startupWithSelectedLocationAndNoRoomCacheRendersRetryableNoCacheError() {
         val context = targetContext()
         val selectedLocationStorage = DataStoreSelectedLocationStorage(context)
@@ -252,6 +289,41 @@ private object FailingWeatherRepository : WeatherRepository {
         sequenceOf(
             WeatherRepositoryResult.Loading,
             WeatherRepositoryResult.Failure(ForecastError.NetworkUnavailable),
+        )
+}
+
+private class RecordingSelectedLocationStorage : SelectedLocationStorage {
+    val writes = mutableListOf<WeatherLocation>()
+
+    override fun readSelectedLocation(): WeatherLocation? = null
+
+    override fun writeSelectedLocation(location: WeatherLocation) {
+        writes += location
+    }
+}
+
+private class StaticGeocodingRepository(
+    private val location: WeatherLocation,
+) : GeocodingRepository {
+    override fun search(
+        query: String,
+        count: Int,
+        language: String?,
+        countryCode: String?,
+    ): Sequence<GeocodingRepositoryResult> =
+        sequenceOf(
+            GeocodingRepositoryResult.Success(
+                listOf(
+                    com.oxygen.weather.core.model.GeocodingLocationCandidate(
+                        locationId = location.id,
+                        displayName = location.displayName,
+                        point = location.point,
+                        zoneId = location.zoneId,
+                        country = "United States",
+                        countryCode = "US",
+                    ),
+                ),
+            ),
         )
 }
 

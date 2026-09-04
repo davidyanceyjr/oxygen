@@ -34,6 +34,9 @@ ledger states.
 
 - Last committed implementation slice: Slice 32, Fallback Real-Path
   Verification, committed at `9b9d706`.
+- Last committed documentation cleanup: Pre-19D Authority Drift Cleanup,
+  committed at `2c779cc`.
+- Current planned implementation slice: Slice 19D, Save Search Result UI.
 - Current documentation drift under review: none known after pre-19D authority
   cleanup reconciled stale specification, roadmap, and live-history wording
   that still pointed at already committed Slice 19A/Slice 32 work.
@@ -139,10 +142,10 @@ Boundaries:
 
 ### 2026-09-04-pre-19d-authority-drift-cleanup
 
-Status: verified
+Status: committed
 Mode: documentation-only
 Slice: Pre-19D authority drift cleanup
-Commit: not committed
+Commit: `2c779cc`
 
 Result:
 - Updated specification section 53 so it no longer points future work at
@@ -167,3 +170,57 @@ Boundaries:
   release, or MVP behavior changed.
 - Android compile, unit, connected, and assemble commands were not run because
   this was a Markdown-only authority cleanup.
+
+### 2026-09-04-slice-19d-save-search-result-ui
+
+Status: verified
+Mode: feature
+Slice: Slice 19D, Save Search Result UI
+Commit: not committed
+
+Result:
+- Added a search-result save event to `OxygenAppStateHolder` that saves the
+  provider-neutral `WeatherLocation` through `SavedLocationStorage`, refreshes
+  saved rows, and reports local saved-location failures without selecting the
+  location or starting a forecast.
+- Added separate per-result `Save` and `Use now` controls to the location-entry
+  Compose surface with stable tags such as `location-entry-result-save-0` and
+  `location-entry-result-use-now-0`.
+- Hid search-result save controls when saved-location storage is unavailable.
+- Updated README status so search-result save UI is no longer listed as not
+  implemented.
+
+Evidence:
+- Baseline focused unit passed:
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRunLocationStateHolderTest' --tests '*HomeForecastStateHolderTest'`.
+- Red focused unit failed on missing `onManualLocationCandidateSaved`, then the
+  same focused unit command passed after implementation.
+- Connected Room/app-state evidence passed on rerun:
+  `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.OfflineLaunchPersistenceInstrumentedTest`.
+- Connected Compose evidence passed:
+  `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest`.
+- Installed-app exercise passed on `oxygen_starter`: searched live Open-Meteo
+  geocoding for Chicago, saw Save and Use now controls, saved Chicago into the
+  visible saved-location list without leaving location entry, then Use now
+  opened Home with Open-Meteo forecast data.
+- Broad checks passed: compileDebugKotlin, app/core debug unit tests,
+  assembleDebug, and `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-slice-19d-save-search-result-ui/`.
+
+Blockers:
+- Initial connected Room/app-state run failed because the new test used
+  persistent DataStore selected-location state and started on Home. The test was
+  corrected to isolate selected-location storage while still using production
+  `RoomSavedLocationStorageFactory.create(...)` for the save path.
+- The installed-app exercise initially hit an emulator Pixel Launcher ANR
+  dialog. Dismissing the system dialog allowed the Oxygen installed path to be
+  exercised.
+
+Boundaries:
+- No saved-location removal UI, saved-location reordering/favorites, provider
+  changes, forecast cache/Room schema changes, DataStore format changes, unit
+  preferences, alerts, air quality, radar/maps, appearance settings, widgets,
+  background refresh, notifications, release, or MVP-readiness behavior was
+  added.

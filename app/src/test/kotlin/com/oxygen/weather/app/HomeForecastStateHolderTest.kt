@@ -377,6 +377,115 @@ class HomeForecastStateHolderTest {
     }
 
     @Test
+    fun `saving manual search result writes saved storage and refreshes saved list without selecting`() {
+        val location = weatherLocation("manual-save-madison", "Manual Save Madison")
+        val selectedStorage = RecordingSelectedLocationStorage()
+        val savedStorage = RecordingSavedLocationStorage()
+        val weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Loading))
+        val stateHolder = OxygenAppStateHolder(
+            geocodingRepository = StaticGeocodingRepository(location),
+            weatherRepository = weatherRepository,
+            selectedLocationStorage = selectedStorage,
+            savedLocationStorage = savedStorage,
+            searchExecutor = DirectForecastExecutor,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onManualLocationQueryChanged("Manual Save Madison")
+        stateHolder.onManualLocationSearchSubmitted()
+        val result = ((stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry)
+            .searchState as ManualLocationSearchState.Results).candidates.single()
+        stateHolder.onManualLocationCandidateSaved(result.id)
+
+        val loaded = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        assertEquals(listOf(location), savedStorage.saves)
+        assertEquals(listOf(location), loaded.locations)
+        assertEquals(1, savedStorage.listCalls)
+        assertEquals(emptyList<WeatherLocation>(), selectedStorage.writes)
+        assertEquals(emptyList<WeatherLocation>(), weatherRepository.locations)
+        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertTrue(stateHolder.presentationState.screen is OxygenAppScreen.FirstRunLocationEntry)
+    }
+
+    @Test
+    fun `saving manual search result failure surfaces saved-location failure without selecting`() {
+        val location = weatherLocation("manual-save-fails", "Manual Save Fails")
+        val selectedStorage = RecordingSelectedLocationStorage()
+        val weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Loading))
+        val stateHolder = OxygenAppStateHolder(
+            geocodingRepository = StaticGeocodingRepository(location),
+            weatherRepository = weatherRepository,
+            selectedLocationStorage = selectedStorage,
+            savedLocationStorage = FailingSavedLocationStorage(saveFails = true),
+            searchExecutor = DirectForecastExecutor,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onManualLocationQueryChanged("Manual Save Fails")
+        stateHolder.onManualLocationSearchSubmitted()
+        val result = ((stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry)
+            .searchState as ManualLocationSearchState.Results).candidates.single()
+        stateHolder.onManualLocationCandidateSaved(result.id)
+
+        val failure = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Failure
+        assertEquals(SavedLocationsMessage.LocalStateUnavailable, failure.message)
+        assertEquals(emptyList<WeatherLocation>(), selectedStorage.writes)
+        assertEquals(emptyList<WeatherLocation>(), weatherRepository.locations)
+        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertTrue(stateHolder.presentationState.screen is OxygenAppScreen.FirstRunLocationEntry)
+    }
+
+    @Test
+    fun `saving manual search result without saved storage fails locally without selecting`() {
+        val location = weatherLocation("manual-save-absent", "Manual Save Absent")
+        val selectedStorage = RecordingSelectedLocationStorage()
+        val weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Loading))
+        val stateHolder = OxygenAppStateHolder(
+            geocodingRepository = StaticGeocodingRepository(location),
+            weatherRepository = weatherRepository,
+            selectedLocationStorage = selectedStorage,
+            searchExecutor = DirectForecastExecutor,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onManualLocationQueryChanged("Manual Save Absent")
+        stateHolder.onManualLocationSearchSubmitted()
+        val result = ((stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry)
+            .searchState as ManualLocationSearchState.Results).candidates.single()
+        stateHolder.onManualLocationCandidateSaved(result.id)
+
+        val failure = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Failure
+        assertEquals(SavedLocationsMessage.LocalStateUnavailable, failure.message)
+        assertEquals(emptyList<WeatherLocation>(), selectedStorage.writes)
+        assertEquals(emptyList<WeatherLocation>(), weatherRepository.locations)
+        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertTrue(stateHolder.presentationState.screen is OxygenAppScreen.FirstRunLocationEntry)
+    }
+
+    @Test
+    fun `saving already saved manual search result refreshes one visible saved row`() {
+        val location = weatherLocation("manual-save-duplicate", "Manual Save Duplicate")
+        val savedStorage = RecordingSavedLocationStorage(listOf(location))
+        val stateHolder = OxygenAppStateHolder(
+            geocodingRepository = StaticGeocodingRepository(location),
+            savedLocationStorage = savedStorage,
+            searchExecutor = DirectForecastExecutor,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        stateHolder.onManualLocationQueryChanged("Manual Save Duplicate")
+        stateHolder.onManualLocationSearchSubmitted()
+        val result = ((stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry)
+            .searchState as ManualLocationSearchState.Results).candidates.single()
+        stateHolder.onManualLocationCandidateSaved(result.id)
+
+        val loaded = stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded
+        assertEquals(listOf(location), savedStorage.saves)
+        assertEquals(listOf(location), loaded.locations)
+        assertEquals(1, loaded.locations.size)
+    }
+
+    @Test
     fun `select saved location persists selection restores matching cache and starts provider refresh`() {
         val saved = weatherLocation("saved-cache", "Saved Cache City")
         val cachedBundle = fullWeatherBundle(saved)
@@ -1196,8 +1305,11 @@ private class RecordingSavedLocationStorage(
 
 private class FailingSavedLocationStorage(
     private val listFails: Boolean = false,
+    private val saveFails: Boolean = false,
 ) : SavedLocationStorage {
-    override fun saveLocation(location: WeatherLocation) = Unit
+    override fun saveLocation(location: WeatherLocation) {
+        if (saveFails) error("saved-location save failed")
+    }
 
     override fun listLocations(): List<WeatherLocation> {
         if (listFails) error("saved-location list failed")
