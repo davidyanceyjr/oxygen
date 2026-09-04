@@ -6,7 +6,7 @@ Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
 Revised: 2026-09-04
 Reconciled against remote `main`: `ca28c2c`
-Synchronized through local commit: `9b9d706`
+Synchronized through local commit: `8599640`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -1026,7 +1026,7 @@ Out of scope:
 
 ### Slice 19D: Save Search Result UI
 
-Status: specified
+Status: committed at `8599640`
 
 Prerequisite:
 
@@ -1829,7 +1829,7 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 ## Recommended Sequence From Current Committed State
 
 Remote `main` is reconciled through merge `ca28c2c`. The latest completed local
-implementation slice is Slice 32, committed at `9b9d706`.
+implementation slice is Slice 19D, committed at `8599640`.
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
@@ -1881,7 +1881,7 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 19D: Save Search Result UI.
+Candidate: Slice 19E: Remove Saved Location UI.
 
 Immediate planning boundary:
 
@@ -1895,8 +1895,9 @@ Immediate planning boundary:
 -> 31A installed-app fallback wiring committed at 4cdecdd
 -> 31B fallback cache and provenance committed at 4028044
 -> 32 fallback real-path verification committed at 9b9d706
--> next candidate: 19D save search result UI
--> then 19E remove saved location UI and 19F saved locations documentation sync
+-> 19D save search result UI committed at 8599640
+-> next candidate: 19E remove saved location UI
+-> then 19F saved locations documentation sync
 ```
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
@@ -1904,6 +1905,6 @@ Those implementation boundaries are historical and already committed. Slice
 18J-R was a provider-path recovery slice required by the blocked Slice 18J
 evidence boundary, not a new visual gate.
 
-To start the next implementation slice after this authority cleanup, replace
-`.codex/plans/current.md` with one bounded Slice 19D plan. Do not treat later
+To start the next implementation slice after this authority sync, replace
+`.codex/plans/current.md` with one bounded Slice 19E plan. Do not treat later
 roadmap entries as active work.

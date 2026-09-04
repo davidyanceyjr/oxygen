@@ -1830,7 +1830,7 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-The next implementation candidate is Slice 19D: Save Search Result UI.
+The next implementation candidate is Slice 19E: Remove Saved Location UI.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering,
@@ -1840,15 +1840,15 @@ Open-Meteo path that selected "Madison, Wisconsin, United States" and previously
 rendered the invalid-response no-cache error instead of a ready forecast.
 
 Saved-location storage, selected-location switching and concurrency protection,
-and the installed saved-location list/select surface are committed through
-Slices 19A, 19B, and 19C. The installed app can persist saved locations, mark
-the current saved location, list saved rows, and select an existing saved row
-through the local Room saved-location model and persisted selected local
-`LocationId`. Provider IDs must not become user-facing location identity, and
-switching locations must continue to control the Home forecast through the same
-lifecycle-aware app boundary used for selected-location and offline launch
-behavior so obsolete refreshes or stale cache emissions cannot update the wrong
-Home.
+the installed saved-location list/select surface, and search-result save UI are
+committed through Slices 19A, 19B, 19C, and 19D. The installed app can persist
+saved locations, mark the current saved location, list saved rows, select an
+existing saved row, and save a searched place through the local Room
+saved-location model and persisted selected local `LocationId`. Provider IDs
+must not become user-facing location identity, and switching locations must
+continue to control the Home forecast through the same lifecycle-aware app
+boundary used for selected-location and offline launch behavior so obsolete
+refreshes or stale cache emissions cannot update the wrong Home.
 
 Installed-app MET Norway fallback wiring, fallback cache provenance, and
 fallback real-path verification are committed through Slices 31A, 31B, and 32.
@@ -1860,13 +1860,14 @@ refresh through the normal selected-location path. Conditional GET requests,
 304 not-modified handling, provider health/backoff behavior, and
 release-candidate fallback verification remain unimplemented.
 
-Slice 19D must let users save a searched place from the location-entry surface
-without making saving a prerequisite for one-off manual selection. Search result
-rows must expose a clear save control, saving must use production
-`SavedLocationStorage`, save success must refresh the saved list, save failure
-must surface as a local saved-location failure, and manual `Use now` selection
-must still work when saved storage is unavailable or saving fails. Compact and
-large-font layouts must keep search, save, and use-now controls readable and
+Slice 19E must let users remove saved locations from the location-entry surface
+without accidentally deleting rows or changing the current Home forecast. Saved
+rows must expose a visible remove control, removal must require an explicit
+confirmation/cancel step before production storage deletion, cancel must not
+delete, confirmed removal must refresh only saved-location list state, and
+removing the currently selected location must not clear or rewrite DataStore
+selected-location state, forecast-cache rows, or the visible Home forecast.
+Compact and large-font layouts must keep remove confirmation readable and
 reachable.
 
 Implementation must not add unit preferences, device-location permission flow,

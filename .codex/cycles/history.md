@@ -34,12 +34,12 @@ ledger states.
 
 - Last committed implementation slice: Slice 19D, Save Search Result UI,
   committed at `8599640`.
-- Last committed documentation cleanup: Pre-19D Authority Drift Cleanup,
-  committed at `2c779cc`.
+- Last committed documentation cleanup: Post-19D Authority Sync, currently
+  uncommitted.
 - Current planned implementation slice: none selected.
-- Current documentation drift under review: none known after pre-19D authority
-  cleanup reconciled stale specification, roadmap, and live-history wording
-  that still pointed at already committed Slice 19A/Slice 32 work.
+- Current documentation drift under review: none known after post-19D authority
+  sync reconciled stale specification and roadmap wording that still pointed at
+  already committed Slice 19D work.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -224,3 +224,32 @@ Boundaries:
   preferences, alerts, air quality, radar/maps, appearance settings, widgets,
   background refresh, notifications, release, or MVP-readiness behavior was
   added.
+
+### 2026-09-04-post-19d-authority-sync
+
+Status: ready
+Mode: documentation-only
+Slice: Post-19D Authority Sync
+Commit: uncommitted
+
+Result:
+- Updated specification section 53 so it no longer identifies already committed
+  Slice 19D as the next implementation candidate and now points to Slice 19E.
+- Updated the MVP roadmap so Slice 19D is committed at `8599640`, the latest
+  completed local implementation slice is Slice 19D, and the next-candidate
+  startup guidance selects Slice 19E.
+- Updated this live history summary to reflect the post-19D authority sync.
+
+Evidence:
+- `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-post-19d-authority-sync/git-diff-check.log`.
+
+Boundaries:
+- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
+  DataStore format, forecast-cache format, UI behavior, saved-location
+  behavior, provider behavior, unit preference, alert, air quality, radar,
+  release, or MVP behavior changed.
+- Android compile, unit, connected, and assemble commands were not run because
+  this was a Markdown-only authority sync.
