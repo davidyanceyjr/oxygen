@@ -4,6 +4,7 @@ import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
+import com.oxygen.weather.core.provider.cache.ForecastCacheMetadata
 import java.time.Instant
 
 class MetNoWeatherRepository(
@@ -31,7 +32,13 @@ class MetNoWeatherRepository(
                     yield(WeatherRepositoryResult.Failure(ForecastError.InvalidResponse(PROVIDER_ID)))
                     return@sequence
                 }
-                yield(WeatherRepositoryResult.Success(weather))
+                val cacheMetadata = try {
+                    result.toCacheMetadata(weather.fetchedAt)
+                } catch (error: RuntimeException) {
+                    yield(WeatherRepositoryResult.Failure(ForecastError.InvalidResponse(PROVIDER_ID)))
+                    return@sequence
+                }
+                yield(WeatherRepositoryResult.Success(weather, cacheMetadata = cacheMetadata))
             }
             is MetNoForecastClientResult.NotModified -> {
                 yield(WeatherRepositoryResult.Failure(ForecastError.InvalidResponse(PROVIDER_ID)))
@@ -53,6 +60,19 @@ class MetNoWeatherRepository(
             is MetNoForecastClientError.UnsupportedForecastData -> ForecastError.ProviderRejectedRequest(PROVIDER_ID)
             is MetNoForecastClientError.UnexpectedHttpFailure -> ForecastError.UnexpectedProviderFailure(PROVIDER_ID)
         }
+
+    private fun MetNoForecastClientResult.Success.toCacheMetadata(fetchedAt: Instant): ForecastCacheMetadata =
+        ForecastCacheMetadata(
+            providerId = PROVIDER_ID,
+            expires = cacheHeaders.expires,
+            lastModified = cacheHeaders.lastModified,
+            etag = cacheHeaders.etag,
+            fetchedAt = fetchedAt,
+            responseLatitude = response.geometry.latitude,
+            responseLongitude = response.geometry.longitude,
+            responseElevationMeters = response.geometry.altitudeMeters,
+            providerUpdatedAt = Instant.parse(response.meta.updatedAt),
+        )
 
     private companion object {
         const val PROVIDER_ID = "met-norway"

@@ -43,9 +43,12 @@ source-code licensing.
 - Verified capability: Slice 31A covers installed factory fallback composition,
   Home ready presentation with MET Norway provenance, and identifying
   User-Agent behavior with controlled provider responses.
-- Not yet implemented or verified: provider-specific cache-header persistence,
-  conditional GET metadata, cached fallback restore claims, provider health or
-  backoff state, and release-candidate fallback behavior.
+- Verified capability: Slice 31B covers provider-specific MET Norway
+  cache-header persistence, cached fallback restore as MET Norway data, and
+  stale failed-refresh retention with MET Norway provenance.
+- Not yet implemented or verified: conditional GET requests, 304 not-modified
+  handling, provider health or backoff state, and release-candidate fallback
+  behavior.
 - Request data when this provider path is used: selected location latitude and
   longitude, optional altitude when present, an identifying User-Agent/contact
   header, and normal client network metadata such as IP address.
@@ -78,7 +81,7 @@ location-entry surface, marks the current saved location, and can select an
 existing saved row through the local selected-location path. It does not yet
 implement search-result save UI, saved-location removal UI, unit preferences,
 official alert lookup, air-quality lookup, radar, provider-specific MET Norway
-cache-header persistence, or release-candidate fallback behavior.
+conditional GET/304 handling, or release-candidate fallback behavior.
 
 Before any additional provider becomes active, document its current terms,
 attribution, rate/caching requirements, privacy implications, and last review

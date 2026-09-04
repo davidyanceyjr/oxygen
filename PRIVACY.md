@@ -53,6 +53,5 @@ The installed app also stores the last selected location and saved-location
 records locally. Saved rows can be shown and selected from the location-entry
 surface. The app does not currently include search-result save UI,
 saved-location removal UI, unit preferences, alert lookup, air-quality lookup,
-radar, provider-specific MET Norway cache-header persistence, conditional GET
-metadata, cached fallback restore claims, or release-candidate fallback
-behavior.
+radar, conditional GET requests, 304 not-modified handling, or
+release-candidate fallback behavior.

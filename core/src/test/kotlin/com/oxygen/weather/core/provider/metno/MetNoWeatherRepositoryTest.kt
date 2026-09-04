@@ -6,6 +6,7 @@ import com.oxygen.weather.core.model.LocationId
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
+import com.oxygen.weather.core.provider.cache.ForecastCacheMetadata
 import java.io.IOException
 import java.net.URL
 import java.net.URLDecoder
@@ -90,6 +91,40 @@ class MetNoWeatherRepositoryTest {
         assertEquals(fetchedAt, bundle.current.provenance.fetchedAt)
         assertEquals(DataType.FORECAST, bundle.hourly.first().provenance.type)
         assertEquals(DataType.FORECAST, bundle.daily.first().provenance.type)
+    }
+
+    @Test
+    fun successCarriesMetNorwayCacheMetadataForRepositoryCacheStorage() {
+        val repository = repository(
+            transport = RepositoryStaticMetNoTransport(
+                MetNoHttpResponse(
+                    statusCode = 200,
+                    headers = mapOf(
+                        "Expires" to "Sun, 23 Aug 2026 15:00:00 GMT",
+                        "Last-Modified" to "Sun, 23 Aug 2026 14:00:00 GMT",
+                        "ETag" to "\"metno-forecast\"",
+                    ),
+                    body = fixture("home_forecast_normal.json"),
+                ),
+            ),
+        )
+
+        val success = repository.refresh(chicago).terminalSuccess()
+
+        assertEquals(
+            ForecastCacheMetadata(
+                providerId = "met-norway",
+                expires = "Sun, 23 Aug 2026 15:00:00 GMT",
+                lastModified = "Sun, 23 Aug 2026 14:00:00 GMT",
+                etag = "\"metno-forecast\"",
+                fetchedAt = fetchedAt,
+                responseLatitude = 41.875,
+                responseLongitude = -87.625,
+                responseElevationMeters = 181.0,
+                providerUpdatedAt = Instant.parse("2026-08-23T10:15:00Z"),
+            ),
+            success.cacheMetadata,
+        )
     }
 
     @Test

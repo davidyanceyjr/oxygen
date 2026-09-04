@@ -64,7 +64,8 @@ private val dataSourceSections = listOf(
             "Core forecast-cache persistence and foreground failed-refresh stale retention are implemented at the repository and app-state boundary.",
             "Saved-location storage, list display, current-location marking, and saved-location selection are implemented for existing saved rows.",
             "Installed-app durable Room cache wiring and offline cache launch behavior are implemented for the selected forecast path.",
-            "Provider-specific MET Norway cache headers, conditional GET metadata, and cached fallback provenance are not implemented yet.",
+            "Provider-specific MET Norway cache headers are persisted with cached fallback forecasts and cached fallback provenance remains provider-neutral.",
+            "Conditional GET requests, 304 not-modified handling, and release-candidate fallback verification are not implemented yet.",
         ),
     ),
     AboutSection(

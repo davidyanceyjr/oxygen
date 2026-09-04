@@ -154,9 +154,10 @@ launched without network, and a foreground refresh failure can retain the same
 selected location's cached forecast as a stale success with explicit
 refresh-failed metadata. If a live provider refresh succeeds while local
 forecast-cache persistence fails, the live provider forecast remains
-displayable. Provider-specific MET Norway cache-header persistence, conditional
-GET metadata, cached fallback restore claims, and stale fallback provenance
-remain later work.
+displayable. Provider-specific MET Norway cache headers are persisted with
+cached fallback forecasts, and cached/stale MET Norway forecasts retain
+MET Norway provenance. Conditional GET requests, 304 not-modified handling, and
+release-candidate fallback verification remain later work.
 
 Search-result save UI, saved-location removal UI, unit preferences, alerts, air
 quality, radar, and release-candidate verification are not implemented yet.

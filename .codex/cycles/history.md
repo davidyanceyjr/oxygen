@@ -28,14 +28,13 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 19C, Saved Location List and
-  Selection UI, committed at `e2efdd3`.
-- Current active slice: Slice 31A, Installed-App Fallback Wiring, ready in the
-  working tree and not yet committed.
-- Current documentation drift under review: the post-19C status sync remains in
-  the working tree, and Slice 31A has updated status surfaces to report the
-  verified installed-app MET Norway fallback wiring while leaving cache-header
-  and fallback-provenance follow-up work unclaimed.
+- Last committed implementation slice: Slice 31B, Fallback Cache and
+  Provenance, committed in this changeset.
+- Current active slice: none selected after Slice 31B.
+- Current documentation drift under review: none known. Slice 31B updated
+  README, Data Sources, Privacy, and About disclosure text to report
+  MET Norway cache-header persistence and cached/stale provenance truthfully
+  while leaving conditional GET/304 and release-candidate behavior unclaimed.
 - Current process correction: the live cycle history was re-trimmed on
   2026-09-03 after archiving the previous 511-line live file at
   `.codex/cycles/archive/history-through-2026-09-03-before-19a-tail-refresh.md`.
@@ -159,6 +158,8 @@ Evidence:
   :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
   :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
   ./gradlew :app:assembleDebug`; `git diff --check`.
+- Final doc-sync rerun passed the same broad checks before commit; logs use the
+  `*-doc-sync.log` suffix in the artifact directory.
 
 Artifacts:
 - `.codex/test-artifacts/2026-09-03-saved-location-storage-model/`.
@@ -264,7 +265,7 @@ Boundaries:
 Status: ready
 Mode: documentation-only
 Slice: Post-19C documentation sync
-Commit: not yet committed
+Commit: committed in `4cdecdd`
 
 Result:
 - Updated the live history summary to reflect committed Slice 19C at `e2efdd3`.
@@ -294,7 +295,7 @@ Boundaries:
 Status: ready
 Mode: feature
 Slice: Slice 31A, Installed-App Fallback Wiring
-Commit: not yet committed
+Commit: `4cdecdd`
 
 Result:
 - Added an installed forecast repository factory that composes Open-Meteo as
@@ -333,3 +334,52 @@ Boundaries:
   provider-specific MET Norway cache-header persistence, conditional GET
   metadata, cached fallback restore claim, stale fallback provenance,
   release-candidate status, or MVP-readiness behavior was added.
+
+### 2026-09-03-fallback-cache-provenance
+
+Status: committed
+Mode: feature
+Slice: Slice 31B, Fallback Cache and Provenance
+Commit: committed in this changeset
+
+Result:
+- Added cache-only forecast metadata for provider cache headers and provider
+  response metadata without adding raw headers to `WeatherBundle` or Home UI.
+- MET Norway repository success now carries Expires, Last-Modified, ETag,
+  fetch time, response coordinates/elevation, provider updated time, and
+  provider ID for cache storage.
+- Room forecast cache storage persists that metadata with a v2-to-v3 migration,
+  clears stale provider cache metadata on non-metadata replacement, and still
+  restores cached MET Norway forecasts with MET Norway provenance.
+- README, Data Sources, Privacy, and About disclosure text now report MET
+  Norway cache-header persistence and cached/stale provenance while leaving
+  conditional GET/304 and release-candidate fallback verification unclaimed.
+
+Evidence:
+- Baseline checks passed: `InstalledForecastRepositoryFactoryTest`,
+  `HomeForecastStateHolderTest`, and `CachedWeatherRepositoryTest`.
+- Red checks failed for missing cache metadata type/success field before
+  implementation: `red-cache-metadata-storage.log` and
+  `red-metno-cache-metadata.log`.
+- Focused checks passed: core `CachedWeatherRepositoryTest` plus
+  `MetNoWeatherRepositoryTest`, app `AboutDisclosureStateHolderTest`, connected
+  `RoomForecastCacheStorageInstrumentedTest`, and connected
+  `RoomSavedLocationStorageInstrumentedTest`.
+- Broad checks passed: `. scripts/android-env.sh && ./gradlew
+  :app:compileDebugKotlin`; `. scripts/android-env.sh && ./gradlew
+  :app:testDebugUnitTest :core:testDebugUnitTest`; `. scripts/android-env.sh &&
+  ./gradlew :app:assembleDebug`; `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-03-fallback-cache-provenance/`.
+
+Blockers:
+- Initial connected Room attempt found no connected devices. The repo-local
+  `oxygen_starter` emulator was started. A parallel connected rerun then
+  crashed instrumentation/uninstall; sequential reruns passed.
+
+Boundaries:
+- No conditional GET request, 304 not-modified handling, provider health or
+  backoff state, provider preference UI, saved-location save/remove UI, unit
+  preference, alert, air quality, radar, release-candidate status, or
+  MVP-readiness behavior was added.

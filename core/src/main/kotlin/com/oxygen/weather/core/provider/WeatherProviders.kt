@@ -6,6 +6,7 @@ import com.oxygen.weather.core.model.GeocodingLocationCandidate
 import com.oxygen.weather.core.model.WeatherAlert
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherLocation
+import com.oxygen.weather.core.provider.cache.ForecastCacheMetadata
 import java.time.Duration
 
 interface ForecastProvider {
@@ -65,6 +66,7 @@ sealed class WeatherRepositoryResult {
     data class Success(
         val weather: WeatherBundle,
         val freshness: ForecastFreshness = ForecastFreshness.Fresh,
+        val cacheMetadata: ForecastCacheMetadata? = null,
     ) : WeatherRepositoryResult()
 
     data class Failure(

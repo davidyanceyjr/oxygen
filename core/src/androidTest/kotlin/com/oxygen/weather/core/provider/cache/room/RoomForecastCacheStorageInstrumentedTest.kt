@@ -22,6 +22,7 @@ import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import com.oxygen.weather.core.provider.cache.CachedWeatherRepository
+import com.oxygen.weather.core.provider.cache.ForecastCacheMetadata
 import com.oxygen.weather.core.provider.cache.ForecastCacheStorage
 import java.time.Instant
 import java.time.ZoneId
@@ -165,6 +166,29 @@ class RoomForecastCacheStorageInstrumentedTest {
         assertEquals(provenance("met-norway"), requireNotNull(readback.current).provenance)
         assertEquals(provenance("met-norway"), readback.hourly.first().provenance)
         assertEquals(provenance("met-norway"), readback.daily.first().provenance)
+    }
+
+    @Test
+    fun roomStorageRoundTripsMetNorwayProviderCacheMetadata() {
+        val bundle = fullBundle(chicago, providerId = "met-norway")
+        val metadata = metNorwayCacheMetadata()
+
+        storage.replaceBundle(bundle, metadata)
+
+        assertEquals(bundle, storage.readBundle(chicago.id))
+        assertEquals(metadata, storage.readCacheMetadata(chicago.id))
+    }
+
+    @Test
+    fun nonMetadataReplacementClearsPreviousMetNorwayProviderCacheMetadata() {
+        val metNorwayBundle = fullBundle(chicago, providerId = "met-norway")
+        val openMeteoBundle = fullBundle(chicago, providerId = "open-meteo")
+        storage.replaceBundle(metNorwayBundle, metNorwayCacheMetadata())
+
+        storage.replaceBundle(openMeteoBundle)
+
+        assertEquals(openMeteoBundle, storage.readBundle(chicago.id))
+        assertNull(storage.readCacheMetadata(chicago.id))
     }
 
     @Test
@@ -338,6 +362,19 @@ class RoomForecastCacheStorageInstrumentedTest {
             fetchedAt = Instant.parse("2026-08-26T10:20:00Z"),
             type = DataType.FORECAST,
             licenseId = "CC-BY-4.0",
+        )
+
+    private fun metNorwayCacheMetadata(): ForecastCacheMetadata =
+        ForecastCacheMetadata(
+            providerId = "met-norway",
+            expires = "Sun, 23 Aug 2026 15:00:00 GMT",
+            lastModified = "Sun, 23 Aug 2026 14:00:00 GMT",
+            etag = "\"metno-forecast\"",
+            fetchedAt = Instant.parse("2026-08-26T10:20:00Z"),
+            responseLatitude = 41.875,
+            responseLongitude = -87.625,
+            responseElevationMeters = 181.0,
+            providerUpdatedAt = Instant.parse("2026-08-26T10:15:00Z"),
         )
 
     private fun alert(): WeatherAlert =

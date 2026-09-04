@@ -27,6 +27,8 @@ import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
+import com.oxygen.weather.core.provider.cache.ForecastCacheMetadata
+import com.oxygen.weather.core.provider.cache.ForecastCacheMetadataStorage
 import com.oxygen.weather.core.provider.cache.ForecastCacheStorage
 import java.time.Instant
 import java.time.ZoneId
@@ -34,7 +36,7 @@ import java.time.ZoneId
 class RoomForecastCacheStorage internal constructor(
     private val database: OxygenForecastCacheDatabase,
     private val beforeCommit: () -> Unit = {},
-) : ForecastCacheStorage {
+) : ForecastCacheMetadataStorage {
     private val dao = database.forecastCacheDao()
 
     override fun replaceBundle(bundle: WeatherBundle) {
@@ -47,8 +49,28 @@ class RoomForecastCacheStorage internal constructor(
         dao.replaceBundle(bundle.toCachedBundleRecord(), beforeCommit)
     }
 
+    override fun replaceBundle(
+        bundle: WeatherBundle,
+        cacheMetadata: ForecastCacheMetadata,
+    ) {
+        validateForecastOnly(bundle)
+        dao.replaceBundle(bundle.toCachedBundleRecord(cacheMetadata), beforeCommit)
+    }
+
     override fun readBundle(locationId: LocationId): WeatherBundle? =
         dao.readBundle(locationId.value)?.toBundle()
+
+    override fun readCacheMetadata(locationId: LocationId): ForecastCacheMetadata? =
+        dao.readCacheMetadata(locationId.value)?.toCacheMetadata()
+
+    private fun validateForecastOnly(bundle: WeatherBundle) {
+        require(bundle.alerts.isEmpty()) {
+            "RoomForecastCacheStorage is forecast-only and does not persist weather alerts yet."
+        }
+        require(bundle.airQuality == null) {
+            "RoomForecastCacheStorage is forecast-only and does not persist air quality yet."
+        }
+    }
 }
 
 object RoomForecastCacheStorageFactory {
@@ -58,7 +80,7 @@ object RoomForecastCacheStorageFactory {
                 context.applicationContext,
                 OxygenForecastCacheDatabase::class.java,
                 "oxygen_forecast_cache.db",
-            ).addMigrations(OXYGEN_DATABASE_MIGRATION_1_2).build(),
+            ).addMigrations(OXYGEN_DATABASE_MIGRATION_1_2, OXYGEN_DATABASE_MIGRATION_2_3).build(),
         )
 }
 
@@ -86,7 +108,7 @@ object RoomSavedLocationStorageFactory {
                 context.applicationContext,
                 OxygenForecastCacheDatabase::class.java,
                 "oxygen_forecast_cache.db",
-            ).addMigrations(OXYGEN_DATABASE_MIGRATION_1_2).build(),
+            ).addMigrations(OXYGEN_DATABASE_MIGRATION_1_2, OXYGEN_DATABASE_MIGRATION_2_3).build(),
         )
 }
 
@@ -99,7 +121,7 @@ object RoomSavedLocationStorageFactory {
         CachedDailyForecastEntity::class,
         SavedLocationEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 internal abstract class OxygenForecastCacheDatabase : RoomDatabase() {
@@ -124,6 +146,20 @@ internal val OXYGEN_DATABASE_MIGRATION_1_2 = object : Migration(1, 2) {
             """.trimIndent(),
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_saved_locations_sortOrder` ON `saved_locations` (`sortOrder`)")
+    }
+}
+
+internal val OXYGEN_DATABASE_MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `cached_forecast_metadata` ADD COLUMN `providerCacheProviderId` TEXT")
+        db.execSQL("ALTER TABLE `cached_forecast_metadata` ADD COLUMN `providerCacheExpires` TEXT")
+        db.execSQL("ALTER TABLE `cached_forecast_metadata` ADD COLUMN `providerCacheLastModified` TEXT")
+        db.execSQL("ALTER TABLE `cached_forecast_metadata` ADD COLUMN `providerCacheEtag` TEXT")
+        db.execSQL("ALTER TABLE `cached_forecast_metadata` ADD COLUMN `providerCacheFetchedAt` TEXT")
+        db.execSQL("ALTER TABLE `cached_forecast_metadata` ADD COLUMN `providerCacheResponseLatitude` REAL")
+        db.execSQL("ALTER TABLE `cached_forecast_metadata` ADD COLUMN `providerCacheResponseLongitude` REAL")
+        db.execSQL("ALTER TABLE `cached_forecast_metadata` ADD COLUMN `providerCacheResponseElevationMeters` REAL")
+        db.execSQL("ALTER TABLE `cached_forecast_metadata` ADD COLUMN `providerCacheUpdatedAt` TEXT")
     }
 }
 
@@ -190,6 +226,9 @@ internal abstract class ForecastCacheDao {
     @Query("SELECT * FROM cached_forecast_metadata WHERE location_id = :locationId")
     protected abstract fun readMetadata(locationId: String): CachedForecastMetadataEntity?
 
+    @Query("SELECT * FROM cached_forecast_metadata WHERE location_id = :locationId")
+    abstract fun readCacheMetadata(locationId: String): CachedForecastMetadataEntity?
+
     @Query("SELECT * FROM cached_current_conditions WHERE location_id = :locationId")
     protected abstract fun readCurrent(locationId: String): CachedCurrentConditionsEntity?
 
@@ -247,6 +286,15 @@ internal data class CachedForecastMetadataEntity(
     @androidx.room.ColumnInfo(name = "location_id")
     val locationId: String,
     val bundleFetchedAt: String,
+    val providerCacheProviderId: String? = null,
+    val providerCacheExpires: String? = null,
+    val providerCacheLastModified: String? = null,
+    val providerCacheEtag: String? = null,
+    val providerCacheFetchedAt: String? = null,
+    val providerCacheResponseLatitude: Double? = null,
+    val providerCacheResponseLongitude: Double? = null,
+    val providerCacheResponseElevationMeters: Double? = null,
+    val providerCacheUpdatedAt: String? = null,
 )
 
 @Entity(
@@ -379,17 +427,42 @@ internal data class CachedBundleRecord(
         )
 }
 
-private fun WeatherBundle.toCachedBundleRecord(): CachedBundleRecord =
+private fun WeatherBundle.toCachedBundleRecord(cacheMetadata: ForecastCacheMetadata? = null): CachedBundleRecord =
     CachedBundleRecord(
         location = location.toEntity(),
         metadata = CachedForecastMetadataEntity(
             locationId = location.id.value,
             bundleFetchedAt = fetchedAt.toString(),
+            providerCacheProviderId = cacheMetadata?.providerId,
+            providerCacheExpires = cacheMetadata?.expires,
+            providerCacheLastModified = cacheMetadata?.lastModified,
+            providerCacheEtag = cacheMetadata?.etag,
+            providerCacheFetchedAt = cacheMetadata?.fetchedAt?.toString(),
+            providerCacheResponseLatitude = cacheMetadata?.responseLatitude,
+            providerCacheResponseLongitude = cacheMetadata?.responseLongitude,
+            providerCacheResponseElevationMeters = cacheMetadata?.responseElevationMeters,
+            providerCacheUpdatedAt = cacheMetadata?.providerUpdatedAt?.toString(),
         ),
         current = current?.toEntity(location.id.value),
         hourly = hourly.mapIndexed { index, forecast -> forecast.toEntity(location.id.value, index) },
         daily = daily.mapIndexed { index, forecast -> forecast.toEntity(location.id.value, index) },
     )
+
+private fun CachedForecastMetadataEntity.toCacheMetadata(): ForecastCacheMetadata? {
+    val providerId = providerCacheProviderId ?: return null
+    val fetchedAt = providerCacheFetchedAt ?: return null
+    return ForecastCacheMetadata(
+        providerId = providerId,
+        expires = providerCacheExpires,
+        lastModified = providerCacheLastModified,
+        etag = providerCacheEtag,
+        fetchedAt = Instant.parse(fetchedAt),
+        responseLatitude = providerCacheResponseLatitude,
+        responseLongitude = providerCacheResponseLongitude,
+        responseElevationMeters = providerCacheResponseElevationMeters,
+        providerUpdatedAt = providerCacheUpdatedAt?.let(Instant::parse),
+    )
+}
 
 private fun WeatherLocation.toEntity(): CachedForecastLocationEntity =
     CachedForecastLocationEntity(

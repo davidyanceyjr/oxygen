@@ -115,13 +115,14 @@ class RoomSavedLocationStorageInstrumentedTest {
             context,
             OxygenForecastCacheDatabase::class.java,
             databaseName,
-        ).addMigrations(OXYGEN_DATABASE_MIGRATION_1_2).build()
+        ).addMigrations(OXYGEN_DATABASE_MIGRATION_1_2, OXYGEN_DATABASE_MIGRATION_2_3).build()
 
         try {
             val migratedForecastCache = RoomForecastCacheStorage(migratedDatabase)
             val migratedSavedLocations = RoomSavedLocationStorage(migratedDatabase)
 
             assertEquals(fullBundle(chicago), migratedForecastCache.readBundle(chicago.id))
+            assertNull(migratedForecastCache.readCacheMetadata(chicago.id))
             assertEquals(emptyList<WeatherLocation>(), migratedSavedLocations.listLocations())
 
             migratedSavedLocations.saveLocation(madison)
