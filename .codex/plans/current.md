@@ -1,6 +1,6 @@
 # Slice 22 Plan — NWS Alert Provider Contract
 
-**Status:** ready — contract, source review, and Markdown verification complete; commit pending
+**Status:** committed — contract, source review, Markdown verification, and PR merge complete
 **Cycle ID:** `2026-09-05-slice-22-nws-alert-provider-contract`
 **Mode:** documentation / provider contract
 
@@ -215,6 +215,9 @@ remain ignored.
 
 Android compile, unit, connected, assemble, install, emulator, and screenshot
 checks were not run because the accepted Slice 22 diff is Markdown-only.
+
+The slice merged in PR `#10` as commit `d0a7eb3`, and local `main` now matches
+`origin/main`.
 
 ## Verification Budget and Ledger
 

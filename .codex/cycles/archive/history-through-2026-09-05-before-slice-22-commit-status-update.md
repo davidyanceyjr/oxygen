@@ -645,10 +645,10 @@ Boundaries:
 
 ### 2026-09-05-slice-22-nws-alert-provider-contract
 
-Status: committed
+Status: ready
 Mode: documentation / provider contract
 Slice: Slice 22, NWS Alert Provider Contract
-Commit: `d0a7eb3`
+Commit: not committed
 
 Result:
 - Added `docs/data-sources/NWS_ALERTS.md` as the NOAA/National Weather Service
@@ -681,8 +681,6 @@ Evidence:
   roadmap, and cycle history. `git diff --no-index -- /dev/null
   docs/data-sources/NWS_ALERTS.md` was used to review the new untracked
   contract file; its exit code 1 is expected for new-file content.
-- PR `#10` merged to `origin/main` as commit `d0a7eb3`; local `main` was
-  fast-forwarded to the merge commit, and the slice branch was removed.
 
 Artifacts:
 - `.codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract/`.
