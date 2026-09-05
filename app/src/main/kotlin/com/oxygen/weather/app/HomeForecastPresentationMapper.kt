@@ -41,10 +41,11 @@ private val FETCHED_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM
 
 fun WeatherBundle.toHomeSuccessPresentation(
     selectedLocation: WeatherLocation,
-    unitPreference: UnitPreference = DEFAULT_HOME_UNIT_PREFERENCE,
+    unitPreference: UnitPreference? = null,
 ): HomeSuccessPresentation {
-    val units = unitPreference.resolve()
-    val compatibilityDefault = unitPreference == DEFAULT_HOME_UNIT_PREFERENCE
+    val resolvedPreference = unitPreference ?: DEFAULT_HOME_UNIT_PREFERENCE
+    val units = resolvedPreference.resolve()
+    val compatibilityDefault = unitPreference == null || resolvedPreference == DEFAULT_HOME_UNIT_PREFERENCE
     val zoneId = selectedLocation.zoneId
     val heroRange = daily.firstOrNull { it.highC != null || it.lowC != null }?.toHeroRangePresentation(units)
     val currentPresentation = current?.toCurrentPresentation(

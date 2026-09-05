@@ -515,3 +515,79 @@ Boundaries:
   location, alerts, air quality, radar/map, appearance, release, or MVP
   behavior changed. Slice 20C must exercise persisted alternate-unit choice
   through the installed path.
+
+### 2026-09-05-post-20b-authority-sync
+
+Status: ready
+Mode: documentation-only
+Slice: Post-20B Authority Sync
+Commit: not committed
+
+Result:
+- Updated README to distinguish the implemented provider-neutral unit
+  preference foundation and Home presentation conversion boundary from
+  unimplemented persisted unit preference selection UI.
+- Updated specification section 53 to record Slice 20B as committed and make
+  Slice 20C, persisted alternate-unit reachability through the installed path,
+  the next implementation candidate.
+- Replaced the active plan with this bounded Markdown-only authority sync.
+
+Evidence:
+- Stale authority search identified outdated Slice 20B next-candidate and
+  broad unit-preference-not-implemented claims before edits.
+- `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-05-post-20b-authority-sync/git-diff-check.log`.
+
+Blockers:
+- None.
+
+Boundaries:
+- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
+  DataStore format, forecast-cache format, UI behavior, saved-location
+  behavior, provider behavior, unit conversion, persisted unit preference
+  selection, alert, air quality, radar, release, or MVP behavior changed.
+- Android compile, unit, connected, assemble, emulator, install, and screenshot
+  commands were not run because this was a Markdown-only authority sync.
+
+### 2026-09-05-slice-20c-persisted-unit-selection
+
+Status: ready
+Mode: feature
+Slice: Slice 20C, Persisted Alternate-Unit Reachability
+Commit: not committed
+
+Result:
+- Added a dedicated versioned Preferences DataStore for preset and custom
+  provider-neutral unit preferences, with safe non-mutating invalid-record
+  fallback and a no-op default storage.
+- Added installed Settings / About / Units selection for Oxygen default, Metric,
+  US, and UK; successful writes remap the visible selected-location Home through
+  the existing mapper without refresh or cache mutation.
+- Applied the loaded selection to live, restored-cache, refreshed, and retained
+  stale Home presentations while preserving canonical weather and provenance.
+
+Evidence:
+- Focused app unit tests passed for codec, state-holder, About, and mapper
+  boundaries.
+- OfflineLaunchPersistenceInstrumentedTest passed all 10 tests, including a
+  fresh DataStore readback and state-holder startup readback.
+- HomeDashboardUiTest passed all 34 tests, including the installed Compose
+  Units journey; a direct single-test rerun also passed and produced the
+  screenshot artifact.
+- Broad compile, full app/core unit tests, assemble, and diff checks passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-05-slice-20c-persisted-unit-selection/`
+- Includes installed Units and changed-Home PNGs plus semantics/test logs.
+
+Blockers:
+- None. An initial HomeDashboard run was interrupted by an emulator ADB
+  disconnect after four tests; the restarted complete run passed.
+
+Boundaries:
+- No provider request units or mappings, core domain models, forecast/cache/
+  selected-location/saved-location schemas, location permission, alerts, air
+  quality, radar/maps, appearance settings beyond selected units, release, or
+  MVP behavior changed. Custom-unit editing remains out of scope.

@@ -1,5 +1,6 @@
 package com.oxygen.weather.app.ui.home
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -11,12 +12,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
@@ -718,6 +721,61 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("about-bottom-actions").assertIsDisplayed()
         composeRule.assertInLowerReachZone("about-bottom-actions", rootHeight = 640f)
         composeRule.assertMinimumTouchTarget("about-back")
+    }
+
+    @Test
+    fun oxygenAppUnitsSelectionReturnsHomeWithAlternateUnitsAndKeepsPagesReachable() {
+        val location = weatherLocation(name = "Units Fixture City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactContent(heightDp = 900) {
+            OxygenApp(stateHolder = stateHolder)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-about-entry").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Units").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("unit-choice-default").assertIsSelected()
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "unit-choice-default",
+            "unit-choice-metric",
+            "unit-choice-us",
+            "unit-choice-uk",
+        )
+        composeRule.assertMinimumTouchTarget("about-back")
+
+        composeRule.onNodeWithTag("unit-choice-metric").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("unit-choice-metric").assertIsSelected()
+        composeRule.onNodeWithTag("about-back").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("about-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("18 deg C").assertIsDisplayed()
+        composeRule.onNodeWithText("Open-Meteo | Fetched Aug 22, 7:00 AM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        assertEquals(listOf(location), repository.locations)
+        composeRule.writeSemanticsArtifact("units-selection-home-semantics.txt")
+        val screenshot = composeRule.onRoot().captureToImage().asAndroidBitmap()
+        val screenshotFile = File(
+            InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
+            "units-selection-home.png",
+        )
+        screenshotFile.outputStream().use { output ->
+            assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, output))
+        }
     }
 
     @Test

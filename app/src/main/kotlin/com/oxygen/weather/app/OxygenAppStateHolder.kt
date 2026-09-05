@@ -3,6 +3,7 @@ package com.oxygen.weather.app
 import com.oxygen.weather.core.location.SavedLocationStorage
 import com.oxygen.weather.core.model.GeocodingLocationCandidate
 import com.oxygen.weather.core.model.LocationId
+import com.oxygen.weather.core.model.UnitPreference
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.ForecastError
@@ -26,6 +27,7 @@ class OxygenAppStateHolder(
     private val geocodingRepository: GeocodingRepository = OpenMeteoGeocodingRepository(),
     private val weatherRepository: WeatherRepository = OpenMeteoWeatherRepository(),
     private val selectedLocationStorage: SelectedLocationStorage = EmptySelectedLocationStorage,
+    private val unitPreferenceStorage: UnitPreferenceStorage = EmptyUnitPreferenceStorage,
     private val savedLocationStorage: SavedLocationStorage? = null,
     private val forecastCacheStorage: ForecastCacheStorage? = null,
     private val clock: Clock = Clock.systemUTC(),
@@ -61,11 +63,14 @@ class OxygenAppStateHolder(
     private var pendingCommand: OxygenAppCommand? = null
     private var onStateChanged: ((OxygenAppPresentationState) -> Unit)? = null
     private var activeForecastRequestId = 0L
+    private var activeUnitPreference: UnitPreference? = null
+    private var activeCanonicalForecast: WeatherBundle? = null
 
     init {
         if (initialSelectedLocation == null) {
-            if (selectedLocationStorage !== EmptySelectedLocationStorage) {
+            if (selectedLocationStorage !== EmptySelectedLocationStorage || unitPreferenceStorage !== EmptyUnitPreferenceStorage) {
                 forecastExecutor.execute {
+                    loadStoredUnitPreference()
                     val restoredLocation = readStoredSelectedLocation()
                     when {
                         restoredLocation != null -> {
@@ -79,6 +84,7 @@ class OxygenAppStateHolder(
                                     message = FirstRunLocationMessage.LocalStateUnavailable,
                                 ),
                                 selectedLocation = null,
+                                unitPreference = activeUnitPreference,
                             )
                             publishState()
                         }
@@ -87,6 +93,7 @@ class OxygenAppStateHolder(
             }
         } else {
             forecastExecutor.execute {
+                loadStoredUnitPreference()
                 restoreCachedHomeForecast(initialSelectedLocation)
                 startHomeForecastLoad(initialSelectedLocation)
             }
@@ -319,7 +326,65 @@ class OxygenAppStateHolder(
 
     fun onAboutSurfaceSelected(surfaceId: AboutSurfaceId) {
         updateAboutState {
-            it.copy(selectedSurface = surfaceId)
+            it.copy(
+                selectedSurface = surfaceId,
+                unitPreferenceMessage = null,
+            )
+        }
+    }
+
+    fun onUnitPreferenceSelected(preference: UnitPreference?) {
+        val about = presentationState.screen as? OxygenAppScreen.About ?: return
+        if (about.selectedSurface != AboutSurfaceId.Units) return
+
+        updateAboutState { it.copy(unitPreferenceMessage = null) }
+        forecastExecutor.execute {
+            try {
+                unitPreferenceStorage.writeUnitPreference(preference)
+            } catch (_: Exception) {
+                synchronized(this) {
+                    updateAboutState {
+                        it.copy(unitPreferenceMessage = UnitPreferenceMessage.LocalStateUnavailable)
+                    }
+                }
+                return@execute
+            }
+
+            synchronized(this) {
+                activeUnitPreference = preference
+                val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
+                val currentReady = currentHome?.forecast as? HomeForecastPresentationState.ForecastReady
+                val canonical = activeCanonicalForecast
+                val selectedLocation = presentationState.selectedLocation
+                val nextHome = if (
+                    currentHome != null &&
+                    currentReady != null &&
+                    canonical != null &&
+                    selectedLocation != null &&
+                    canonical.location == selectedLocation &&
+                    currentReady.location == selectedLocation
+                ) {
+                    val dashboard = canonical.toHomeSuccessPresentation(
+                        selectedLocation = selectedLocation,
+                        unitPreference = activeUnitPreference,
+                    )
+                    OxygenAppScreen.Home(
+                        forecast = currentReady.copy(
+                            dashboard = dashboard,
+                            forecastDisclosure = dashboard.source.toForecastDisclosure(),
+                            forecastPrivacyNote = dashboard.source.toForecastPrivacyNote(),
+                        ),
+                    )
+                } else {
+                    null
+                }
+                presentationState = presentationState.copy(
+                    screen = nextHome?.let(presentationState.screen::withVisibleOrReturnScreen)
+                        ?: presentationState.screen,
+                    unitPreference = activeUnitPreference,
+                )
+                publishState()
+            }
         }
     }
 
@@ -338,6 +403,9 @@ class OxygenAppStateHolder(
     @Synchronized
     private fun startHomeForecastLoad(location: WeatherLocation) {
         val requestId = nextForecastRequestId()
+        if (activeCanonicalForecast?.location != location) {
+            activeCanonicalForecast = null
+        }
         val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
         val nextForecast = if (
             currentHome?.forecast is HomeForecastPresentationState.ForecastReady &&
@@ -355,6 +423,7 @@ class OxygenAppStateHolder(
                 forecast = nextForecast,
             ),
             selectedLocation = location,
+            unitPreference = activeUnitPreference,
         )
         publishState()
 
@@ -492,6 +561,16 @@ class OxygenAppStateHolder(
             null
         }
 
+    private fun loadStoredUnitPreference() {
+        activeUnitPreference = try {
+            unitPreferenceStorage.readUnitPreference()
+        } catch (_: Exception) {
+            null
+        }
+        presentationState = presentationState.copy(unitPreference = activeUnitPreference)
+        publishState()
+    }
+
     @Synchronized
     private fun setHomeLoading(location: WeatherLocation) {
         presentationState = OxygenAppPresentationState(
@@ -499,6 +578,7 @@ class OxygenAppStateHolder(
                 forecast = HomeForecastPresentationState.Loading.from(location),
             ),
             selectedLocation = location,
+            unitPreference = activeUnitPreference,
         )
         publishState()
     }
@@ -517,6 +597,7 @@ class OxygenAppStateHolder(
                     ),
                 ),
                 selectedLocation = location,
+                unitPreference = activeUnitPreference,
             )
             publishState()
             return
@@ -529,10 +610,13 @@ class OxygenAppStateHolder(
                     location = location,
                     weather = cached,
                     staleAge = Duration.between(cached.fetchedAt, clock.instant()).coerceAtLeast(Duration.ZERO),
+                    unitPreference = activeUnitPreference,
                 ),
             ),
             selectedLocation = location,
+            unitPreference = activeUnitPreference,
         )
+        activeCanonicalForecast = cached
         publishState()
     }
 
@@ -571,11 +655,15 @@ class OxygenAppStateHolder(
                 location = location,
                 message = result.error.toHomeForecastMessage(),
             )
-            is WeatherRepositoryResult.Success -> HomeForecastPresentationState.ForecastReady.from(
-                location = location,
-                weather = result.weather,
-                freshness = result.freshness,
-            )
+            is WeatherRepositoryResult.Success -> {
+                activeCanonicalForecast = result.weather.takeIf { it.location == location }
+                HomeForecastPresentationState.ForecastReady.from(
+                    location = location,
+                    weather = result.weather,
+                    freshness = result.freshness,
+                    unitPreference = activeUnitPreference,
+                )
+            }
         }
 
         val nextHome = OxygenAppScreen.Home(forecast = forecast)
@@ -583,6 +671,7 @@ class OxygenAppStateHolder(
         presentationState = OxygenAppPresentationState(
             screen = currentScreen.withVisibleOrReturnScreen(nextHome),
             selectedLocation = location,
+            unitPreference = activeUnitPreference,
         )
         publishState()
     }
@@ -619,6 +708,7 @@ data class OxygenAppPresentationState(
     val screen: OxygenAppScreen,
     val selectedLocation: WeatherLocation?,
     val savedLocations: SavedLocationsPresentationState = SavedLocationsPresentationState.NotLoaded,
+    val unitPreference: UnitPreference? = null,
 ) {
     val isShowingHome: Boolean = screen is OxygenAppScreen.Home && selectedLocation != null
     val usesScaffoldWeather: Boolean = false
@@ -714,8 +804,12 @@ sealed interface HomeForecastPresentationState {
                 location: WeatherLocation,
                 weather: WeatherBundle,
                 freshness: ForecastFreshness = ForecastFreshness.Fresh,
+                unitPreference: UnitPreference? = null,
             ): ForecastReady {
-                val dashboard = weather.toHomeSuccessPresentation(selectedLocation = location)
+                val dashboard = weather.toHomeSuccessPresentation(
+                    selectedLocation = location,
+                    unitPreference = unitPreference,
+                )
                 return ForecastReady(
                     location = location,
                     title = location.displayName,
@@ -735,8 +829,12 @@ sealed interface HomeForecastPresentationState {
                 location: WeatherLocation,
                 weather: WeatherBundle,
                 staleAge: Duration,
+                unitPreference: UnitPreference? = null,
             ): ForecastReady {
-                val dashboard = weather.toHomeSuccessPresentation(selectedLocation = location)
+                val dashboard = weather.toHomeSuccessPresentation(
+                    selectedLocation = location,
+                    unitPreference = unitPreference,
+                )
                 val ageText = staleAge.toStaleAgeText()
                 return ForecastReady(
                     location = location,
@@ -784,6 +882,12 @@ enum class HomeForecastMessage(
     RejectedRequest("Weather updates rejected that location request. Try again later."),
     LocalCacheFailure("Weather data was received but could not be saved locally. Try again."),
     UnexpectedFailure("Weather update failed unexpectedly. Try again."),
+}
+
+enum class UnitPreferenceMessage(
+    val text: String,
+) {
+    LocalStateUnavailable("Oxygen could not save unit preference on this device."),
 }
 
 enum class HomeRefreshFailureMessage(
@@ -903,6 +1007,7 @@ sealed interface OxygenAppScreen {
     data class About(
         val returnScreen: OxygenAppScreen,
         val selectedSurface: AboutSurfaceId? = null,
+        val unitPreferenceMessage: UnitPreferenceMessage? = null,
         val title: String = "Settings / About",
         val surfaceOptions: List<AboutSurfaceId> = aboutSurfaceOptions,
     ) : OxygenAppScreen {

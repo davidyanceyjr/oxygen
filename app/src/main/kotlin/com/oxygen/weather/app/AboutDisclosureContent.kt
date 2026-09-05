@@ -3,6 +3,7 @@ package com.oxygen.weather.app
 enum class AboutSurfaceId(
     val title: String,
 ) {
+    Units("Units"),
     DataSources("Data Sources"),
     Privacy("Privacy"),
     OpenSourceLicenses("Open Source Licenses"),
@@ -23,6 +24,7 @@ val aboutSurfaceOptions: List<AboutSurfaceId> = AboutSurfaceId.entries
 fun aboutSurfaceState(surfaceId: AboutSurfaceId?): AboutSurfaceState =
     when (surfaceId) {
         null -> AboutSurfaceState()
+        AboutSurfaceId.Units -> AboutSurfaceState(title = AboutSurfaceId.Units.title)
         AboutSurfaceId.DataSources -> AboutSurfaceState(
             title = AboutSurfaceId.DataSources.title,
             sections = dataSourceSections,
@@ -72,7 +74,7 @@ private val dataSourceSections = listOf(
         heading = "Roadmap Only",
         body = listOf(
             "NOAA/NWS alerts, Environment and Climate Change Canada alerts, and Open-Meteo/CAMS air quality are roadmap-only here.",
-            "Alerts, air quality, radar, unit settings, and release-candidate fallback behavior are not implemented.",
+            "Custom unit editing, alerts, air quality, radar, and release-candidate fallback behavior are not implemented.",
         ),
     ),
 )

@@ -42,7 +42,7 @@ class AboutDisclosureStateHolderTest {
         val about = stateHolder.presentationState.screen as OxygenAppScreen.About
         assertEquals("Settings / About", about.title)
         assertEquals(
-            listOf(AboutSurfaceId.DataSources, AboutSurfaceId.Privacy, AboutSurfaceId.OpenSourceLicenses),
+            listOf(AboutSurfaceId.Units, AboutSurfaceId.DataSources, AboutSurfaceId.Privacy, AboutSurfaceId.OpenSourceLicenses),
             about.surfaceOptions,
         )
 

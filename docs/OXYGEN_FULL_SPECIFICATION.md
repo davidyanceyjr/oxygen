@@ -1850,9 +1850,10 @@ Do not update these simply because a newer version exists. Update them as a deli
 ## 53. Immediate Next Engineering Tasks
 
 Gate 19F: Saved Locations Documentation Sync, Slice 20A: Unit Preference
-Contract, and Gate 20-0: Presentation Semantics and Localization Safety are
-committed. The next implementation candidate is Slice 20B: Unit Conversion
-Presentation Boundary.
+Contract, Gate 20-0: Presentation Semantics and Localization Safety, and
+Slice 20B: Unit Conversion Presentation Boundary are committed. Slice 20C,
+persisted alternate-unit reachability through the installed path, is implemented
+and verified in the current changeset.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering,
@@ -1894,16 +1895,28 @@ Gate 20-0 then established that Home presentation behavior depends on semantic
 data and nullable canonical values rather than English labels or formatted
 strings.
 
-Slice 20B is the next bounded implementation slice. It must convert canonical
-weather values only for presentation while preserving canonical storage,
-provider requests, source/provenance, and null/unavailable semantics. It must
-not add persisted units UI, provider changes, Settings information
-architecture, or MVP-readiness claims.
+Slice 20B converted canonical weather values only for presentation while
+preserving canonical storage, provider requests, source/provenance, and
+null/unavailable semantics. It did not add persisted units UI, provider
+changes, Settings information architecture, or MVP-readiness claims.
 
-Slice 20B must not add device-location permission flow, alert lookup, persisted
-appearance settings, additional provider wiring, Paper/Terminal theme
-completion, radar, maps, air quality, widgets, background refresh,
-notifications, release-readiness, or MVP-readiness claims.
+Slice 20C made a persisted Oxygen default, Metric, US, and UK unit preference
+reachable through Settings / About / Units and exercised the alternate-unit
+choice through the normal Home presentation boundary. Its dedicated versioned
+Preferences DataStore also preserves provider-neutral custom preferences for
+future editing. It preserves canonical provider/storage units, provider
+requests, source/provenance, null/unavailable semantics, and the ability to use
+the app without an account, advertising, telemetry, or mandatory location
+permission.
+
+Slice 20C evidence includes focused storage/state tests, production DataStore
+readback instrumentation, the full HomeDashboard connected test class, an
+installed-app Units screenshot, and an installed-app changed-Home screenshot.
+
+Slice 20C did not add device-location permission flow, alert lookup, persisted
+appearance settings beyond the selected unit preference, additional provider
+wiring, Paper/Terminal theme completion, radar, maps, air quality, widgets,
+background refresh, notifications, release-readiness, or MVP-readiness claims.
 
 ---
 

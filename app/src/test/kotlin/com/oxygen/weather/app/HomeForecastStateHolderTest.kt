@@ -14,6 +14,8 @@ import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
+import com.oxygen.weather.core.model.UnitPreference
+import com.oxygen.weather.core.model.UnitPreferencePreset
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.ForecastFreshness
 import com.oxygen.weather.core.provider.GeocodingRepository
@@ -37,6 +39,88 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HomeForecastStateHolderTest {
+    @Test
+    fun `startup applies persisted unit preference without changing canonical forecast`() {
+        val location = weatherLocation("persisted-units", "Persisted Units City")
+        val bundle = fullWeatherBundle(location)
+        val storage = RecordingUnitPreferenceStorage(UnitPreference.Preset(UnitPreferencePreset.METRIC))
+        val repository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(bundle)))
+
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            unitPreferenceStorage = storage,
+            forecastExecutor = DirectForecastExecutor,
+        )
+
+        val ready = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        assertEquals("18 deg C", ready.dashboard.current?.temperature)
+        assertEquals(UnitPreference.Preset(UnitPreferencePreset.METRIC), stateHolder.presentationState.unitPreference)
+        assertEquals(1, storage.readCalls)
+        assertEquals(listOf(location), repository.locations)
+    }
+
+    @Test
+    fun `choosing a unit preference remaps visible home without refresh or cache mutation`() {
+        val location = weatherLocation("choose-units", "Choose Units City")
+        val bundle = fullWeatherBundle(location)
+        val storage = RecordingUnitPreferenceStorage()
+        val cache = RecordingForecastCacheStorage()
+        val repository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(bundle)))
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            unitPreferenceStorage = storage,
+            forecastCacheStorage = cache,
+            forecastExecutor = DirectForecastExecutor,
+        )
+        val before = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        stateHolder.onOpenAbout()
+        stateHolder.onAboutSurfaceSelected(AboutSurfaceId.Units)
+        stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.METRIC))
+
+        val about = stateHolder.presentationState.screen as OxygenAppScreen.About
+        val remapped = (about.returnScreen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(UnitPreference.Preset(UnitPreferencePreset.METRIC), storage.writes.single())
+        assertEquals("18 deg C", remapped.dashboard.current?.temperature)
+        assertEquals(before.dashboard.source, remapped.dashboard.source)
+        assertEquals(before.dashboard.sectionOrder, remapped.dashboard.sectionOrder)
+        assertEquals(before.freshness, remapped.freshness)
+        assertEquals(listOf(location), repository.locations)
+        assertEquals(emptyList<WeatherBundle>(), cache.replacements)
+    }
+
+    @Test
+    fun `failed unit preference write retains dashboard and exposes local failure`() {
+        val location = weatherLocation("failed-units", "Failed Units City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            unitPreferenceStorage = RecordingUnitPreferenceStorage(writeFails = true),
+            forecastExecutor = DirectForecastExecutor,
+        )
+        val before = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        stateHolder.onOpenAbout()
+        stateHolder.onAboutSurfaceSelected(AboutSurfaceId.Units)
+        stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.US))
+
+        val about = stateHolder.presentationState.screen as OxygenAppScreen.About
+        val current = (about.returnScreen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(before.dashboard, current.dashboard)
+        assertEquals(UnitPreferenceMessage.LocalStateUnavailable, about.unitPreferenceMessage)
+        assertEquals(listOf(location), repository.locations)
+    }
     @Test
     fun `no selected location stays first-run and does not request weather`() {
         val weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Loading))
@@ -1431,6 +1515,26 @@ private class RecordingSelectedLocationStorage(
     override fun writeSelectedLocation(location: WeatherLocation) {
         events?.add("write selected ${location.id.value}")
         writes += location
+    }
+}
+
+private class RecordingUnitPreferenceStorage(
+    private var storedPreference: UnitPreference? = null,
+    private val writeFails: Boolean = false,
+) : UnitPreferenceStorage {
+    var readCalls: Int = 0
+        private set
+    val writes = mutableListOf<UnitPreference?>()
+
+    override fun readUnitPreference(): UnitPreference? {
+        readCalls += 1
+        return storedPreference
+    }
+
+    override fun writeUnitPreference(preference: UnitPreference?) {
+        if (writeFails) error("unit preference write failed")
+        writes += preference
+        storedPreference = preference
     }
 }
 

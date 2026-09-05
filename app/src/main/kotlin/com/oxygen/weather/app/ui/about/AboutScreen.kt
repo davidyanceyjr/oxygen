@@ -22,12 +22,18 @@ import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.AboutSection
 import com.oxygen.weather.app.AboutSurfaceId
 import com.oxygen.weather.app.OxygenAppScreen
+import com.oxygen.weather.app.UnitPreferenceMessage
+import com.oxygen.weather.app.ui.units.UnitPreferencesScreen
+import com.oxygen.weather.core.model.UnitPreference
 
 @Composable
 fun AboutScreen(
     state: OxygenAppScreen.About,
     onSurfaceSelected: (AboutSurfaceId) -> Unit,
     onBack: () -> Unit,
+    selectedUnitPreference: UnitPreference? = null,
+    unitPreferenceMessage: UnitPreferenceMessage? = null,
+    onUnitPreferenceSelected: (UnitPreference?) -> Unit = {},
 ) {
     Surface(Modifier.fillMaxSize()) {
         Column(
@@ -55,18 +61,26 @@ fun AboutScreen(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
-                if (state.selectedSurface == null) {
-                    state.surfaceOptions.forEach { surface ->
-                        Button(
-                            onClick = { onSurfaceSelected(surface) },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(surface.title)
+                if (state.selectedSurface == AboutSurfaceId.Units) {
+                    UnitPreferencesScreen(
+                        selectedPreference = selectedUnitPreference,
+                        message = unitPreferenceMessage,
+                        onPreferenceSelected = onUnitPreferenceSelected,
+                    )
+                } else {
+                    if (state.selectedSurface == null) {
+                        state.surfaceOptions.forEach { surface ->
+                            Button(
+                                onClick = { onSurfaceSelected(surface) },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(surface.title)
+                            }
                         }
                     }
-                }
-                state.surfaceState.sections.forEach { section ->
-                    AboutSectionView(section)
+                    state.surfaceState.sections.forEach { section ->
+                        AboutSectionView(section)
+                    }
                 }
             }
             AboutBottomActions(

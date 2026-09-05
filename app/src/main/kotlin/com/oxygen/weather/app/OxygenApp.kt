@@ -127,6 +127,12 @@ fun OxygenApp(
                     stateHolder.onAboutBack()
                     appState = stateHolder.presentationState
                 },
+                selectedUnitPreference = appState.unitPreference,
+                unitPreferenceMessage = screen.unitPreferenceMessage,
+                onUnitPreferenceSelected = {
+                    stateHolder.onUnitPreferenceSelected(it)
+                    appState = stateHolder.presentationState
+                },
             )
         }
     }

@@ -10,6 +10,12 @@ import com.oxygen.weather.core.model.DataType
 import com.oxygen.weather.core.model.GeoPoint
 import com.oxygen.weather.core.model.HourlyForecast
 import com.oxygen.weather.core.model.LocationId
+import com.oxygen.weather.core.model.PrecipitationUnit
+import com.oxygen.weather.core.model.PressureUnit
+import com.oxygen.weather.core.model.TemperatureUnit
+import com.oxygen.weather.core.model.UnitPreference
+import com.oxygen.weather.core.model.VisibilityUnit
+import com.oxygen.weather.core.model.WindSpeedUnit
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
@@ -76,6 +82,38 @@ class OfflineLaunchPersistenceInstrumentedTest {
         storage.writeSelectedLocation(location)
 
         assertEquals(location, storage.readSelectedLocation())
+    }
+
+    @Test
+    fun dataStoreUnitPreferenceReadbackSurvivesNewStorageInstance() {
+        val preference = UnitPreference.Custom(
+            temperature = TemperatureUnit.CELSIUS,
+            windSpeed = WindSpeedUnit.KNOTS,
+            pressure = PressureUnit.INCHES_OF_MERCURY,
+            precipitation = PrecipitationUnit.INCHES,
+            visibility = VisibilityUnit.MILES,
+        )
+
+        DataStoreUnitPreferenceStorage(targetContext()).writeUnitPreference(preference)
+
+        assertEquals(
+            preference,
+            DataStoreUnitPreferenceStorage(targetContext()).readUnitPreference(),
+        )
+
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = weatherLocation(
+                id = "android-unit-preference-state-${System.nanoTime()}",
+                name = "Android Unit Preference State City",
+            ),
+            unitPreferenceStorage = DataStoreUnitPreferenceStorage(targetContext()),
+            weatherRepository = FailingWeatherRepository,
+            forecastExecutor = DirectExecutor,
+        )
+        assertEquals(preference, stateHolder.presentationState.unitPreference)
+
+        DataStoreUnitPreferenceStorage(targetContext()).writeUnitPreference(null)
+        assertEquals(null, DataStoreUnitPreferenceStorage(targetContext()).readUnitPreference())
     }
 
     @Test
