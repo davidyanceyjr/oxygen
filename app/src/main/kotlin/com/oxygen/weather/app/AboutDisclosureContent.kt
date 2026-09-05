@@ -3,6 +3,7 @@ package com.oxygen.weather.app
 enum class AboutSurfaceId(
     val title: String,
 ) {
+    Units("Units"),
     DataSources("Data Sources"),
     Privacy("Privacy"),
     OpenSourceLicenses("Open Source Licenses"),
@@ -23,6 +24,7 @@ val aboutSurfaceOptions: List<AboutSurfaceId> = AboutSurfaceId.entries
 fun aboutSurfaceState(surfaceId: AboutSurfaceId?): AboutSurfaceState =
     when (surfaceId) {
         null -> AboutSurfaceState()
+        AboutSurfaceId.Units -> AboutSurfaceState(title = AboutSurfaceId.Units.title)
         AboutSurfaceId.DataSources -> AboutSurfaceState(
             title = AboutSurfaceId.DataSources.title,
             sections = dataSourceSections,
@@ -54,6 +56,7 @@ private val dataSourceSections = listOf(
             "Forecasts: Open-Meteo is the installed-app default forecast provider for selected locations.",
             "MET Norway can serve Home forecasts after eligible Open-Meteo terminal forecast failures.",
             "Location search: Open-Meteo Geocoding API, based on GeoNames data, powers manual place search.",
+            "Timezone resolution by Open-Meteo.com (CC BY 4.0): an explicitly requested approximate device point is resolved with a metadata-only timezone=auto request before its normal forecast request.",
         ),
     ),
     AboutSection(
@@ -72,7 +75,7 @@ private val dataSourceSections = listOf(
         heading = "Roadmap Only",
         body = listOf(
             "NOAA/NWS alerts, Environment and Climate Change Canada alerts, and Open-Meteo/CAMS air quality are roadmap-only here.",
-            "Alerts, air quality, radar, unit settings, and release-candidate fallback behavior are not implemented.",
+            "Custom unit editing, alerts, air quality, radar, and release-candidate fallback behavior are not implemented.",
         ),
     ),
 )
@@ -83,12 +86,15 @@ private val privacySections = listOf(
         body = listOf(
             "Oxygen contains no advertising SDK, behavioral tracking, mandatory analytics, marketing attribution, or mandatory account system.",
             "Location permission is optional. Manual search works without Android location permission.",
+            "Use my location requests coarse foreground permission only after your tap and obtains one approximate position. There is no background acquisition or automatic relocation on launch, restart, or refresh.",
+            "The selected approximate position is stored locally and restored for offline weather. It is not automatically added to saved places.",
         ),
     ),
     AboutSection(
         heading = "Active Requests",
         body = listOf(
             "Open-Meteo forecast requests send the selected coordinates, timezone, requested weather variables, and normal network metadata such as IP address.",
+            "Device coordinates first go to Open-Meteo with timezone=auto to resolve the IANA timezone, then follow the normal forecast request path. The phone timezone is never substituted.",
             "MET Norway fallback requests send selected coordinates, optional altitude, an identifying User-Agent/contact header, and normal network metadata.",
             "Open-Meteo geocoding requests send the typed place query, bounded result count, optional locale/filter parameters where implemented, and normal network metadata such as IP address.",
             "Open-Meteo geocoding data is based on GeoNames.",

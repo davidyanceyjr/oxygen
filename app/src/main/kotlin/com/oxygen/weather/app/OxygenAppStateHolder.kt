@@ -3,9 +3,13 @@ package com.oxygen.weather.app
 import com.oxygen.weather.core.location.SavedLocationStorage
 import com.oxygen.weather.core.model.GeocodingLocationCandidate
 import com.oxygen.weather.core.model.LocationId
+import com.oxygen.weather.core.model.UnitPreference
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.ForecastError
+import com.oxygen.weather.core.provider.CoordinateTimeZoneResolver
+import com.oxygen.weather.core.provider.CoordinateTimeZoneResult
+import com.oxygen.weather.core.provider.openmeteo.OpenMeteoTimeZoneResolver
 import com.oxygen.weather.core.provider.ForecastFreshness
 import com.oxygen.weather.core.provider.GeocodingError
 import com.oxygen.weather.core.provider.GeocodingRepository
@@ -26,9 +30,15 @@ class OxygenAppStateHolder(
     private val geocodingRepository: GeocodingRepository = OpenMeteoGeocodingRepository(),
     private val weatherRepository: WeatherRepository = OpenMeteoWeatherRepository(),
     private val selectedLocationStorage: SelectedLocationStorage = EmptySelectedLocationStorage,
+    private val unitPreferenceStorage: UnitPreferenceStorage = EmptyUnitPreferenceStorage,
     private val savedLocationStorage: SavedLocationStorage? = null,
     private val forecastCacheStorage: ForecastCacheStorage? = null,
     private val clock: Clock = Clock.systemUTC(),
+    private val deviceLocationSource: DeviceLocationSource? = null,
+    private val timeZoneResolver: CoordinateTimeZoneResolver = OpenMeteoTimeZoneResolver(),
+    private val deviceExecutor: Executor = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "oxygen-device-timezone").apply { isDaemon = true }
+    },
     private val searchExecutor: Executor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "oxygen-geocoding-search").apply { isDaemon = true }
     },
@@ -61,11 +71,17 @@ class OxygenAppStateHolder(
     private var pendingCommand: OxygenAppCommand? = null
     private var onStateChanged: ((OxygenAppPresentationState) -> Unit)? = null
     private var activeForecastRequestId = 0L
+    private var activeUnitPreference: UnitPreference? = null
+    private var activeCanonicalForecast: WeatherBundle? = null
+    private var deviceAttemptCounter = 0L
+    private var activeDeviceAttempt: Long? = null
+    private var deviceCancellation: LocationCancellation? = null
 
     init {
         if (initialSelectedLocation == null) {
-            if (selectedLocationStorage !== EmptySelectedLocationStorage) {
+            if (selectedLocationStorage !== EmptySelectedLocationStorage || unitPreferenceStorage !== EmptyUnitPreferenceStorage) {
                 forecastExecutor.execute {
+                    loadStoredUnitPreference()
                     val restoredLocation = readStoredSelectedLocation()
                     when {
                         restoredLocation != null -> {
@@ -79,6 +95,7 @@ class OxygenAppStateHolder(
                                     message = FirstRunLocationMessage.LocalStateUnavailable,
                                 ),
                                 selectedLocation = null,
+                                unitPreference = activeUnitPreference,
                             )
                             publishState()
                         }
@@ -87,6 +104,7 @@ class OxygenAppStateHolder(
             }
         } else {
             forecastExecutor.execute {
+                loadStoredUnitPreference()
                 restoreCachedHomeForecast(initialSelectedLocation)
                 startHomeForecastLoad(initialSelectedLocation)
             }
@@ -97,7 +115,9 @@ class OxygenAppStateHolder(
         onStateChanged = listener
     }
 
+    @Synchronized
     fun onManualLocationQueryChanged(query: String) {
+        cancelDeviceLocation()
         updateFirstRunState {
             it.copy(
                 query = query,
@@ -107,18 +127,24 @@ class OxygenAppStateHolder(
         }
     }
 
+    @Synchronized
     fun onManualLocationSearchSubmitted() {
+        cancelDeviceLocation()
         val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
         val submittedQuery = firstRun.query.trim()
         startManualLocationSearch(submittedQuery)
     }
 
+    @Synchronized
     fun onManualLocationSearchRetry() {
+        cancelDeviceLocation()
         val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
         startManualLocationSearch(firstRun.submittedQuery.orEmpty())
     }
 
+    @Synchronized
     fun onManualLocationCandidateSelected(candidateId: LocationId) {
+        cancelDeviceLocation()
         val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
         val results = firstRun.searchState as? ManualLocationSearchState.Results ?: return
         val selected = results.candidates.firstOrNull { it.id == candidateId } ?: return
@@ -193,7 +219,9 @@ class OxygenAppStateHolder(
         }
     }
 
+    @Synchronized
     fun onSavedLocationSelected(locationId: LocationId) {
+        cancelDeviceLocation()
         val storage = savedLocationStorage ?: return
         forecastExecutor.execute {
             val savedLocation = try {
@@ -297,14 +325,18 @@ class OxygenAppStateHolder(
         loadSavedLocations()
     }
 
+    @Synchronized
     fun onLocationEntryBack() {
+        cancelDeviceLocation()
         val firstRun = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry ?: return
         val returnScreen = firstRun.returnScreen ?: return
         presentationState = presentationState.copy(screen = returnScreen)
         publishState()
     }
 
+    @Synchronized
     fun onOpenAbout() {
+        cancelDeviceLocation()
         val currentScreen = presentationState.screen
         if (currentScreen is OxygenAppScreen.About) return
 
@@ -319,7 +351,65 @@ class OxygenAppStateHolder(
 
     fun onAboutSurfaceSelected(surfaceId: AboutSurfaceId) {
         updateAboutState {
-            it.copy(selectedSurface = surfaceId)
+            it.copy(
+                selectedSurface = surfaceId,
+                unitPreferenceMessage = null,
+            )
+        }
+    }
+
+    fun onUnitPreferenceSelected(preference: UnitPreference?) {
+        val about = presentationState.screen as? OxygenAppScreen.About ?: return
+        if (about.selectedSurface != AboutSurfaceId.Units) return
+
+        updateAboutState { it.copy(unitPreferenceMessage = null) }
+        forecastExecutor.execute {
+            try {
+                unitPreferenceStorage.writeUnitPreference(preference)
+            } catch (_: Exception) {
+                synchronized(this) {
+                    updateAboutState {
+                        it.copy(unitPreferenceMessage = UnitPreferenceMessage.LocalStateUnavailable)
+                    }
+                }
+                return@execute
+            }
+
+            synchronized(this) {
+                activeUnitPreference = preference
+                val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
+                val currentReady = currentHome?.forecast as? HomeForecastPresentationState.ForecastReady
+                val canonical = activeCanonicalForecast
+                val selectedLocation = presentationState.selectedLocation
+                val nextHome = if (
+                    currentHome != null &&
+                    currentReady != null &&
+                    canonical != null &&
+                    selectedLocation != null &&
+                    canonical.location == selectedLocation &&
+                    currentReady.location == selectedLocation
+                ) {
+                    val dashboard = canonical.toHomeSuccessPresentation(
+                        selectedLocation = selectedLocation,
+                        unitPreference = activeUnitPreference,
+                    )
+                    OxygenAppScreen.Home(
+                        forecast = currentReady.copy(
+                            dashboard = dashboard,
+                            forecastDisclosure = dashboard.source.toForecastDisclosure(),
+                            forecastPrivacyNote = dashboard.source.toForecastPrivacyNote(),
+                        ),
+                    )
+                } else {
+                    null
+                }
+                presentationState = presentationState.copy(
+                    screen = nextHome?.let(presentationState.screen::withVisibleOrReturnScreen)
+                        ?: presentationState.screen,
+                    unitPreference = activeUnitPreference,
+                )
+                publishState()
+            }
         }
     }
 
@@ -338,6 +428,9 @@ class OxygenAppStateHolder(
     @Synchronized
     private fun startHomeForecastLoad(location: WeatherLocation) {
         val requestId = nextForecastRequestId()
+        if (activeCanonicalForecast?.location != location) {
+            activeCanonicalForecast = null
+        }
         val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
         val nextForecast = if (
             currentHome?.forecast is HomeForecastPresentationState.ForecastReady &&
@@ -355,6 +448,7 @@ class OxygenAppStateHolder(
                 forecast = nextForecast,
             ),
             selectedLocation = location,
+            unitPreference = activeUnitPreference,
         )
         publishState()
 
@@ -396,6 +490,7 @@ class OxygenAppStateHolder(
         }
     }
 
+    @Synchronized
     private fun applyManualLocationSearchResult(
         query: String,
         result: GeocodingRepositoryResult,
@@ -442,22 +537,102 @@ class OxygenAppStateHolder(
         publishState()
     }
 
+    @Synchronized
     fun onUseMyLocation() {
-        pendingCommand = OxygenAppCommand.RequestLocationPermission
+        if (presentationState.screen !is OxygenAppScreen.FirstRunLocationEntry || activeDeviceAttempt != null) return
+        val attempt = ++deviceAttemptCounter
+        activeDeviceAttempt = attempt
+        updateFirstRunState { it.copy(message = null, deviceProgress = DeviceLocationProgress.Permission) }
+        pendingCommand = OxygenAppCommand.RequestLocationPermission(attempt)
     }
 
-    fun onLocationPermissionResult(result: LocationPermissionResult) {
-        when (result) {
-            LocationPermissionResult.Granted -> updateFirstRunState {
-                it.copy(message = FirstRunLocationMessage.LocationLookupNotConnected)
-            }
-            LocationPermissionResult.Denied,
-            LocationPermissionResult.Unavailable -> updateFirstRunState {
-                it.copy(message = FirstRunLocationMessage.LocationPermissionOptional)
-            }
+    @Synchronized
+    fun onLocationPermissionResult(attempt: Long, result: LocationPermissionResult) {
+        if (!isDeviceAttemptActive(attempt) ||
+            (presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry)?.deviceProgress != DeviceLocationProgress.Permission
+        ) return
+        if (result != LocationPermissionResult.Granted) {
+            failDeviceAttempt(attempt, FirstRunLocationMessage.LocationPermissionOptional)
+            return
+        }
+        updateFirstRunState { it.copy(deviceProgress = DeviceLocationProgress.Locating) }
+        val source = deviceLocationSource
+        if (source == null) {
+            failDeviceAttempt(attempt, FirstRunLocationMessage.DeviceLocationUnavailable)
+            return
+        }
+        try {
+            val handle = source.locate { onDevicePoint(attempt, it) }
+            if (isDeviceAttemptActive(attempt)) deviceCancellation = handle else handle.cancel()
+        } catch (_: Exception) {
+            failDeviceAttempt(attempt, FirstRunLocationMessage.DeviceLocationUnavailable)
         }
     }
 
+    @Synchronized
+    private fun onDevicePoint(attempt: Long, result: DeviceLocationResult) {
+        if (!isDeviceAttemptActive(attempt) ||
+            (presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry)?.deviceProgress != DeviceLocationProgress.Locating
+        ) return
+        when (result) {
+            is DeviceLocationResult.Success -> {
+                updateFirstRunState { it.copy(deviceProgress = DeviceLocationProgress.Resolving) }
+                deviceExecutor.execute {
+                    if (!isDeviceAttemptActive(attempt)) return@execute
+                    val resolved = try { timeZoneResolver.resolve(result.point) } catch (_: Exception) { null }
+                    synchronized(this) {
+                        if (!isDeviceAttemptActive(attempt)) return@execute
+                        if (resolved !is CoordinateTimeZoneResult.Success || resolved.point != result.point) {
+                            failDeviceAttempt(attempt, FirstRunLocationMessage.DeviceTimezoneUnavailable)
+                            return@execute
+                        }
+                        val location = try {
+                            approximateDeviceLocation(result.point, resolved.zoneId)
+                        } catch (_: Exception) {
+                            failDeviceAttempt(attempt, FirstRunLocationMessage.DeviceTimezoneUnavailable)
+                            return@execute
+                        }
+                        // Serialize the guard, durable commit and publication with competing selections.
+                        try {
+                            selectedLocationStorage.writeSelectedLocation(location)
+                        } catch (_: Exception) {
+                            failDeviceAttempt(attempt, FirstRunLocationMessage.LocalStateUnavailable)
+                            return@execute
+                        }
+                        cancelDeviceLocation()
+                        startHomeForecastLoad(location)
+                    }
+                }
+            }
+            DeviceLocationResult.TimedOut -> failDeviceAttempt(attempt, FirstRunLocationMessage.DeviceLocationTimedOut)
+            DeviceLocationResult.Unavailable -> failDeviceAttempt(attempt, FirstRunLocationMessage.DeviceLocationUnavailable)
+            DeviceLocationResult.Cancelled -> cancelDeviceLocation()
+        }
+    }
+
+    @Synchronized
+    private fun isDeviceAttemptActive(attempt: Long): Boolean =
+        activeDeviceAttempt == attempt && presentationState.screen is OxygenAppScreen.FirstRunLocationEntry
+
+    @Synchronized
+    fun cancelDeviceLocation() {
+        activeDeviceAttempt = null
+        pendingCommand = null
+        val cancellation = deviceCancellation
+        deviceCancellation = null
+        runCatching { cancellation?.cancel() }
+        val entry = presentationState.screen as? OxygenAppScreen.FirstRunLocationEntry
+        if (entry?.deviceProgress != null) updateFirstRunState { it.copy(deviceProgress = null) }
+    }
+
+    @Synchronized
+    private fun failDeviceAttempt(attempt: Long, message: FirstRunLocationMessage) {
+        if (!isDeviceAttemptActive(attempt)) return
+        cancelDeviceLocation()
+        updateFirstRunState { it.copy(message = message) }
+    }
+
+    @Synchronized
     fun consumeNextCommand(): OxygenAppCommand? {
         val command = pendingCommand
         pendingCommand = null
@@ -492,6 +667,16 @@ class OxygenAppStateHolder(
             null
         }
 
+    private fun loadStoredUnitPreference() {
+        activeUnitPreference = try {
+            unitPreferenceStorage.readUnitPreference()
+        } catch (_: Exception) {
+            null
+        }
+        presentationState = presentationState.copy(unitPreference = activeUnitPreference)
+        publishState()
+    }
+
     @Synchronized
     private fun setHomeLoading(location: WeatherLocation) {
         presentationState = OxygenAppPresentationState(
@@ -499,6 +684,7 @@ class OxygenAppStateHolder(
                 forecast = HomeForecastPresentationState.Loading.from(location),
             ),
             selectedLocation = location,
+            unitPreference = activeUnitPreference,
         )
         publishState()
     }
@@ -517,6 +703,7 @@ class OxygenAppStateHolder(
                     ),
                 ),
                 selectedLocation = location,
+                unitPreference = activeUnitPreference,
             )
             publishState()
             return
@@ -529,10 +716,13 @@ class OxygenAppStateHolder(
                     location = location,
                     weather = cached,
                     staleAge = Duration.between(cached.fetchedAt, clock.instant()).coerceAtLeast(Duration.ZERO),
+                    unitPreference = activeUnitPreference,
                 ),
             ),
             selectedLocation = location,
+            unitPreference = activeUnitPreference,
         )
+        activeCanonicalForecast = cached
         publishState()
     }
 
@@ -571,11 +761,15 @@ class OxygenAppStateHolder(
                 location = location,
                 message = result.error.toHomeForecastMessage(),
             )
-            is WeatherRepositoryResult.Success -> HomeForecastPresentationState.ForecastReady.from(
-                location = location,
-                weather = result.weather,
-                freshness = result.freshness,
-            )
+            is WeatherRepositoryResult.Success -> {
+                activeCanonicalForecast = result.weather.takeIf { it.location == location }
+                HomeForecastPresentationState.ForecastReady.from(
+                    location = location,
+                    weather = result.weather,
+                    freshness = result.freshness,
+                    unitPreference = activeUnitPreference,
+                )
+            }
         }
 
         val nextHome = OxygenAppScreen.Home(forecast = forecast)
@@ -583,6 +777,7 @@ class OxygenAppStateHolder(
         presentationState = OxygenAppPresentationState(
             screen = currentScreen.withVisibleOrReturnScreen(nextHome),
             selectedLocation = location,
+            unitPreference = activeUnitPreference,
         )
         publishState()
     }
@@ -619,6 +814,7 @@ data class OxygenAppPresentationState(
     val screen: OxygenAppScreen,
     val selectedLocation: WeatherLocation?,
     val savedLocations: SavedLocationsPresentationState = SavedLocationsPresentationState.NotLoaded,
+    val unitPreference: UnitPreference? = null,
 ) {
     val isShowingHome: Boolean = screen is OxygenAppScreen.Home && selectedLocation != null
     val usesScaffoldWeather: Boolean = false
@@ -714,8 +910,12 @@ sealed interface HomeForecastPresentationState {
                 location: WeatherLocation,
                 weather: WeatherBundle,
                 freshness: ForecastFreshness = ForecastFreshness.Fresh,
+                unitPreference: UnitPreference? = null,
             ): ForecastReady {
-                val dashboard = weather.toHomeSuccessPresentation(selectedLocation = location)
+                val dashboard = weather.toHomeSuccessPresentation(
+                    selectedLocation = location,
+                    unitPreference = unitPreference,
+                )
                 return ForecastReady(
                     location = location,
                     title = location.displayName,
@@ -735,8 +935,12 @@ sealed interface HomeForecastPresentationState {
                 location: WeatherLocation,
                 weather: WeatherBundle,
                 staleAge: Duration,
+                unitPreference: UnitPreference? = null,
             ): ForecastReady {
-                val dashboard = weather.toHomeSuccessPresentation(selectedLocation = location)
+                val dashboard = weather.toHomeSuccessPresentation(
+                    selectedLocation = location,
+                    unitPreference = unitPreference,
+                )
                 val ageText = staleAge.toStaleAgeText()
                 return ForecastReady(
                     location = location,
@@ -784,6 +988,12 @@ enum class HomeForecastMessage(
     RejectedRequest("Weather updates rejected that location request. Try again later."),
     LocalCacheFailure("Weather data was received but could not be saved locally. Try again."),
     UnexpectedFailure("Weather update failed unexpectedly. Try again."),
+}
+
+enum class UnitPreferenceMessage(
+    val text: String,
+) {
+    LocalStateUnavailable("Oxygen could not save unit preference on this device."),
 }
 
 enum class HomeRefreshFailureMessage(
@@ -882,6 +1092,7 @@ sealed interface OxygenAppScreen {
         val query: String = "",
         val submittedQuery: String? = null,
         val message: FirstRunLocationMessage? = null,
+        val deviceProgress: DeviceLocationProgress? = null,
         val searchState: ManualLocationSearchState = ManualLocationSearchState.Idle,
         val returnScreen: Home? = null,
         val title: String = "Choose a location",
@@ -903,6 +1114,7 @@ sealed interface OxygenAppScreen {
     data class About(
         val returnScreen: OxygenAppScreen,
         val selectedSurface: AboutSurfaceId? = null,
+        val unitPreferenceMessage: UnitPreferenceMessage? = null,
         val title: String = "Settings / About",
         val surfaceOptions: List<AboutSurfaceId> = aboutSurfaceOptions,
     ) : OxygenAppScreen {
@@ -968,7 +1180,9 @@ enum class FirstRunLocationMessage(
     SearchRejected("Location search rejected that request. Try a more specific place name."),
     SearchUnexpectedFailure("Location search failed unexpectedly. Try again."),
     LocationPermissionOptional("Location permission is optional. You can search for a place instead."),
-    LocationLookupNotConnected("Device location lookup is not connected yet in this slice."),
+    DeviceLocationUnavailable("Approximate device location is unavailable. Search for a place or try Use my location again."),
+    DeviceLocationTimedOut("Finding an approximate location timed out. Search for a place or try Use my location again."),
+    DeviceTimezoneUnavailable("Could not resolve the approximate location's timezone. Search for a place or try Use my location again."),
     LocalStateUnavailable("Oxygen could not save or read the selected location on this device. Select the location again."),
 }
 
@@ -978,8 +1192,14 @@ enum class LocationPermissionResult {
     Unavailable,
 }
 
-enum class OxygenAppCommand {
-    RequestLocationPermission,
+enum class DeviceLocationProgress(val text: String) {
+    Permission("Waiting for optional location permission"),
+    Locating("Finding approximate device location…"),
+    Resolving("Resolving approximate location timezone…"),
+}
+
+sealed interface OxygenAppCommand {
+    data class RequestLocationPermission(val attempt: Long) : OxygenAppCommand
 }
 
 private fun GeocodingLocationCandidate.toManualLocationCandidate(): ManualLocationCandidate {

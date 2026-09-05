@@ -19,7 +19,20 @@ source-code licensing.
 - Attribution: Weather data by Open-Meteo.com.
 - Data license: Creative Commons Attribution 4.0 International (CC BY 4.0), as
   recorded in docs/data-sources/OPEN_METEO_FORECAST.md.
-- Last terms review date: 2026-08-19.
+- Last terms review date: 2026-09-05.
+
+### Approximate Device Timezone: Open-Meteo
+
+- Explicit Use my location obtains one approximate point with optional coarse
+  foreground permission. Coordinates are sent first with `timezone=auto` and
+  no weather variables, then through the normal selected forecast path.
+- The original device point and validated IANA zone are selected locally;
+  response grid coordinates are not the device position. Resolver responses
+  are not weather and do not enter the forecast cache.
+- No background acquisition or automatic relocation occurs. Manual search
+  remains fully usable without permission.
+- Attribution: Timezone resolution by Open-Meteo.com. Data license: CC BY 4.0.
+- Last terms review date: 2026-09-05; contract: `docs/data-sources/OPEN_METEO_FORECAST.md`.
 
 ### Location Search: Open-Meteo Geocoding API / GeoNames
 
@@ -78,8 +91,8 @@ selected local `LocationId`.
 
 The installed app also persists saved locations locally, shows saved rows on the
 location-entry surface, marks the current saved location, and can select an
-existing saved row through the local selected-location path. It does not yet
-implement search-result save UI, saved-location removal UI, unit preferences,
+existing saved row through the local selected-location path, save search results,
+remove saved rows after confirmation, and persist unit choices. It does not yet implement
 official alert lookup, air-quality lookup, radar, provider-specific MET Norway
 conditional GET/304 handling, or release-candidate fallback behavior.
 

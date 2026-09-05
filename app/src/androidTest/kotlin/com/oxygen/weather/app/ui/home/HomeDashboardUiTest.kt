@@ -1,5 +1,6 @@
 package com.oxygen.weather.app.ui.home
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -11,12 +12,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
@@ -50,6 +53,12 @@ import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.app.OxygenApp
 import com.oxygen.weather.app.OxygenAppScreen
 import com.oxygen.weather.app.OxygenAppStateHolder
+import com.oxygen.weather.app.DeviceLocationProgress
+import com.oxygen.weather.app.DeviceLocationSource
+import com.oxygen.weather.app.DeviceLocationResult
+import com.oxygen.weather.app.LocationCancellation
+import com.oxygen.weather.app.LocationPermissionResult
+import com.oxygen.weather.app.FirstRunLocationMessage
 import com.oxygen.weather.app.SavedLocationsMessage
 import com.oxygen.weather.app.SavedLocationsPresentationState
 import com.oxygen.weather.app.ui.about.AboutScreen
@@ -92,6 +101,66 @@ import org.junit.Test
 class HomeDashboardUiTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun deviceLookupShowsProgressDisablesDuplicatesAndCancelLeavesManualSearchUsable() {
+        var pointCallback: ((DeviceLocationResult) -> Unit)? = null
+        var sourceCalls = 0
+        val holder = OxygenAppStateHolder(
+            deviceLocationSource = DeviceLocationSource { callback ->
+                sourceCalls++
+                pointCallback = callback
+                LocationCancellation { }
+            },
+        )
+        composeRule.setCompactContent {
+            OxygenApp(holder, onRequestLocationPermission = {
+                holder.onLocationPermissionResult(it, LocationPermissionResult.Granted)
+            })
+        }
+        composeRule.onNodeWithTag("location-entry-use-my-location").performClick()
+        composeRule.onNodeWithTag("location-entry-use-my-location").assertIsNotEnabled()
+        composeRule.onNodeWithText(DeviceLocationProgress.Locating.text).performScrollTo().assertIsDisplayed()
+        composeRule.assertMinimumTouchTarget("location-entry-device-cancel", "location-entry-use-my-location")
+        composeRule.onNodeWithTag("location-entry-device-cancel").performClick()
+        composeRule.runOnIdle { pointCallback!!(DeviceLocationResult.Success(GeoPoint(43.0, -89.0))) }
+        composeRule.onAllNodesWithTag("location-entry-device-progress").assertCountEquals(0)
+        composeRule.onNodeWithTag("location-entry-search-field").performScrollTo().performTextInput("Madison")
+        composeRule.runOnIdle {
+            assertEquals("Madison", (holder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry).query)
+            assertEquals(null, holder.presentationState.selectedLocation)
+            assertEquals(1, sourceCalls)
+        }
+    }
+
+    @Test
+    fun deviceResolvingAndErrorRemainReadableAtLargeFontWithEffectsOff() {
+        val state = mutableStateOf(OxygenAppScreen.FirstRunLocationEntry(
+            deviceProgress = DeviceLocationProgress.Resolving,
+        ))
+        composeRule.setCompactContent(fontScale = 2f) {
+            FirstRunLocationEntryScreen(
+                state = state.value,
+                selectedLocation = null,
+                savedLocations = SavedLocationsPresentationState.NotLoaded,
+                onQueryChanged = {}, onSearch = {}, onRetry = {}, onCandidateSelected = {},
+                onSavedLocationSelected = {}, onUseMyLocation = {
+                    state.value = state.value.copy(message = null, deviceProgress = DeviceLocationProgress.Locating)
+                },
+                onCancelDeviceLocation = {
+                    state.value = state.value.copy(deviceProgress = null, message = FirstRunLocationMessage.DeviceTimezoneUnavailable)
+                },
+                onBack = {}, onOpenAbout = {},
+            )
+        }
+        composeRule.onNodeWithText(DeviceLocationProgress.Resolving.text).performScrollTo().assertIsDisplayed()
+        composeRule.assertMinimumTouchTarget("location-entry-device-cancel", "location-entry-search")
+        composeRule.assertWithinRootBounds("location-entry-actions")
+        composeRule.onNodeWithTag("location-entry-device-cancel").performClick()
+        composeRule.onNodeWithText(FirstRunLocationMessage.DeviceTimezoneUnavailable.text).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("location-entry-use-my-location").performClick()
+        composeRule.onNodeWithText(DeviceLocationProgress.Locating.text).performScrollTo().assertIsDisplayed()
+    }
 
     @Test
     fun freshSuccessRendersSemanticHomePagesAndPreservesDashboardContent() {
@@ -718,6 +787,61 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("about-bottom-actions").assertIsDisplayed()
         composeRule.assertInLowerReachZone("about-bottom-actions", rootHeight = 640f)
         composeRule.assertMinimumTouchTarget("about-back")
+    }
+
+    @Test
+    fun oxygenAppUnitsSelectionReturnsHomeWithAlternateUnitsAndKeepsPagesReachable() {
+        val location = weatherLocation(name = "Units Fixture City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactContent(heightDp = 900) {
+            OxygenApp(stateHolder = stateHolder)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-about-entry").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Units").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("unit-choice-default").assertIsSelected()
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "unit-choice-default",
+            "unit-choice-metric",
+            "unit-choice-us",
+            "unit-choice-uk",
+        )
+        composeRule.assertMinimumTouchTarget("about-back")
+
+        composeRule.onNodeWithTag("unit-choice-metric").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("unit-choice-metric").assertIsSelected()
+        composeRule.onNodeWithTag("about-back").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("about-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("18 deg C").assertIsDisplayed()
+        composeRule.onNodeWithText("Open-Meteo | Fetched Aug 22, 7:00 AM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        assertEquals(listOf(location), repository.locations)
+        composeRule.writeSemanticsArtifact("units-selection-home-semantics.txt")
+        val screenshot = composeRule.onRoot().captureToImage().asAndroidBitmap()
+        val screenshotFile = File(
+            InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
+            "units-selection-home.png",
+        )
+        screenshotFile.outputStream().use { output ->
+            assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, output))
+        }
     }
 
     @Test

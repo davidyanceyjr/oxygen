@@ -3,7 +3,8 @@ package com.oxygen.weather.app
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,24 +18,26 @@ import com.oxygen.weather.app.ui.theme.OxygenThemeId
 @Composable
 fun OxygenApp(
     stateHolder: OxygenAppStateHolder = remember { OxygenAppStateHolder() },
-    locationPermissionResult: LocationPermissionResult? = null,
-    onRequestLocationPermission: () -> Unit = {},
+    onRequestLocationPermission: (Long) -> Unit = {},
 ) {
     var themeId by remember { mutableStateOf(OxygenThemeId.OXYGEN) }
     var appState by remember(stateHolder) { mutableStateOf(stateHolder.presentationState) }
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
 
-    stateHolder.setOnStateChanged { state ->
-        mainHandler.post {
-            appState = state
+    DisposableEffect(stateHolder) {
+        stateHolder.setOnStateChanged { state ->
+            mainHandler.post { appState = state }
+        }
+        appState = stateHolder.presentationState
+        onDispose {
+            stateHolder.setOnStateChanged { }
+            stateHolder.cancelDeviceLocation()
+            mainHandler.removeCallbacksAndMessages(null)
         }
     }
-
-    LaunchedEffect(locationPermissionResult) {
-        locationPermissionResult?.let {
-            stateHolder.onLocationPermissionResult(it)
-            appState = stateHolder.presentationState
-        }
+    val entry = appState.screen as? OxygenAppScreen.FirstRunLocationEntry
+    BackHandler(enabled = entry?.deviceProgress != null || entry?.canReturnHome == true) {
+        stateHolder.onLocationEntryBack()
     }
 
     OxygenTheme(themeId = themeId) {
@@ -84,11 +87,12 @@ fun OxygenApp(
                     stateHolder.onUseMyLocation()
                     stateHolder.consumeNextCommand()?.let { command ->
                         when (command) {
-                            OxygenAppCommand.RequestLocationPermission -> onRequestLocationPermission()
+                            is OxygenAppCommand.RequestLocationPermission -> onRequestLocationPermission(command.attempt)
                         }
                     }
                     appState = stateHolder.presentationState
                 },
+                onCancelDeviceLocation = { stateHolder.cancelDeviceLocation() },
                 onBack = {
                     stateHolder.onLocationEntryBack()
                     appState = stateHolder.presentationState
@@ -125,6 +129,12 @@ fun OxygenApp(
                 },
                 onBack = {
                     stateHolder.onAboutBack()
+                    appState = stateHolder.presentationState
+                },
+                selectedUnitPreference = appState.unitPreference,
+                unitPreferenceMessage = screen.unitPreferenceMessage,
+                onUnitPreferenceSelected = {
+                    stateHolder.onUnitPreferenceSelected(it)
                     appState = stateHolder.presentationState
                 },
             )

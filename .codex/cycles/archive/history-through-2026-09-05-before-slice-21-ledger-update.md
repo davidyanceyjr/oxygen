@@ -32,13 +32,13 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 20C, Unit Conversion Presentation
-  Boundary, committed at `1b52718`.
+- Last committed implementation slice: Slice 20B, Unit Conversion Presentation
+  Boundary, committed in this changeset.
 - Last committed implementation gate: Gate 20-0, Presentation Semantics and
   Localization Safety, committed at `587b0ad`.
 - Last committed documentation sync: Post-20-0 Authority Sync, committed at
-  `a0bca26`. The next implementation candidate is Slice 21: optional device
-  location through the installed path.
+  `a0bca26`. The next implementation candidate is Slice 20C: persisted
+  alternate-unit reachability through the installed path.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -553,10 +553,10 @@ Boundaries:
 
 ### 2026-09-05-slice-20c-persisted-unit-selection
 
-Status: committed
+Status: ready
 Mode: feature
 Slice: Slice 20C, Persisted Alternate-Unit Reachability
-Commit: `1b52718`
+Commit: not committed
 
 Result:
 - Added a dedicated versioned Preferences DataStore for preset and custom
@@ -591,105 +591,3 @@ Boundaries:
   selected-location/saved-location schemas, location permission, alerts, air
   quality, radar/maps, appearance settings beyond selected units, release, or
   MVP behavior changed. Custom-unit editing remains out of scope.
-
-### 2026-09-05-slice-21-optional-device-location
-
-Status: verified
-Mode: feature
-Slice: Slice 21, Optional Device Location
-Commit: not committed
-
-Result:
-- Added an app-local coarse-location acquisition path with a cancellable
-  attempt boundary, a one-shot device-point source, and a selected-location
-  write before the existing Home handoff.
-- Added provider-neutral coordinate-to-timezone resolution in `:core` through
-  the verified Open-Meteo `timezone=auto` metadata request.
-- Updated the installed app disclosures, manifest, and first-run surface to
-  keep manual search usable while making device location optional and
-  action-triggered.
-- Verified the installed path on the emulator: coarse permission grants,
-  approximate device point acquisition, metadata-only timezone resolution,
-  selected-location persistence, and restored Home with the approximate
-  label.
-
-Evidence:
-- Focused unit tests passed:
-  `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteoTimeZoneResolverTest*'`
-  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRunLocationStateHolderTest*' --tests '*DeviceLocationSourceTest*'`
-  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`.
-- Connected persistence test passed:
-  `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.OfflineLaunchPersistenceInstrumentedTest`.
-- Broad checks passed:
-  `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-  `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
-  `git diff --check`.
-- Installed screenshots saved under
-  `.codex/test-artifacts/2026-09-05-slice-21-device-location/`:
-  `entry-baseline.png`, `permission-or-progress.png`, `after-permission-grant.png`,
-  `after-test-provider-start.png`, and `large-font-restored.png`.
-
-Artifacts:
-- `.codex/test-artifacts/2026-09-05-slice-21-device-location/`.
-
-Blockers:
-- Emulator `geo fix` alone did not deliver a timely fix to the app's bounded
-  request window; the successful real-path proof used the emulator's test GPS
-  provider via `adb shell cmd location providers add-test-provider gps ...`
-  and `set-test-provider-location gps --location 43.0731,-89.4012`.
-
-Boundaries:
-- No fine/background location, Play Services dependency, provider/cache
-  schema change, saved-location schema change, or continuous tracking behavior
-  was added.
-
-### 2026-09-05-slice-22-nws-alert-provider-contract
-
-Status: ready
-Mode: documentation / provider contract
-Slice: Slice 22, NWS Alert Provider Contract
-Commit: not committed
-
-Result:
-- Added `docs/data-sources/NWS_ALERTS.md` as the NOAA/National Weather Service
-  active-alert provider contract for selected-point official alerts.
-- Contracted exact endpoint, headers/User-Agent, source-reviewed rate/cache
-  behavior, required alert fields, timestamps, severity/urgency/certainty,
-  identity/lifecycle, geometry/affected-area fallback, errors, attribution,
-  license/privacy, unsupported-region behavior, fixtures, and alert/forecast
-  independence.
-- Recorded that existing `WeatherAlert`/`AlertProvider` names must be evolved
-  rather than duplicated: domain expansion belongs to Slice 23A, result/error
-  boundary evolution to Slice 23B, and independent forecast/alert composition to
-  Slice 23C.
-
-Evidence:
-- Live NWS evidence passed on 2026-09-05 with
-  `User-Agent: OxygenWeather/0.1 (https://github.com/davidyanceyjr/oxygen/issues)`
-  and `Accept: application/geo+json`: Madison point returned HTTP 200
-  GeoJSON `FeatureCollection` with zero features and cache headers; London
-  point returned HTTP 400 problem JSON matching the contracted conservative
-  unsupported-region discriminator.
-- OpenAPI fetch passed and was inspected for `/alerts/active`, `AlertPoint`,
-  response media types, alert properties/enums/references, and generic problem
-  schema.
-- Source review covered NWS API service docs, OpenAPI, Alerts Web Service, NWS
-  Geolocation Guide, NWS CAP/OASIS CAP sources, disclaimer, privacy policy, and
-  PNS26-62.
-- Broad Markdown checks passed: `git diff --check`, `git diff --stat`, and the
-  bounded diff review over current plan, NWS contract, spec, data/privacy docs,
-  roadmap, and cycle history. `git diff --no-index -- /dev/null
-  docs/data-sources/NWS_ALERTS.md` was used to review the new untracked
-  contract file; its exit code 1 is expected for new-file content.
-
-Artifacts:
-- `.codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract/`.
-
-Blockers:
-- None.
-
-Boundaries:
-- No Kotlin, Compose, Gradle, resource, manifest, provider runtime,
-  persistence, permission, UI, `DATA_SOURCES.md`, `PRIVACY.md`, specification,
-  roadmap-status, active-provider claim, Android build/test, emulator, install,
-  or screenshot behavior changed. NWS alerts remain roadmap-only.

@@ -9,6 +9,14 @@ Location permission is optional. A user can search for locations manually in
 the current app build. Manual location search must not request Android location
 permission.
 
+Use my location requests only coarse foreground permission after an explicit
+tap and obtains one approximate position. Its coordinates and normal network
+metadata go first to Open-Meteo for IANA timezone resolution, then through the
+normal forecast request path. The selected approximate position is stored
+locally and can restore cached weather offline; it is not automatically saved
+as a saved place. Launch, restart, refresh, and background paths never acquire
+a new device fix. A new explicit action is required to relocate.
+
 ## Active Provider Requests
 
 Oxygen currently has active installed-app production paths for Open-Meteo
@@ -51,7 +59,7 @@ location and can restore the last cached forecast offline.
 
 The installed app also stores the last selected location and saved-location
 records locally. Saved rows can be shown and selected from the location-entry
-surface. The app does not currently include search-result save UI,
-saved-location removal UI, unit preferences, alert lookup, air-quality lookup,
+surface, with search-result save, confirmed removal, and persisted unit choices.
+The app does not currently include alert lookup, air-quality lookup,
 radar, conditional GET requests, 304 not-modified handling, or
 release-candidate fallback behavior.

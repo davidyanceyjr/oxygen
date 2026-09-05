@@ -17,6 +17,10 @@ and `docs/data-sources/`.
 
 - Manual location search through the Open-Meteo geocoding path.
 - Manual selected-location change from the installed Home screen.
+- Optional Use my location action: one coarse foreground device point, an
+  Open-Meteo IANA timezone lookup, and selection through the same forecast/cache
+  path. The selected approximate position is stored locally; no automatic
+  relocation or background acquisition occurs. Manual search needs no grant.
 - Explicit selected-location Open-Meteo forecast retrieval.
 - Last selected location persistence through the local DataStore path.
 - Saved-location storage, saved-location list display, current-location marking,
@@ -32,6 +36,10 @@ and `docs/data-sources/`.
   visible with stale/source/update context where available.
 - Installed-app MET Norway fallback after eligible Open-Meteo terminal forecast
   failures, with MET Norway provenance shown through the normal Home surface.
+- Persisted Oxygen default, Metric, US, and UK unit selection through the
+  installed Settings / About / Units surface, with immediate Home remapping.
+- Home presentation conversion for provider-neutral unit preferences at the
+  mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
   provenance, and disclosure presentation.
 - Standard Home paged interaction foundation with Now, Hourly, Daily, and
@@ -39,7 +47,8 @@ and `docs/data-sources/`.
 - Standard Home Now, Hourly, Daily, and Details visual baselines.
 - Art-sheet-aligned Standard Home weather marks, surface roles, typography
   roles, and app-local design roles for the installed Home surface.
-- Settings/About surfaces for Data Sources, Privacy, and Open Source Licenses.
+- Settings/About surfaces for Units, Data Sources, Privacy, and Open Source
+  Licenses.
 - Oxygen package/application identity, theme foundation, and Compose Home UI.
 
 ## Implemented but not active in the installed app
@@ -47,10 +56,12 @@ and `docs/data-sources/`.
 - MET Norway forecast provider path and core fallback-selection behavior.
 - File-backed forecast cache storage retained as a core repository boundary
   implementation, while the installed app uses Room storage.
+- Provider-neutral custom-unit model and alternate-unit Home presentation
+  outputs retained for a future custom-unit editor.
 
 ## Not implemented yet
 
-- Unit preferences.
+- Custom unit editing UI.
 - Official weather alert lookup.
 - Persisted appearance/effects/layout settings.
 - Release-candidate verification.
@@ -162,7 +173,7 @@ cached fallback forecasts, and cached/stale MET Norway forecasts retain
 MET Norway provenance. Conditional GET requests, 304 not-modified handling, and
 release-candidate fallback verification remain later work.
 
-Unit preferences, alerts, air quality, radar, and release-candidate
+Custom unit editing, alerts, air quality, radar, and release-candidate
 verification are not implemented yet.
 
 ## Specification

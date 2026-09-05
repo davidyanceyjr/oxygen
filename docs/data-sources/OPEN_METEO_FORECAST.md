@@ -1,7 +1,7 @@
 # Open-Meteo Forecast Provider Contract
 
 - **Provider:** Open-Meteo
-- **Purpose:** Default MVP general forecast provider for current conditions, hourly forecast, daily forecast, and Home source/provenance display. This contract does not make Open-Meteo active in production; activation requires DTO parsing, client, mapper, repository, and UI state slices.
+- **Purpose:** Active installed default forecast provider for current conditions, hourly forecast, daily forecast, and Home source/provenance display. Also resolves an explicitly requested approximate device point to an IANA timezone using the metadata-only request below.
 - **Coverage:** Global forecast coverage through Open-Meteo's automatically selected best-match weather-model blend. Model availability, resolution, forecast length, update cadence, and field availability vary by geography and upstream national weather service model.
 - **Base endpoint:** Free non-commercial endpoint `https://api.open-meteo.com/v1/forecast`. Commercial/customer endpoint is `https://customer-api.open-meteo.com/v1/forecast` with the same query shape plus `apikey`; Oxygen must keep the base URL configurable and outside UI code.
 - **Authentication:** No API key, account, sign-up, or SDK for the free non-commercial endpoint. Commercial use requires a paid Open-Meteo subscription, customer endpoint, and `apikey` query parameter.
@@ -42,7 +42,7 @@
 - **Attribution:** Display Open-Meteo attribution anywhere Open-Meteo weather data is displayed. Required app copy should be equivalent to `Weather data by Open-Meteo.com` with a link to `https://open-meteo.com/`. Do not imply Open-Meteo endorses Oxygen.
 - **License:** Open-Meteo API data are offered under Creative Commons Attribution 4.0 International (CC BY 4.0). Open-Meteo server source code is AGPLv3-or-later; that is separate from the data license and does not by itself license Oxygen source code.
 - **Privacy implications:** Forecast requests send the selected location coordinates, requested variables, timezone, and client network metadata such as IP address to Open-Meteo. Open-Meteo terms/privacy reviewed for this slice state that free API service may collect non-personal technical information such as IP addresses, and troubleshooting logs may contain sensitive information such as geographical coordinates and are deleted after 90 days. Oxygen must disclose this before presenting Open-Meteo as an active provider. Manual location support must remain fully functional without Android location permission.
-- **Failover behavior:** Open-Meteo is the default MVP forecast provider. MET Norway is the specified MVP forecast fallback but is not active until its provider contract, production client/mapper/repository path, and fallback selection behavior are implemented and verified. Do not average or merge Open-Meteo values with fallback provider values. Provenance must identify whichever provider served displayed forecast data.
+- **Failover behavior:** Open-Meteo is the active default forecast provider. MET Norway is the installed fallback after eligible terminal forecast failures; success, network/offline failure, and provider-rejected requests do not call it. Timezone resolution has no fallback. Do not average or merge provider values. Provenance identifies the provider serving the forecast.
 - **Fixture/sample response location:** Future parser fixtures must live under `core/src/test/resources/providers/openmeteo/` unless the provider implementation is placed in a different testable module. Required fixture set for the next slice: normal Home forecast response, missing optional values, malformed envelope, invalid weather code, rate/error response body, and timezone-sensitive response.
 - **Official documentation:**
   - Forecast API docs: https://open-meteo.com/en/docs
@@ -50,7 +50,33 @@
   - License: https://open-meteo.com/en/licence
   - Pricing/rate-limit details: https://open-meteo.com/en/pricing
   - Open-Meteo source project: https://github.com/open-meteo/open-meteo
-- **Last terms review date:** 2026-08-19
+- **Last terms review date:** 2026-09-05
+
+## Approximate Device Timezone Resolution
+
+After an explicit Use my location action and optional coarse foreground grant,
+send `GET /v1/forecast?latitude=<point>&longitude=<point>&timezone=auto`.
+No current, hourly, daily, unit, or time-format parameters are requested. The
+required response field is a string `timezone` present in the IANA zone database.
+Missing, malformed, offset-only, or unknown zones fail; the phone zone and UTC
+must never substitute. Retain the original finite WGS84 input point, ignoring
+response grid coordinates and elevation. The result is metadata only: it does
+not produce weather, populate a forecast cache, or invoke forecast fallback.
+
+Invalid input fails before transport. IO failures map to network unavailable;
+429 to rate limited; 5xx to provider unavailable; other 4xx and `error: true`
+bodies to request rejected; malformed/missing/invalid timezone to invalid
+response; other HTTP/transport failures to unavailable. There is no automatic
+retry or resolver cache. Fixtures live under
+`core/src/test/resources/providers/openmeteo/timezone-*`.
+
+The approximate device coordinates and normal network metadata (including IP
+address) go to Open-Meteo for resolution before normal selected-location
+forecast requests. The selected approximate point is stored locally. Acquisition
+occurs only on explicit action, never on launch, refresh, restart, or in the
+background. Manual search works without permission. The same Open-Meteo terms,
+rate limits, CC BY 4.0 data license, and attribution above apply; disclose
+"Timezone resolution by Open-Meteo.com" in Data Sources.
 
 ## Oxygen Semantics
 

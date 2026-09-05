@@ -10,6 +10,12 @@ import com.oxygen.weather.core.model.DataType
 import com.oxygen.weather.core.model.GeoPoint
 import com.oxygen.weather.core.model.HourlyForecast
 import com.oxygen.weather.core.model.LocationId
+import com.oxygen.weather.core.model.PrecipitationUnit
+import com.oxygen.weather.core.model.PressureUnit
+import com.oxygen.weather.core.model.TemperatureUnit
+import com.oxygen.weather.core.model.UnitPreference
+import com.oxygen.weather.core.model.VisibilityUnit
+import com.oxygen.weather.core.model.WindSpeedUnit
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
@@ -34,6 +40,67 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class OfflineLaunchPersistenceInstrumentedTest {
+    @Test
+    fun deviceSelectionPersistsThroughProductionStorageAndRestoresCachedHomeWithoutAcquisition() {
+        val context = targetContext()
+        val selectedStorage = DataStoreSelectedLocationStorage(context)
+        val cache = RoomForecastCacheStorageFactory.create(context)
+        val saved = RoomSavedLocationStorageFactory.create(context)
+        val savedBefore = saved.listLocations()
+        // Controlled device input; production DataStore and Room boundaries.
+        val point = GeoPoint(43.0731, -89.4012)
+        val holder = OxygenAppStateHolder(
+            selectedLocationStorage = selectedStorage,
+            savedLocationStorage = saved,
+            weatherRepository = object : WeatherRepository {
+                override fun refresh(location: WeatherLocation): Sequence<WeatherRepositoryResult> {
+                    assertEquals(location, selectedStorage.readSelectedLocation())
+                    val bundle = fullWeatherBundle(location)
+                    cache.replaceBundle(bundle)
+                    return sequenceOf(WeatherRepositoryResult.Success(bundle))
+                }
+            },
+            deviceLocationSource = DeviceLocationSource { callback ->
+                callback(DeviceLocationResult.Success(point))
+                LocationCancellation { }
+            },
+            timeZoneResolver = com.oxygen.weather.core.provider.CoordinateTimeZoneResolver {
+                com.oxygen.weather.core.provider.CoordinateTimeZoneResult.Success(it, ZoneId.of("America/Chicago"))
+            },
+            forecastExecutor = DirectExecutor,
+            deviceExecutor = DirectExecutor,
+        )
+        if (holder.presentationState.isShowingHome) holder.onChangeLocation()
+        holder.onUseMyLocation()
+        val command = holder.consumeNextCommand() as OxygenAppCommand.RequestLocationPermission
+        holder.onLocationPermissionResult(command.attempt, LocationPermissionResult.Granted)
+        val selected = DataStoreSelectedLocationStorage(context).readSelectedLocation()!!
+        assertEquals(point, selected.point)
+        assertEquals("Approximate device location", selected.displayName)
+        assertEquals(null, selected.elevationMeters)
+        assertTrue(selected.id.value.startsWith("device-"))
+        assertEquals(savedBefore, saved.listLocations())
+
+        val restarted = OxygenAppStateHolder(
+            selectedLocationStorage = DataStoreSelectedLocationStorage(context),
+            forecastCacheStorage = RoomForecastCacheStorageFactory.create(context),
+            weatherRepository = FailingWeatherRepository,
+            deviceLocationSource = DeviceLocationSource { error("Offline restart must not acquire location") },
+            timeZoneResolver = com.oxygen.weather.core.provider.CoordinateTimeZoneResolver {
+                error("Offline restart must not resolve a new point")
+            },
+            forecastExecutor = DirectExecutor,
+        )
+        assertEquals(null, restarted.consumeNextCommand())
+        val ready = (restarted.presentationState.screen as OxygenAppScreen.Home).forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(selected, ready.location)
+        assertEquals("Approximate device location", ready.title)
+        assertTrue(ready.freshness is HomeForecastFreshness.StaleAfterFailedRefresh)
+        restarted.onHomeForecastRefresh()
+        assertEquals(selected, restarted.presentationState.selectedLocation)
+        assertEquals(savedBefore, saved.listLocations())
+    }
+
     @Test
     fun seedDeterministicInstalledHomeScreenshotState() {
         val context = targetContext()
@@ -76,6 +143,38 @@ class OfflineLaunchPersistenceInstrumentedTest {
         storage.writeSelectedLocation(location)
 
         assertEquals(location, storage.readSelectedLocation())
+    }
+
+    @Test
+    fun dataStoreUnitPreferenceReadbackSurvivesNewStorageInstance() {
+        val preference = UnitPreference.Custom(
+            temperature = TemperatureUnit.CELSIUS,
+            windSpeed = WindSpeedUnit.KNOTS,
+            pressure = PressureUnit.INCHES_OF_MERCURY,
+            precipitation = PrecipitationUnit.INCHES,
+            visibility = VisibilityUnit.MILES,
+        )
+
+        DataStoreUnitPreferenceStorage(targetContext()).writeUnitPreference(preference)
+
+        assertEquals(
+            preference,
+            DataStoreUnitPreferenceStorage(targetContext()).readUnitPreference(),
+        )
+
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = weatherLocation(
+                id = "android-unit-preference-state-${System.nanoTime()}",
+                name = "Android Unit Preference State City",
+            ),
+            unitPreferenceStorage = DataStoreUnitPreferenceStorage(targetContext()),
+            weatherRepository = FailingWeatherRepository,
+            forecastExecutor = DirectExecutor,
+        )
+        assertEquals(preference, stateHolder.presentationState.unitPreference)
+
+        DataStoreUnitPreferenceStorage(targetContext()).writeUnitPreference(null)
+        assertEquals(null, DataStoreUnitPreferenceStorage(targetContext()).readUnitPreference())
     }
 
     @Test

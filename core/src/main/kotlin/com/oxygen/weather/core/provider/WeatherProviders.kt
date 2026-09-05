@@ -8,6 +8,20 @@ import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.cache.ForecastCacheMetadata
 import java.time.Duration
+import java.time.ZoneId
+
+fun interface CoordinateTimeZoneResolver {
+    fun resolve(point: GeoPoint): CoordinateTimeZoneResult
+}
+
+sealed interface CoordinateTimeZoneResult {
+    data class Success(val point: GeoPoint, val zoneId: ZoneId) : CoordinateTimeZoneResult
+    data class Failure(val error: CoordinateTimeZoneError) : CoordinateTimeZoneResult
+}
+
+enum class CoordinateTimeZoneError {
+    InvalidPoint, NetworkUnavailable, RateLimited, ProviderUnavailable, RequestRejected, InvalidResponse,
+}
 
 interface ForecastProvider {
     val id: String
