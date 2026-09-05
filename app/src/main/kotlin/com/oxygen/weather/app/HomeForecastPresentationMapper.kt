@@ -10,33 +10,55 @@ import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
+import com.oxygen.weather.core.model.PrecipitationUnit
+import com.oxygen.weather.core.model.PressureUnit
+import com.oxygen.weather.core.model.ResolvedUnitPreference
+import com.oxygen.weather.core.model.TemperatureUnit
+import com.oxygen.weather.core.model.UnitPreference
+import com.oxygen.weather.core.model.VisibilityUnit
+import com.oxygen.weather.core.model.WindSpeedUnit
+import com.oxygen.weather.core.model.resolve
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.math.roundToInt
 
 private const val UNAVAILABLE = "Unavailable"
+private val DEFAULT_HOME_UNIT_PREFERENCE = UnitPreference.Custom(
+    temperature = TemperatureUnit.FAHRENHEIT,
+    windSpeed = WindSpeedUnit.KILOMETERS_PER_HOUR,
+    pressure = PressureUnit.HECTOPASCALS,
+    precipitation = PrecipitationUnit.MILLIMETERS,
+    visibility = VisibilityUnit.KILOMETERS,
+)
 private val HOUR_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("h a", Locale.US)
 private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
 private val DAY_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.US)
 private val FETCHED_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, h:mm a z", Locale.US)
 
-fun WeatherBundle.toHomeSuccessPresentation(selectedLocation: WeatherLocation): HomeSuccessPresentation {
+fun WeatherBundle.toHomeSuccessPresentation(
+    selectedLocation: WeatherLocation,
+    unitPreference: UnitPreference = DEFAULT_HOME_UNIT_PREFERENCE,
+): HomeSuccessPresentation {
+    val units = unitPreference.resolve()
+    val compatibilityDefault = unitPreference == DEFAULT_HOME_UNIT_PREFERENCE
     val zoneId = selectedLocation.zoneId
-    val heroRange = daily.firstOrNull { it.highC != null || it.lowC != null }?.toHeroRangePresentation()
+    val heroRange = daily.firstOrNull { it.highC != null || it.lowC != null }?.toHeroRangePresentation(units)
     val currentPresentation = current?.toCurrentPresentation(
         zoneId = zoneId,
         heroRange = heroRange,
+        units = units,
     )
-    val hourlyRows = hourly.take(12).map { it.toHourlyPresentation(zoneId) }
-    val dailyRows = daily.take(10).map { it.toDailyPresentation(zoneId) }
-    val metricRows = current?.toMetricRows().orEmpty()
+    val hourlyRows = hourly.take(12).map { it.toHourlyPresentation(zoneId, units) }
+    val dailyRows = daily.take(10).map { it.toDailyPresentation(zoneId, units) }
+    val metricRows = current?.toMetricRows(units, compatibilityDefault).orEmpty()
     val sun = daily.firstOrNull { it.sunrise != null || it.sunset != null }?.toSunPresentation(zoneId)
     val provenance = mostRelevantProvenance()?.toSourcePresentation(zoneId) ?: bundleFallbackSource(zoneId)
     val alertsPresentation = alerts.map { it.toAlertPresentation(zoneId) }
-    val precipitationSummary = hourly.nearTermPrecipitationSummary()
+    val precipitationSummary = hourly.nearTermPrecipitationSummary(units)
     val returnedDataUnavailable = current == null && hourly.isEmpty() && daily.isEmpty()
 
     return HomeSuccessPresentation(
@@ -211,13 +233,14 @@ private data class HomeHeroRangePresentation(
 private fun CurrentConditions.toCurrentPresentation(
     zoneId: ZoneId,
     heroRange: HomeHeroRangePresentation?,
+    units: ResolvedUnitPreference,
 ): HomeCurrentPresentation =
     HomeCurrentPresentation(
-        temperature = temperatureC.formatFahrenheit(),
+        temperature = temperatureC.formatTemperature(units.temperature),
         temperatureC = temperatureC,
         condition = condition.displayName(),
         conditionIdentity = condition,
-        apparentTemperature = apparentTemperatureC?.let { "Feels like ${it.formatFahrenheit()}" } ?: "Feels like unavailable",
+        apparentTemperature = apparentTemperatureC?.let { "Feels like ${it.formatTemperature(units.temperature)}" } ?: "Feels like unavailable",
         apparentTemperatureC = apparentTemperatureC,
         highTemperature = heroRange?.highTemperature,
         highTemperatureC = heroRange?.highTemperatureC,
@@ -227,46 +250,55 @@ private fun CurrentConditions.toCurrentPresentation(
         dataTypeLabel = provenance.type.displayLabel(),
     )
 
-private fun DailyForecast.toHeroRangePresentation(): HomeHeroRangePresentation =
+private fun DailyForecast.toHeroRangePresentation(units: ResolvedUnitPreference): HomeHeroRangePresentation =
     HomeHeroRangePresentation(
-        highTemperature = highC?.let { "H ${it.formatFahrenheit()}" },
+        highTemperature = highC?.let { "H ${it.formatTemperature(units.temperature)}" },
         highTemperatureC = highC,
-        lowTemperature = lowC?.let { "L ${it.formatFahrenheit()}" },
+        lowTemperature = lowC?.let { "L ${it.formatTemperature(units.temperature)}" },
         lowTemperatureC = lowC,
     )
 
-private fun HourlyForecast.toHourlyPresentation(zoneId: ZoneId): HomeHourlyPresentation =
+private fun HourlyForecast.toHourlyPresentation(
+    zoneId: ZoneId,
+    units: ResolvedUnitPreference,
+): HomeHourlyPresentation =
     HomeHourlyPresentation(
         time = HOUR_FORMAT.format(time.atZone(zoneId)),
         condition = condition.displayName(),
         conditionIdentity = condition,
-        temperature = temperatureC.formatFahrenheit(),
+        temperature = temperatureC.formatTemperature(units.temperature),
         temperatureC = temperatureC,
         precipitationProbability = precipitationProbabilityPercent?.let { "$it%" },
         precipitationProbabilityPercent = precipitationProbabilityPercent,
     )
 
-private fun DailyForecast.toDailyPresentation(zoneId: ZoneId): HomeDailyPresentation =
+private fun DailyForecast.toDailyPresentation(
+    zoneId: ZoneId,
+    units: ResolvedUnitPreference,
+): HomeDailyPresentation =
     HomeDailyPresentation(
         date = DAY_FORMAT.format(LocalDate.ofEpochDay(dateEpochDay)),
         condition = condition.displayName(),
         conditionIdentity = condition,
         precipitationProbability = precipitationProbabilityPercent?.let { "$it%" },
         precipitationProbabilityPercent = precipitationProbabilityPercent,
-        high = highC?.let { "High ${it.formatFahrenheit()}" } ?: "High unavailable",
-        low = lowC?.let { "Low ${it.formatFahrenheit()}" } ?: "Low unavailable",
+        high = highC?.let { "High ${it.formatTemperature(units.temperature)}" } ?: "High unavailable",
+        low = lowC?.let { "Low ${it.formatTemperature(units.temperature)}" } ?: "Low unavailable",
         highC = highC,
         lowC = lowC,
         sunrise = sunrise?.formatLocalTime(zoneId),
         sunset = sunset?.formatLocalTime(zoneId),
     )
 
-private fun CurrentConditions.toMetricRows(): List<HomeMetricPresentation> = buildList {
+private fun CurrentConditions.toMetricRows(
+    units: ResolvedUnitPreference,
+    compatibilityDefault: Boolean,
+): List<HomeMetricPresentation> = buildList {
     add(
         HomeMetricPresentation(
             identity = HomeMetricIdentity.ApparentTemperature,
             label = "Feels like",
-            value = apparentTemperatureC.formatFahrenheit(),
+            value = apparentTemperatureC.formatTemperature(units.temperature),
             numericValues = HomeMetricNumericValues.TemperatureC(apparentTemperatureC),
         ),
     )
@@ -281,7 +313,7 @@ private fun CurrentConditions.toMetricRows(): List<HomeMetricPresentation> = bui
         )
     }
     wind?.let { wind ->
-        wind.toMetricText()?.let { value ->
+        wind.toMetricText(units.windSpeed)?.let { value ->
             add(
                 HomeMetricPresentation(
                     identity = HomeMetricIdentity.Wind,
@@ -301,7 +333,7 @@ private fun CurrentConditions.toMetricRows(): List<HomeMetricPresentation> = bui
             HomeMetricPresentation(
                 identity = HomeMetricIdentity.Pressure,
                 label = "Pressure",
-                value = "${it.roundToInt()} hPa",
+                value = it.formatPressure(units.pressure),
                 numericValues = HomeMetricNumericValues.PressureHpa(it),
             ),
         )
@@ -311,7 +343,7 @@ private fun CurrentConditions.toMetricRows(): List<HomeMetricPresentation> = bui
             HomeMetricPresentation(
                 identity = HomeMetricIdentity.Visibility,
                 label = "Visibility",
-                value = it.formatVisibility(),
+                value = it.formatVisibility(units.visibility, compatibilityDefault),
                 numericValues = HomeMetricNumericValues.DistanceMeters(it),
             ),
         )
@@ -321,7 +353,7 @@ private fun CurrentConditions.toMetricRows(): List<HomeMetricPresentation> = bui
             HomeMetricPresentation(
                 identity = HomeMetricIdentity.DewPoint,
                 label = "Dew point",
-                value = it.formatFahrenheit(),
+                value = it.formatTemperature(units.temperature),
                 numericValues = HomeMetricNumericValues.TemperatureC(it),
             ),
         )
@@ -341,17 +373,17 @@ private fun CurrentConditions.toMetricRows(): List<HomeMetricPresentation> = bui
             HomeMetricPresentation(
                 identity = HomeMetricIdentity.Precipitation,
                 label = "Precipitation",
-                value = it.formatMillimeters(),
+                value = it.formatPrecipitation(units.precipitation),
                 numericValues = HomeMetricNumericValues.PrecipitationMm(it),
             ),
         )
     }
 }
 
-private fun Wind.toMetricText(): String? {
-    val speed = speedMetersPerSecond?.let { "${(it * 3.6).roundToInt()} km/h" }
-    val gust = gustMetersPerSecond?.let { "gust ${(it * 3.6).roundToInt()} km/h" }
-    val direction = directionDegrees?.let { "${it.roundToInt()} deg" }
+private fun Wind.toMetricText(unit: WindSpeedUnit): String? {
+    val speed = speedMetersPerSecond?.let { "${it.convertWindSpeed(unit).whole()} ${unit.symbol}" }
+    val gust = gustMetersPerSecond?.let { "gust ${it.convertWindSpeed(unit).whole()} ${unit.symbol}" }
+    val direction = directionDegrees?.let { "${it.whole()} deg" }
     return listOfNotNull(speed, gust, direction).takeIf { it.isNotEmpty() }?.joinToString(", ")
 }
 
@@ -371,7 +403,7 @@ private fun WeatherAlert.toAlertPresentation(zoneId: ZoneId): HomeAlertPresentat
         expires = expires?.let { "Expires ${it.formatLocalTime(zoneId)}" },
     )
 
-private fun List<HourlyForecast>.nearTermPrecipitationSummary(): String? {
+private fun List<HourlyForecast>.nearTermPrecipitationSummary(units: ResolvedUnitPreference): String? {
     val nearTerm = take(6)
     val probabilities = nearTerm.mapNotNull { it.precipitationProbabilityPercent }
     val amounts = nearTerm.mapNotNull { it.precipitationMm }
@@ -379,7 +411,7 @@ private fun List<HourlyForecast>.nearTermPrecipitationSummary(): String? {
 
     val parts = buildList {
         probabilities.maxOrNull()?.let { add("Up to $it% precipitation chance in the next 6 hours") }
-        if (amounts.isNotEmpty()) add("${amounts.sum().formatMillimeters()} possible in the next 6 hours")
+        if (amounts.isNotEmpty()) add("${amounts.sum().formatPrecipitation(units.precipitation)} possible in the next 6 hours")
     }
     return parts.joinToString("; ")
 }
@@ -413,16 +445,57 @@ private fun Instant.formatLocalTime(zoneId: ZoneId): String = TIME_FORMAT.format
 
 private fun Instant.formatFetched(zoneId: ZoneId): String = FETCHED_FORMAT.format(atZone(zoneId))
 
-private fun Double?.formatFahrenheit(): String = this?.let { "${((it * 9.0 / 5.0) + 32.0).roundToInt()} deg F" } ?: UNAVAILABLE
-
-private fun Double.formatMillimeters(): String = String.format(Locale.US, "%.1f mm", this)
-
-private fun Double.formatVisibility(): String =
-    if (this >= 1000.0) {
-        String.format(Locale.US, "%.1f km", this / 1000.0)
-    } else {
-        "${roundToInt()} m"
+private fun Double?.formatTemperature(unit: TemperatureUnit): String = this?.let {
+    val value = when (unit) {
+        TemperatureUnit.CELSIUS -> it
+        TemperatureUnit.FAHRENHEIT -> it * 9.0 / 5.0 + 32.0
     }
+    "${value.whole()} ${unit.symbol}"
+} ?: UNAVAILABLE
+
+private val TemperatureUnit.symbol: String
+    get() = when (this) {
+        TemperatureUnit.CELSIUS -> "deg C"
+        TemperatureUnit.FAHRENHEIT -> "deg F"
+    }
+
+private fun Double.convertWindSpeed(unit: WindSpeedUnit): Double = when (unit) {
+    WindSpeedUnit.KILOMETERS_PER_HOUR -> this * 3.6
+    WindSpeedUnit.MILES_PER_HOUR -> this * 2.2369362920544
+    WindSpeedUnit.METERS_PER_SECOND -> this
+    WindSpeedUnit.KNOTS -> this * 1.9438444924406
+}
+
+private val WindSpeedUnit.symbol: String
+    get() = when (this) {
+        WindSpeedUnit.KILOMETERS_PER_HOUR -> "km/h"
+        WindSpeedUnit.MILES_PER_HOUR -> "mph"
+        WindSpeedUnit.METERS_PER_SECOND -> "m/s"
+        WindSpeedUnit.KNOTS -> "kn"
+    }
+
+private fun Double.formatPressure(unit: PressureUnit): String = when (unit) {
+    PressureUnit.HECTOPASCALS -> "${whole()} hPa"
+    PressureUnit.INCHES_OF_MERCURY -> "${(this * 0.0295299830714).decimal(2)} inHg"
+    PressureUnit.MILLIMETERS_OF_MERCURY -> "${(this * 0.750061683).whole()} mmHg"
+}
+
+private fun Double.formatPrecipitation(unit: PrecipitationUnit): String = when (unit) {
+    PrecipitationUnit.MILLIMETERS -> "${decimal(1)} mm"
+    PrecipitationUnit.INCHES -> "${(this / 25.4).decimal(2)} in"
+}
+
+private fun Double.formatVisibility(unit: VisibilityUnit, compatibilityDefault: Boolean): String = when {
+    compatibilityDefault && unit == VisibilityUnit.KILOMETERS && this < 1000.0 -> "${whole()} m"
+    unit == VisibilityUnit.KILOMETERS -> "${(this / 1000.0).decimal(1)} km"
+    else -> "${(this / 1609.344).decimal(1)} mi"
+}
+
+private fun Double.whole(): String = decimal(0)
+
+private fun Double.decimal(scale: Int): String = BigDecimal.valueOf(this)
+    .setScale(scale, RoundingMode.HALF_UP)
+    .toPlainString()
 
 private fun DataType.displayLabel(): String = when (this) {
     DataType.OBSERVATION -> "Observation"

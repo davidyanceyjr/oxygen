@@ -7,6 +7,13 @@ import com.oxygen.weather.core.model.DataType
 import com.oxygen.weather.core.model.GeoPoint
 import com.oxygen.weather.core.model.HourlyForecast
 import com.oxygen.weather.core.model.LocationId
+import com.oxygen.weather.core.model.PrecipitationUnit
+import com.oxygen.weather.core.model.PressureUnit
+import com.oxygen.weather.core.model.TemperatureUnit
+import com.oxygen.weather.core.model.UnitPreference
+import com.oxygen.weather.core.model.UnitPreferencePreset
+import com.oxygen.weather.core.model.VisibilityUnit
+import com.oxygen.weather.core.model.WindSpeedUnit
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
@@ -115,6 +122,153 @@ class HomeForecastPresentationMapperTest {
             presentation.metrics.single { it.identity == HomeMetricIdentity.ApparentTemperature }.numericValues,
         )
     }
+
+    @Test
+    fun `metric preference converts every displayed weather category`() {
+        val presentation = fullWeatherBundle().toHomeSuccessPresentation(
+            testLocation,
+            UnitPreference.Preset(UnitPreferencePreset.METRIC),
+        )
+
+        assertEquals("18 deg C", requireNotNull(presentation.current).temperature)
+        assertEquals("Feels like 17 deg C", requireNotNull(presentation.current).apparentTemperature)
+        assertEquals("H 23 deg C", requireNotNull(presentation.current).highTemperature)
+        assertEquals("L 12 deg C", requireNotNull(presentation.current).lowTemperature)
+        assertEquals("18 deg C", presentation.hourly.single().temperature)
+        assertEquals("High 23 deg C", presentation.daily.single().high)
+        assertEquals("Low 12 deg C", presentation.daily.single().low)
+        assertEquals("14 km/h, gust 25 km/h, 225 deg", metric(presentation, HomeMetricIdentity.Wind).value)
+        assertEquals("1012 hPa", metric(presentation, HomeMetricIdentity.Pressure).value)
+        assertEquals("9.5 km", metric(presentation, HomeMetricIdentity.Visibility).value)
+        assertEquals("12 deg C", metric(presentation, HomeMetricIdentity.DewPoint).value)
+        assertEquals("0.4 mm", metric(presentation, HomeMetricIdentity.Precipitation).value)
+    }
+
+    @Test
+    fun `US and UK presets preserve their distinct unit families`() {
+        val us = fullWeatherBundle().toHomeSuccessPresentation(
+            testLocation,
+            UnitPreference.Preset(UnitPreferencePreset.US),
+        )
+        val uk = fullWeatherBundle().toHomeSuccessPresentation(
+            testLocation,
+            UnitPreference.Preset(UnitPreferencePreset.UK),
+        )
+
+        assertEquals("65 deg F", requireNotNull(us.current).temperature)
+        assertEquals("9 mph, gust 16 mph, 225 deg", metric(us, HomeMetricIdentity.Wind).value)
+        assertEquals("29.90 inHg", metric(us, HomeMetricIdentity.Pressure).value)
+        assertEquals("5.9 mi", metric(us, HomeMetricIdentity.Visibility).value)
+        assertEquals("0.02 in", metric(us, HomeMetricIdentity.Precipitation).value)
+        assertEquals("18 deg C", requireNotNull(uk.current).temperature)
+        assertEquals("9 mph, gust 16 mph, 225 deg", metric(uk, HomeMetricIdentity.Wind).value)
+        assertEquals("1012 hPa", metric(uk, HomeMetricIdentity.Pressure).value)
+        assertEquals("5.9 mi", metric(uk, HomeMetricIdentity.Visibility).value)
+        assertEquals("0.4 mm", metric(uk, HomeMetricIdentity.Precipitation).value)
+    }
+
+    @Test
+    fun `custom preference supports knots mmHg inches miles meters per second and inHg`() {
+        val custom = UnitPreference.Custom(
+            temperature = TemperatureUnit.CELSIUS,
+            windSpeed = WindSpeedUnit.KNOTS,
+            pressure = PressureUnit.MILLIMETERS_OF_MERCURY,
+            precipitation = PrecipitationUnit.INCHES,
+            visibility = VisibilityUnit.MILES,
+        )
+        val presentation = fullWeatherBundle().toHomeSuccessPresentation(testLocation, custom)
+
+        assertEquals("8 kn, gust 14 kn, 225 deg", metric(presentation, HomeMetricIdentity.Wind).value)
+        assertEquals("759 mmHg", metric(presentation, HomeMetricIdentity.Pressure).value)
+        assertEquals("0.02 in", metric(presentation, HomeMetricIdentity.Precipitation).value)
+        assertEquals("5.9 mi", metric(presentation, HomeMetricIdentity.Visibility).value)
+
+        val metricWindAndInHg = fullWeatherBundle().toHomeSuccessPresentation(
+            testLocation,
+            custom.copy(windSpeed = WindSpeedUnit.METERS_PER_SECOND, pressure = PressureUnit.INCHES_OF_MERCURY),
+        )
+        assertEquals("4 m/s, gust 7 m/s, 225 deg", metric(metricWindAndInHg, HomeMetricIdentity.Wind).value)
+        assertEquals("29.90 inHg", metric(metricWindAndInHg, HomeMetricIdentity.Pressure).value)
+    }
+
+    @Test
+    fun `default compatibility keeps current strings including sub-kilometer visibility`() {
+        val weather = fullWeatherBundle().copy(
+            current = requireNotNull(fullWeatherBundle().current).copy(visibilityMeters = 999.5),
+        )
+        val presentation = weather.toHomeSuccessPresentation(testLocation)
+
+        assertEquals("1000 m", metric(presentation, HomeMetricIdentity.Visibility).value)
+        assertEquals("0.4 mm", metric(presentation, HomeMetricIdentity.Precipitation).value)
+        assertEquals("14 km/h, gust 25 km/h, 225 deg", metric(presentation, HomeMetricIdentity.Wind).value)
+    }
+
+    @Test
+    fun `conversion rounds half up and aggregates canonical precipitation before conversion`() {
+        val weather = fullWeatherBundle().copy(
+            current = requireNotNull(fullWeatherBundle().current).copy(
+                temperatureC = -17.5,
+                wind = Wind(0.5 / 3.6, 1.5 / 3.6, 12.5),
+                pressureHpa = 1012.5,
+                visibilityMeters = 500.0,
+                precipitationMm = 0.05,
+            ),
+            hourly = listOf(
+                fullWeatherBundle().hourly.single().copy(precipitationMm = 0.025),
+                fullWeatherBundle().hourly.single().copy(precipitationMm = 0.025),
+            ),
+        )
+        val presentation = weather.toHomeSuccessPresentation(
+            testLocation,
+            UnitPreference.Custom(
+                temperature = TemperatureUnit.CELSIUS,
+                windSpeed = WindSpeedUnit.KILOMETERS_PER_HOUR,
+                pressure = PressureUnit.HECTOPASCALS,
+                precipitation = PrecipitationUnit.MILLIMETERS,
+                visibility = VisibilityUnit.KILOMETERS,
+            ),
+        )
+
+        assertEquals("-18 deg C", requireNotNull(presentation.current).temperature)
+        assertEquals("1 km/h, gust 2 km/h, 13 deg", metric(presentation, HomeMetricIdentity.Wind).value)
+        assertEquals("1013 hPa", metric(presentation, HomeMetricIdentity.Pressure).value)
+        assertEquals("0.1 mm", presentation.precipitationSummary?.substringAfter("; ")?.substringBefore(" possible"))
+    }
+
+    @Test
+    fun `direction remains visible when speed and gust are absent`() {
+        val weather = fullWeatherBundle().copy(
+            current = requireNotNull(fullWeatherBundle().current).copy(wind = Wind(null, null, 270.5)),
+        )
+        val wind = metric(weather.toHomeSuccessPresentation(testLocation), HomeMetricIdentity.Wind)
+
+        assertEquals("271 deg", wind.value)
+        assertEquals(
+            HomeMetricNumericValues.Wind(null, null, 270.5),
+            wind.numericValues,
+        )
+    }
+
+    @Test
+    fun `unit conversion does not mutate canonical bundle or source presentation`() {
+        val weather = fullWeatherBundle()
+        val presentation = weather.toHomeSuccessPresentation(
+            testLocation,
+            UnitPreference.Preset(UnitPreferencePreset.US),
+        )
+
+        assertEquals(weather, fullWeatherBundle())
+        assertEquals("Mapper Provider", presentation.source.sourceName)
+        assertEquals("Model estimate", presentation.source.dataType)
+        assertEquals(HomeMetricIdentity.Wind, metric(presentation, HomeMetricIdentity.Wind).identity)
+        assertEquals(18.4, requireNotNull(presentation.current).temperatureC)
+        assertEquals(22.7, requireNotNull(presentation.current).highTemperatureC)
+    }
+
+    private fun metric(
+        presentation: HomeSuccessPresentation,
+        identity: HomeMetricIdentity,
+    ): HomeMetricPresentation = presentation.metrics.single { it.identity == identity }
 
     private fun fullWeatherBundle(): WeatherBundle =
         WeatherBundle(

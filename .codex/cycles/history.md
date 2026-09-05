@@ -32,13 +32,13 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 20A, Unit Preference Contract,
-  committed at `3f6d741`.
+- Last committed implementation slice: Slice 20B, Unit Conversion Presentation
+  Boundary, committed in this changeset.
 - Last committed implementation gate: Gate 20-0, Presentation Semantics and
   Localization Safety, committed at `587b0ad`.
-- Current documentation sync target: Post-20-0 Authority Sync. It advances the
-  next implementation candidate to Slice 20B: Unit Conversion Presentation
-  Boundary.
+- Last committed documentation sync: Post-20-0 Authority Sync, committed at
+  `a0bca26`. The next implementation candidate is Slice 20C: persisted
+  alternate-unit reachability through the installed path.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -443,10 +443,10 @@ Boundaries:
 
 ### 2026-09-04-post-20-0-authority-sync
 
-Status: ready
+Status: committed
 Mode: documentation-only
 Slice: Post-20-0 Authority Sync
-Commit: not committed in this changeset
+Commit: `a0bca26`
 
 Result:
 - Updated the specification and roadmap to record committed Gate 20-0 evidence
@@ -473,3 +473,45 @@ Boundaries:
   alert, air quality, radar, release, or MVP behavior changed.
 - Android compile, unit, connected, assemble, emulator, install, and screenshot
   commands were not run because this was a Markdown-only authority sync.
+
+### 2026-09-04-slice-20b-unit-conversion-presentation-boundary
+
+Status: committed
+Mode: feature
+Slice: Slice 20B, Unit Conversion Presentation Boundary
+Commit: committed in this changeset
+
+Result:
+- Added selected-unit conversion at the Home presentation mapper boundary.
+- Preserved the installed compatibility default of Fahrenheit, km/h, hPa, mm,
+  and km, including whole-meter sub-kilometer visibility.
+- Centralized deterministic `HALF_UP` rounding for temperature, wind, pressure,
+  precipitation, and visibility display text.
+- Kept canonical `WeatherBundle` values, Gate 20-0 semantic fields, condition
+  identities, metric identities, source, provenance, and section ordering
+  unchanged.
+- Added focused mapper tests for Metric, US, UK, Custom, null preservation,
+  direction-only wind, aggregate precipitation, rounding boundaries, default
+  compatibility output, and canonical immutability.
+
+Evidence:
+- Baseline focused app/state and core provider/unit tests passed before edits.
+- Focused mapper/state tests passed after edits.
+- Connected `HomeDashboardUiTest` passed all 33 tests on `oxygen_starter`.
+- `scripts/install-debug.sh` installed and launched the debug app successfully.
+- Broad `:app:compileDebugKotlin`, full app/core unit tests,
+  `:app:assembleDebug`, and `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-slice-20b-unit-conversion-presentation-boundary/`.
+
+Blockers:
+- None for this slice. The first connected attempt occurred before emulator
+  boot completed; the rerun passed after boot.
+
+Boundaries:
+- No persisted preference selection, Settings/Home unit controls, provider
+  request units, provider mappings, repositories, Room/DataStore/cache schema,
+  location, alerts, air quality, radar/map, appearance, release, or MVP
+  behavior changed. Slice 20C must exercise persisted alternate-unit choice
+  through the installed path.
