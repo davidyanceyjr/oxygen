@@ -1,11 +1,24 @@
 # Slice 21 — Optional Device Location
 
-Status: planned — active implementation plan; not implemented.
+Status: verified — implementation and verification complete; commit pending.
 
 Execution started 2026-09-05. Cycle artifacts:
 `.codex/test-artifacts/2026-09-05-slice-21-device-location/`.
 Discovery confirms the existing selected-location/cache schemas can be retained.
-Production and verification work are in progress; completion gate remains open.
+Production and verification work are complete; commit pending.
+
+Verification evidence:
+
+- Focused unit tests passed: `:core:testDebugUnitTest --tests '*OpenMeteoTimeZoneResolverTest*'`;
+  `:app:testDebugUnitTest --tests '*FirstRunLocationStateHolderTest*' --tests '*DeviceLocationSourceTest*'`;
+  `:app:testDebugUnitTest :core:testDebugUnitTest`.
+- Connected installed persistence test passed:
+  `:app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.OfflineLaunchPersistenceInstrumentedTest`.
+- Broad checks passed: `:app:compileDebugKotlin`; `:app:assembleDebug`; `git diff --check`.
+- Installed screenshots saved under
+  `.codex/test-artifacts/2026-09-05-slice-21-device-location/`:
+  `entry-baseline.png`, `permission-or-progress.png`, `after-permission-grant.png`,
+  `after-test-provider-start.png`, and `large-font-restored.png`.
 
 Reviewed against local `main` at `1b527189fed7182c239f4fb800127217525cfec4` (2026-09-05). This is the active implementation authority for the bounded Slice 21 cycle. The completed Slice 20C record remains in `.codex/cycles/history.md`.
 

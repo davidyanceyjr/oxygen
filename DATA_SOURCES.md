@@ -19,7 +19,7 @@ source-code licensing.
 - Attribution: Weather data by Open-Meteo.com.
 - Data license: Creative Commons Attribution 4.0 International (CC BY 4.0), as
   recorded in docs/data-sources/OPEN_METEO_FORECAST.md.
-- Last terms review date: 2026-08-19.
+- Last terms review date: 2026-09-05.
 
 ### Approximate Device Timezone: Open-Meteo
 

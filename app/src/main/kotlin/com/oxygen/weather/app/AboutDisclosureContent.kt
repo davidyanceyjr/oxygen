@@ -56,7 +56,7 @@ private val dataSourceSections = listOf(
             "Forecasts: Open-Meteo is the installed-app default forecast provider for selected locations.",
             "MET Norway can serve Home forecasts after eligible Open-Meteo terminal forecast failures.",
             "Location search: Open-Meteo Geocoding API, based on GeoNames data, powers manual place search.",
-            "Timezone resolution by Open-Meteo.com (CC BY 4.0): an explicitly requested approximate device point is resolved before its normal forecast request.",
+            "Timezone resolution by Open-Meteo.com (CC BY 4.0): an explicitly requested approximate device point is resolved with a metadata-only timezone=auto request before its normal forecast request.",
         ),
     ),
     AboutSection(

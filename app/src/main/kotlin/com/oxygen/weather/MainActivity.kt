@@ -66,11 +66,13 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        permissionAttempt = null
         appStateHolder?.cancelDeviceLocation()
         super.onStop()
     }
 
     override fun onDestroy() {
+        permissionAttempt = null
         appStateHolder?.cancelDeviceLocation()
         appStateHolder?.setOnStateChanged { }
         appStateHolder = null

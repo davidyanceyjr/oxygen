@@ -594,7 +594,7 @@ Boundaries:
 
 ### 2026-09-05-slice-21-optional-device-location
 
-Status: ready
+Status: verified
 Mode: feature
 Slice: Slice 21, Optional Device Location
 Commit: not committed
@@ -608,18 +608,35 @@ Result:
 - Updated the installed app disclosures, manifest, and first-run surface to
   keep manual search usable while making device location optional and
   action-triggered.
+- Verified the installed path on the emulator: coarse permission grants,
+  approximate device point acquisition, metadata-only timezone resolution,
+  selected-location persistence, and restored Home with the approximate
+  label.
 
 Evidence:
-- Focused unit tests passed: `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`.
-- `git diff --check` passed.
+- Focused unit tests passed:
+  `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteoTimeZoneResolverTest*'`
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRunLocationStateHolderTest*' --tests '*DeviceLocationSourceTest*'`
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`.
+- Connected persistence test passed:
+  `. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.OfflineLaunchPersistenceInstrumentedTest`.
+- Broad checks passed:
+  `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
+  `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
+  `git diff --check`.
+- Installed screenshots saved under
+  `.codex/test-artifacts/2026-09-05-slice-21-device-location/`:
+  `entry-baseline.png`, `permission-or-progress.png`, `after-permission-grant.png`,
+  `after-test-provider-start.png`, and `large-font-restored.png`.
 
 Artifacts:
-- `.codex/test-artifacts/2026-09-05-slice-21-device-location/` (planned for
-  the active cycle; no files saved yet in this commit snapshot).
+- `.codex/test-artifacts/2026-09-05-slice-21-device-location/`.
 
 Blockers:
-- No connected-device or installed-path verification was run in this commit
-  snapshot.
+- Emulator `geo fix` alone did not deliver a timely fix to the app's bounded
+  request window; the successful real-path proof used the emulator's test GPS
+  provider via `adb shell cmd location providers add-test-provider gps ...`
+  and `set-test-provider-location gps --location 43.0731,-89.4012`.
 
 Boundaries:
 - No fine/background location, Play Services dependency, provider/cache

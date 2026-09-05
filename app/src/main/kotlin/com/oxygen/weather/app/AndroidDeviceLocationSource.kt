@@ -27,7 +27,7 @@ private class AndroidLocationPlatform(context: Context) : DeviceLocationPlatform
     override val apiLevel: Int get() = Build.VERSION.SDK_INT
 
     override fun enabledCoarseProvider(): String? =
-        listOf(LocationManager.NETWORK_PROVIDER, "fused").firstOrNull {
+        listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER, "fused").firstOrNull {
             it in manager.getProviders(true) && manager.isProviderEnabled(it)
         }
 
