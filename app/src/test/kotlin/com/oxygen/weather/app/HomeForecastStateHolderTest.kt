@@ -849,10 +849,42 @@ class HomeForecastStateHolderTest {
         assertEquals(15.0, ready.dashboard.daily[4].lowC)
         assertEquals(19.5, ready.dashboard.daily[5].highC)
         assertEquals(null, ready.dashboard.daily[5].lowC)
-        assertEquals(HomeMetricPresentation(HomeMetricIdentity.Wind, "Wind", "14 km/h, gust 25 km/h, 225 deg"), ready.dashboard.metrics.single { it.identity == HomeMetricIdentity.Wind })
-        assertEquals(HomeMetricPresentation(HomeMetricIdentity.Visibility, "Visibility", "9.5 km"), ready.dashboard.metrics.single { it.identity == HomeMetricIdentity.Visibility })
-        assertEquals(HomeMetricPresentation(HomeMetricIdentity.ApparentTemperature, "Feels like", "63 deg F"), ready.dashboard.metrics.single { it.identity == HomeMetricIdentity.ApparentTemperature })
-        assertEquals(HomeMetricPresentation(HomeMetricIdentity.DewPoint, "Dew point", "53 deg F"), ready.dashboard.metrics.single { it.identity == HomeMetricIdentity.DewPoint })
+        assertEquals(
+            HomeMetricPresentation(
+                HomeMetricIdentity.Wind,
+                "Wind",
+                "14 km/h, gust 25 km/h, 225 deg",
+                HomeMetricNumericValues.Wind(4.0, 7.0, 225.0),
+            ),
+            ready.dashboard.metrics.single { it.identity == HomeMetricIdentity.Wind },
+        )
+        assertEquals(
+            HomeMetricPresentation(
+                HomeMetricIdentity.Visibility,
+                "Visibility",
+                "9.5 km",
+                HomeMetricNumericValues.DistanceMeters(9500.0),
+            ),
+            ready.dashboard.metrics.single { it.identity == HomeMetricIdentity.Visibility },
+        )
+        assertEquals(
+            HomeMetricPresentation(
+                HomeMetricIdentity.ApparentTemperature,
+                "Feels like",
+                "63 deg F",
+                HomeMetricNumericValues.TemperatureC(17.2),
+            ),
+            ready.dashboard.metrics.single { it.identity == HomeMetricIdentity.ApparentTemperature },
+        )
+        assertEquals(
+            HomeMetricPresentation(
+                HomeMetricIdentity.DewPoint,
+                "Dew point",
+                "53 deg F",
+                HomeMetricNumericValues.TemperatureC(11.6),
+            ),
+            ready.dashboard.metrics.single { it.identity == HomeMetricIdentity.DewPoint },
+        )
         assertEquals("Open-Meteo", ready.dashboard.source.sourceName)
         assertEquals("Model estimate", ready.dashboard.source.dataType)
         assertEquals("Fetched Aug 22, 7:00 AM CDT", ready.dashboard.source.fetchedAt)

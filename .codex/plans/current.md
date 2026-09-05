@@ -1,168 +1,137 @@
 # Active Cycle
 
 Status: committed
-Cycle ID: 2026-09-04-slice-20a-unit-preference-contract
-Mode: feature
-Slice: Slice 20A, Unit Preference Contract
+Cycle ID: 2026-09-04-gate-20-0-presentation-semantics-localization-safety
+Mode: gate
+Slice: Gate 20-0, Presentation Semantics and Localization Safety
 Commit: committed in this changeset
 
-Goal: Implement the provider-neutral unit preference contract required before
-unit conversion or persisted units UI work, without changing canonical weather
-storage, provider requests, Home presentation values, or installed app behavior.
+## Objective
 
-Basis:
-- Gate 19F is committed at `8386484`, with post-commit status correction at
-  `4a58c96`.
-- `.codex/plans/mvp-roadmap.md` names Slice 20A as the next candidate after
-  Gate 19F and scopes it to defining unit preferences before conversion/UI.
-- Roadmap prerequisite "small-state persistence foundation" is satisfied by
-  saved-location and selected-location persistence committed through Slice 19E
-  at `00cb88a`; this slice must not add new persistence.
-- `docs/OXYGEN_FULL_SPECIFICATION.md` section 38 requires canonical internal
-  values and presentation-only conversion.
-- Current core weather models already store canonical units:
-  `temperatureC`, `speedMetersPerSecond`, `pressureHpa`, `precipitationMm`,
-  and `visibilityMeters`.
-- Open-Meteo requests currently ask for Celsius, km/h, and mm; MET Norway
-  mapping normalizes provider units into canonical domain values.
+Establish a semantic presentation boundary before Slice 20B expands unit
+conversion. Home presentation must use semantic identities and numeric values,
+not parse English labels or formatted strings.
+
+## Scope
+
+Inspect and, only where required, update:
+
+- `app/src/main/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapper.kt`
+- `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`
+- directly affected `app/src/main/res/values/strings.xml` entries;
+- `app/src/test/kotlin/com/oxygen/weather/app/HomeForecastStateHolderTest.kt`;
+- new `app/src/test/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapperTest.kt`
+  if the existing state tests cannot express the contract cleanly.
+
+Preserve existing Home display output and current Fahrenheit, km/h, visibility,
+and precipitation conversion formulas. Do not refactor or expand conversion;
+Slice 20B owns conversion behavior.
 
 ## Contract
 
-Selected behavior:
-- Add a provider-neutral unit preference model for temperature, wind speed,
-  pressure, precipitation, and visibility.
-- Define preset behavior for Metric, US, UK, and Custom.
-- Document the Metric, US, and UK preset mappings in
-  `docs/OXYGEN_FULL_SPECIFICATION.md` section 38 before relying on them in
-  production code, because section 38 currently names presets without mapping
-  their category defaults.
-- Metric defaults:
-  - temperature Celsius;
-  - wind km/h;
-  - pressure hPa;
-  - precipitation mm;
-  - visibility km.
-- US defaults:
-  - temperature Fahrenheit;
-  - wind mph;
-  - pressure inHg;
-  - precipitation in;
-  - visibility mi.
-- UK defaults:
-  - temperature Celsius;
-  - wind mph;
-  - pressure hPa;
-  - precipitation mm;
-  - visibility mi.
-- Custom must carry explicit choices for every unit category and must not
-  silently fall back per category.
-- Preference resolution must be deterministic and testable without Android UI.
-- Existing canonical weather model values and cache schema must remain
-  unchanged.
+- `HomeMetricIdentity` remains the source of metric grouping and ordering;
+  grouping must not depend on localized labels.
+- Condition identity remains `WeatherCondition`, including icon and
+  accessibility paths.
+- Presentation models expose only the nullable numeric values needed for
+  future conversion, visualization, or accessibility, alongside display text;
+  each such value has an explicit semantic unit/identity.
+- Semantic numeric null remains null. Existing user-facing fallback text such
+  as `"Unavailable"` may remain display-only and must not become numeric data.
+- Composables do not parse temperature, percentage, pressure, distance,
+  precipitation, or wind strings back into numbers.
+- Provider DTOs do not appear in presentation models or Composable parameters.
+- Resource migration is limited to strings directly touched by a required fix;
+  no broad localization cleanup is included.
 
-Acceptance boundary:
-- Production changes are allowed only for the unit preference contract model
-  and small pure resolution helpers in `:core`, unless discovery finds a
-  higher-authority conflict.
-- Focused unit tests must prove:
-  - every preset resolves all five unit categories exactly;
-  - Custom preserves explicit category choices;
-  - resolving Metric, US, UK, and Custom preferences for a representative
-    `WeatherBundle` leaves canonical domain values unchanged, including
-    `temperatureC`, `speedMetersPerSecond`, `pressureHpa`, `precipitationMm`,
-    `visibilityMeters`, hourly temperatures/precipitation, and daily highs/lows;
-  - canonical weather storage remains Celsius, meters per second, hPa,
-    millimeters, and meters, without adding parallel display-unit fields to
-    `WeatherBundle`.
-- Static/diff review must prove the new contract has no imports or dependencies
-  on provider DTOs, provider clients, Room cache entities, DataStore, Android UI,
-  or Home formatted strings.
-- Documentation/status changes are allowed only when needed to keep the active
-  cycle and roadmap/history truthful.
+## Acceptance Evidence
 
-Out of scope:
-- Unit conversion math.
-- Persisted unit preference storage.
-- Settings or Home unit selection UI.
-- Home presentation format changes.
-- Provider request unit changes.
-- Room schema, DataStore format, forecast-cache format, or saved-location
-  storage changes.
-- Device-location permission flow, alerts, air quality, radar/maps,
-  appearance settings, widgets, background refresh, notifications, release
-  readiness, or MVP-readiness claims.
+Focused tests must prove:
+
+- changing a metric label does not change grouping or identity;
+- required numeric presentation values are present, correctly nullable, and
+  independent of their formatted text;
+- condition/icon identity remains semantic;
+- missing current, hourly, daily, metric, and accessibility values remain
+  absent rather than becoming zero or inferred values;
+- existing formatted Home output remains unchanged.
+
+Static review must prove:
+
+- no display string is parsed into a numeric value;
+- `HomeMetricIdentity` and `WeatherCondition` are used for semantic paths;
+- provider DTOs do not cross into presentation/UI;
+- `WeatherBundle` and canonical domain units are unchanged;
+- no persistence, provider request, cache, or unit-conversion scope drift.
 
 ## Workflow
 
-Discover:
-- Read required authorities and inspect current unit/canonical weather model
-  boundaries.
-- Confirm `:core` package placement for provider-neutral unit preference types,
-  or stop on any higher-authority conflict.
+1. Baseline the existing Home boundary:
 
-Red/Baseline:
-- Run focused baseline tests around current provider canonical units:
-  `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteoForecastClientTest' --tests '*OpenMeteoForecastMapperTest' --tests '*MetNoForecastMapperTest'`.
-- Add focused unit tests for the Slice 20A contract and confirm they fail before
-  production implementation.
+   ```bash
+   . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecastStateHolderTest'
+   ```
 
-Build:
-- Add unit preference enums/value types and preset/custom resolution helpers.
-- Keep implementation pure Kotlin with no Android UI, Room, DataStore, provider
-  request, or presentation formatting changes.
+2. Inventory all `HomeMetricPresentation`, formatted numeric fields,
+   `contentDescription`, grouping, and conditional-section consumers with
+   `rg`. Decide the minimum semantic numeric fields required; do not redesign
+   the presentation model speculatively.
 
-Focused Green:
-- Run the focused Slice 20A unit tests and the canonical-provider baseline
-  tests.
+3. Add or update the focused mapper/state tests, then make the smallest
+   production change needed at the mapper boundary. Keep display formatting
+   and existing conversion output stable.
 
-Real-Path Exercise:
-- Not applicable for this pure provider-neutral contract slice because it must
-  not change installed-app behavior; behavior preservation is checked through
-  focused tests, broad checks, and static/diff review.
+4. Run focused green tests, including the new mapper test if added, and rerun
+   the Home state test.
 
-Broad Checks:
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-- `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
-- `git diff --check`
+5. Run the static parsing review:
 
-Review:
-- Inspect `git diff --stat` and `git diff` for accidental provider, cache,
-  DataStore, Room, UI, or documentation claim drift.
-- Treat any empty or pre-existing artifact file as non-evidence; replace it only
-  with output from a command actually run during this cycle.
-- Save command logs under
-  `.codex/test-artifacts/2026-09-04-slice-20a-unit-preference-contract/`.
+   ```bash
+   rg -n 'toDouble\(|toFloat\(|parse.*(temperature|pressure|wind|precip|visibility)|split\(|substring\(' app/src/main
+   ```
 
-## Phase Results
+   Inspect every match; no display-to-number parsing may remain.
 
-- specified: Slice 20A is specified by the MVP roadmap and specification unit
-  section.
-- planned: Bounded to provider-neutral unit preference contract behavior.
-- covered: `UnitPreferenceTest` proves Metric, US, and UK preset resolution,
-  Custom explicit-choice preservation, unchanged canonical `WeatherBundle`
-  values after preference resolution, and absence of parallel display-unit
-  fields on `WeatherBundle`.
-- implemented: Added pure provider-neutral unit preference contract types and
-  resolution helpers in `:core`; documented preset mappings in specification
-  section 38.
-- verified: Provider canonical baseline passed with
-  `:core:testDebugUnitTest --tests '*OpenMeteoForecastClientTest' --tests
-  '*OpenMeteoForecastMapperTest' --tests '*MetNoForecastMapperTest'`.
-- verified: Focused Slice 20A test passed with
-  `:core:testDebugUnitTest --tests '*UnitPreferenceTest'`.
-- verified: Broad checks passed:
-  `:app:compileDebugKotlin`,
-  `:app:testDebugUnitTest :core:testDebugUnitTest`,
+6. If production or accessibility code changes, run the connected Home test
+   and installed-app exercise:
+
+   ```bash
+   . scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest
+   scripts/install-debug.sh
+   ```
+
+   Capture the affected UI evidence under
+   `.codex/test-artifacts/2026-09-04-gate-20-0-presentation-semantics-localization-safety/`.
+   If only tests/static review change, record why installed behavior is
+   unchanged and no real-path exercise is required.
+
+7. Run broad checks:
+
+   ```bash
+   . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
+   . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
+   . scripts/android-env.sh && ./gradlew :app:assembleDebug
+   git diff --check
+   ```
+
+## Out of Scope
+
+Unit conversion math or formula changes, persisted unit preferences, Settings
+controls, provider requests, Room/DataStore/cache changes, location flow,
+alerts, air quality, radar/maps, appearance settings, widgets, notifications,
+release readiness, and MVP-readiness claims.
+
+## Verification
+
+- Focused mapper and Home-state unit checks passed:
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*HomeForecastPresentationMapperTest' --tests '*HomeForecastStateHolderTest'`.
+- Static parsing review found no display-string-to-number parsing. The only
+  matches were procedural weather-mark geometry conversions and location-name
+  display splitting, neither of which consumes formatted weather values.
+- Connected `HomeDashboardUiTest` passed all 33 tests on `oxygen_starter`,
+  including the changed-metric-label grouping and rendered semantics boundary.
+- `scripts/install-debug.sh` launched the installed app on `oxygen_starter`.
+  The launch screenshot, test logs, and parsing review are in
+  `.codex/test-artifacts/2026-09-04-gate-20-0-presentation-semantics-localization-safety/`.
+- Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
   `:app:assembleDebug`, and `git diff --check`.
-- verified: Static review found unit preference symbols only under
-  `core.model`; no app, provider, Room, DataStore, cache, Home formatting, or
-  provider request path adopted unit preferences.
-- verified: Real-path exercise is not applicable because this pure contract
-  slice intentionally does not change installed-app behavior.
-- artifacts: `.codex/test-artifacts/2026-09-04-slice-20a-unit-preference-contract/`.
-- committed: Slice 20A is committed in this changeset.
-
-Skipped commands:
-- Emulator, install, connected Android tests, and screenshot capture were not
-  run because this slice changes no installed UI or runtime behavior.

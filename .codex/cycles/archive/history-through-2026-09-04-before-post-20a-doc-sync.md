@@ -32,12 +32,12 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 20A, Unit Preference Contract,
-  committed at `3f6d741`.
-- Last committed documentation sync: this post-20A authority sync.
-- Current committed implementation target: Gate 20-0, Presentation Semantics
-  and Localization Safety. It remains bounded to semantic presentation and
-  localization-safety verification before conversion/UI work.
+- Last committed implementation slice: Slice 19E, Remove Saved Location UI,
+  committed at `00cb88a`.
+- Last committed documentation sync: Gate 19F, Saved Locations Documentation
+  Sync, committed at `8386484`.
+- Current active planning target: Slice 20A, Unit Preference Contract. Keep it
+  bounded to preference-contract behavior before conversion/UI work.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -378,64 +378,3 @@ Boundaries:
 - Emulator, install, connected Android tests, and screenshot capture were not
   run because this pure provider-neutral contract slice intentionally does not
   change installed UI or runtime behavior.
-
-### 2026-09-04-post-20a-authority-sync
-
-Status: verified
-Mode: documentation-only
-Slice: Post-20A Authority Sync
-Commit: committed in this changeset
-
-Result:
-- Updated the roadmap and specification to record committed Slice 20A and set
-  Gate 20-0, Presentation Semantics and Localization Safety, as next.
-- Replaced the active plan with a bounded Gate 20-0 plan and corrected the
-  recent-state summary.
-
-Evidence:
-- `git diff --check` passed.
-- Stale next-candidate search found no remaining 20A-next references in the
-  active roadmap, specification, history, or plan.
-
-Artifacts:
-- Archived the pre-sync live history at
-  `.codex/cycles/archive/history-through-2026-09-04-before-post-20a-doc-sync.md`.
-
-Boundaries:
-- No Kotlin, Compose, Gradle, manifest, provider, persistence, cache, or
-  installed-app behavior changed.
-
-### 2026-09-04-gate-20-0-presentation-semantics-localization-safety
-
-Status: verified
-Mode: gate
-Slice: Gate 20-0, Presentation Semantics and Localization Safety
-Commit: committed in this changeset
-
-Result:
-- Kept existing Home formatted output while adding explicit nullable canonical
-  values to current, hourly, daily, and metric presentation models. Metric
-  variants name their canonical units, including Celsius, percent, meters per
-  second, degrees, hPa, meters, and millimeters.
-- Preserved `HomeMetricIdentity` for grouping and `WeatherCondition` for
-  condition/icon semantics; no Home composable parses formatted weather text.
-
-Evidence:
-- Focused `HomeForecastPresentationMapperTest` and
-  `HomeForecastStateHolderTest` passed; the mapper test covers semantic values,
-  formatted text stability, condition identity, and null preservation.
-- Connected `HomeDashboardUiTest` passed all 33 tests on `oxygen_starter`,
-  including changed-label Details grouping and rendered semantics.
-- Installed debug app launched on `oxygen_starter`; broad compile, app/core
-  unit tests, assemble, and `git diff --check` all passed.
-
-Artifacts:
-- `.codex/test-artifacts/2026-09-04-gate-20-0-presentation-semantics-localization-safety/`.
-
-Blockers:
-- None.
-
-Boundaries:
-- No conversion formulas, persisted preferences, Settings controls, provider,
-  repository, Room/DataStore/cache, location, alert, air-quality, radar/map,
-  appearance, widget, notification, release, or MVP behavior changed.

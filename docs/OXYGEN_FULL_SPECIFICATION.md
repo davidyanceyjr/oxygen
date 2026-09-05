@@ -1849,8 +1849,9 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-Gate 19F: Saved Locations Documentation Sync is committed. The next
-implementation candidate is Slice 20A: Unit Preference Contract.
+Gate 19F: Saved Locations Documentation Sync and Slice 20A: Unit Preference
+Contract are committed. The next implementation candidate is Gate 20-0:
+Presentation Semantics and Localization Safety.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering,
@@ -1883,19 +1884,22 @@ refresh through the normal selected-location path. Conditional GET requests,
 304 not-modified handling, provider health/backoff behavior, and
 release-candidate fallback verification remain unimplemented.
 
-Gate 19F must keep README, roadmap, disclosure, and active-cycle status aligned
-with verified saved-location behavior without changing app behavior or claiming
-release readiness. Slice 20A must define unit preference behavior before unit
-conversion or persisted units UI begins. It must specify the preference model
-for temperature, wind speed, pressure, precipitation, and visibility units, and
-must not treat existing enum/scaffold values as implemented user preferences.
+Gate 19F kept README, roadmap, disclosure, and active-cycle status aligned with
+verified saved-location behavior without changing app behavior or claiming
+release readiness. Slice 20A then defined the provider-neutral preference model
+for temperature, wind speed, pressure, precipitation, and visibility units
+without changing canonical storage, provider requests, persistence, or UI.
 
-Gate 19F must not add unit preferences, device-location permission flow, alert
-lookup, persisted appearance settings, additional provider wiring,
-Paper/Terminal theme completion, radar, maps, air quality, widgets, background
-refresh, notifications, release-readiness, or MVP-readiness claims. Slice 20A
-must remain a preference contract slice and must not add unit conversion,
-persisted units UI, provider changes, or MVP-readiness claims.
+Gate 20-0 is the next bounded verification gate. It must establish that
+presentation behavior depends on semantic data rather than English labels or
+formatted strings before unit conversion and additional appearance modes
+multiply those paths. It must not add unit conversion, persisted units UI,
+provider changes, or MVP-readiness claims.
+
+Gate 20-0 must not add device-location permission flow, alert lookup, persisted
+appearance settings, additional provider wiring, Paper/Terminal theme
+completion, radar, maps, air quality, widgets, background refresh,
+notifications, release-readiness, or MVP-readiness claims.
 
 ---
 
