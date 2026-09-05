@@ -34,10 +34,11 @@ ledger states.
 
 - Last committed implementation slice: Slice 20A, Unit Preference Contract,
   committed at `3f6d741`.
-- Last committed documentation sync: this post-20A authority sync.
-- Current committed implementation target: Gate 20-0, Presentation Semantics
-  and Localization Safety. It remains bounded to semantic presentation and
-  localization-safety verification before conversion/UI work.
+- Last committed implementation gate: Gate 20-0, Presentation Semantics and
+  Localization Safety, committed at `587b0ad`.
+- Current documentation sync target: Post-20-0 Authority Sync. It advances the
+  next implementation candidate to Slice 20B: Unit Conversion Presentation
+  Boundary.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -407,10 +408,10 @@ Boundaries:
 
 ### 2026-09-04-gate-20-0-presentation-semantics-localization-safety
 
-Status: verified
+Status: committed
 Mode: gate
 Slice: Gate 20-0, Presentation Semantics and Localization Safety
-Commit: committed in this changeset
+Commit: `587b0ad`
 
 Result:
 - Kept existing Home formatted output while adding explicit nullable canonical
@@ -439,3 +440,36 @@ Boundaries:
 - No conversion formulas, persisted preferences, Settings controls, provider,
   repository, Room/DataStore/cache, location, alert, air-quality, radar/map,
   appearance, widget, notification, release, or MVP behavior changed.
+
+### 2026-09-04-post-20-0-authority-sync
+
+Status: ready
+Mode: documentation-only
+Slice: Post-20-0 Authority Sync
+Commit: not committed in this changeset
+
+Result:
+- Updated the specification and roadmap to record committed Gate 20-0 evidence
+  at `587b0ad`.
+- Advanced the next implementation candidate to Slice 20B: Unit Conversion
+  Presentation Boundary.
+- Replaced the active plan with this bounded Markdown-only authority sync.
+
+Evidence:
+- Stale next-candidate search returned no matches in the active specification,
+  roadmap, current plan, or live recent history.
+- `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-04-post-20-0-authority-sync/git-diff-check.log`.
+
+Blockers:
+- None.
+
+Boundaries:
+- No Kotlin, Compose, Gradle, manifest, provider request, Room schema,
+  DataStore format, forecast-cache format, UI behavior, saved-location
+  behavior, provider behavior, unit conversion, persisted unit preference,
+  alert, air quality, radar, release, or MVP behavior changed.
+- Android compile, unit, connected, assemble, emulator, install, and screenshot
+  commands were not run because this was a Markdown-only authority sync.

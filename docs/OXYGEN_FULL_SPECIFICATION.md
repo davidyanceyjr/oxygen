@@ -1849,9 +1849,10 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 ## 53. Immediate Next Engineering Tasks
 
-Gate 19F: Saved Locations Documentation Sync and Slice 20A: Unit Preference
-Contract are committed. The next implementation candidate is Gate 20-0:
-Presentation Semantics and Localization Safety.
+Gate 19F: Saved Locations Documentation Sync, Slice 20A: Unit Preference
+Contract, and Gate 20-0: Presentation Semantics and Localization Safety are
+committed. The next implementation candidate is Slice 20B: Unit Conversion
+Presentation Boundary.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering,
@@ -1889,14 +1890,17 @@ verified saved-location behavior without changing app behavior or claiming
 release readiness. Slice 20A then defined the provider-neutral preference model
 for temperature, wind speed, pressure, precipitation, and visibility units
 without changing canonical storage, provider requests, persistence, or UI.
+Gate 20-0 then established that Home presentation behavior depends on semantic
+data and nullable canonical values rather than English labels or formatted
+strings.
 
-Gate 20-0 is the next bounded verification gate. It must establish that
-presentation behavior depends on semantic data rather than English labels or
-formatted strings before unit conversion and additional appearance modes
-multiply those paths. It must not add unit conversion, persisted units UI,
-provider changes, or MVP-readiness claims.
+Slice 20B is the next bounded implementation slice. It must convert canonical
+weather values only for presentation while preserving canonical storage,
+provider requests, source/provenance, and null/unavailable semantics. It must
+not add persisted units UI, provider changes, Settings information
+architecture, or MVP-readiness claims.
 
-Gate 20-0 must not add device-location permission flow, alert lookup, persisted
+Slice 20B must not add device-location permission flow, alert lookup, persisted
 appearance settings, additional provider wiring, Paper/Terminal theme
 completion, radar, maps, air quality, widgets, background refresh,
 notifications, release-readiness, or MVP-readiness claims.

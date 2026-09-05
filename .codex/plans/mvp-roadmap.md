@@ -1156,7 +1156,7 @@ Evidence:
 
 ## Gate 20-0: Presentation Semantics and Localization Safety
 
-Status: specified
+Status: committed at `587b0ad`
 
 Recommended timing:
 
@@ -1178,6 +1178,27 @@ Must prove:
 - missing values remain missing.
 
 This gate does not require shipping translations.
+
+Committed result:
+
+- Added explicit nullable canonical values and semantic unit identities to Home
+  current, hourly, daily, and metric presentation models while preserving
+  existing formatted output.
+- Preserved `HomeMetricIdentity` for grouping and `WeatherCondition` for
+  condition/icon semantics.
+- Verified Home composables do not parse formatted weather text back into
+  weather numbers.
+
+Evidence:
+
+- Focused `HomeForecastPresentationMapperTest` and
+  `HomeForecastStateHolderTest` checks passed.
+- Connected `HomeDashboardUiTest` passed on `oxygen_starter`.
+- Installed debug app launched on `oxygen_starter`.
+- Broad compile, app/core unit-test, assemble, and `git diff --check` checks
+  passed.
+- Artifacts:
+  `.codex/test-artifacts/2026-09-04-gate-20-0-presentation-semantics-localization-safety/`.
 
 ---
 
@@ -1844,7 +1865,7 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 ## Recommended Sequence From Current Committed State
 
 Remote `main` is reconciled through merge `bfb2970`. The latest completed local
-implementation slice is Slice 20A, committed at `3f6d741`.
+implementation gate is Gate 20-0, committed at `587b0ad`.
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
@@ -1896,7 +1917,7 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Gate 20-0: Presentation Semantics and Localization Safety.
+Candidate: Slice 20B: Unit Conversion Presentation Boundary.
 
 Immediate planning boundary:
 
@@ -1914,7 +1935,8 @@ Immediate planning boundary:
 -> 19E remove saved location UI committed at 00cb88a
 -> 19F saved locations documentation sync committed at 8386484
 -> 20A unit preference contract committed at 3f6d741
--> next candidate: Gate 20-0 presentation semantics and localization safety
+-> 20-0 presentation semantics and localization safety committed at 587b0ad
+-> next candidate: Slice 20B unit conversion presentation boundary
 ```
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
@@ -1923,5 +1945,5 @@ Those implementation boundaries are historical and already committed. Slice
 evidence boundary, not a new visual gate.
 
 To start the next implementation slice after this authority sync is committed,
-replace `.codex/plans/current.md` with one bounded Gate 20-0 plan. Do not treat
+replace `.codex/plans/current.md` with one bounded Slice 20B plan. Do not treat
 later roadmap entries as active work.
