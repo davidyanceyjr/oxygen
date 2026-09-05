@@ -1,126 +1,265 @@
-# Slice 21 — Optional Device Location
+# Slice 22 Plan — NWS Alert Provider Contract
 
-Status: verified — implementation and verification complete; commit pending.
+**Status:** ready — contract, source review, and Markdown verification complete; commit pending
+**Cycle ID:** `2026-09-05-slice-22-nws-alert-provider-contract`
+**Mode:** documentation / provider contract
 
-Execution started 2026-09-05. Cycle artifacts:
-`.codex/test-artifacts/2026-09-05-slice-21-device-location/`.
-Discovery confirms the existing selected-location/cache schemas can be retained.
-Production and verification work are complete; commit pending.
+## Selected Behavior and Acceptance Boundary
 
-Verification evidence:
+Add `docs/data-sources/NWS_ALERTS.md` as the sourced NOAA/National Weather
+Service contract for selected-point official alerts. It must let Slices
+23A–23C implement parsing, provider errors, and forecast/alert composition
+without guessing, while keeping NWS roadmap-only and changing no runtime
+behavior.
 
-- Focused unit tests passed: `:core:testDebugUnitTest --tests '*OpenMeteoTimeZoneResolverTest*'`;
-  `:app:testDebugUnitTest --tests '*FirstRunLocationStateHolderTest*' --tests '*DeviceLocationSourceTest*'`;
-  `:app:testDebugUnitTest :core:testDebugUnitTest`.
-- Connected installed persistence test passed:
-  `:app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.OfflineLaunchPersistenceInstrumentedTest`.
-- Broad checks passed: `:app:compileDebugKotlin`; `:app:assembleDebug`; `git diff --check`.
-- Installed screenshots saved under
-  `.codex/test-artifacts/2026-09-05-slice-21-device-location/`:
-  `entry-baseline.png`, `permission-or-progress.png`, `after-permission-grant.png`,
-  `after-test-provider-start.png`, and `large-font-restored.png`.
+Slice 22 is ready when the contract covers every Slice 22 roadmap obligation,
+records the decisions below, passes the bounded provider/source review and
+Markdown checks, and contains no Kotlin, Gradle, resource, manifest,
+persistence, permission, dependency, or UI change.
 
-Reviewed against local `main` at `1b527189fed7182c239f4fb800127217525cfec4` (2026-09-05). This is the active implementation authority for the bounded Slice 21 cycle. The completed Slice 20C record remains in `.codex/cycles/history.md`.
+## Verified Prerequisites and Current Boundary
 
-## Intent and acceptance boundary
+- `HEAD` is `3ea5ae6`; Slice 21 implementation and verification are committed
+  in `c6febb6` and `3ea5ae6`.
+- Room is the installed forecast persistence boundary. Forecast fallback is
+  composed independently and must remain independent from alert lookup.
+- `AlertProvider`, `WeatherAlert`, `AlertSeverity`,
+  `DataType.OFFICIAL_ALERT`, `WeatherBundle.alerts`, and provenance already
+  exist in `:core`.
+- `WeatherAlert` can reuse ID, event, headline, severity, effective/expires,
+  description, instruction, issuer, and provenance. It lacks urgency,
+  certainty, affected-area/geometry, onset/end, sent time, message type,
+  status, and update references.
+- `AlertProvider.getActiveAlerts` returns only `List<WeatherAlert>` and cannot
+  distinguish an empty success, unsupported coverage, or failures.
+- Home maps and renders scaffold alerts through `HomeAlertPresentation` and
+  `home-section-alert`; this is neither a live provider path nor Slice 24.
+- Alert persistence does not exist. Room explicitly rejects alert-bearing
+  forecast bundles; the retained file forecast format omits alerts. Slices 23
+  must not route alert persistence through either forecast-cache boundary.
+- No NWS DTO/parser/client/repository, alert result/error type, alert cache, or
+  installed composition path exists.
 
-After an explicit **Use my location** action, Oxygen may request coarse foreground location, obtain one approximate device point, resolve its IANA timezone, persist it as the selected `WeatherLocation`, and load Home through the existing installed forecast/cache path. Manual search remains completely usable before, during, and after any device-location outcome. No launch, refresh, restart, or background path requests permission or obtains a new fix.
+The roadmap still labels the Persistence Architecture Gate and Slice 21
+`specified`, and recent-history summary/last-cycle commit state predates the
+commits above. Current code and Git history satisfy Slice 22 prerequisites.
+Treat roadmap/history correction as a separate authority-sync task; do not
+silently include it in the provider-contract diff.
 
-This slice ends at a selected approximate device position and normal Home behavior. It does not turn the app into a continuously updating “current location” product.
+## Decisions That Resolve Review Blockers
 
-## Verified prerequisites
+### Existing Domain and Result Boundaries
 
-- Slice 21’s only roadmap prerequisite, saved-location selection, is present: manual candidates and saved rows write `DataStoreSelectedLocationStorage` before `OxygenAppStateHolder.startHomeForecastLoad`; Room forecasts are keyed by `LocationId`.
-- The installed `MainActivity` composes `OxygenAppStateHolder` with `DataStoreSelectedLocationStorage`, Room saved-location/cache storage, and `InstalledForecastRepositoryFactory`. The latter retains the active Open-Meteo → eligible MET Norway fallback/cache composition.
-- `WeatherLocation` already requires a local `LocationId`, WGS84 point, nullable elevation, and IANA `ZoneId`; its current DataStore and Room records need no field or schema change.
-- `OpenMeteoGeocodingMapper` already demonstrates the required stable-local-ID rule (4-decimal normalized coordinates and SHA-256); manual IDs must not change.
-- `OxygenAppStateHolder` has only a scaffold permission command/result: grant currently shows `LocationLookupNotConnected`. `AndroidManifest.xml` declares neither location permission, and `MainActivity` has neither an Activity Result launcher nor a location adapter.
-- `activeForecastRequestId` protects forecast emissions only. A device-location attempt needs a separate guard so a late permission/fix/timezone callback cannot write selected-location storage.
-- Review live request on 2026-09-05: `GET /v1/forecast?latitude=43.0731&longitude=-89.4012&timezone=auto` returned metadata including `timezone: America/Chicago`; no weather variables were requested. The provider’s returned coordinates are grid metadata and are not the device point.
+The NWS contract will inventory reusable and missing provider-neutral fields.
+Slice 23A must expand the existing `WeatherAlert`/related enums to retain the
+required semantics; it must not introduce a parallel alert hierarchy. Slice
+23B must replace or evolve the existing `AlertProvider` return boundary so a
+successful empty result remains distinct from `UnsupportedRegion`, network,
+rate-limit, provider, invalid-request, and invalid-response outcomes. Slice
+23C owns repository composition and independent forecast/alert freshness.
+Existing names remain authoritative unless a higher-authority change explicitly
+replaces them.
 
-## Authoritative references
+### Coverage and Unsupported Region
 
-- `AGENTS.md`; `.codex/plans/mvp-roadmap.md` (Slice 21); `.codex/plans/current.md`; and the live recent-history contract in `.codex/cycles/history.md`.
-- `docs/OXYGEN_FULL_SPECIFICATION.md` §§1, 10, 19, 39, 40, and 46: permission is optional and action-triggered; manual locations work fully; no Google Play Services core requirement; `WeatherLocation` owns an IANA zone; remote weather never uses the phone zone.
-- `README.md`, `DATA_SOURCES.md`, `PRIVACY.md`, and `docs/data-sources/OPEN_METEO_FORECAST.md`; the provider-template obligations apply when extending the active Open-Meteo request shape.
-- [Open-Meteo Forecast API](https://open-meteo.com/en/docs): `timezone=auto` resolves the coordinate’s IANA zone. [Android LocationManager](https://developer.android.com/reference/android/location/LocationManager): coarse permission can return an obfuscated position and `getCurrentLocation` is API 30+.
+Coverage means the point coverage accepted by the NWS active-alert service,
+not CONUS, a country-code test, or the selected forecast provider. Oxygen will
+attempt any locally valid coordinate, including US states, District of
+Columbia, NWS-served territories, and relevant coastal/offshore or other marine
+points; provider acceptance owns the exact evolving boundary.
 
-## Current repository boundary
+Slice 23B must first reject non-finite coordinates or latitude outside
+`[-90, 90]` / longitude outside `[-180, 180]` as local invalid input. For a
+locally valid point:
 
-Extend, do not duplicate:
+- HTTP 200 with a valid `FeatureCollection`, including zero features, is a
+  supported success.
+- `UnsupportedRegion` requires HTTP 400 `application/problem+json`, problem
+  type `https://api.weather.gov/problems/InvalidParameter`, title
+  `Invalid Parameter`, and detail `Parameter "point" is invalid: out of bounds`.
+- Every other 400 is `InvalidRequest`, or `InvalidResponse` if its declared
+  problem envelope is malformed.
 
-- `app/src/main/kotlin/com/oxygen/weather/MainActivity.kt` and `OxygenApp.kt` for the Android permission-result boundary and lifecycle ownership.
-- `OxygenAppStateHolder.kt` and `ui/firstrun/FirstRunLocationEntryScreen.kt` for one device-attempt state, accessible progress/error UI, and the existing selected-location/Home handoff.
-- `app/src/main/AndroidManifest.xml` for `ACCESS_COARSE_LOCATION` only.
-- `core/.../provider/WeatherProviders.kt` and `core/.../provider/openmeteo/` for a deliberately small provider-neutral coordinate-to-zone contract and its Open-Meteo implementation. Reuse `OpenMeteoHttpTransport`; do not force the full forecast parser/client to parse a metadata-only response.
-- `SelectedLocationStorage`, Room cache/saved-location storage, `InstalledForecastRepositoryFactory`, and `WeatherLocation` unchanged. Do not add a DataStore key, Room entity/migration, cache namespace/table, or saved-place row.
+The OpenAPI currently exposes only a generic error response and does not
+promise that out-of-bounds discriminator. The narrow rule above is therefore a
+dated, conservative Oxygen interpretation of observed behavior, not a provider
+guarantee. Preserve diagnostics and add a re-review trigger; never infer
+support from an empty list or forecast routing.
 
-## Implementation steps
+### Canonical Request Identity
 
-1. **Document the active request before wiring it.** Extend `docs/data-sources/OPEN_METEO_FORECAST.md` with the metadata-only `latitude`, `longitude`, `timezone=auto` resolver request; required `timezone` response; error classification; no-cache/no-forecast semantics; coordinate privacy; attribution/license; and refreshed terms-review date. Correct only its stale activation/failover wording necessary to match the already active installed forecast path. Update the matching implemented-behavior/request disclosures in `DATA_SOURCES.md`, `PRIVACY.md`, `README.md`, and `AboutDisclosureContent.kt`: coarse permission is optional; a device point is obtained only after an explicit action; its coordinates are sent to Open-Meteo first for timezone resolution and then for normal forecast requests; the selected approximate position is stored locally; no background acquisition occurs.
+The exact initial identity is:
 
-2. **Add the narrow timezone-resolution boundary in `:core`.** Define one provider-neutral coordinate-to-`ZoneId` result/error contract, then implement `OpenMeteoTimeZoneResolver` beside the existing Open-Meteo clients. It must validate finite WGS84 input and the returned IANA identifier, map transport/HTTP/error-body/malformed/missing-zone outcomes to provider-neutral failures, and retain the original input point. It uses only the verified metadata request above; it must not emit weather, enter `WeatherRepository`, populate the forecast cache, or alter fallback selection. Add fixtures under `core/src/test/resources/providers/openmeteo/` for success, malformed/missing/invalid timezone, error body, and relevant HTTP failures.
-
-3. **Add one cancellable Android point source in `:app`.** Inject an app-local `DeviceLocationSource` into `OxygenAppStateHolder`; its production `LocationManager` implementation is constructed by `MainActivity`, uses no Play Services, and returns exactly one result or a provider-neutral unavailable/failure/cancel outcome. Declare/request only `ACCESS_COARSE_LOCATION`. On each explicit action, `MainActivity` checks the actual grant: an existing grant goes directly to the same result path; otherwise use `ActivityResultContracts.RequestPermission`. Use `getCurrentLocation` with `CancellationSignal` on API 30+, and an API 26–29 one-shot listener with the same cleanup guarantees. Select only an enabled compatible provider; reject null, non-finite/out-of-range, or stale fixes. Bound the attempt to 20 seconds, cancel/remove callbacks on result, timeout, user cancellation, `onStop`, and destruction, and never fall back to arbitrary last-known coordinates. Do not request fine/background permission, add a foreground service, or add a dependency.
-
-4. **Complete the existing state/UI path.** Replace `LocationLookupNotConnected` with a single attempt token spanning permission result, point acquisition, timezone resolution, selected-location write, and Home start. The entry screen shows locating/resolving status and an explicit cancel action; duplicate taps are coalesced. Search, saved-row selection, candidate selection, Back, About, cancellation, and activity stop invalidate the token; late callbacks do nothing. On denial/dismissal, unavailable provider/fix, timeout, resolver failure, or selected-location write failure, preserve the query/results/saved rows/previous selection and show a concise provider-neutral manual-search/retry message.
-
-   On success, make `WeatherLocation(displayName = "Approximate device location", elevationMeters = null)` from the original device point and validated zone. Give it a deterministic `device-` local ID from the existing four-decimal coordinate normalization plus zone in a device-only hash namespace; do not change manual-location IDs or use a constant device ID. Write it through the existing selected-location storage before publishing it or calling `startHomeForecastLoad`. Do not automatically save it to the saved-locations list. On restart, restore that stored location/cache normally without permission or a new fix; a new device action is required to relocate.
-
-5. **Keep the entry surface finished.** Preserve the existing 48dp controls and manual-search disclosure. Progress and failure must be readable text/semantics, not color alone; the approximate qualifier must remain visible and must not imply a street address, precise GPS, a supplied accuracy radius, or phone timezone. Capture a baseline and final installed entry-screen screenshot; inspect the completed flow on a compact display and large font.
-
-## Exact acceptance criteria
-
-- Ordinary fresh launch, restored launch, Home refresh, and manual search make no permission request or platform location call. Manual search can still select a real forecast with permission denied.
-- Only an explicit tap can cause one coarse-permission request. Denial/dismissal/repeated denial neither loops nor opens Settings automatically; it leaves the manual surface usable and does not mutate selected storage/cache/Home.
-- A granted tap obtains at most one bounded foreground point. Existing coarse grant avoids a new dialog. No fine/background permission, periodic listener, background work, or Google Play Services dependency is present.
-- The selected device location uses the original valid approximate point, an Open-Meteo-validated IANA zone, the fixed approximate display name, null elevation, and a stable device-only local ID. Invalid/missing zone or a bad/stale point never produces a `WeatherLocation`; neither UTC nor the handset zone may substitute.
-- A successful device selection commits selected-location storage before the existing `startHomeForecastLoad`; normal Open-Meteo/MET Norway fallback, cache, provenance, unit presentation, and stale behavior then apply unchanged. No resolver response becomes forecast/cache data.
-- A manual/saved selection or exit while device resolution is pending wins permanently: a late permission, point, timeout, resolver, or forecast callback cannot overwrite selected storage, selected Home, or its error state.
-- Restart after a successful device selection restores the approximate location and matching cached forecast offline without a permission prompt/acquisition. The device position is not added to saved locations, and existing manual/saved IDs, selection, save, and remove behavior remain compatible.
-
-## Focused tests and evidence
-
-- Core resolver parser/client/repository tests: exact metadata-only query; input and IANA-zone validation; original-point preservation; malformed/missing/error-body, 4xx/429/5xx, and offline mapping; no forecast fields/cache effects.
-- App state-holder tests in `FirstRunLocationStateHolderTest`: no-action baseline; permission command/result; progress, denial, unavailable, timeout, resolver/storage failure; success commit-before-Home; manual/saved/Back/cancel/activity-stop races; duplicate tap coalescing; and late callbacks cannot persist over selection B.
-- App-local device-source tests behind a fakeable platform facade: one completion, provider absence, null/stale/invalid fix, timeout, cancellation/cleanup, and both API 26–29 listener and API 30+ current-location branches. A fake point must be labelled controlled input.
-- Extend `OfflineLaunchPersistenceInstrumentedTest` with production DataStore + Room: persisted device `WeatherLocation`/label/cache restores offline without source invocation or permission flow. Re-run saved-location regression coverage to show the device selection was not saved and existing saved behavior survives.
-- Add/extend Compose tests for disabled duplicate action, locating/resolving/cancel, error/retry/manual-search availability, approximation text, and 48dp/semantic control behavior. Retain focused logs and screenshots under `.codex/test-artifacts/<actual-cycle-id>/`.
-
-## Real-path evidence
-
-On an installed debug build, start with no grant, tap **Use my location**, grant coarse permission, and prove the production chain: Android `LocationManager` → Open-Meteo metadata resolver → selected DataStore write → installed forecast factory → ready Home with the approximate label. Repeat with permission denied and with location services/provider unavailable, confirming manual search still reaches Home. Capture baseline/final screenshots and record device/API, permission state, provider availability, request outcome, and observed UI. If the emulator cannot supply a genuine platform fix, exercise on an available physical device; that limitation is a blocker, not a passed real-path test.
-
-## Broad verification
-
-```sh
-. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteoTimeZone*'
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*FirstRunLocationStateHolderTest*'
-. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest --tests '*OfflineLaunchPersistenceInstrumentedTest*'
-. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
-. scripts/android-env.sh && ./gradlew :app:assembleDebug
-git diff --check
+```text
+User-Agent: OxygenWeather/0.1 (https://github.com/davidyanceyjr/oxygen/issues)
+Accept: application/geo+json
 ```
 
-Use `scripts/start-emulator.sh` and `scripts/install-debug.sh` for installed evidence. Record commands actually run and any unavailable API-26–29 or physical-device condition; compilation and assembly alone are not slice evidence.
+The contact is the issue tracker for the repository named by `git origin`.
+Keep it provider-local/configurable and review it when repository ownership or
+the application version changes. Do not copy the mismatched MET Norway default
+URL or invent an email/API-key path.
 
-## Explicitly out of scope
+## Contract Coverage
 
-Fine/background location, continuous tracking, geofencing, location history, foreground services, Play Services, reverse geocoding/city naming, saved-device locations, elevation/altitude, location settings deep links, provider/cache schema changes, a new forecast provider, changes to manual IDs, Home composition, fallback rules, units, alerts, maps/radar, widgets, notifications, translations beyond touched strings, release readiness, and MVP claims.
+| Roadmap obligation | Required contract decision/evidence |
+| --- | --- |
+| Endpoint/auth | `GET https://api.weather.gov/alerts/active?point={lat},{lon}`; no current API key; exact headers above. |
+| Rate/requests | No published numeric quota; NWS recommends no more often than 30 seconds. No recomposition polling, tight retries, or request storms; back off rate limits. |
+| Caching | Record `Cache-Control`, `Expires`, `ETag`, and `Last-Modified` only when present/useful. Response freshness never dictates Oxygen polling cadence; invent no TTL. |
+| Fields/UI needs | Inventory existing fields and contract only identity, lifecycle, severity/urgency/certainty, affected area/geometry, provenance, diagnostics, and specified banner/detail needs. No presentation strings in domain/provider types. |
+| Timestamps | Parse absolute instants and keep sent/effective/onset/expires/end distinct; optional values stay absent; presentation uses selected-location timezone. |
+| CAP values | Preserve severity, urgency, and certainty separately with `UNKNOWN` fallback; do not synthesize danger scores. |
+| Identity/lifecycle | Treat provider ID as opaque; deduplicate identical IDs. Define CAP Alert/Update/Cancel and references for mapper robustness without claiming the active snapshot returns prior or cancellation messages. |
+| Expiration | Filter expired/superseded/cancelled cached input. The NWS geolocation guide, not a live observation, supports active results that are ongoing or near-future-effective. |
+| Area/geometry | Preserve valid geometry, zones/geocodes, and area text when present; null geometry remains usable for a point-filtered result; fabricate nothing. |
+| Outcomes/errors | Use the coverage rule above and classify empty success, unsupported, offline/network, rate limit, unavailable, invalid request/response, identification rejection, and other HTTP failure separately. Raw provider copy is diagnostic only. |
+| Reuse/privacy | Record public-domain/disclaimer limits, source attribution/provenance, selected coordinates, IP/network metadata, and the identifying User-Agent sent to NWS. No new permission or collection is introduced. |
+| Independence | Official alerts never derive from forecast risk; forecast choice/fallback cannot disable lookup; alert failure cannot invalidate forecast; freshness stays separate. |
+| Fixtures | Assign no/one/many, missing optionals, unknown enums, geometry/null geometry, duplicates, update/cancel references, near-future-effective, expired, and malformed-envelope fixtures to Slice 23A. |
 
-## Completion gate
+## Source Boundaries
 
-Do not mark this slice covered, implemented, verified, or committed until the production path and every acceptance criterion have corresponding focused evidence, installed real-path evidence, accurate disclosures, and clean broad checks. Keep artifacts ignored under the actual cycle directory; record their paths and exact outcomes in the activated current plan and then append the concise history entry. Leave unrelated existing changes untouched.
+Review and date each normative statement in the provider contract against:
 
-## Unresolved blockers
+- NWS API service docs and OpenAPI for base URL, identification, media type,
+  point parameter, response schema/enums, generic error envelope, rate, and
+  cache orientation: <https://www.weather.gov/documentation/services-web-api>
+  and <https://api.weather.gov/openapi.json>.
+- NWS Alerts Web Service for alert purpose, point lookup, 30-second guidance,
+  and NWS CAP context:
+  <https://www.weather.gov/documentation/services-web-alerts>.
+- NWS Geolocation Guide for point lookup and ongoing/near-future active scope:
+  <https://www.weather.gov/media/documentation/docs/NWS_Geolocation.pdf>.
+- NWS CAP documentation first, and OASIS CAP 1.2 only where NWS delegates
+  semantic definitions: <https://www.weather.gov/alerting> and
+  <https://docs.oasis-open.org/emergency/cap/v1.2/CAP-v1.2.html>.
+- NWS disclaimer and privacy pages for reuse, attribution, disclaimers, and
+  network-data handling: <https://www.weather.gov/disclaimer> and
+  <https://www.weather.gov/privacy>.
+- Exact PNS26-62 notice for the proposed CAP-primary/VTEC change:
+  <https://www.weather.gov/media/notification/pdf_2026/PNS26-62_CAP_Transition.pdf>.
 
-None at planning time. The API-26–29 compatibility branch and a real coarse-fix device/emulator remain verification obligations; report an unavailable runtime capability as a blocker rather than replacing it with a mock success.
+State `not publicly specified` and choose conservative Oxygen behavior where
+official documentation is silent. Label bounded live responses as dated
+observations, never fixtures or guaranteed provider behavior. Re-review service
+notices immediately before Slice 23.
 
-## Review Resolution
+## Files and Workflow
 
-- Rebased the plan from `bfb2970` to current `1b52718`; removed the obsolete claim that saved-location and unit prerequisites were not shipped.
-- Corrected the architecture to the actual permission scaffold, selected-location DataStore, Room cache, installed fallback factory, and forecast-only request client.
-- Replaced speculative full-forecast timezone lookup with the verified metadata-only Open-Meteo `timezone=auto` request and required provider-neutral validation.
-- Added the missing lifecycle/attempt-token race boundary, persistence-before-publish rule, and precise no-schema-change constraint.
-- Narrowed verification to resolver, Android source, state, persistence, Compose, and an installed production chain; removed unsupported completion claims and made real device-fix availability explicit.
+Intended changes:
+
+- add `docs/data-sources/NWS_ALERTS.md`;
+- update `.codex/plans/current.md` only as execution evidence changes;
+- amend the specification only for a demonstrated higher-authority gap.
+
+Keep `DATA_SOURCES.md` roadmap-only and `PRIVACY.md` unchanged because no live
+NWS path exists. Use `discover -> contract/document -> review -> ready`.
+
+Do not add production code, dependencies, alert persistence, background work,
+notifications, UI, VTEC coupling, global routing, active-provider claims, or
+runtime verification claims. Those belong to Slices 23A–23C, 24, or later.
+
+## Execution Evidence
+
+Cycle artifacts:
+`.codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract/`.
+
+Added `docs/data-sources/NWS_ALERTS.md` as the provider contract. No Kotlin,
+Gradle, resource, manifest, persistence, permission, dependency, UI,
+`DATA_SOURCES.md`, `PRIVACY.md`, specification, or roadmap behavior/status
+change was made.
+
+Live evidence collected on 2026-09-05 with:
+
+```text
+User-Agent: OxygenWeather/0.1 (https://github.com/davidyanceyjr/oxygen/issues)
+Accept: application/geo+json
+```
+
+- Madison, Wisconsin point `43.0731,-89.4012`: HTTP 200
+  `application/geo+json`, valid `FeatureCollection`, zero features, observed
+  `ETag`, `Cache-Control`, and `Expires`.
+- London, United Kingdom point `51.5074,-0.1278`: HTTP 400
+  `application/problem+json`, `Invalid Parameter`, type
+  `https://api.weather.gov/problems/InvalidParameter`, detail
+  `Parameter "point" is invalid: out of bounds`.
+- `https://api.weather.gov/openapi.json`: HTTP 200
+  `application/vnd.oai.openapi+json;version=3.1`; inspected `/alerts/active`,
+  `AlertPoint`, response media types, alert properties/enums/references, and
+  generic problem schema.
+
+Source review covered NWS API service docs, OpenAPI, Alerts Web Service, NWS
+Geolocation Guide, NWS CAP landing page, OASIS CAP 1.2, NWS disclaimer, NWS
+privacy policy, and PNS26-62. The verification ledger is
+`.codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract/verification-ledger.md`.
+
+Broad checks passed:
+
+```bash
+git diff --check
+git diff --stat
+git diff -- .codex/plans/current.md docs/data-sources/NWS_ALERTS.md \
+  docs/OXYGEN_FULL_SPECIFICATION.md DATA_SOURCES.md PRIVACY.md \
+  .codex/plans/mvp-roadmap.md .codex/cycles/history.md
+git diff --no-index -- /dev/null docs/data-sources/NWS_ALERTS.md
+git status --short
+git ls-files --others --exclude-standard \
+  .codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract \
+  docs/data-sources/NWS_ALERTS.md
+```
+
+The `--no-index` command exits `1` for the expected new-file diff; it was used
+only to inspect the untracked contract content before staging. Artifact payloads
+remain ignored.
+
+Android compile, unit, connected, assemble, install, emulator, and screenshot
+checks were not run because the accepted Slice 22 diff is Markdown-only.
+
+## Verification Budget and Ledger
+
+Budget: one bounded live evidence pass, one official-source/OpenAPI review, and
+one final Markdown diff pass. Do not repeat a passing request/check unless the
+input or environment affecting it changes. Save response headers/bodies and
+the ledger under `.codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract/`;
+artifact payloads remain untracked.
+
+Required focused evidence using the exact User-Agent:
+
+1. One in-coverage point: record status, content type, valid
+   `FeatureCollection`, feature count, and observed cache headers.
+2. One locally valid out-of-coverage point: record the actual problem status,
+   content type, title/type/detail, and whether it satisfies the narrow rule.
+3. Inspect OpenAPI point parameter, alert properties/enums/references, response
+   media types, and generic error schema.
+4. Map every rate, cache, reuse, privacy, future-effective, and lifecycle claim
+   to the exact source class above.
+
+Required broad checks:
+
+```bash
+git diff --check
+git diff --stat
+git diff -- .codex/plans/current.md docs/data-sources/NWS_ALERTS.md \
+  docs/OXYGEN_FULL_SPECIFICATION.md DATA_SOURCES.md PRIVACY.md \
+  .codex/plans/mvp-roadmap.md .codex/cycles/history.md
+```
+
+Android compile, unit, connected, assemble, install, emulator, and screenshot
+checks are intentionally excluded because the accepted diff is Markdown-only.
+If the diff escapes that boundary, stop and re-plan instead of using Android
+checks to legitimize scope drift.
+
+## Completion Gate
+
+- The provider contract covers every table row with exact citations and a
+  current review date.
+- Domain expansion is assigned to 23A; result/error evolution to 23B;
+  independent merge/freshness to 23C; existing alert names are preserved.
+- Coverage, local validation, empty success, and unsupported classification are
+  deterministic and honestly distinguish observation from guarantee.
+- The exact User-Agent/contact is recorded and used in live evidence.
+- NWS remains roadmap-only; forecast risk remains non-official; no alert data
+  is sent through forecast cache storage.
+- The evidence ledger and final diff review pass, with unrelated files and the
+  separate roadmap/history authority-sync left untouched.

@@ -642,3 +642,54 @@ Boundaries:
 - No fine/background location, Play Services dependency, provider/cache
   schema change, saved-location schema change, or continuous tracking behavior
   was added.
+
+### 2026-09-05-slice-22-nws-alert-provider-contract
+
+Status: ready
+Mode: documentation / provider contract
+Slice: Slice 22, NWS Alert Provider Contract
+Commit: not committed
+
+Result:
+- Added `docs/data-sources/NWS_ALERTS.md` as the NOAA/National Weather Service
+  active-alert provider contract for selected-point official alerts.
+- Contracted exact endpoint, headers/User-Agent, source-reviewed rate/cache
+  behavior, required alert fields, timestamps, severity/urgency/certainty,
+  identity/lifecycle, geometry/affected-area fallback, errors, attribution,
+  license/privacy, unsupported-region behavior, fixtures, and alert/forecast
+  independence.
+- Recorded that existing `WeatherAlert`/`AlertProvider` names must be evolved
+  rather than duplicated: domain expansion belongs to Slice 23A, result/error
+  boundary evolution to Slice 23B, and independent forecast/alert composition to
+  Slice 23C.
+
+Evidence:
+- Live NWS evidence passed on 2026-09-05 with
+  `User-Agent: OxygenWeather/0.1 (https://github.com/davidyanceyjr/oxygen/issues)`
+  and `Accept: application/geo+json`: Madison point returned HTTP 200
+  GeoJSON `FeatureCollection` with zero features and cache headers; London
+  point returned HTTP 400 problem JSON matching the contracted conservative
+  unsupported-region discriminator.
+- OpenAPI fetch passed and was inspected for `/alerts/active`, `AlertPoint`,
+  response media types, alert properties/enums/references, and generic problem
+  schema.
+- Source review covered NWS API service docs, OpenAPI, Alerts Web Service, NWS
+  Geolocation Guide, NWS CAP/OASIS CAP sources, disclaimer, privacy policy, and
+  PNS26-62.
+- Broad Markdown checks passed: `git diff --check`, `git diff --stat`, and the
+  bounded diff review over current plan, NWS contract, spec, data/privacy docs,
+  roadmap, and cycle history. `git diff --no-index -- /dev/null
+  docs/data-sources/NWS_ALERTS.md` was used to review the new untracked
+  contract file; its exit code 1 is expected for new-file content.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract/`.
+
+Blockers:
+- None.
+
+Boundaries:
+- No Kotlin, Compose, Gradle, resource, manifest, provider runtime,
+  persistence, permission, UI, `DATA_SOURCES.md`, `PRIVACY.md`, specification,
+  roadmap-status, active-provider claim, Android build/test, emulator, install,
+  or screenshot behavior changed. NWS alerts remain roadmap-only.
