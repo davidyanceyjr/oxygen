@@ -53,6 +53,12 @@ import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.app.OxygenApp
 import com.oxygen.weather.app.OxygenAppScreen
 import com.oxygen.weather.app.OxygenAppStateHolder
+import com.oxygen.weather.app.DeviceLocationProgress
+import com.oxygen.weather.app.DeviceLocationSource
+import com.oxygen.weather.app.DeviceLocationResult
+import com.oxygen.weather.app.LocationCancellation
+import com.oxygen.weather.app.LocationPermissionResult
+import com.oxygen.weather.app.FirstRunLocationMessage
 import com.oxygen.weather.app.SavedLocationsMessage
 import com.oxygen.weather.app.SavedLocationsPresentationState
 import com.oxygen.weather.app.ui.about.AboutScreen
@@ -95,6 +101,66 @@ import org.junit.Test
 class HomeDashboardUiTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun deviceLookupShowsProgressDisablesDuplicatesAndCancelLeavesManualSearchUsable() {
+        var pointCallback: ((DeviceLocationResult) -> Unit)? = null
+        var sourceCalls = 0
+        val holder = OxygenAppStateHolder(
+            deviceLocationSource = DeviceLocationSource { callback ->
+                sourceCalls++
+                pointCallback = callback
+                LocationCancellation { }
+            },
+        )
+        composeRule.setCompactContent {
+            OxygenApp(holder, onRequestLocationPermission = {
+                holder.onLocationPermissionResult(it, LocationPermissionResult.Granted)
+            })
+        }
+        composeRule.onNodeWithTag("location-entry-use-my-location").performClick()
+        composeRule.onNodeWithTag("location-entry-use-my-location").assertIsNotEnabled()
+        composeRule.onNodeWithText(DeviceLocationProgress.Locating.text).performScrollTo().assertIsDisplayed()
+        composeRule.assertMinimumTouchTarget("location-entry-device-cancel", "location-entry-use-my-location")
+        composeRule.onNodeWithTag("location-entry-device-cancel").performClick()
+        composeRule.runOnIdle { pointCallback!!(DeviceLocationResult.Success(GeoPoint(43.0, -89.0))) }
+        composeRule.onAllNodesWithTag("location-entry-device-progress").assertCountEquals(0)
+        composeRule.onNodeWithTag("location-entry-search-field").performScrollTo().performTextInput("Madison")
+        composeRule.runOnIdle {
+            assertEquals("Madison", (holder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry).query)
+            assertEquals(null, holder.presentationState.selectedLocation)
+            assertEquals(1, sourceCalls)
+        }
+    }
+
+    @Test
+    fun deviceResolvingAndErrorRemainReadableAtLargeFontWithEffectsOff() {
+        val state = mutableStateOf(OxygenAppScreen.FirstRunLocationEntry(
+            deviceProgress = DeviceLocationProgress.Resolving,
+        ))
+        composeRule.setCompactContent(fontScale = 2f) {
+            FirstRunLocationEntryScreen(
+                state = state.value,
+                selectedLocation = null,
+                savedLocations = SavedLocationsPresentationState.NotLoaded,
+                onQueryChanged = {}, onSearch = {}, onRetry = {}, onCandidateSelected = {},
+                onSavedLocationSelected = {}, onUseMyLocation = {
+                    state.value = state.value.copy(message = null, deviceProgress = DeviceLocationProgress.Locating)
+                },
+                onCancelDeviceLocation = {
+                    state.value = state.value.copy(deviceProgress = null, message = FirstRunLocationMessage.DeviceTimezoneUnavailable)
+                },
+                onBack = {}, onOpenAbout = {},
+            )
+        }
+        composeRule.onNodeWithText(DeviceLocationProgress.Resolving.text).performScrollTo().assertIsDisplayed()
+        composeRule.assertMinimumTouchTarget("location-entry-device-cancel", "location-entry-search")
+        composeRule.assertWithinRootBounds("location-entry-actions")
+        composeRule.onNodeWithTag("location-entry-device-cancel").performClick()
+        composeRule.onNodeWithText(FirstRunLocationMessage.DeviceTimezoneUnavailable.text).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("location-entry-use-my-location").performClick()
+        composeRule.onNodeWithText(DeviceLocationProgress.Locating.text).performScrollTo().assertIsDisplayed()
+    }
 
     @Test
     fun freshSuccessRendersSemanticHomePagesAndPreservesDashboardContent() {

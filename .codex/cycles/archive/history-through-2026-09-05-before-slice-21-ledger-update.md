@@ -32,13 +32,13 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 20C, Unit Conversion Presentation
-  Boundary, committed at `1b52718`.
+- Last committed implementation slice: Slice 20B, Unit Conversion Presentation
+  Boundary, committed in this changeset.
 - Last committed implementation gate: Gate 20-0, Presentation Semantics and
   Localization Safety, committed at `587b0ad`.
 - Last committed documentation sync: Post-20-0 Authority Sync, committed at
-  `a0bca26`. The next implementation candidate is Slice 21: optional device
-  location through the installed path.
+  `a0bca26`. The next implementation candidate is Slice 20C: persisted
+  alternate-unit reachability through the installed path.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -553,10 +553,10 @@ Boundaries:
 
 ### 2026-09-05-slice-20c-persisted-unit-selection
 
-Status: committed
+Status: ready
 Mode: feature
 Slice: Slice 20C, Persisted Alternate-Unit Reachability
-Commit: `1b52718`
+Commit: not committed
 
 Result:
 - Added a dedicated versioned Preferences DataStore for preset and custom
@@ -591,37 +591,3 @@ Boundaries:
   selected-location/saved-location schemas, location permission, alerts, air
   quality, radar/maps, appearance settings beyond selected units, release, or
   MVP behavior changed. Custom-unit editing remains out of scope.
-
-### 2026-09-05-slice-21-optional-device-location
-
-Status: ready
-Mode: feature
-Slice: Slice 21, Optional Device Location
-Commit: not committed
-
-Result:
-- Added an app-local coarse-location acquisition path with a cancellable
-  attempt boundary, a one-shot device-point source, and a selected-location
-  write before the existing Home handoff.
-- Added provider-neutral coordinate-to-timezone resolution in `:core` through
-  the verified Open-Meteo `timezone=auto` metadata request.
-- Updated the installed app disclosures, manifest, and first-run surface to
-  keep manual search usable while making device location optional and
-  action-triggered.
-
-Evidence:
-- Focused unit tests passed: `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`.
-- `git diff --check` passed.
-
-Artifacts:
-- `.codex/test-artifacts/2026-09-05-slice-21-device-location/` (planned for
-  the active cycle; no files saved yet in this commit snapshot).
-
-Blockers:
-- No connected-device or installed-path verification was run in this commit
-  snapshot.
-
-Boundaries:
-- No fine/background location, Play Services dependency, provider/cache
-  schema change, saved-location schema change, or continuous tracking behavior
-  was added.

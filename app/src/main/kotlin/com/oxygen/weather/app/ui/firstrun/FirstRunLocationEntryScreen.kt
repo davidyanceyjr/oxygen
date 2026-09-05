@@ -24,6 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -52,6 +55,7 @@ fun FirstRunLocationEntryScreen(
     onSavedLocationRemoveCanceled: (LocationId) -> Unit = {},
     onSavedLocationRemoveConfirmed: (LocationId) -> Unit = {},
     onUseMyLocation: () -> Unit,
+    onCancelDeviceLocation: () -> Unit = {},
     onBack: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
@@ -100,6 +104,14 @@ fun FirstRunLocationEntryScreen(
                 state.message?.let { message ->
                     FirstRunMessage(message)
                 }
+                state.deviceProgress?.let { progress ->
+                    Text(
+                        text = progress.text,
+                        modifier = Modifier.testTag("location-entry-device-progress")
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
                 SavedLocationsContent(
                     savedLocations = savedLocations,
                     selectedLocation = selectedLocation,
@@ -120,11 +132,16 @@ fun FirstRunLocationEntryScreen(
                     disclosure = state.geocodingDisclosure,
                     privacyNote = state.geocodingPrivacyNote,
                 )
+                Text(
+                    text = "Use my location obtains one approximate position. Its coordinates go to Open-Meteo for timezone resolution and weather, and the selected position stays on this device. No background location.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
             LocationEntryBottomActions(
                 state = state,
                 onSearch = onSearch,
                 onUseMyLocation = onUseMyLocation,
+                onCancelDeviceLocation = onCancelDeviceLocation,
                 onBack = onBack,
                 onOpenAbout = onOpenAbout,
             )
@@ -325,6 +342,7 @@ private fun LocationEntryBottomActions(
     state: OxygenAppScreen.FirstRunLocationEntry,
     onSearch: () -> Unit,
     onUseMyLocation: () -> Unit,
+    onCancelDeviceLocation: () -> Unit,
     onBack: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
@@ -345,12 +363,22 @@ private fun LocationEntryBottomActions(
         }
         OutlinedButton(
             onClick = onUseMyLocation,
+            enabled = state.deviceProgress == null,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
                 .testTag("location-entry-use-my-location"),
         ) {
             Text(state.useMyLocationLabel)
+        }
+        if (state.deviceProgress != null) {
+            OutlinedButton(
+                onClick = onCancelDeviceLocation,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .testTag("location-entry-device-cancel"),
+            ) {
+                Text("Cancel location lookup")
+            }
         }
         OutlinedButton(
             onClick = onOpenAbout,
@@ -513,7 +541,7 @@ private fun FirstRunMessage(message: FirstRunLocationMessage) {
     ) {
         Text(
             text = message.text,
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(14.dp).semantics { liveRegion = LiveRegionMode.Polite },
             style = MaterialTheme.typography.bodyMedium,
         )
     }

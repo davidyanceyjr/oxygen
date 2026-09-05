@@ -17,6 +17,10 @@ and `docs/data-sources/`.
 
 - Manual location search through the Open-Meteo geocoding path.
 - Manual selected-location change from the installed Home screen.
+- Optional Use my location action: one coarse foreground device point, an
+  Open-Meteo IANA timezone lookup, and selection through the same forecast/cache
+  path. The selected approximate position is stored locally; no automatic
+  relocation or background acquisition occurs. Manual search needs no grant.
 - Explicit selected-location Open-Meteo forecast retrieval.
 - Last selected location persistence through the local DataStore path.
 - Saved-location storage, saved-location list display, current-location marking,

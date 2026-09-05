@@ -169,6 +169,28 @@ history and the archive file preserve previous ledger states.
 
 ## Verification Commands
 
+### Verification Budget and Emulator Lifecycle
+
+Before running checks, select the minimum evidence set for the slice: focused
+tests, one connected suite when the acceptance boundary requires it, and the
+applicable broad build/checks. Record the selected commands in the active plan
+or cycle artifact directory.
+
+- Do not rerun a passing command unless production code, test inputs, or the
+  execution environment changed in a way that could affect its result.
+- Set a practical time and token budget before verification. When the budget is
+  exhausted, report the evidence collected and the remaining gap instead of
+  continuing with repetitive checks.
+- Start one emulator session per task. Confirm that ADB is ready, then install
+  once per APK change. Relaunch or force-stop the app with ADB when needed; do
+  not restart the emulator for ordinary retries.
+- If a real-path attempt reaches a bounded platform timeout, record the exact
+  outcome as a blocker and stop repeating the same attempt. Do not convert a
+  platform limitation into mock success.
+- Maintain a short verification ledger containing each command, result, and
+  reason for any rerun. A passing check is evidence, not a reason to repeat it.
+- If the user asks to stop testing or verification, stop immediately.
+
 Use the repo-local environment wrapper for Android commands:
 
 ```bash

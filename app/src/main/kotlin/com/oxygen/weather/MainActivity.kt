@@ -1,6 +1,9 @@
 package com.oxygen.weather
 
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.remember
@@ -9,10 +12,23 @@ import com.oxygen.weather.app.InstalledForecastRepositoryFactory
 import com.oxygen.weather.app.OxygenApp
 import com.oxygen.weather.app.OxygenAppStateHolder
 import com.oxygen.weather.app.DataStoreUnitPreferenceStorage
+import com.oxygen.weather.app.AndroidDeviceLocationSource
+import com.oxygen.weather.app.LocationPermissionResult
 import com.oxygen.weather.core.provider.cache.room.RoomForecastCacheStorageFactory
 import com.oxygen.weather.core.provider.cache.room.RoomSavedLocationStorageFactory
 
 class MainActivity : ComponentActivity() {
+    private var appStateHolder: OxygenAppStateHolder? = null
+    private var permissionAttempt: Long? = null
+    private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val attempt = permissionAttempt
+        permissionAttempt = null
+        if (attempt != null) appStateHolder?.onLocationPermissionResult(
+            attempt,
+            if (granted) LocationPermissionResult.Granted else LocationPermissionResult.Denied,
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -22,6 +38,7 @@ class MainActivity : ComponentActivity() {
             val unitPreferenceStorage = remember { DataStoreUnitPreferenceStorage(this) }
             val stateHolder = remember {
                 OxygenAppStateHolder(
+                    deviceLocationSource = AndroidDeviceLocationSource(this),
                     selectedLocationStorage = selectedLocationStorage,
                     unitPreferenceStorage = unitPreferenceStorage,
                     savedLocationStorage = savedLocationStorage,
@@ -31,9 +48,32 @@ class MainActivity : ComponentActivity() {
                     ),
                 )
             }
+            appStateHolder = stateHolder
             OxygenApp(
                 stateHolder = stateHolder,
+                onRequestLocationPermission = { attempt ->
+                    if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        stateHolder.onLocationPermissionResult(attempt, LocationPermissionResult.Granted)
+                    } else if (permissionAttempt == null) {
+                        permissionAttempt = attempt
+                        permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                    } else {
+                        stateHolder.onLocationPermissionResult(attempt, LocationPermissionResult.Unavailable)
+                    }
+                },
             )
         }
+    }
+
+    override fun onStop() {
+        appStateHolder?.cancelDeviceLocation()
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        appStateHolder?.cancelDeviceLocation()
+        appStateHolder?.setOnStateChanged { }
+        appStateHolder = null
+        super.onDestroy()
     }
 }
