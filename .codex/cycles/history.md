@@ -866,3 +866,38 @@ Boundaries:
 - No alert detail navigation, alert persistence/cache, background polling,
   notifications, provider routing changes, Room alert entities, or live NWS
   request was added.
+
+### 2026-09-06-slice-24b-official-alert-detail-navigation
+
+Status: committed
+Mode: feature
+Slice: Slice 24B, Official Alert Detail Navigation
+Commit: `ceb6253`
+
+Result:
+- Added the Home Now official-alert detail route for the active forecast
+  session, including first-alert opening, multi-alert selection, in-surface and
+  system back handling, and return-to-Home behavior.
+- Added the dedicated alert detail Compose screen, mapper output for per-alert
+  presentation, and state-holder route preservation through refresh and unit
+  remap flows.
+- Added focused mapper, state-holder, and connected Home UI tests for the new
+  alert detail behavior.
+- Updated the repository-facing docs so installed alert detail navigation is
+  described as implemented while alert persistence/cache and background alert
+  polling remain future work.
+
+Evidence:
+- `git diff --check` passed in this session after the implementation and doc
+  sync edits.
+- The user said the relevant Android tests had already passed and no rerun was
+  requested in this session.
+
+Blockers:
+- None.
+
+Boundaries:
+- `scripts/start-emulator.sh` was left untouched as an unrelated worktree
+  change.
+- Alert persistence/cache, background polling, notifications, and other future
+  alert work remain out of scope.
