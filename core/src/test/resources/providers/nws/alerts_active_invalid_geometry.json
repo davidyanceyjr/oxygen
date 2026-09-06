@@ -1,0 +1,26 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "invalid-geometry-feature",
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-181.0, 43.0],
+            [-89.0, 43.0],
+            [-89.0, 43.5],
+            [-181.0, 43.0]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "invalid-geometry-alert",
+        "event": "Tornado Warning",
+        "senderName": "National Weather Service",
+        "severity": "Extreme"
+      }
+    }
+  ]
+}

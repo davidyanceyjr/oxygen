@@ -1,0 +1,43 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "expired-update-feature",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "expired-update",
+        "event": "Severe Thunderstorm Warning",
+        "senderName": "National Weather Service",
+        "messageType": "Update",
+        "expires": "2026-09-05T12:00:00+00:00",
+        "references": [
+          {
+            "identifier": "superseded-alert",
+            "sender": "w-nws.webmaster@noaa.gov",
+            "sent": "2026-09-05T11:00:00+00:00"
+          }
+        ]
+      }
+    },
+    {
+      "id": "expired-cancel-feature",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "expired-cancel",
+        "event": "Severe Thunderstorm Warning",
+        "senderName": "National Weather Service",
+        "messageType": "Cancel",
+        "expires": "2026-09-05T12:15:00+00:00",
+        "references": [
+          {
+            "identifier": "cancelled-alert",
+            "sender": "w-nws.webmaster@noaa.gov",
+            "sent": "2026-09-05T11:30:00+00:00"
+          }
+        ]
+      }
+    }
+  ]
+}

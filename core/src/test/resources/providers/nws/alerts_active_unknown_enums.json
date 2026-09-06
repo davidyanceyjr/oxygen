@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "unknown-enums-feature",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "unknown-enums-alert",
+        "event": "Provider Test Event",
+        "senderName": "National Weather Service",
+        "severity": "Catastrophic",
+        "urgency": "Soonish",
+        "certainty": "Maybe",
+        "status": "Archived",
+        "messageType": "Replacement"
+      }
+    }
+  ]
+}

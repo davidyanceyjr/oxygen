@@ -1,268 +1,205 @@
-# Slice 22 Plan — NWS Alert Provider Contract
+# Slice 23A — NWS Alert Fixtures, Parsing, and Mapping
 
-**Status:** committed — contract, source review, Markdown verification, and PR merge complete
-**Cycle ID:** `2026-09-05-slice-22-nws-alert-provider-contract`
-**Mode:** documentation / provider contract
+**Artifact:** implementation plan
+**Roadmap slice:** 23A
+**Prepared against:** `HEAD` `2ac01a8` (Slice 22 contract merged at `d0a7eb3`)
+**Prepared:** 2026-09-05
+**Status:** planned
+**Cycle ID:** `2026-09-05-slice-23a-nws-alert-fixtures-parsing-mapping`
 
-## Selected Behavior and Acceptance Boundary
+## Goal and boundary
 
-Add `docs/data-sources/NWS_ALERTS.md` as the sourced NOAA/National Weather
-Service contract for selected-point official alerts. It must let Slices
-23A–23C implement parsing, provider errors, and forecast/alert composition
-without guessing, while keeping NWS roadmap-only and changing no runtime
-behavior.
+Add the deterministic, offline NWS data boundary: committed GeoJSON and
+problem-response fixtures flow through production parsing and mapping into the
+expanded provider-neutral official-alert model. The slice proves field
+retention, nullability, geometry/area fallback, lifecycle/reference retention,
+and deterministic invalid-input handling. It makes no request and does not
+activate NWS in the app.
 
-Slice 22 is ready when the contract covers every Slice 22 roadmap obligation,
-records the decisions below, passes the bounded provider/source review and
-Markdown checks, and contains no Kotlin, Gradle, resource, manifest,
-persistence, permission, dependency, or UI change.
+Slice 22 is authoritative and committed. `docs/data-sources/NWS_ALERTS.md` is
+the direct contract. The product specification requires official alerts to stay
+distinct from forecast-derived risk.
 
-## Verified Prerequisites and Current Boundary
+Out of scope: HTTP/header/request/error-result classification (23B), alert
+repository composition, deduplication, cached-input filtering, and persistence
+(23C), and alert UI (24). In particular, this slice retains duplicate IDs and
+expired/superseded/cancel lifecycle data; it does not decide which alert is
+presentable. A malformed or unsupported-region `application/problem+json`
+fixture is rejected as a non-`FeatureCollection`; 23B assigns its HTTP/result
+classification.
 
-- `HEAD` is `3ea5ae6`; Slice 21 implementation and verification are committed
-  in `c6febb6` and `3ea5ae6`.
-- Room is the installed forecast persistence boundary. Forecast fallback is
-  composed independently and must remain independent from alert lookup.
-- `AlertProvider`, `WeatherAlert`, `AlertSeverity`,
-  `DataType.OFFICIAL_ALERT`, `WeatherBundle.alerts`, and provenance already
-  exist in `:core`.
-- `WeatherAlert` can reuse ID, event, headline, severity, effective/expires,
-  description, instruction, issuer, and provenance. It lacks urgency,
-  certainty, affected-area/geometry, onset/end, sent time, message type,
-  status, and update references.
-- `AlertProvider.getActiveAlerts` returns only `List<WeatherAlert>` and cannot
-  distinguish an empty success, unsupported coverage, or failures.
-- Home maps and renders scaffold alerts through `HomeAlertPresentation` and
-  `home-section-alert`; this is neither a live provider path nor Slice 24.
-- Alert persistence does not exist. Room explicitly rejects alert-bearing
-  forecast bundles; the retained file forecast format omits alerts. Slices 23
-  must not route alert persistence through either forecast-cache boundary.
-- No NWS DTO/parser/client/repository, alert result/error type, alert cache, or
-  installed composition path exists.
+No app, Gradle, Room, forecast-provider, selected-location, cache-format, or
+`AlertProvider` result-boundary change is permitted.
 
-The roadmap still labels the Persistence Architecture Gate and Slice 21
-`specified`, and recent-history summary/last-cycle commit state predates the
-commits above. Current code and Git history satisfy Slice 22 prerequisites.
-Treat roadmap/history correction as a separate authority-sync task; do not
-silently include it in the provider-contract diff.
+## Contract decisions for this slice
 
-## Decisions That Resolve Review Blockers
+Before the red test, expand the existing types in
+`core/src/main/kotlin/com/oxygen/weather/core/model/WeatherModels.kt`; do not
+create a parallel alert model or change `AlertProvider.getActiveAlerts`.
 
-### Existing Domain and Result Boundaries
-
-The NWS contract will inventory reusable and missing provider-neutral fields.
-Slice 23A must expand the existing `WeatherAlert`/related enums to retain the
-required semantics; it must not introduce a parallel alert hierarchy. Slice
-23B must replace or evolve the existing `AlertProvider` return boundary so a
-successful empty result remains distinct from `UnsupportedRegion`, network,
-rate-limit, provider, invalid-request, and invalid-response outcomes. Slice
-23C owns repository composition and independent forecast/alert freshness.
-Existing names remain authoritative unless a higher-authority change explicitly
-replaces them.
-
-### Coverage and Unsupported Region
-
-Coverage means the point coverage accepted by the NWS active-alert service,
-not CONUS, a country-code test, or the selected forecast provider. Oxygen will
-attempt any locally valid coordinate, including US states, District of
-Columbia, NWS-served territories, and relevant coastal/offshore or other marine
-points; provider acceptance owns the exact evolving boundary.
-
-Slice 23B must first reject non-finite coordinates or latitude outside
-`[-90, 90]` / longitude outside `[-180, 180]` as local invalid input. For a
-locally valid point:
-
-- HTTP 200 with a valid `FeatureCollection`, including zero features, is a
-  supported success.
-- `UnsupportedRegion` requires HTTP 400 `application/problem+json`, problem
-  type `https://api.weather.gov/problems/InvalidParameter`, title
-  `Invalid Parameter`, and detail `Parameter "point" is invalid: out of bounds`.
-- Every other 400 is `InvalidRequest`, or `InvalidResponse` if its declared
-  problem envelope is malformed.
-
-The OpenAPI currently exposes only a generic error response and does not
-promise that out-of-bounds discriminator. The narrow rule above is therefore a
-dated, conservative Oxygen interpretation of observed behavior, not a provider
-guarantee. Preserve diagnostics and add a re-review trigger; never infer
-support from an empty list or forecast routing.
-
-### Canonical Request Identity
-
-The exact initial identity is:
-
-```text
-User-Agent: OxygenWeather/0.1 (https://github.com/davidyanceyjr/oxygen/issues)
-Accept: application/geo+json
-```
-
-The contact is the issue tracker for the repository named by `git origin`.
-Keep it provider-local/configurable and review it when repository ownership or
-the application version changes. Do not copy the mismatched MET Norway default
-URL or invent an email/API-key path.
-
-## Contract Coverage
-
-| Roadmap obligation | Required contract decision/evidence |
+| Provider-neutral addition | Representation and validity rule |
 | --- | --- |
-| Endpoint/auth | `GET https://api.weather.gov/alerts/active?point={lat},{lon}`; no current API key; exact headers above. |
-| Rate/requests | No published numeric quota; NWS recommends no more often than 30 seconds. No recomposition polling, tight retries, or request storms; back off rate limits. |
-| Caching | Record `Cache-Control`, `Expires`, `ETag`, and `Last-Modified` only when present/useful. Response freshness never dictates Oxygen polling cadence; invent no TTL. |
-| Fields/UI needs | Inventory existing fields and contract only identity, lifecycle, severity/urgency/certainty, affected area/geometry, provenance, diagnostics, and specified banner/detail needs. No presentation strings in domain/provider types. |
-| Timestamps | Parse absolute instants and keep sent/effective/onset/expires/end distinct; optional values stay absent; presentation uses selected-location timezone. |
-| CAP values | Preserve severity, urgency, and certainty separately with `UNKNOWN` fallback; do not synthesize danger scores. |
-| Identity/lifecycle | Treat provider ID as opaque; deduplicate identical IDs. Define CAP Alert/Update/Cancel and references for mapper robustness without claiming the active snapshot returns prior or cancellation messages. |
-| Expiration | Filter expired/superseded/cancelled cached input. The NWS geolocation guide, not a live observation, supports active results that are ongoing or near-future-effective. |
-| Area/geometry | Preserve valid geometry, zones/geocodes, and area text when present; null geometry remains usable for a point-filtered result; fabricate nothing. |
-| Outcomes/errors | Use the coverage rule above and classify empty success, unsupported, offline/network, rate limit, unavailable, invalid request/response, identification rejection, and other HTTP failure separately. Raw provider copy is diagnostic only. |
-| Reuse/privacy | Record public-domain/disclaimer limits, source attribution/provenance, selected coordinates, IP/network metadata, and the identifying User-Agent sent to NWS. No new permission or collection is introduced. |
-| Independence | Official alerts never derive from forecast risk; forecast choice/fallback cannot disable lookup; alert failure cannot invalidate forecast; freshness stays separate. |
-| Fixtures | Assign no/one/many, missing optionals, unknown enums, geometry/null geometry, duplicates, update/cancel references, near-future-effective, expired, and malformed-envelope fixtures to Slice 23A. |
+| urgency and certainty | `AlertUrgency { IMMEDIATE, EXPECTED, FUTURE, PAST, UNKNOWN }` and `AlertCertainty { OBSERVED, LIKELY, POSSIBLE, UNLIKELY, UNKNOWN }`; missing or unrecognized provider values map to `UNKNOWN`. |
+| lifecycle | `AlertStatus { ACTUAL, EXERCISE, SYSTEM, TEST, DRAFT, UNKNOWN }`, `AlertMessageType { ALERT, UPDATE, CANCEL, ACK, ERROR, UNKNOWN }`, plus nullable `sent`, `onset`, and `ends`. Missing/unknown status or message type maps to `UNKNOWN`; a present but unrecognized raw value is retained only in NWS parser diagnostics, not asserted as a known Oxygen state. |
+| replacement references | `AlertReference(id: String, sender: String?, sent: Instant?)`; an alert has `references: List<AlertReference>`. Preserve every syntactically valid NWS/CAP reference in order. Invalid reference syntax or reference `sent` is a mapper `InvalidField` at its feature/index path. |
+| affected area | `AlertAffectedArea(areaDescription: String?, ugcCodes: List<String>, sameCodes: List<String>, affectedZoneIds: List<String>)`. Lists preserve provider order and may be empty; area description stays nullable. No containment, zone retrieval, or synthesized area. |
+| geometry | Provider-neutral `AlertGeometry` is a sealed GeoJSON value model for Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon, and GeometryCollection, composed of `GeoPoint` positions. The mapper accepts only a GeoJSON object whose type/coordinates (or `geometries`) match that model, every coordinate is finite and within WGS84 longitude/latitude bounds, every line has at least two positions, and every polygon ring has at least four positions with equal first/last longitude/latitude. `null` remains `null`; malformed or unsupported geometry fails with `InvalidField(features[i].geometry, ...)`, never with fabricated geometry. |
+| other contracted lifecycle/display data | Add nullable `category`, `response`, `scope`, `code`, `language`, and `web: String?`, plus nullable `eventCodes` and `parameters: Map<String, List<String>>?`. Preserve optional absence; do not normalize values for UI. `event`, `issuer`, `headline`, `description`, and `instruction` retain their existing model fields. |
 
-## Source Boundaries
+`WeatherAlert` therefore gains `urgency`, `certainty`, `status`, `messageType`,
+`sent`, `onset`, `ends`, `references`, `affectedArea`, `geometry`, and the
+nullable metadata above. `affectedArea` is null only when every affected-area
+source is absent; an explicitly empty provider list remains an empty list.
+Its existing required `id`, `event`, `severity`, `issuer`, and provenance remain.
+The mapper creates `DataProvenance(providerId = "nws", sourceName =
+"NOAA/National Weather Service", type = DataType.OFFICIAL_ALERT, licenseId =
+null)` with `issuedAt = sent` and the injected `fetchedAt`; it never calls a
+clock. Exact provider/source/license constants must be copied from the committed
+contract if that contract is amended before implementation.
 
-Review and date each normative statement in the provider contract against:
+The NWS DTOs remain under `core/.../provider/nws/`; only the mapper exposes
+core model types. The parser follows the local `InvalidJson`, `MissingField`,
+and `InvalidField(fieldPath, detail)` convention, validates a GeoJSON
+`FeatureCollection` with a `features` array, and leaves timestamp conversion to
+the mapper. Unknown JSON keys are ignored. Required contracted fields fail at a
+precise feature/property path; optional JSON `null` stays nullable.
 
-- NWS API service docs and OpenAPI for base URL, identification, media type,
-  point parameter, response schema/enums, generic error envelope, rate, and
-  cache orientation: <https://www.weather.gov/documentation/services-web-api>
-  and <https://api.weather.gov/openapi.json>.
-- NWS Alerts Web Service for alert purpose, point lookup, 30-second guidance,
-  and NWS CAP context:
-  <https://www.weather.gov/documentation/services-web-alerts>.
-- NWS Geolocation Guide for point lookup and ongoing/near-future active scope:
-  <https://www.weather.gov/media/documentation/docs/NWS_Geolocation.pdf>.
-- NWS CAP documentation first, and OASIS CAP 1.2 only where NWS delegates
-  semantic definitions: <https://www.weather.gov/alerting> and
-  <https://docs.oasis-open.org/emergency/cap/v1.2/CAP-v1.2.html>.
-- NWS disclaimer and privacy pages for reuse, attribution, disclaimers, and
-  network-data handling: <https://www.weather.gov/disclaimer> and
-  <https://www.weather.gov/privacy>.
-- Exact PNS26-62 notice for the proposed CAP-primary/VTEC change:
-  <https://www.weather.gov/media/notification/pdf_2026/PNS26-62_CAP_Transition.pdf>.
+## Acceptance and fixture matrix
 
-State `not publicly specified` and choose conservative Oxygen behavior where
-official documentation is silent. Label bounded live responses as dated
-observations, never fixtures or guaranteed provider behavior. Re-review service
-notices immediately before Slice 23.
+Fixtures live in `core/src/test/resources/providers/nws/`; they are minimal,
+faithful documents, not live dumps. Tests load the fixture through production
+code rather than constructing DTOs.
 
-## Files and Workflow
+| Fixture | Parser/mapper assertion | Deliberately deferred |
+| --- | --- | --- |
+| `alerts_active_none.json` | valid empty FeatureCollection maps to no alerts | HTTP success classification |
+| `alerts_active_one.json` | retains identity, all baseline display fields, severity/urgency/certainty, sent/effective/onset/expires/ends, lifecycle, area, geometry, provenance, and other contracted metadata | UI formatting |
+| `alerts_active_many.json` | retains distinct feature records and order | UI ordering |
+| `alerts_active_missing_optional.json` | optional strings/times/geometry/metadata remain absent, not empty/defaulted | fallback copy |
+| `alerts_active_unknown_enums.json` | unrecognized severity, urgency, certainty, status, and message type map safely to `UNKNOWN` | provider diagnostics display |
+| `alerts_active_geometry_polygon.json` | valid polygon maps to `AlertGeometry.Polygon` | spatial query/rendering |
+| `alerts_active_null_geometry.json` | null geometry retains area description, UGC/SAME, and zones | geometry synthesis |
+| `alerts_active_duplicate_id.json` | parser and mapper retain both records and exact IDs | deduplication (23C) |
+| `alerts_active_update_references.json` | Update lifecycle and parsed references are retained | replacement decision (23C) |
+| `alerts_active_cancel_references.json` | Cancel lifecycle and parsed references are retained | cancellation filtering (23C) |
+| `alerts_active_near_future_effective.json` | future `effective`/`onset` map exactly | active-now decision (23C) |
+| `alerts_active_expired_superseded_cached.json` | expired times, Update/Cancel lifecycle, and references map exactly | cache-read filtering (23C) |
+| `alerts_active_invalid_timestamp.json` | invalid present timestamp fails mapper at its path | transport invalid-response result |
+| `alerts_active_malformed_envelope.json` | malformed/missing/wrong-type FeatureCollection field fails parser deterministically | HTTP classification |
+| `alerts_problem_malformed.json` | nonconforming problem body fails active-collection parser deterministically | problem parsing/classification (23B) |
+| `alerts_problem_unsupported_region.json` | well-formed unsupported-region problem body fails active-collection parser deterministically | `UnsupportedRegion` result (23B) |
 
-Intended changes:
+The one-alert fixture is the only full-field fixture. Other fixtures change the
+minimum field(s) necessary for their case. No fixture represents forecast risk.
 
-- add `docs/data-sources/NWS_ALERTS.md`;
-- update `.codex/plans/current.md` only as execution evidence changes;
-- amend the specification only for a demonstrated higher-authority gap.
+## Implementation sequence
 
-Keep `DATA_SOURCES.md` roadmap-only and `PRIVACY.md` unchanged because no live
-NWS path exists. Use `discover -> contract/document -> review -> ready`.
+1. Confirm `HEAD`, the Slice 22 contract, current model, existing
+   Open-Meteo/MET Norway parser/mapper conventions, no nested instructions, and
+   a clean understanding of unrelated working-tree changes. Stop on a
+   higher-authority conflict.
+2. Add focused fixture-backed parser/mapper tests first. The new tests must
+   fail because the domain/parser/mapper behavior is absent, not due to setup.
+3. Add the domain expansion above and tests for null/default, enum, geometry,
+   reference, lifecycle, and provenance semantics.
+4. Add the minimum NWS DTO/parser (`NwsAlertDtos.kt`, `NwsAlertParser.kt`) and
+   mapper (`NwsAlertMapper.kt`). Keep parsing, mapping, and domain validation
+   deterministic and Android/network-free.
+5. Run focused tests, then the existing provider parser/mapper regression set.
+   The fixture-to-production-parser-to-mapper tests are the valid real-path
+   exercise for this no-transport slice.
+6. Run selected broad checks, inspect the diff for scope creep, and record
+   evidence/results in this plan and the cycle history only when the cycle is
+   ready. Do not report `covered`, `implemented`, or `verified` before their
+   respective evidence exists.
 
-Do not add production code, dependencies, alert persistence, background work,
-notifications, UI, VTEC coupling, global routing, active-provider claims, or
-runtime verification claims. Those belong to Slices 23A–23C, 24, or later.
-
-## Execution Evidence
-
-Cycle artifacts:
-`.codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract/`.
-
-Added `docs/data-sources/NWS_ALERTS.md` as the provider contract. No Kotlin,
-Gradle, resource, manifest, persistence, permission, dependency, UI,
-`DATA_SOURCES.md`, `PRIVACY.md`, specification, or roadmap behavior/status
-change was made.
-
-Live evidence collected on 2026-09-05 with:
+Expected code/test diff:
 
 ```text
-User-Agent: OxygenWeather/0.1 (https://github.com/davidyanceyjr/oxygen/issues)
-Accept: application/geo+json
+core/src/main/kotlin/com/oxygen/weather/core/model/WeatherModels.kt
+core/src/main/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertDtos.kt
+core/src/main/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertParser.kt
+core/src/main/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertMapper.kt
+core/src/test/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertParserTest.kt
+core/src/test/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertMapperTest.kt
+core/src/test/resources/providers/nws/*.json
 ```
 
-- Madison, Wisconsin point `43.0731,-89.4012`: HTTP 200
-  `application/geo+json`, valid `FeatureCollection`, zero features, observed
-  `ETag`, `Cache-Control`, and `Expires`.
-- London, United Kingdom point `51.5074,-0.1278`: HTTP 400
-  `application/problem+json`, `Invalid Parameter`, type
-  `https://api.weather.gov/problems/InvalidParameter`, detail
-  `Parameter "point" is invalid: out of bounds`.
-- `https://api.weather.gov/openapi.json`: HTTP 200
-  `application/vnd.oai.openapi+json;version=3.1`; inspected `/alerts/active`,
-  `AlertPoint`, response media types, alert properties/enums/references, and
-  generic problem schema.
+## Verification ledger (selected before work)
 
-Source review covered NWS API service docs, OpenAPI, Alerts Web Service, NWS
-Geolocation Guide, NWS CAP landing page, OASIS CAP 1.2, NWS disclaimer, NWS
-privacy policy, and PNS26-62. The verification ledger is
-`.codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract/verification-ledger.md`.
+**Budget:** 35 minutes / 12k tokens after implementation; one execution of each
+passing command. Re-run only after a relevant production/test/environment change
+or a transient infrastructure failure, recording why. Artifact directory:
+`.codex/test-artifacts/2026-09-05-slice-23a-nws-alert-fixtures-parsing-mapping/`.
 
-Broad checks passed:
+| Command | Evidence |
+| --- | --- |
+| `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteoForecastParserTest' --tests '*OpenMeteoForecastMapperTest' --tests '*MetNoForecastParserTest' --tests '*MetNoForecastMapperTest'` | baseline and post-change regression of the existing provider boundary |
+| `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*NwsAlertParserTest' --tests '*NwsAlertMapperTest'` | fixture → production parser → mapper behavior, including invalid cases |
+| `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` | required app compilation check |
+| `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` | full unit regression |
+| `. scripts/android-env.sh && ./gradlew :app:assembleDebug` | debug assembly |
+| `git diff --check` | whitespace integrity |
 
-```bash
-git diff --check
-git diff --stat
-git diff -- .codex/plans/current.md docs/data-sources/NWS_ALERTS.md \
-  docs/OXYGEN_FULL_SPECIFICATION.md DATA_SOURCES.md PRIVACY.md \
-  .codex/plans/mvp-roadmap.md .codex/cycles/history.md
-git diff --no-index -- /dev/null docs/data-sources/NWS_ALERTS.md
-git status --short
-git ls-files --others --exclude-standard \
-  .codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract \
-  docs/data-sources/NWS_ALERTS.md
+No emulator, installation, live NWS call, or connected test is selected:
+there is no installed or transport path in 23A. Do not treat a curl request as
+evidence for this production boundary.
+
+## Execution evidence
+
+**Status:** ready, not committed.
+
+Implemented the offline NWS fixture -> production parser -> mapper boundary in
+`:core`. The domain model now retains provider-neutral official-alert urgency,
+certainty, lifecycle, references, affected area, geometry, metadata,
+timestamps, and NWS provenance without changing `AlertProvider.getActiveAlerts`.
+
+Changed production files:
+
+```text
+core/src/main/kotlin/com/oxygen/weather/core/model/WeatherModels.kt
+core/src/main/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertDtos.kt
+core/src/main/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertParser.kt
+core/src/main/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertMapper.kt
 ```
 
-The `--no-index` command exits `1` for the expected new-file diff; it was used
-only to inspect the untracked contract content before staging. Artifact payloads
-remain ignored.
+Changed test/fixture files:
 
-Android compile, unit, connected, assemble, install, emulator, and screenshot
-checks were not run because the accepted Slice 22 diff is Markdown-only.
-
-The slice merged in PR `#10` as commit `d0a7eb3`, and local `main` now matches
-`origin/main`.
-
-## Verification Budget and Ledger
-
-Budget: one bounded live evidence pass, one official-source/OpenAPI review, and
-one final Markdown diff pass. Do not repeat a passing request/check unless the
-input or environment affecting it changes. Save response headers/bodies and
-the ledger under `.codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract/`;
-artifact payloads remain untracked.
-
-Required focused evidence using the exact User-Agent:
-
-1. One in-coverage point: record status, content type, valid
-   `FeatureCollection`, feature count, and observed cache headers.
-2. One locally valid out-of-coverage point: record the actual problem status,
-   content type, title/type/detail, and whether it satisfies the narrow rule.
-3. Inspect OpenAPI point parameter, alert properties/enums/references, response
-   media types, and generic error schema.
-4. Map every rate, cache, reuse, privacy, future-effective, and lifecycle claim
-   to the exact source class above.
-
-Required broad checks:
-
-```bash
-git diff --check
-git diff --stat
-git diff -- .codex/plans/current.md docs/data-sources/NWS_ALERTS.md \
-  docs/OXYGEN_FULL_SPECIFICATION.md DATA_SOURCES.md PRIVACY.md \
-  .codex/plans/mvp-roadmap.md .codex/cycles/history.md
+```text
+core/src/test/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertParserTest.kt
+core/src/test/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertMapperTest.kt
+core/src/test/resources/providers/nws/*.json
 ```
 
-Android compile, unit, connected, assemble, install, emulator, and screenshot
-checks are intentionally excluded because the accepted diff is Markdown-only.
-If the diff escapes that boundary, stop and re-plan instead of using Android
-checks to legitimize scope drift.
+Verification results:
 
-## Completion Gate
+| Command | Result |
+| --- | --- |
+| `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*NwsAlertParserTest' --tests '*NwsAlertMapperTest'` | Failed once because the malformed-problem parser assertion expected `InvalidField(type)` while production correctly returned `MissingField(type)` for a body without `type`; rerun passed after test-only correction. After adding invalid-geometry coverage, failed once because the test expected a less precise geometry path; rerun passed after test-only correction to `features[0].geometry.coordinates[0][0][0]`. |
+| `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteoForecastParserTest' --tests '*OpenMeteoForecastMapperTest' --tests '*MetNoForecastParserTest' --tests '*MetNoForecastMapperTest'` | Passed. |
+| `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` | Passed. |
+| `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` | Passed; rerun passed after the invalid-geometry test/fixture addition. |
+| `. scripts/android-env.sh && ./gradlew :app:assembleDebug` | Passed. |
+| `git diff --check` | Passed. |
 
-- The provider contract covers every table row with exact citations and a
-  current review date.
-- Domain expansion is assigned to 23A; result/error evolution to 23B;
-  independent merge/freshness to 23C; existing alert names are preserved.
-- Coverage, local validation, empty success, and unsupported classification are
-  deterministic and honestly distinguish observation from guarantee.
-- The exact User-Agent/contact is recorded and used in live evidence.
-- NWS remains roadmap-only; forecast risk remains non-official; no alert data
-  is sent through forecast cache storage.
-- The evidence ledger and final diff review pass, with unrelated files and the
-  separate roadmap/history authority-sync left untouched.
+Artifacts:
+
+```text
+.codex/test-artifacts/2026-09-05-slice-23a-nws-alert-fixtures-parsing-mapping/
+```
+
+No emulator, installation, live NWS request, connected test, app UI, Room,
+forecast-provider, selected-location, cache-format, Gradle, dependency, or
+`AlertProvider` result-boundary change was run or made for this slice.
+
+## Review and follow-up
+
+Before ready, inspect `git status --short`, `git diff --stat`, and `git diff`.
+Reject DTO leakage, `Instant.now()`, fake/defaulted values, raw response bodies,
+generic provider abstractions, dependency churn, and any transport/repository/
+UI/cache wiring.
+
+The roadmap currently says Slices 22 and 23A are `specified`; that is stale
+against Slice 22's committed status and this active `planned` document. The
+next documentation-only authority-sync must correct those roadmap labels. This
+plan, not the stale roadmap, is the status evidence for 23A until that sync.

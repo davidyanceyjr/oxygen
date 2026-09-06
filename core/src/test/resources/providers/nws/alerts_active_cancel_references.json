@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "cancel-feature",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "cancel-message",
+        "event": "Flash Flood Warning",
+        "senderName": "National Weather Service",
+        "messageType": "Cancel",
+        "references": [
+          {
+            "identifier": "cancelled-alert",
+            "sender": "w-nws.webmaster@noaa.gov",
+            "sent": "2026-09-05T16:00:00+00:00"
+          }
+        ]
+      }
+    }
+  ]
+}

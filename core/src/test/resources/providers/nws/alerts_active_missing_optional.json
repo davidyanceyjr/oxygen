@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "minimal-feature",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "minimal-alert",
+        "event": "Special Weather Statement",
+        "senderName": "National Weather Service"
+      }
+    }
+  ]
+}

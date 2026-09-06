@@ -1,0 +1,16 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "invalid-timestamp-feature",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "invalid-timestamp-alert",
+        "event": "Flood Warning",
+        "senderName": "National Weather Service",
+        "sent": "2026-09-05 18:00"
+      }
+    }
+  ]
+}

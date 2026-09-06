@@ -695,3 +695,51 @@ Boundaries:
   persistence, permission, UI, `DATA_SOURCES.md`, `PRIVACY.md`, specification,
   roadmap-status, active-provider claim, Android build/test, emulator, install,
   or screenshot behavior changed. NWS alerts remain roadmap-only.
+
+### 2026-09-05-slice-23a-nws-alert-fixtures-parsing-mapping
+
+Status: ready, not committed
+Mode: feature
+Slice: Slice 23A, NWS Alert Fixtures, Parsing, and Mapping
+Commit: not committed
+
+Result:
+- Expanded the provider-neutral `WeatherAlert` model with urgency, certainty,
+  lifecycle, replacement references, affected area, GeoJSON geometry,
+  timestamps, optional alert metadata, and official-alert provenance retention.
+- Added offline NWS active-alert DTO, parser, and mapper code under
+  `core/.../provider/nws/` without transport, repository, cache, app, or UI
+  wiring.
+- Added committed-style fixture coverage for empty, one, many, missing optional,
+  unknown enum, polygon geometry, null geometry, duplicate ID, update/cancel
+  references, near-future effective, expired/superseded cached input,
+  invalid timestamps, invalid geometry, malformed active envelope, malformed
+  problem body, and unsupported-region problem body cases.
+
+Evidence:
+- Focused NWS parser/mapper tests passed:
+  `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*NwsAlertParserTest' --tests '*NwsAlertMapperTest'`.
+- Existing Open-Meteo/MET Norway provider parser/mapper regressions passed:
+  `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteoForecastParserTest' --tests '*OpenMeteoForecastMapperTest' --tests '*MetNoForecastParserTest' --tests '*MetNoForecastMapperTest'`.
+- Broad checks passed:
+  `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
+  `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
+  `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-05-slice-23a-nws-alert-fixtures-parsing-mapping/`.
+
+Blockers:
+- None. The first focused NWS run failed because the malformed-problem parser
+  test expected one envelope failure subtype for both problem fixtures; the
+  test was corrected and the focused rerun passed. A later invalid-geometry
+  coverage addition initially expected a less precise field path; the test was
+  corrected to the mapper's exact polygon longitude path and rerun passed.
+
+Boundaries:
+- No NWS HTTP client, headers, request/error-result classification,
+  repository composition, deduplication, cache filtering, persistence, Room,
+  app UI, installed path, Gradle, dependency, live NWS request, emulator,
+  connected test, alert presentation, or `AlertProvider` result-boundary
+  behavior changed.

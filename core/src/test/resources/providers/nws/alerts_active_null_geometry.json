@@ -1,0 +1,22 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "null-geometry-feature",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "null-geometry-alert",
+        "areaDesc": "Dane County",
+        "geocode": {
+          "UGC": ["WIC025"],
+          "SAME": ["055025"]
+        },
+        "affectedZones": ["https://api.weather.gov/zones/county/WIC025"],
+        "event": "Flood Warning",
+        "senderName": "National Weather Service",
+        "severity": "Severe"
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "invalid-reference-timestamp-feature",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "invalid-reference-timestamp-alert",
+        "event": "Flood Warning",
+        "senderName": "National Weather Service",
+        "references": [
+          {
+            "identifier": "previous-alert",
+            "sender": "w-nws.webmaster@noaa.gov",
+            "sent": "2026-09-05 17:30"
+          }
+        ]
+      }
+    }
+  ]
+}
