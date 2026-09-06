@@ -32,14 +32,16 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 23C, Alert Repository Merge,
-  committed at `3c658a8`.
+- Last committed implementation slice: Slice 24A, Alert Summary/Banner UI,
+  committed at `cf9ddaf`.
 - Last committed implementation gate: Gate 20-0, Presentation Semantics and
   Localization Safety, committed at `587b0ad`.
-- Last committed documentation sync: Slice 23C Authority Sync, committed at
-  `3c658a8`.
-- Current changeset: none; Slice 23C, Alert Repository Merge, is committed at
-  `3c658a8`.
+- Last prior documentation sync: Slice 23C Authority Sync, committed at
+  `24fa4ac`.
+- Last committed documentation sync: Slice 24A Authority Sync, committed at
+  `cc2af8b`.
+- Current changeset: none; Slice 24A, Alert Summary/Banner UI, is committed at
+  `cf9ddaf`.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -811,3 +813,56 @@ Blockers:
 Boundaries:
 - No app factory wiring, UI, Room schema, alert cache, forecast provider
   semantics, or connected/emulator test was added.
+
+### 2026-09-06-slice-24a-alert-summary-banner-ui
+
+Status: committed
+Mode: feature
+Slice: Slice 24A, Alert Summary/Banner UI
+Commit: `cf9ddaf`
+Authority sync: `cc2af8b`
+
+Result:
+- Installed the production composition
+  `Open-Meteo -> FallbackWeatherRepository -> CachedWeatherRepository ->
+  AlertMergingWeatherRepository(NwsAlertProvider)`.
+- Added provider-neutral successful alert metadata and process-local
+  per-provider/per-point 30-second alert request gating, including failed-call
+  backoff, positive `Retry-After` extension, exact-boundary retry, and retained
+  in-memory successful results on skips.
+- Carried `WeatherBundle` plus `AlertLookupStatus` through the app canonical
+  forecast session so unit remaps preserve the alert source-check time and
+  cached restores remain `NotRequested`.
+- Rendered the effects-independent Home Now official-alert summary with
+  selected-zone expiry/source-check time, total count, NOAA/NWS attribution,
+  validated HTTPS source link/fallback, and direct complete `WeatherAlert`
+  values retained for later detail work.
+- Reconciled README, data-source, privacy, disclosure, and full-specification
+  status while retaining detail, persistence/cache, background, notification,
+  and non-NWS-region boundaries.
+
+Evidence:
+- Core focused merge/provider/cache tests passed, including final gate
+  hardening.
+- App focused factory/mapper/state/disclosure tests passed.
+- `HomeDashboardUiTest` passed all 37 connected tests; the dedicated alert test
+  passed again against the final APK/test APK and produced the exact 360x640,
+  density-1, font-scale-1.3, effects-off PNG and semantics artifacts.
+- Final `:app:compileDebugKotlin`, all app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-06-slice-24a-alert-summary-banner-ui/`.
+
+Blockers:
+- None. The fresh installed target had no selected location, so installed
+  launch captures are first-run evidence; deterministic connected Home fixture
+  coverage is the alert acceptance evidence.
+
+Boundaries:
+- Existing Now-page overflow scrolling remains an explicit compatibility
+  exception used at large font scale for readable content; normal-scale Home
+  navigation composition was not changed.
+- No alert detail navigation, alert persistence/cache, background polling,
+  notifications, provider routing changes, Room alert entities, or live NWS
+  request was added.

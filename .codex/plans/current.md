@@ -1,9 +1,10 @@
 # Slice 24A — Alert Summary/Banner UI
 
-**Status:** planned
+**Status:** committed
 **Cycle ID:** `2026-09-06-slice-24a-alert-summary-banner-ui`
 **Planning basis:** local `main` `be38405`; the post-Slice-23C authority-sync
-commit is `24fa4ac`; reviewed and revised 2026-09-06.
+commit is `24fa4ac`; implementation committed as `cf9ddaf`; reviewed and
+revised 2026-09-06.
 
 ## Decision and acceptance boundary
 
@@ -286,3 +287,57 @@ committed before those facts exist.
 Expected production files are the installed factory, app state holder, Home
 mapper, Home loading screen, and About disclosure content. Expected tests are
 the five app tests named above, including `AboutDisclosureStateHolderTest`.
+
+## Completion Evidence
+
+Status: committed.
+
+Implementation commit: `cf9ddaf` (`Implement foreground alert summary banner`).
+Authority-sync commit: `cc2af8b` (`Sync Slice 24A authorities`).
+
+Changed production boundaries:
+
+- `:core` now merges terminal forecast successes with independent NWS alerts,
+  deduplicates them, retains successful metadata, and enforces the process-local
+  per-provider/per-point 30-second request gate, including failure backoff and
+  positive `Retry-After` extension.
+- `:app` now installs `Open-Meteo -> FallbackWeatherRepository ->
+  CachedWeatherRepository -> AlertMergingWeatherRepository(NwsAlertProvider)`,
+  carries alert status through canonical state and unit remapping, and renders
+  the official alert summary/link on Home Now.
+- Provider-neutral `WeatherAlert` values remain complete in the Home
+  presentation; the compact banner is created only for an available non-empty
+  lookup and validates/falls back source URLs in the mapper.
+
+Changed tests and authorities include the installed factory, merge repository,
+mapper, state holder, disclosure, and connected Home tests plus `README.md`,
+`DATA_SOURCES.md`, `PRIVACY.md`, `AboutDisclosureContent.kt`, and section 53 of
+the full specification.
+
+Evidence ledger: `.codex/test-artifacts/2026-09-06-slice-24a-alert-summary-banner-ui/ledger.md`.
+
+Final evidence:
+
+- Focused core merge/provider/cache tests passed in
+  `core-focused-unit-final.log`.
+- Focused app factory/mapper/state/disclosure tests passed in
+  `app-focused-unit-final-4.log`.
+- `HomeDashboardUiTest` passed all 37 connected tests in
+  `home-dashboard-connected-final-2.log`; the dedicated alert test was also
+  rerun against the final APK/test APK.
+- The exact effects-off fixture was captured at `360x640`, density `1`, font
+  scale `1.3` in `alert-summary-effects-off-360x640-font-1.3.png` and its
+  semantics artifact.
+- Final app compilation, all app/core unit tests, debug assembly, and
+  `git diff --check` passed; final logs use the `*-final-2.log` names in the
+  artifact directory.
+- The installed launch was successful, but the fresh target app had no
+  selected location, so its final window/screenshot are first-run evidence.
+  Deterministic connected fixture coverage is the Home acceptance evidence.
+
+The existing Now-page scroll behavior remains an explicit compatibility
+exception: the slice uses the existing overflow scrolling at large font scale
+to preserve readable alert content and does not claim to remediate normal-scale
+Home navigation composition.
+
+Blockers: none.
