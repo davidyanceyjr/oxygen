@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.HomeDailyPresentation
+import com.oxygen.weather.app.HomeAlertSummaryPresentation
 import com.oxygen.weather.app.HomeHourlyPresentation
 import com.oxygen.weather.app.HomeMetricIdentity
 import com.oxygen.weather.app.HomeMetricPresentation
@@ -546,13 +548,9 @@ private fun NowPage(
         }
     }
 
-    dashboard.alerts.forEach { alert ->
+    dashboard.alertSummary?.let { alert ->
         DashboardCard(tag = "home-section-alert") {
-            Text(alert.event, style = roles.sectionHeading)
-            Text(alert.headline, style = MaterialTheme.typography.bodyMedium)
-            Text("${alert.severity} | ${alert.issuer}", style = MaterialTheme.typography.bodySmall)
-            alert.effective?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-            alert.expires?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            OfficialAlertSummary(alert)
         }
     }
 
@@ -561,6 +559,34 @@ private fun NowPage(
             Text("Near-term precipitation", style = roles.sectionHeading)
             Text(it, style = MaterialTheme.typography.bodyMedium)
         }
+    }
+}
+
+@Composable
+private fun OfficialAlertSummary(summary: HomeAlertSummaryPresentation) {
+    val roles = LocalOxygenHomeDesign.current
+    val uriHandler = LocalUriHandler.current
+    Text("Official alert", style = roles.sectionHeading)
+    Text(summary.event, style = MaterialTheme.typography.titleMedium)
+    Text("Severity: ${summary.severity}", style = MaterialTheme.typography.bodyMedium)
+    Text("Issuer: ${summary.issuer}", style = MaterialTheme.typography.bodyMedium)
+    Text(summary.expires, style = MaterialTheme.typography.bodyMedium)
+    Text(summary.sourceCheckedAt, style = MaterialTheme.typography.bodySmall)
+    TextButton(
+        onClick = { uriHandler.openUri(summary.sourceLink) },
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .testTag("home-alert-source-link")
+            .semantics { contentDescription = summary.sourceLinkLabel },
+    ) {
+        Text(summary.attribution)
+    }
+    if (summary.activeAlertCount > 1) {
+        Text(
+            text = "${summary.activeAlertCount} active alerts",
+            modifier = Modifier.testTag("home-alert-count"),
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 

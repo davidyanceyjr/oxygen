@@ -57,6 +57,7 @@ private val dataSourceSections = listOf(
             "MET Norway can serve Home forecasts after eligible Open-Meteo terminal forecast failures.",
             "Location search: Open-Meteo Geocoding API, based on GeoNames data, powers manual place search.",
             "Timezone resolution by Open-Meteo.com (CC BY 4.0): an explicitly requested approximate device point is resolved with a metadata-only timezone=auto request before its normal forecast request.",
+            "Official alerts: selected-point NOAA/National Weather Service active alerts are requested in the foreground after a terminal forecast result.",
         ),
     ),
     AboutSection(
@@ -68,14 +69,15 @@ private val dataSourceSections = listOf(
             "Saved-location storage, list display, current-location marking, saved-location selection, search-result save, and confirmed saved-location removal are implemented through the installed location-entry surface.",
             "Installed-app durable Room cache wiring and offline cache launch behavior are implemented for the selected forecast path.",
             "Provider-specific MET Norway cache headers are persisted with cached fallback forecasts and cached fallback provenance remains provider-neutral.",
+            "The Home Now page shows one official-alert summary, total count, NOAA/NWS attribution, source-check time, and an external source link.",
             "Conditional GET requests, 304 not-modified handling, and release-candidate fallback verification are not implemented yet.",
         ),
     ),
     AboutSection(
         heading = "Roadmap Only",
         body = listOf(
-            "NOAA/NWS alerts, Environment and Climate Change Canada alerts, and Open-Meteo/CAMS air quality are roadmap-only here.",
-            "Custom unit editing, alerts, air quality, radar, and release-candidate fallback behavior are not implemented.",
+            "Environment and Climate Change Canada alerts and Open-Meteo/CAMS air quality are roadmap-only here.",
+            "Alert detail navigation, alert persistence/cache, background polling, notifications, custom unit editing, air quality, radar, and release-candidate fallback behavior are not implemented.",
         ),
     ),
 )
@@ -98,6 +100,8 @@ private val privacySections = listOf(
             "MET Norway fallback requests send selected coordinates, optional altitude, an identifying User-Agent/contact header, and normal network metadata.",
             "Open-Meteo geocoding requests send the typed place query, bounded result count, optional locale/filter parameters where implemented, and normal network metadata such as IP address.",
             "Open-Meteo geocoding data is based on GeoNames.",
+            "Foreground selected-point NWS alert requests send the selected coordinates, required Oxygen User-Agent/contact identity, and normal network metadata such as IP address.",
+            "NWS alert results are kept in process memory for the foreground rate-limit window; Oxygen does not persist or background-poll alert data.",
         ),
     ),
     AboutSection(
@@ -122,6 +126,7 @@ private val openSourceLicenseSections = listOf(
         body = listOf(
             "Weather-data attribution and licensing are separate from Oxygen source-code licensing.",
             "Open-Meteo forecast and geocoding disclosures are tracked in DATA_SOURCES.md and provider contracts. GeoNames attribution applies to the geocoding data source.",
+            "NOAA/National Weather Service official-alert attribution is shown with the Home summary and its source link; NWS does not endorse Oxygen.",
             "Provider or government data attribution does not imply endorsement of Oxygen.",
         ),
     ),

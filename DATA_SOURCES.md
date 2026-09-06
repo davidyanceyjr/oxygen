@@ -70,13 +70,27 @@ source-code licensing.
   recorded in docs/data-sources/MET_NORWAY_FORECAST.md.
 - Last terms review date: 2026-08-23.
 
+### Official Alerts: NOAA/National Weather Service
+
+- Purpose: Foreground active-alert lookup for the selected point in supported
+  NWS-served regions, with one summary and a source link on Home Now.
+- Request data: selected latitude and longitude, required identifying
+  User-Agent/contact header, and normal network metadata such as IP address.
+- Attribution: Official alerts from NOAA/National Weather Service. The Home
+  summary displays this attribution and links to the supplied official source,
+  falling back to `https://www.weather.gov/` when the supplied URL is invalid.
+- Current app status: installed for terminal forecast successes, with a
+  process-local 30-second per-point request gate and no alert persistence.
+- Contract: `docs/data-sources/NWS_ALERTS.md`.
+- Last terms review date: 2026-09-05.
+
 ## Roadmap-Only Providers
 
 These providers are specified by the roadmap or product specification but are
 not active/current until their own contracts, production paths, app wiring, and
 verification evidence are complete:
 
-- NOAA/NWS — United States official alerts and later observations/radar.
+- NOAA/NWS — later observations/radar.
 - Environment and Climate Change Canada — Canadian official alerts.
 - Open-Meteo/CAMS — air-quality path where appropriate.
 
@@ -93,7 +107,8 @@ The installed app also persists saved locations locally, shows saved rows on the
 location-entry surface, marks the current saved location, and can select an
 existing saved row through the local selected-location path, save search results,
 remove saved rows after confirmation, and persist unit choices. It does not yet implement
-official alert lookup, air-quality lookup, radar, provider-specific MET Norway
+alert detail navigation or alert persistence/cache, background alert polling or
+notifications, air-quality lookup, radar, provider-specific MET Norway
 conditional GET/304 handling, or release-candidate fallback behavior.
 
 Before any additional provider becomes active, document its current terms,

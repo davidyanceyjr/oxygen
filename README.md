@@ -38,6 +38,9 @@ and `docs/data-sources/`.
   failures, with MET Norway provenance shown through the normal Home surface.
 - Provider-neutral forecast/official-alert repository merging in `:core`, with
   explicit alert lookup status and forecast-only cache composition.
+- Foreground selected-point NOAA/National Weather Service active-alert lookup,
+  with a Home Now summary, total count, attribution, source-check time, and
+  working external source link.
 - Persisted Oxygen default, Metric, US, and UK unit selection through the
   installed Settings / About / Units surface, with immediate Home remapping.
 - Home presentation conversion for provider-neutral unit preferences at the
@@ -64,7 +67,8 @@ and `docs/data-sources/`.
 ## Not implemented yet
 
 - Custom unit editing UI.
-- Installed-app official weather alert presentation and merge.
+- Alert detail navigation, alert persistence/cache, background polling, and
+  notifications.
 - Persisted appearance/effects/layout settings.
 - Release-candidate verification.
 

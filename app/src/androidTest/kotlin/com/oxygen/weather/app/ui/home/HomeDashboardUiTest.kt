@@ -15,6 +15,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
@@ -83,6 +85,8 @@ import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.ForecastFreshness
+import com.oxygen.weather.core.provider.AlertLookupStatus
+import com.oxygen.weather.core.provider.AlertSuccessMetadata
 import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
@@ -228,8 +232,8 @@ class HomeDashboardUiTest {
         assertEquals(
             listOf(
                 HomeSuccessSection.LocationHeader,
-                HomeSuccessSection.Alerts,
                 HomeSuccessSection.Current,
+                HomeSuccessSection.Alerts,
                 HomeSuccessSection.NearTermPrecipitation,
                 HomeSuccessSection.Hourly,
                 HomeSuccessSection.Daily,
@@ -241,6 +245,108 @@ class HomeDashboardUiTest {
             state.dashboard.sectionOrder,
         )
         composeRule.writeSemanticsArtifact("fresh-dashboard-semantics.txt")
+    }
+
+    @Test
+    fun officialAlertSummaryIsReadableEffectsOffAndOpensValidatedSourceLinks() {
+        val location = weatherLocation(name = "Alert Summary City")
+        val baseAlert = fullWeatherBundle(location).alerts.single()
+        val alerts = listOf(
+            baseAlert.copy(
+                event = "Flash Flood Warning",
+                severity = AlertSeverity.SEVERE,
+                issuer = "National Weather Service",
+                web = "https://alerts.weather.gov/example",
+            ),
+            baseAlert.copy(id = "alert-2", event = "Heat Advisory"),
+            baseAlert.copy(id = "alert-3", event = "Wind Advisory"),
+        )
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = alerts),
+            freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                staleAge = Duration.ofMinutes(45),
+                refreshFailure = ForecastError.NetworkUnavailable,
+            ),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(
+                    requestPoint = location.point,
+                    providerId = "nws",
+                    fetchedAt = Instant.parse("2026-08-22T15:05:00Z"),
+                ),
+            ),
+        )
+        val openedUris = mutableListOf<String>()
+        val uriHandler = object : UriHandler {
+            override fun openUri(uri: String) {
+                openedUris += uri
+            }
+        }
+        val renderedState = mutableStateOf(state)
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1.3f),
+                LocalUriHandler provides uriHandler,
+            ) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        HomeLoadingScreen(
+                            state = renderedState.value,
+                            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.assertSemanticsTreeOrder(
+            "home-section-current",
+            "home-section-stale",
+            "home-section-alert",
+            "home-alert-source-link",
+            "home-alert-count",
+            "home-section-precipitation",
+        )
+        composeRule.onNodeWithTag("home-section-alert").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Official alert").assertIsDisplayed()
+        composeRule.onNodeWithText("Flash Flood Warning").assertIsDisplayed()
+        composeRule.onNodeWithText("Severity: Severe").assertIsDisplayed()
+        composeRule.onNodeWithText("Issuer: National Weather Service").assertIsDisplayed()
+        composeRule.onNodeWithText("Expires 1:00 PM").assertIsDisplayed()
+        composeRule.onNodeWithText("Alert source checked Aug 22, 10:05 AM CDT").assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("alert-summary-effects-off-360x640-font-1.3-semantics.txt")
+        val screenshot = composeRule.onRoot().captureToImage().asAndroidBitmap()
+        val screenshotFile = File(
+            InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
+            "alert-summary-effects-off-360x640-font-1.3.png",
+        )
+        screenshotFile.outputStream().use { output ->
+            assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, output))
+        }
+        composeRule.onNodeWithTag("home-alert-source-link")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.onNodeWithTag("home-alert-count").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("3 active alerts").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Open official NOAA/National Weather Service alert source")
+            .assertExists()
+        assertEquals(listOf("https://alerts.weather.gov/example"), openedUris)
+
+        val invalidState = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(
+                alerts = listOf(baseAlert.copy(web = "http://alerts.weather.gov/example")),
+            ),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+        composeRule.runOnIdle { renderedState.value = invalidState }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-alert-source-link").performScrollTo().performClick()
+        assertEquals("https://www.weather.gov/", openedUris.last())
     }
 
     @Test
@@ -1589,6 +1695,16 @@ private fun ComposeTestRule.assertVerticalOrder(vararg tags: String) {
     }
     tops.zipWithNext().forEach { (before, after) ->
         assertTrue("${before.first} should render above ${after.first}", before.second < after.second)
+    }
+}
+
+private fun ComposeTestRule.assertSemanticsTreeOrder(vararg tags: String) {
+    val tree = onRoot().printToString()
+    tags.toList().zipWithNext().forEach { (before, after) ->
+        assertTrue(
+            "$before should precede $after in the rendered Home tree",
+            tree.indexOf("Tag: '$before'") < tree.indexOf("Tag: '$after'"),
+        )
     }
 }
 

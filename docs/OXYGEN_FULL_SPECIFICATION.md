@@ -1888,9 +1888,11 @@ release-candidate fallback verification remain unimplemented.
 
 NWS alert provider contract, parser/mapper fixtures, transport boundary, and
 forecast/alert repository merge are implemented through Slices 22, 23A, 23B,
-and committed Slice 23C. The core merge composes official alerts with forecast
-results without activating installed-app alert presentation. Official alerts
-remain semantically distinct from forecast-derived risk.
+and committed Slice 23C. Slice 24A installs foreground selected-point NWS
+lookup and a Home Now summary, count, attribution, source-check time, and
+working source link. Alert detail navigation, persistence/cache, background
+polling, notifications, and non-NWS alert regions remain later work. Official
+alerts remain semantically distinct from forecast-derived risk.
 
 Gate 19F kept README, roadmap, disclosure, and active-cycle status aligned with
 verified saved-location behavior without changing app behavior or claiming

@@ -18,6 +18,8 @@ import com.oxygen.weather.core.model.UnitPreference
 import com.oxygen.weather.core.model.UnitPreferencePreset
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.ForecastFreshness
+import com.oxygen.weather.core.provider.AlertLookupStatus
+import com.oxygen.weather.core.provider.AlertSuccessMetadata
 import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
@@ -39,6 +41,41 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HomeForecastStateHolderTest {
+    @Test
+    fun availableAlertSummarySurvivesUnitRemapWithIndependentSourceCheckTime() {
+        val location = weatherLocation("alert-unit-remap", "Alert Unit Remap City")
+        val alertCheckedAt = Instant.parse("2026-08-22T15:05:00Z")
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location),
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(location.point, "nws", alertCheckedAt),
+                    ),
+                ),
+            ),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectForecastExecutor,
+        )
+        val before = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        stateHolder.onOpenAbout()
+        stateHolder.onAboutSurfaceSelected(AboutSurfaceId.Units)
+        stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.METRIC))
+
+        val about = stateHolder.presentationState.screen as OxygenAppScreen.About
+        val after = (about.returnScreen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(before.dashboard.alertSummary, after.dashboard.alertSummary)
+        assertEquals("Alert source checked Aug 22, 10:05 AM CDT", after.dashboard.alertSummary?.sourceCheckedAt)
+        assertEquals(before.freshness, after.freshness)
+        assertEquals(listOf(location), repository.locations)
+    }
+
     @Test
     fun `startup applies persisted unit preference without changing canonical forecast`() {
         val location = weatherLocation("persisted-units", "Persisted Units City")
@@ -982,7 +1019,6 @@ class HomeForecastStateHolderTest {
         assertEquals(
             listOf(
                 HomeSuccessSection.LocationHeader,
-                HomeSuccessSection.Alerts,
                 HomeSuccessSection.Current,
                 HomeSuccessSection.NearTermPrecipitation,
                 HomeSuccessSection.Hourly,

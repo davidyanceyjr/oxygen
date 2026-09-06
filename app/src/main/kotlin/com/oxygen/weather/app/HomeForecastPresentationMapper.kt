@@ -18,8 +18,10 @@ import com.oxygen.weather.core.model.UnitPreference
 import com.oxygen.weather.core.model.VisibilityUnit
 import com.oxygen.weather.core.model.WindSpeedUnit
 import com.oxygen.weather.core.model.resolve
+import com.oxygen.weather.core.provider.AlertLookupStatus
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.net.URI
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -42,6 +44,7 @@ private val FETCHED_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM
 fun WeatherBundle.toHomeSuccessPresentation(
     selectedLocation: WeatherLocation,
     unitPreference: UnitPreference? = null,
+    alertStatus: AlertLookupStatus? = null,
 ): HomeSuccessPresentation {
     val resolvedPreference = unitPreference ?: DEFAULT_HOME_UNIT_PREFERENCE
     val units = resolvedPreference.resolve()
@@ -58,14 +61,16 @@ fun WeatherBundle.toHomeSuccessPresentation(
     val metricRows = current?.toMetricRows(units, compatibilityDefault).orEmpty()
     val sun = daily.firstOrNull { it.sunrise != null || it.sunset != null }?.toSunPresentation(zoneId)
     val provenance = mostRelevantProvenance()?.toSourcePresentation(zoneId) ?: bundleFallbackSource(zoneId)
-    val alertsPresentation = alerts.map { it.toAlertPresentation(zoneId) }
+    val effectiveAlertStatus = alertStatus ?: alerts.legacyAlertStatus(selectedLocation)
+    val alertSummary = effectiveAlertStatus?.toHomeAlertSummary(alerts, zoneId)
     val precipitationSummary = hourly.nearTermPrecipitationSummary(units)
     val returnedDataUnavailable = current == null && hourly.isEmpty() && daily.isEmpty()
 
     return HomeSuccessPresentation(
         locationName = selectedLocation.displayName,
         locationSubtitle = selectedLocation.forecastSubtitle(),
-        alerts = alertsPresentation,
+        alerts = alerts,
+        alertSummary = alertSummary,
         current = currentPresentation,
         currentUnavailableText = if (currentPresentation == null && !returnedDataUnavailable) {
             "Current conditions unavailable"
@@ -85,8 +90,8 @@ fun WeatherBundle.toHomeSuccessPresentation(
         },
         sectionOrder = buildList {
             add(HomeSuccessSection.LocationHeader)
-            if (alertsPresentation.isNotEmpty()) add(HomeSuccessSection.Alerts)
             add(HomeSuccessSection.Current)
+            if (alertSummary != null) add(HomeSuccessSection.Alerts)
             if (precipitationSummary != null) add(HomeSuccessSection.NearTermPrecipitation)
             if (hourlyRows.isNotEmpty()) add(HomeSuccessSection.Hourly)
             if (dailyRows.isNotEmpty()) add(HomeSuccessSection.Daily)
@@ -101,7 +106,8 @@ fun WeatherBundle.toHomeSuccessPresentation(
 data class HomeSuccessPresentation(
     val locationName: String,
     val locationSubtitle: String,
-    val alerts: List<HomeAlertPresentation>,
+    val alerts: List<WeatherAlert>,
+    val alertSummary: HomeAlertSummaryPresentation?,
     val current: HomeCurrentPresentation?,
     val currentUnavailableText: String?,
     val precipitationSummary: String?,
@@ -127,13 +133,16 @@ enum class HomeSuccessSection {
     ProvenanceFooter,
 }
 
-data class HomeAlertPresentation(
+data class HomeAlertSummaryPresentation(
     val event: String,
-    val headline: String,
     val severity: String,
     val issuer: String,
-    val effective: String?,
-    val expires: String?,
+    val expires: String,
+    val activeAlertCount: Int,
+    val sourceCheckedAt: String,
+    val attribution: String,
+    val sourceLink: String,
+    val sourceLinkLabel: String,
 )
 
 data class HomeCurrentPresentation(
@@ -394,15 +403,52 @@ private fun DailyForecast.toSunPresentation(zoneId: ZoneId): HomeSunPresentation
         sunset = sunset?.formatLocalTime(zoneId) ?: UNAVAILABLE,
     )
 
-private fun WeatherAlert.toAlertPresentation(zoneId: ZoneId): HomeAlertPresentation =
-    HomeAlertPresentation(
-        event = event,
-        headline = headline ?: event,
-        severity = severity.name.lowercase().replaceFirstChar { it.uppercase() },
-        issuer = issuer,
-        effective = effective?.let { "Effective ${it.formatLocalTime(zoneId)}" },
-        expires = expires?.let { "Expires ${it.formatLocalTime(zoneId)}" },
+private fun AlertLookupStatus.toHomeAlertSummary(
+    alerts: List<WeatherAlert>,
+    zoneId: ZoneId,
+): HomeAlertSummaryPresentation? {
+    if (this !is AlertLookupStatus.Available || alerts.isEmpty()) return null
+    val first = alerts.first()
+    return HomeAlertSummaryPresentation(
+        event = first.event,
+        severity = first.severity.name.lowercase().replaceFirstChar { it.uppercase() },
+        issuer = first.issuer,
+        expires = first.expires?.let { "Expires ${it.formatLocalTime(zoneId)}" } ?: "Expires unavailable",
+        activeAlertCount = alerts.size,
+        sourceCheckedAt = "Alert source checked ${metadata.fetchedAt.formatFetched(zoneId)}",
+        attribution = "Official alerts from NOAA/National Weather Service",
+        sourceLink = first.web.validAlertSourceUrl(),
+        sourceLinkLabel = "Open official NOAA/National Weather Service alert source",
     )
+}
+
+private fun List<WeatherAlert>.legacyAlertStatus(selectedLocation: WeatherLocation): AlertLookupStatus? {
+    val first = firstOrNull() ?: return null
+    val provenance = first.provenance
+    return AlertLookupStatus.Available(
+        com.oxygen.weather.core.provider.AlertSuccessMetadata(
+            requestPoint = selectedLocation.point,
+            providerId = provenance.providerId,
+            fetchedAt = provenance.fetchedAt,
+        ),
+    )
+}
+
+private fun String?.validAlertSourceUrl(): String {
+    val candidate = this?.trim().orEmpty()
+    return try {
+        val uri = URI(candidate)
+        if (uri.isAbsolute && uri.scheme.equals("https", ignoreCase = true) && !uri.host.isNullOrBlank()) {
+            uri.toString()
+        } else {
+            OFFICIAL_ALERT_SOURCE_FALLBACK
+        }
+    } catch (_: Exception) {
+        OFFICIAL_ALERT_SOURCE_FALLBACK
+    }
+}
+
+private const val OFFICIAL_ALERT_SOURCE_FALLBACK = "https://www.weather.gov/"
 
 private fun List<HourlyForecast>.nearTermPrecipitationSummary(units: ResolvedUnitPreference): String? {
     val nearTerm = take(6)
@@ -421,7 +467,6 @@ private fun WeatherBundle.mostRelevantProvenance(): DataProvenance? =
     current?.provenance
         ?: hourly.firstOrNull()?.provenance
         ?: daily.firstOrNull()?.provenance
-        ?: alerts.firstOrNull()?.provenance
         ?: airQuality?.provenance
 
 private fun WeatherBundle.bundleFallbackSource(zoneId: ZoneId): HomeSourcePresentation =

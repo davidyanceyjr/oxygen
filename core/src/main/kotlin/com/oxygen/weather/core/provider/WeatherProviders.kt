@@ -8,8 +8,8 @@ import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.cache.ForecastCacheMetadata
 import java.time.Duration
-import java.time.ZoneId
 import java.time.Instant
+import java.time.ZoneId
 
 fun interface CoordinateTimeZoneResolver {
     fun resolve(point: GeoPoint): CoordinateTimeZoneResult
@@ -67,10 +67,15 @@ sealed interface AlertProviderError {
 
 sealed interface AlertLookupStatus {
     data object NotRequested : AlertLookupStatus
-    data object NoAlerts : AlertLookupStatus
-    data object Available : AlertLookupStatus
+    data class NoAlerts(val metadata: AlertSuccessMetadata) : AlertLookupStatus
+    data class Available(val metadata: AlertSuccessMetadata) : AlertLookupStatus
     data object UnsupportedRegion : AlertLookupStatus
     data class Failed(val error: AlertProviderError) : AlertLookupStatus
+    data class SkippedByRateLimit(
+        val providerId: String,
+        val requestPoint: GeoPoint,
+        val nextEligibleAt: Instant,
+    ) : AlertLookupStatus
 }
 
 interface AirQualityProvider {

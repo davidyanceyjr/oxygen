@@ -7,6 +7,7 @@ import com.oxygen.weather.core.model.UnitPreference
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.ForecastError
+import com.oxygen.weather.core.provider.AlertLookupStatus
 import com.oxygen.weather.core.provider.CoordinateTimeZoneResolver
 import com.oxygen.weather.core.provider.CoordinateTimeZoneResult
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoTimeZoneResolver
@@ -72,7 +73,7 @@ class OxygenAppStateHolder(
     private var onStateChanged: ((OxygenAppPresentationState) -> Unit)? = null
     private var activeForecastRequestId = 0L
     private var activeUnitPreference: UnitPreference? = null
-    private var activeCanonicalForecast: WeatherBundle? = null
+    private var activeCanonicalForecast: ActiveCanonicalForecast? = null
     private var deviceAttemptCounter = 0L
     private var activeDeviceAttempt: Long? = null
     private var deviceCancellation: LocationCancellation? = null
@@ -386,12 +387,13 @@ class OxygenAppStateHolder(
                     currentReady != null &&
                     canonical != null &&
                     selectedLocation != null &&
-                    canonical.location == selectedLocation &&
+                    canonical.weather.location == selectedLocation &&
                     currentReady.location == selectedLocation
                 ) {
-                    val dashboard = canonical.toHomeSuccessPresentation(
+                    val dashboard = canonical.weather.toHomeSuccessPresentation(
                         selectedLocation = selectedLocation,
                         unitPreference = activeUnitPreference,
+                        alertStatus = canonical.alertStatus,
                     )
                     OxygenAppScreen.Home(
                         forecast = currentReady.copy(
@@ -428,7 +430,7 @@ class OxygenAppStateHolder(
     @Synchronized
     private fun startHomeForecastLoad(location: WeatherLocation) {
         val requestId = nextForecastRequestId()
-        if (activeCanonicalForecast?.location != location) {
+        if (activeCanonicalForecast?.weather?.location != location) {
             activeCanonicalForecast = null
         }
         val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
@@ -722,7 +724,10 @@ class OxygenAppStateHolder(
             selectedLocation = location,
             unitPreference = activeUnitPreference,
         )
-        activeCanonicalForecast = cached
+        activeCanonicalForecast = ActiveCanonicalForecast(
+            weather = cached,
+            alertStatus = AlertLookupStatus.NotRequested,
+        )
         publishState()
     }
 
@@ -762,12 +767,18 @@ class OxygenAppStateHolder(
                 message = result.error.toHomeForecastMessage(),
             )
             is WeatherRepositoryResult.Success -> {
-                activeCanonicalForecast = result.weather.takeIf { it.location == location }
+                activeCanonicalForecast = result.weather.takeIf { it.location == location }?.let {
+                    ActiveCanonicalForecast(
+                        weather = it,
+                        alertStatus = result.alertStatus,
+                    )
+                }
                 HomeForecastPresentationState.ForecastReady.from(
                     location = location,
                     weather = result.weather,
                     freshness = result.freshness,
                     unitPreference = activeUnitPreference,
+                    alertStatus = result.alertStatus,
                 )
             }
         }
@@ -782,6 +793,11 @@ class OxygenAppStateHolder(
         publishState()
     }
 }
+
+private data class ActiveCanonicalForecast(
+    val weather: WeatherBundle,
+    val alertStatus: AlertLookupStatus,
+)
 
 private fun OxygenAppPresentationState.retainVisibleCacheAfterRefreshFailure(
     location: WeatherLocation,
@@ -911,10 +927,12 @@ sealed interface HomeForecastPresentationState {
                 weather: WeatherBundle,
                 freshness: ForecastFreshness = ForecastFreshness.Fresh,
                 unitPreference: UnitPreference? = null,
+                alertStatus: AlertLookupStatus? = null,
             ): ForecastReady {
                 val dashboard = weather.toHomeSuccessPresentation(
                     selectedLocation = location,
                     unitPreference = unitPreference,
+                    alertStatus = alertStatus,
                 )
                 return ForecastReady(
                     location = location,
@@ -940,6 +958,7 @@ sealed interface HomeForecastPresentationState {
                 val dashboard = weather.toHomeSuccessPresentation(
                     selectedLocation = location,
                     unitPreference = unitPreference,
+                    alertStatus = AlertLookupStatus.NotRequested,
                 )
                 val ageText = staleAge.toStaleAgeText()
                 return ForecastReady(

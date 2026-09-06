@@ -1,6 +1,7 @@
 package com.oxygen.weather.app
 
 import com.oxygen.weather.core.model.CurrentConditions
+import com.oxygen.weather.core.model.AlertSeverity
 import com.oxygen.weather.core.model.DailyForecast
 import com.oxygen.weather.core.model.DataProvenance
 import com.oxygen.weather.core.model.DataType
@@ -15,9 +16,12 @@ import com.oxygen.weather.core.model.UnitPreferencePreset
 import com.oxygen.weather.core.model.VisibilityUnit
 import com.oxygen.weather.core.model.WindSpeedUnit
 import com.oxygen.weather.core.model.WeatherBundle
+import com.oxygen.weather.core.model.WeatherAlert
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
+import com.oxygen.weather.core.provider.AlertLookupStatus
+import com.oxygen.weather.core.provider.AlertSuccessMetadata
 import java.time.Instant
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
@@ -25,6 +29,75 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class HomeForecastPresentationMapperTest {
+    @Test
+    fun availableAlertSummaryUsesSelectedZoneMetadataCountAndSafeSourceLink() {
+        val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
+        val alerts = listOf(
+            mapperAlert().copy(
+                event = "Flash Flood Warning",
+                severity = AlertSeverity.SEVERE,
+                expires = Instant.parse("2026-08-22T18:00:00Z"),
+                web = " https://alerts.weather.gov/example ",
+            ),
+            mapperAlert(id = "alert-2", event = "Heat Advisory"),
+            mapperAlert(id = "alert-3", event = "Wind Advisory"),
+        )
+
+        val presentation = fullWeatherBundle().copy(alerts = alerts).toHomeSuccessPresentation(
+            selectedLocation = testLocation,
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(
+                    requestPoint = testLocation.point,
+                    providerId = "nws",
+                    fetchedAt = checkedAt,
+                ),
+            ),
+        )
+
+        assertEquals(alerts, presentation.alerts)
+        assertEquals("Flash Flood Warning", presentation.alertSummary?.event)
+        assertEquals("Severe", presentation.alertSummary?.severity)
+        assertEquals("Expires 1:00 PM", presentation.alertSummary?.expires)
+        assertEquals(3, presentation.alertSummary?.activeAlertCount)
+        assertEquals("Alert source checked Aug 22, 10:05 AM CDT", presentation.alertSummary?.sourceCheckedAt)
+        assertEquals("https://alerts.weather.gov/example", presentation.alertSummary?.sourceLink)
+        assertEquals(HomeSuccessSection.Current, presentation.sectionOrder[1])
+        assertEquals(HomeSuccessSection.Alerts, presentation.sectionOrder[2])
+    }
+
+    @Test
+    fun nonAvailableAlertStatusPreservesCompleteAlertsWithoutSummary() {
+        val weather = fullWeatherBundle()
+        val presentation = weather.toHomeSuccessPresentation(
+            selectedLocation = testLocation,
+            alertStatus = AlertLookupStatus.Failed(com.oxygen.weather.core.provider.AlertProviderError.Network),
+        )
+
+        assertEquals(weather.alerts, presentation.alerts)
+        assertNull(presentation.alertSummary)
+        assertEquals(HomeSuccessSection.Current, presentation.sectionOrder[1])
+    }
+
+    @Test
+    fun invalidAlertSourceUrlUsesOfficialWeatherFallback() {
+        listOf(null, "", "alerts.weather.gov", "http://alerts.weather.gov", "https:///missing-host", "mailto:nws@example.com")
+            .forEach { url ->
+                val weather = fullWeatherBundle().copy(
+                    alerts = listOf(mapperAlert(web = url)),
+                )
+                val presentation = weather.toHomeSuccessPresentation(
+                    selectedLocation = testLocation,
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(
+                            requestPoint = testLocation.point,
+                            providerId = "nws",
+                            fetchedAt = Instant.parse("2026-08-22T15:05:00Z"),
+                        ),
+                    ),
+                )
+                assertEquals("https://www.weather.gov/", presentation.alertSummary?.sourceLink)
+            }
+    }
     @Test
     fun `mapper keeps canonical values separate from formatted Home text`() {
         val presentation = fullWeatherBundle().toHomeSuccessPresentation(testLocation)
@@ -324,3 +397,22 @@ class HomeForecastPresentationMapperTest {
         )
     }
 }
+
+private fun mapperAlert(
+    id: String = "alert-1",
+    event: String = "Flood Watch",
+    web: String? = null,
+): WeatherAlert = WeatherAlert(
+    id = id,
+    event = event,
+    severity = AlertSeverity.MODERATE,
+    expires = Instant.parse("2026-08-22T18:00:00Z"),
+    issuer = "Test Weather Office",
+    web = web,
+    provenance = DataProvenance(
+        providerId = "nws",
+        sourceName = "NOAA/National Weather Service",
+        fetchedAt = Instant.parse("2026-08-22T15:00:00Z"),
+        type = DataType.OFFICIAL_ALERT,
+    ),
+)
