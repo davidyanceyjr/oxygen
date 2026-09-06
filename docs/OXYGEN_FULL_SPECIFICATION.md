@@ -1851,9 +1851,8 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 Gate 19F: Saved Locations Documentation Sync, Slice 20A: Unit Preference
 Contract, Gate 20-0: Presentation Semantics and Localization Safety, and
-Slice 20B: Unit Conversion Presentation Boundary are committed. Slice 20C,
-persisted alternate-unit reachability through the installed path, is implemented
-and verified in the current changeset.
+Slice 20B: Unit Conversion Presentation Boundary, and Slice 20C, persisted
+alternate-unit reachability through the installed path, are committed.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering,
