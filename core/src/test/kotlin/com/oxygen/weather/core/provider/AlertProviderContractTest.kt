@@ -2,14 +2,12 @@ package com.oxygen.weather.core.provider
 
 import com.oxygen.weather.core.model.GeoPoint
 import java.time.Instant
-import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.coroutines.startCoroutine
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AlertProviderContractTest {
     @Test
-    fun suspendBoundaryCarriesProviderNeutralSuccessAndFailureValues() {
+    fun blockingBoundaryCarriesProviderNeutralSuccessAndFailureValues() {
         val successMetadata = AlertSuccessMetadata(
             requestPoint = GeoPoint(41.875, -87.625),
             providerId = "test-provider",
@@ -25,13 +23,13 @@ class AlertProviderContractTest {
                 metadata = successMetadata,
             ),
         )
-        val success = runSuspend { successProvider.getActiveAlerts(GeoPoint(41.875, -87.625)) }
+        val success = successProvider.getActiveAlerts(GeoPoint(41.875, -87.625))
         assertEquals(AlertProviderResult.Success(emptyList(), successMetadata), success)
 
         val failureProvider = FixedAlertProvider(
             AlertProviderResult.Failure(AlertProviderError.RateLimited("120")),
         )
-        val failure = runSuspend { failureProvider.getActiveAlerts(GeoPoint(41.875, -87.625)) }
+        val failure = failureProvider.getActiveAlerts(GeoPoint(41.875, -87.625))
         assertEquals(AlertProviderResult.Failure(AlertProviderError.RateLimited("120")), failure)
     }
 }
@@ -41,17 +39,5 @@ private class FixedAlertProvider(
 ) : AlertProvider {
     override val id: String = "fixed"
 
-    override suspend fun getActiveAlerts(location: GeoPoint): AlertProviderResult = result
-}
-
-private fun <T> runSuspend(block: suspend () -> T): T {
-    var outcome: Result<T>? = null
-    block.startCoroutine(object : kotlin.coroutines.Continuation<T> {
-        override val context = EmptyCoroutineContext
-
-        override fun resumeWith(result: Result<T>) {
-            outcome = result
-        }
-    })
-    return requireNotNull(outcome) { "Suspending block did not complete synchronously" }.getOrThrow()
+    override fun getActiveAlerts(location: GeoPoint): AlertProviderResult = result
 }

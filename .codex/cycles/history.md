@@ -32,13 +32,14 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 20C, Unit Conversion Presentation
-  Boundary, committed at `1b52718`.
+- Last committed implementation slice: Slice 23B, NWS Alert Transport and
+  Provider Boundary, committed at `dcf707b`.
 - Last committed implementation gate: Gate 20-0, Presentation Semantics and
   Localization Safety, committed at `587b0ad`.
 - Last committed documentation sync: Post-20-0 Authority Sync, committed at
-  `a0bca26`. The next implementation candidate is Slice 21: optional device
-  location through the installed path.
+  `a0bca26`.
+- Current changeset: Slice 23C, Alert Repository Merge, is verified but not
+  committed; `.codex/plans/current.md` records its acceptance evidence.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -698,10 +699,10 @@ Boundaries:
 
 ### 2026-09-05-slice-23a-nws-alert-fixtures-parsing-mapping
 
-Status: ready, not committed
+Status: committed
 Mode: feature
 Slice: Slice 23A, NWS Alert Fixtures, Parsing, and Mapping
-Commit: not committed
+Commit: `17dab0c`
 
 Result:
 - Expanded the provider-neutral `WeatherAlert` model with urgency, certainty,
@@ -746,9 +747,10 @@ Boundaries:
 
 ### 2026-09-05-slice-23b-nws-alert-transport-boundary
 
-Status: ready, not committed
+Status: committed
 Mode: feature
 Slice: Slice 23B, NWS Alert Transport, Classification, and Provider Boundary
+Commit: `dcf707b`
 
 Result:
 - Added provider-neutral alert success metadata and classified failure results.
@@ -774,3 +776,38 @@ Blockers:
 Boundaries:
 - No alert/forecast composition, deduplication, cache or persistence, app/UI,
   background refresh, emulator, connected test, or live NWS behavior changed.
+
+### 2026-09-06-slice-23c-alert-repository-merge
+
+Status: verified, not committed
+Mode: feature
+Slice: Slice 23C, Alert Repository Merge
+Commit: not committed
+
+Result:
+- Corrected `AlertProvider` to the synchronous blocking result boundary.
+- Added provider-neutral `AlertLookupStatus` and the outer
+  `AlertMergingWeatherRepository`, including independent forecast success,
+  failure, stale/fallback provenance, deterministic alert deduplication, and
+  forecast-only cache composition.
+- Kept installed-app alert presentation, Room alert persistence, retries, and
+  background work out of scope.
+
+Evidence:
+- Baseline focused 23A/23B/cache tests passed before changes.
+- Focused merge, provider-contract, NWS transport/provider, and cache tests
+  passed.
+- Madison live `NwsAlertProvider` check passed within the 60-second cap; the
+  disposable test was removed afterward.
+- App compile, full app/core unit tests, debug assembly, and `git diff --check`
+  passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-06-slice-23c-alert-repository-merge/`.
+
+Blockers:
+- None.
+
+Boundaries:
+- No app factory wiring, UI, Room schema, alert cache, forecast provider
+  semantics, or connected/emulator test was added.

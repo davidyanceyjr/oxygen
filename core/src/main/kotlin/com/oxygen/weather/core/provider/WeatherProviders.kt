@@ -31,7 +31,7 @@ interface ForecastProvider {
 
 interface AlertProvider {
     val id: String
-    suspend fun getActiveAlerts(location: GeoPoint): AlertProviderResult
+    fun getActiveAlerts(location: GeoPoint): AlertProviderResult
 }
 
 data class AlertSuccessMetadata(
@@ -63,6 +63,14 @@ sealed interface AlertProviderError {
     data object ProviderUnavailable : AlertProviderError
     data object InvalidResponse : AlertProviderError
     data object UnexpectedProvider : AlertProviderError
+}
+
+sealed interface AlertLookupStatus {
+    data object NotRequested : AlertLookupStatus
+    data object NoAlerts : AlertLookupStatus
+    data object Available : AlertLookupStatus
+    data object UnsupportedRegion : AlertLookupStatus
+    data class Failed(val error: AlertProviderError) : AlertLookupStatus
 }
 
 interface AirQualityProvider {
@@ -113,6 +121,7 @@ sealed class WeatherRepositoryResult {
         val weather: WeatherBundle,
         val freshness: ForecastFreshness = ForecastFreshness.Fresh,
         val cacheMetadata: ForecastCacheMetadata? = null,
+        val alertStatus: AlertLookupStatus = AlertLookupStatus.NotRequested,
     ) : WeatherRepositoryResult()
 
     data class Failure(

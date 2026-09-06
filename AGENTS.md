@@ -125,6 +125,8 @@ discover -> baseline-green -> design-if-needed -> build
 
 Keep `.codex/plans/current.md` current for substantial implementation cycles. Append completed cycle evidence to `.codex/cycles/history.md` when a cycle is ready or committed.
 
+After every commit, perform an authoritative doc sync before considering the work closed: reconcile the active plan, live cycle history, and any affected repository authorities such as `README.md` and `docs/OXYGEN_FULL_SPECIFICATION.md` with the commit's actual state.
+
 Cycle history entries must be self-contained, concise, and appended at the end
 of the live history file. Before replacing, compressing, or otherwise rewriting
 the live history file, archive its previous content under `.codex/cycles/archive/`.
@@ -227,5 +229,6 @@ Before reporting work as ready:
 - state the selected behavior and acceptance boundary;
 - identify changed production and test files;
 - report focused evidence and broad verification commands actually run;
+- if the work was committed, confirm the post-commit authoritative doc sync was completed;
 - call out any commands not run and why;
 - leave unrelated user changes untouched.

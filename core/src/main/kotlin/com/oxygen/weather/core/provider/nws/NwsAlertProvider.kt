@@ -9,7 +9,7 @@ class NwsAlertProvider(
     private val clock: Clock = Clock.systemUTC(),
 ) : AlertProvider {
     override val id: String = "nws"
-    override suspend fun getActiveAlerts(location: GeoPoint): AlertProviderResult = when (val result = client.fetch(location)) {
+    override fun getActiveAlerts(location: GeoPoint): AlertProviderResult = when (val result = client.fetch(location)) {
         is NwsAlertClientResult.Success -> {
             val fetchedAt = clock.instant()
             try {

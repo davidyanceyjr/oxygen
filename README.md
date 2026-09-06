@@ -36,6 +36,8 @@ and `docs/data-sources/`.
   visible with stale/source/update context where available.
 - Installed-app MET Norway fallback after eligible Open-Meteo terminal forecast
   failures, with MET Norway provenance shown through the normal Home surface.
+- Provider-neutral forecast/official-alert repository merging in `:core`, with
+  explicit alert lookup status and forecast-only cache composition.
 - Persisted Oxygen default, Metric, US, and UK unit selection through the
   installed Settings / About / Units surface, with immediate Home remapping.
 - Home presentation conversion for provider-neutral unit preferences at the
@@ -62,7 +64,7 @@ and `docs/data-sources/`.
 ## Not implemented yet
 
 - Custom unit editing UI.
-- Official weather alert lookup.
+- Installed-app official weather alert presentation and merge.
 - Persisted appearance/effects/layout settings.
 - Release-candidate verification.
 
@@ -173,8 +175,8 @@ cached fallback forecasts, and cached/stale MET Norway forecasts retain
 MET Norway provenance. Conditional GET requests, 304 not-modified handling, and
 release-candidate fallback verification remain later work.
 
-Custom unit editing, alerts, air quality, radar, and release-candidate
-verification are not implemented yet.
+Custom unit editing, installed-app official weather alert presentation, air
+quality, radar, and release-candidate verification are not implemented yet.
 
 ## Specification
 

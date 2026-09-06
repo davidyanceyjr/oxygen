@@ -1,151 +1,174 @@
-# Slice 23B — NWS Alert Transport, Classification, and Provider Boundary
+# Slice 23C — Alert Repository Merge
 
-**Artifact:** implementation plan
-**Roadmap slice:** 23B
-**Prepared against:** local `main` `17dab0c` (committed Slice 23A)
-**Prepared:** 2026-09-05
-**Status:** ready, not committed
-**Cycle ID:** `2026-09-05-slice-23b-nws-alert-transport-boundary`
+**Status:** verified, not committed
+**Planning basis:** local `main` `dcf707b` (Slice 23B), reviewed 2026-09-06
+**Cycle ID:** `2026-09-06-slice-23c-alert-repository-merge`
 
-## Goal and acceptance boundary
+## Decision and acceptance boundary
 
-Add the production NWS alert transport boundary in `:core`. A request for a
-validated point is built from provider-local configuration, sent with the
-required identity, parsed through the Slice 23A parser/mapper, and returned
-through an evolved provider-neutral `AlertProvider` contract. This slice does
-not compose alerts with forecasts, filter/deduplicate cached alerts, persist
-responses, poll in the background, or add UI.
+Slices 22 (`d0a7eb3`), 23A (`17dab0c`), and 23B (`dcf707b`) are committed
+prerequisites. Slice 23C will combine a completed forecast result with an
+independent NWS alert lookup in `:core`; it will not activate installed-app
+alert UI, persist alerts, change Room, or alter forecast fallback/cache
+semantics.
 
-Before implementation, perform the bounded documentation authority-sync
-required by the review: reconcile the roadmap's next-candidate/status labels
-and the live history's Slice 23A status with `17dab0c`, then record the sync in
-the appropriate documentation/history entry. Do not claim this plan ready while
-that higher-authority drift remains.
+The current `AlertProvider` is `suspend`, but `WeatherRepository.refresh` is a
+synchronous `Sequence` and the NWS client already performs blocking
+`HttpURLConnection` I/O. Before implementing the decorator, this slice will
+correct the provider contract to a synchronous blocking operation:
 
-## Provider-neutral contract decisions
+```kotlin
+interface AlertProvider {
+    val id: String
+    fun getActiveAlerts(location: GeoPoint): AlertProviderResult
+}
+```
 
-Owner: `core/src/main/kotlin/com/oxygen/weather/core/provider/WeatherProviders.kt`.
-Replace `AlertProvider.getActiveAlerts(location): List<WeatherAlert>` with
-`suspend fun getActiveAlerts(location: GeoPoint): AlertProviderResult`.
-`AlertProviderResult` is a sealed provider-neutral result:
+This is deliberately not a coroutine migration: do not add coroutines, use
+`runBlocking`, or introduce a continuation bridge. Update the obsolete
+`suspend` declaration in the specification at the same time, and adjust 23B
+tests to call the direct method. The provider implementation must retain its
+existing classified result boundary and bounded transport timeouts. This makes
+the callable production boundary explicit before composition begins.
 
-| Result | Meaning |
-| --- | --- |
-| `Success(alerts, metadata)` | HTTP 2xx active collection, including an empty list |
-| `Failure(InvalidPoint)` | local point is non-finite or outside WGS84 bounds; no request |
-| `Failure(InvalidRequest)` | ordinary HTTP 400, malformed request configuration, or other rejected request not matching the supported region discriminator |
-| `Failure(UnsupportedRegion)` | only HTTP 400 with `application/problem+json` and exact contract `type`, `title`, and `detail` for unsupported NWS region |
-| `Failure(IdentificationRejected)` | remote response rejects/misuses the required identity, including the contract-defined identification response |
-| `Failure(Network)` | timeout, connectivity, or offline transport failure |
-| `Failure(RateLimited)` | HTTP 429, retaining `Retry-After` when present |
-| `Failure(ProviderUnavailable)` | HTTP 5xx or provider-unavailable response |
-| `Failure(InvalidResponse)` | malformed declared problem envelope, malformed successful alert body, wrong content type, or otherwise unusable response |
-| `Failure(UnexpectedProvider)` | any provider outcome not safely classified above |
+Acceptance is a forecast `Success` whose `WeatherBundle.alerts` and explicit
+alert lookup status faithfully represent the independent lookup. `Loading` and
+forecast `Failure` pass through unchanged and do not trigger alert work.
 
-No public result exposes `NwsAlertCollection` or another NWS DTO. The client
-may use a named NWS-local intermediate, but a concrete NWS `AlertProvider`
-adapter maps it to `List<WeatherAlert>` before returning. Mapping receives the
-injected fetch time and provenance remains the Slice 23A model contract.
+## Production design
 
-`AlertSuccessMetadata` is provider-neutral and typed:
-`requestPoint: GeoPoint`, `providerId: String`, `fetchedAt: Instant`,
-`cacheControl: String?`, `expires: String?`, `etag: String?`, and
-`lastModified: String?`. Header names are captured case-insensitively. The
-transport receives an injected `Clock`/time source and never calls
-`Instant.now()` directly. No persistence or conditional requests are added.
+Reuse the existing 23B types; do not create `AlertRepositoryResult`, a second
+alert-error taxonomy, or another NWS adapter. `NwsAlertProvider` is already the
+provider-neutral adapter and returns `AlertProviderResult.Success(alerts,
+metadata)` or `Failure(AlertProviderError)`.
 
-The NWS base URL, query/identity values, and user-agent remain provider-local
-and configurable. The local URI decision is: an absolute HTTPS base URI with
-no existing query or fragment; coordinates use locale-safe decimal formatting
-with latitude and longitude serialized separately in the provider's documented
-query shape. Tests lock this decision without generalizing it into `:core`.
+Add `AlertLookupStatus` in `WeatherProviders.kt`:
 
-## Required implementation and tests
+```kotlin
+sealed interface AlertLookupStatus {
+    data object NotRequested : AlertLookupStatus
+    data object NoAlerts : AlertLookupStatus
+    data object Available : AlertLookupStatus
+    data object UnsupportedRegion : AlertLookupStatus
+    data class Failed(val error: AlertProviderError) : AlertLookupStatus
+}
+```
 
-Use the existing Slice 23A classes `NwsAlertParserTest` and
-`NwsAlertMapperTest`; do not rename them. Add transport/client and provider
-boundary tests under `core/src/test/kotlin/com/oxygen/weather/core/provider/nws/`
-and provider-contract tests under `core/src/test/kotlin/com/oxygen/weather/core/provider/`.
-Use fixture-backed responses; no fabricated success or live network is needed
-for focused tests.
+Extend `WeatherRepositoryResult.Success` source-compatibly with
+`alertStatus: AlertLookupStatus = AlertLookupStatus.NotRequested`. Retaining
+the 23B `AlertProviderError` in `Failed` keeps an alert failure distinct from a
+forecast error; an empty list never represents a failed request.
 
-The focused matrix must cover:
+Add `AlertMergingWeatherRepository` as the outer decorator:
 
-- valid empty and non-empty 2xx collections, with mapped `WeatherAlert`s and
-  deterministic `fetchedAt`;
-- exact metadata propagation for request point, provider ID, all four headers,
-  and injected clock value;
-- local non-finite/out-of-range coordinates as `InvalidPoint` with no request;
-- valid unsupported-region problem (`UnsupportedRegion`);
-- ordinary HTTP 400 (`InvalidRequest`);
-- malformed declared problem envelope (`InvalidResponse`);
-- remote identification rejection (`IdentificationRejected`);
-- timeout/offline (`Network`), 429 plus `Retry-After` (`RateLimited`), 5xx
-  (`ProviderUnavailable`), malformed 2xx body (`InvalidResponse`), and an
-  unclassifiable provider response (`UnexpectedProvider`);
-- case-insensitive response-header capture and URI/query/fragment/locale-safe
-  coordinate decisions;
-- public success/error values containing no NWS DTOs and mapper provenance
-  retaining the deterministic fetched time.
+```text
+Open-Meteo/MET Norway -> FallbackWeatherRepository -> CachedWeatherRepository
+    -> AlertMergingWeatherRepository
+```
 
-Preserve the Slice 23A parser/mapper regression set, including
-`parsesOneAlertFixtureAndRetainsProviderFields`,
-`mapsFullAlertFixtureToProviderNeutralDomain`, and the existing invalid-input
-tests. Keep forecast, app, Room, persistence, composition, UI, and background
-refresh out of this slice.
+For each upstream terminal `Success`, call
+`alertProvider.getActiveAlerts(location.point)` exactly once, replace rather
+than append `weather.alerts`, and yield the copied success. Map a successful
+nonempty list to `Available`, a successful empty list to `NoAlerts`,
+`Failure(UnsupportedRegion)` to `UnsupportedRegion`, and every other failure
+to `Failed(error)` with an empty alert list. Do not perform a lookup for an
+upstream loading or terminal forecast failure.
 
-Expected diff is limited to the provider-neutral alert result/metadata types,
-NWS client/adapter/configuration, focused tests/fixtures, and the required
-authority-sync Markdown/history changes. No dependency churn or raw response
-body exposure.
+The decorator preserves every field present on the upstream success: forecast
+weather other than its alert list, forecast provenance/fetched time,
+`freshness`, and the received `cacheMetadata`. This is intentionally narrower
+than claiming cache metadata survives `CachedWeatherRepository`: that existing
+decorator can discard it after a write/readback, and fixing that is outside
+23C. A fresh alert response must never reset a stale forecast's age or
+refresh-failure context. Forecast source identity, including a MET Norway
+fallback success, must not affect whether NWS is called.
 
-## Verification ledger selected before work
+The forecast cache remains forecast-only. Alert merging occurs after it, and no
+alert-bearing bundle reaches `ForecastCacheStorage.replaceBundle`; no schema or
+cache-format change is allowed.
 
-**Budget:** 40 minutes / 14k tokens; one run of each passing command. Re-run
-only after a relevant production/test/environment change, recording why.
-Artifacts: `.codex/test-artifacts/2026-09-05-slice-23b-nws-alert-transport-boundary/`.
+## Deterministic alert policy
 
-| Command | Evidence |
-| --- | --- |
-| `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests 'com.oxygen.weather.core.provider.nws.NwsAlertParserTest' --tests 'com.oxygen.weather.core.provider.nws.NwsAlertMapperTest'` | Slice 23A parser/mapper regression |
-| `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests 'com.oxygen.weather.core.provider.nws.NwsAlertClientTest' --tests 'com.oxygen.weather.core.provider.nws.NwsAlertProviderTest' --tests 'com.oxygen.weather.core.provider.AlertProviderContractTest'` | transport classification, metadata, and public boundary |
-| `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` | app compilation |
-| `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` | unit regression |
-| `. scripts/android-env.sh && ./gradlew :app:assembleDebug` | debug assembly |
-| `git diff --check` | whitespace integrity |
+NWS alert IDs are opaque. At merge time, deduplicate only exact IDs. Preserve
+the source position of an ID's first occurrence, but replace that position's
+value with its last occurrence in the response; unique IDs retain source order.
+Thus `[a1, b, a2, c, b2]` becomes `[a2, b2, c]`. This is deterministic without
+inventing lifecycle, severity, headline, event, or reference inference. Mapper
+fixtures may retain duplicates; the repository owns the final composition
+policy.
 
-If a bounded live NWS re-review is run, cap it at 60 seconds; record timeout or
-failure as a blocker and never substitute it with fixture success. No emulator,
-installation, connected test, app UI, persistence, or forecast composition is
-selected for this transport-only slice.
+## Focused tests
+
+Add `AlertMergingWeatherRepositoryTest` and update the affected 23B provider
+tests for the synchronous contract. Use fixed forecast repositories and a
+recording `AlertProvider`; no test may use a custom suspend/continuation helper.
+The focused set must prove:
+
+1. loading and terminal forecast failure are forwarded byte-for-byte and make
+   zero alert calls;
+2. a forecast success calls NWS once with the selected `location.point`,
+   replaces preexisting alerts, and reports `Available`;
+3. empty provider success is `NoAlerts`, while
+   `Failure(UnsupportedRegion)` is `UnsupportedRegion`;
+4. every non-unsupported `AlertProviderError`, including rate limit, produces
+   forecast success with `Failed(error)` and no alerts;
+5. duplicate IDs use the first-position/last-value rule and retain deterministic
+   ordering;
+6. stale cached and fallback-provenance successes each call the provider once
+   while retaining forecast freshness, fetched time, provider provenance, and
+   any cache metadata delivered to the merge decorator; and
+7. a recording forecast cache in the required composition proves it receives no
+   alert-bearing bundle.
+
+Keep the 23A parser/mapper and 23B client/provider regressions. Do not add UI,
+app-factory wiring, Room, alert cache, retry, background work, a DI framework,
+or a generic orchestration layer.
+
+## Verification
+
+Before changes, run the focused 23A/23B and forecast-cache baseline. After
+focused green, run:
+
+```sh
+. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*AlertMergingWeatherRepositoryTest' --tests '*AlertProviderContractTest' --tests '*NwsAlertProviderTest' --tests '*NwsAlertClientTest' --tests '*CachedWeatherRepositoryTest'
+. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
+. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
+. scripts/android-env.sh && ./gradlew :app:assembleDebug
+git diff --check
+```
+
+For one non-UI production-path exercise, create a disposable, untracked core
+JUnit live-check that constructs the production `NwsAlertProvider` with its
+default client and invokes it for Madison's valid point. Run only that check
+with `timeout 60s`, save stdout/stderr to
+`.codex/test-artifacts/2026-09-06-slice-23c-alert-repository-merge/nws-live-check.log`,
+then remove the check. It must assert only a classified `AlertProviderResult`,
+not a particular alert count. A timeout or provider failure is recorded once as
+a blocker; deterministic fixtures cover failure independence and active-alert
+content. This exercise has no app wiring, persistence, or UI surface.
+
+Record all selected-command results and the disposable-check removal in the
+artifact ledger. The slice is ready only when the synchronous contract,
+independent merge behavior, duplicate policy, forecast-only cache boundary,
+focused tests, production live check (or recorded bounded blocker), and broad
+checks have evidence. Update the plan, live history, README, and specification
+to factual post-commit state after the implementation commit.
 
 ## Execution evidence
 
 Changed production files:
 
 - `core/src/main/kotlin/com/oxygen/weather/core/provider/WeatherProviders.kt`
-- `core/src/main/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertClient.kt`
+- `core/src/main/kotlin/com/oxygen/weather/core/provider/AlertMergingWeatherRepository.kt`
 - `core/src/main/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertProvider.kt`
 
 Changed test files:
 
+- `core/src/test/kotlin/com/oxygen/weather/core/provider/AlertMergingWeatherRepositoryTest.kt`
 - `core/src/test/kotlin/com/oxygen/weather/core/provider/AlertProviderContractTest.kt`
-- `core/src/test/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertClientTest.kt`
 - `core/src/test/kotlin/com/oxygen/weather/core/provider/nws/NwsAlertProviderTest.kt`
-- `core/src/test/resources/providers/nws/alerts_problem_ordinary.json`
 
-Evidence:
-
-- `. scripts/android-env.sh && ./gradlew :core:compileDebugKotlin` passed.
-- `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests 'com.oxygen.weather.core.provider.nws.NwsAlertParserTest' --tests 'com.oxygen.weather.core.provider.nws.NwsAlertMapperTest'` passed.
-- `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests 'com.oxygen.weather.core.provider.nws.NwsAlertClientTest' --tests 'com.oxygen.weather.core.provider.nws.NwsAlertProviderTest' --tests 'com.oxygen.weather.core.provider.AlertProviderContractTest'` passed.
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed.
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` passed.
-- `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed.
-- `git diff --check` passed.
-
-No emulator, connected test, live NWS request, persistence, UI, forecast
-composition, or background-refresh command was run; these are outside this
-transport-only acceptance boundary. The transport classification and provider
-boundary are now covered by focused automated tests, and the slice is ready to
-be recorded as committed once the git commit is created.
+Evidence is recorded in `.codex/test-artifacts/2026-09-06-slice-23c-alert-repository-merge/ledger.md`.
+The disposable live-check passed for Madison's point and was removed after
+the run. The implementation is verified in the current uncommitted changeset;
+no commit was created in this execution.

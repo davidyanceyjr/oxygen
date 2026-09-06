@@ -177,11 +177,13 @@ description, instruction, issuer, and provenance, but it lacks urgency,
 certainty, affected-area/geometry, onset/end, sent time, message type, status,
 and update references. Slice 23A owns that domain expansion.
 
-`AlertProvider.getActiveAlerts` currently returns only `List<WeatherAlert>`.
-Slice 23B must replace or evolve that return boundary so empty success,
+`AlertProvider.getActiveAlerts` now has a synchronous blocking boundary and
+returns the provider-neutral `AlertProviderResult`, so empty success,
 unsupported region, rate limit, network/offline, provider unavailable, invalid
 request, invalid response, and identification rejection remain observable.
-Slice 23C owns forecast/alert repository composition and separate freshness.
+Slice 23C owns forecast/alert repository composition and separate freshness;
+the core merge is implemented, while installed-app alert presentation remains
+out of scope.
 
 Home currently renders scaffold/sample alerts through `HomeAlertPresentation`
 and `home-section-alert`; this is not a live NWS provider path. Alert

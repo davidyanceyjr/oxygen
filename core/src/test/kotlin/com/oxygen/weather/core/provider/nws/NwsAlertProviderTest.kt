@@ -8,7 +8,6 @@ import java.net.URI
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
-import kotlin.coroutines.startCoroutine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -43,7 +42,7 @@ class NwsAlertProviderTest {
         )
         val provider = NwsAlertProvider(client = client, clock = clock)
 
-        val result = runSuspend { provider.getActiveAlerts(point) }
+        val result = provider.getActiveAlerts(point)
 
         val success = result as AlertProviderResult.Success
         assertEquals(point, success.metadata.requestPoint)
@@ -80,7 +79,7 @@ class NwsAlertProviderTest {
             clock = clock,
         )
 
-        val result = runSuspend { provider.getActiveAlerts(point) }
+        val result = provider.getActiveAlerts(point)
 
         assertEquals(AlertProviderResult.Failure(AlertProviderError.InvalidResponse), result)
     }
@@ -101,7 +100,7 @@ class NwsAlertProviderTest {
             clock = clock,
         )
 
-        val result = runSuspend { provider.getActiveAlerts(point) }
+        val result = provider.getActiveAlerts(point)
 
         assertEquals(AlertProviderResult.Failure(AlertProviderError.RateLimited("120")), result)
     }
@@ -121,7 +120,7 @@ class NwsAlertProviderTest {
             clock = clock,
         )
 
-        val result = runSuspend { provider.getActiveAlerts(point) }
+        val result = provider.getActiveAlerts(point)
 
         assertEquals(AlertProviderResult.Failure(AlertProviderError.UnsupportedRegion), result)
     }
@@ -132,18 +131,6 @@ class NwsAlertProviderTest {
         }
         return resource.readText()
     }
-}
-
-private fun <T> runSuspend(block: suspend () -> T): T {
-    var outcome: Result<T>? = null
-    block.startCoroutine(object : kotlin.coroutines.Continuation<T> {
-        override val context = kotlin.coroutines.EmptyCoroutineContext
-
-        override fun resumeWith(result: Result<T>) {
-            outcome = result
-        }
-    })
-    return requireNotNull(outcome) { "Suspending block did not complete synchronously" }.getOrThrow()
 }
 
 private class ProviderStaticTransport(
