@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "update-feature",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "updated-alert",
+        "event": "Flash Flood Warning",
+        "senderName": "National Weather Service",
+        "messageType": "Update",
+        "references": [
+          {
+            "identifier": "previous-alert",
+            "sender": "w-nws.webmaster@noaa.gov",
+            "sent": "2026-09-05T17:30:00+00:00"
+          }
+        ]
+      }
+    }
+  ]
+}

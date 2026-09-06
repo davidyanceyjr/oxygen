@@ -1,0 +1,27 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "feature-one",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "alert-one",
+        "severity": "Minor",
+        "event": "Flood Advisory",
+        "senderName": "National Weather Service"
+      }
+    },
+    {
+      "id": "feature-two",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "alert-two",
+        "severity": "Moderate",
+        "event": "Winter Weather Advisory",
+        "senderName": "National Weather Service"
+      }
+    }
+  ]
+}

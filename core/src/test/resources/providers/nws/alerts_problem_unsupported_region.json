@@ -1,0 +1,6 @@
+{
+  "type": "https://api.weather.gov/problems/InvalidParameter",
+  "title": "Invalid Parameter",
+  "status": 400,
+  "detail": "Parameter \"point\" is invalid: out of bounds"
+}

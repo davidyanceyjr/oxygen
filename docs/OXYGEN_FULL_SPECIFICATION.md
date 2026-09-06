@@ -275,7 +275,7 @@ Forecasts and alerts are separate systems.
 ```kotlin
 interface AlertProvider {
     val id: String
-    suspend fun getActiveAlerts(location: GeoPoint): List<WeatherAlert>
+    fun getActiveAlerts(location: GeoPoint): AlertProviderResult
 }
 ```
 
@@ -1885,6 +1885,12 @@ and can replace fallback-served cached data with a later successful Open-Meteo
 refresh through the normal selected-location path. Conditional GET requests,
 304 not-modified handling, provider health/backoff behavior, and
 release-candidate fallback verification remain unimplemented.
+
+NWS alert provider contract, parser/mapper fixtures, transport boundary, and
+forecast/alert repository merge are implemented through Slices 22, 23A, 23B,
+and committed Slice 23C. The core merge composes official alerts with forecast
+results without activating installed-app alert presentation. Official alerts
+remain semantically distinct from forecast-derived risk.
 
 Gate 19F kept README, roadmap, disclosure, and active-cycle status aligned with
 verified saved-location behavior without changing app behavior or claiming

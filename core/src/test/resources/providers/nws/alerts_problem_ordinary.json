@@ -1,0 +1,6 @@
+{
+  "type": "https://api.weather.gov/problems/BadRequest",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Request parameter is invalid."
+}

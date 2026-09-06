@@ -1,0 +1,27 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "duplicate-feature-one",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "duplicate-alert",
+        "event": "Severe Thunderstorm Warning",
+        "senderName": "National Weather Service",
+        "severity": "Severe"
+      }
+    },
+    {
+      "id": "duplicate-feature-two",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "duplicate-alert",
+        "event": "Severe Thunderstorm Warning",
+        "senderName": "National Weather Service",
+        "severity": "Severe"
+      }
+    }
+  ]
+}

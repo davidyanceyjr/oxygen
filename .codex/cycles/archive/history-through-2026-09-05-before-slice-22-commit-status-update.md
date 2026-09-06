@@ -32,14 +32,13 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 23C, Alert Repository Merge,
-  committed at `3c658a8`.
+- Last committed implementation slice: Slice 20C, Unit Conversion Presentation
+  Boundary, committed at `1b52718`.
 - Last committed implementation gate: Gate 20-0, Presentation Semantics and
   Localization Safety, committed at `587b0ad`.
-- Last committed documentation sync: Slice 23C Authority Sync, committed at
-  `3c658a8`.
-- Current changeset: none; Slice 23C, Alert Repository Merge, is committed at
-  `3c658a8`.
+- Last committed documentation sync: Post-20-0 Authority Sync, committed at
+  `a0bca26`. The next implementation candidate is Slice 21: optional device
+  location through the installed path.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -519,10 +518,10 @@ Boundaries:
 
 ### 2026-09-05-post-20b-authority-sync
 
-Status: committed
+Status: ready
 Mode: documentation-only
 Slice: Post-20B Authority Sync
-Commit: `0fb2ce6`
+Commit: not committed
 
 Result:
 - Updated README to distinguish the implemented provider-neutral unit
@@ -595,10 +594,10 @@ Boundaries:
 
 ### 2026-09-05-slice-21-optional-device-location
 
-Status: committed
+Status: verified
 Mode: feature
 Slice: Slice 21, Optional Device Location
-Commit: `3ea5ae6`
+Commit: not committed
 
 Result:
 - Added an app-local coarse-location acquisition path with a cancellable
@@ -646,10 +645,10 @@ Boundaries:
 
 ### 2026-09-05-slice-22-nws-alert-provider-contract
 
-Status: committed
+Status: ready
 Mode: documentation / provider contract
 Slice: Slice 22, NWS Alert Provider Contract
-Commit: `d0a7eb3`
+Commit: not committed
 
 Result:
 - Added `docs/data-sources/NWS_ALERTS.md` as the NOAA/National Weather Service
@@ -682,8 +681,6 @@ Evidence:
   roadmap, and cycle history. `git diff --no-index -- /dev/null
   docs/data-sources/NWS_ALERTS.md` was used to review the new untracked
   contract file; its exit code 1 is expected for new-file content.
-- PR `#10` merged to `origin/main` as commit `d0a7eb3`; local `main` was
-  fast-forwarded to the merge commit, and the slice branch was removed.
 
 Artifacts:
 - `.codex/test-artifacts/2026-09-05-slice-22-nws-alert-provider-contract/`.
@@ -696,118 +693,3 @@ Boundaries:
   persistence, permission, UI, `DATA_SOURCES.md`, `PRIVACY.md`, specification,
   roadmap-status, active-provider claim, Android build/test, emulator, install,
   or screenshot behavior changed. NWS alerts remain roadmap-only.
-
-### 2026-09-05-slice-23a-nws-alert-fixtures-parsing-mapping
-
-Status: committed
-Mode: feature
-Slice: Slice 23A, NWS Alert Fixtures, Parsing, and Mapping
-Commit: `17dab0c`
-
-Result:
-- Expanded the provider-neutral `WeatherAlert` model with urgency, certainty,
-  lifecycle, replacement references, affected area, GeoJSON geometry,
-  timestamps, optional alert metadata, and official-alert provenance retention.
-- Added offline NWS active-alert DTO, parser, and mapper code under
-  `core/.../provider/nws/` without transport, repository, cache, app, or UI
-  wiring.
-- Added committed-style fixture coverage for empty, one, many, missing optional,
-  unknown enum, polygon geometry, null geometry, duplicate ID, update/cancel
-  references, near-future effective, expired/superseded cached input,
-  invalid timestamps, invalid geometry, malformed active envelope, malformed
-  problem body, and unsupported-region problem body cases.
-
-Evidence:
-- Focused NWS parser/mapper tests passed:
-  `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*NwsAlertParserTest' --tests '*NwsAlertMapperTest'`.
-- Existing Open-Meteo/MET Norway provider parser/mapper regressions passed:
-  `. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*OpenMeteoForecastParserTest' --tests '*OpenMeteoForecastMapperTest' --tests '*MetNoForecastParserTest' --tests '*MetNoForecastMapperTest'`.
-- Broad checks passed:
-  `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-  `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
-  `git diff --check`.
-
-Artifacts:
-- `.codex/test-artifacts/2026-09-05-slice-23a-nws-alert-fixtures-parsing-mapping/`.
-
-Blockers:
-- None. The first focused NWS run failed because the malformed-problem parser
-  test expected one envelope failure subtype for both problem fixtures; the
-  test was corrected and the focused rerun passed. A later invalid-geometry
-  coverage addition initially expected a less precise field path; the test was
-  corrected to the mapper's exact polygon longitude path and rerun passed.
-
-Boundaries:
-- No NWS HTTP client, headers, request/error-result classification,
-  repository composition, deduplication, cache filtering, persistence, Room,
-  app UI, installed path, Gradle, dependency, live NWS request, emulator,
-  connected test, alert presentation, or `AlertProvider` result-boundary
-  behavior changed.
-
-### 2026-09-05-slice-23b-nws-alert-transport-boundary
-
-Status: committed
-Mode: feature
-Slice: Slice 23B, NWS Alert Transport, Classification, and Provider Boundary
-Commit: `dcf707b`
-
-Result:
-- Added provider-neutral alert success metadata and classified failure results.
-- Added configurable NWS HTTPS transport with required identity headers,
-  point validation/query construction, problem-body classification,
-  case-insensitive response headers, and injected clock use.
-- Added the NWS provider adapter mapping parsed alerts into provider-neutral
-  `WeatherAlert` values with deterministic provenance metadata.
-- Added focused client, provider, and provider-contract tests covering empty
-  and non-empty success collections, metadata propagation, invalid input,
-  unsupported-region, ordinary 400, malformed problem, identification
-  rejection, network, rate limit, provider-unavailable, malformed success,
-  and unexpected-provider cases.
-
-Evidence:
-- Core compilation, Slice 23A parser/mapper regression, app compilation, full
-  app/core unit tests, focused 23B client/provider/contract tests, debug
-  assembly, and `git diff --check` passed.
-
-Blockers:
-- None.
-
-Boundaries:
-- No alert/forecast composition, deduplication, cache or persistence, app/UI,
-  background refresh, emulator, connected test, or live NWS behavior changed.
-
-### 2026-09-06-slice-23c-alert-repository-merge
-
-Status: committed
-Mode: feature
-Slice: Slice 23C, Alert Repository Merge
-Commit: `3c658a8`
-
-Result:
-- Corrected `AlertProvider` to the synchronous blocking result boundary.
-- Added provider-neutral `AlertLookupStatus` and the outer
-  `AlertMergingWeatherRepository`, including independent forecast success,
-  failure, stale/fallback provenance, deterministic alert deduplication, and
-  forecast-only cache composition.
-- Kept installed-app alert presentation, Room alert persistence, retries, and
-  background work out of scope.
-
-Evidence:
-- Baseline focused 23A/23B/cache tests passed before changes.
-- Focused merge, provider-contract, NWS transport/provider, and cache tests
-  passed.
-- Madison live `NwsAlertProvider` check passed within the 60-second cap; the
-  disposable test was removed afterward.
-- App compile, full app/core unit tests, debug assembly, and `git diff --check`
-  passed.
-
-Artifacts:
-- `.codex/test-artifacts/2026-09-06-slice-23c-alert-repository-merge/`.
-
-Blockers:
-- None.
-
-Boundaries:
-- No app factory wiring, UI, Room schema, alert cache, forecast provider
-  semantics, or connected/emulator test was added.

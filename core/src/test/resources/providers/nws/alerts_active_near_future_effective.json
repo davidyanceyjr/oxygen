@@ -1,0 +1,17 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "future-feature",
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "future-alert",
+        "event": "Winter Storm Warning",
+        "senderName": "National Weather Service",
+        "effective": "2026-09-05T19:00:00+00:00",
+        "onset": "2026-09-05T19:15:00+00:00"
+      }
+    }
+  ]
+}
