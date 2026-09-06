@@ -1,14 +1,14 @@
 # Slice 23C — Alert Repository Merge
 
-**Status:** verified, not committed
-**Planning basis:** local `main` `dcf707b` (Slice 23B), reviewed 2026-09-06
+**Status:** committed
+**Planning basis:** local `main` `3c658a8` (Slice 23C), reviewed 2026-09-06
 **Cycle ID:** `2026-09-06-slice-23c-alert-repository-merge`
 
 ## Decision and acceptance boundary
 
 Slices 22 (`d0a7eb3`), 23A (`17dab0c`), and 23B (`dcf707b`) are committed
-prerequisites. Slice 23C will combine a completed forecast result with an
-independent NWS alert lookup in `:core`; it will not activate installed-app
+prerequisites. Slice 23C combined a completed forecast result with an
+independent NWS alert lookup in `:core`; it does not activate installed-app
 alert UI, persist alerts, change Room, or alter forecast fallback/cache
 semantics.
 
@@ -170,5 +170,4 @@ Changed test files:
 
 Evidence is recorded in `.codex/test-artifacts/2026-09-06-slice-23c-alert-repository-merge/ledger.md`.
 The disposable live-check passed for Madison's point and was removed after
-the run. The implementation is verified in the current uncommitted changeset;
-no commit was created in this execution.
+the run. The implementation is committed in `3c658a8`.

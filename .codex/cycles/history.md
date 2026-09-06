@@ -32,14 +32,14 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 23B, NWS Alert Transport and
-  Provider Boundary, committed at `dcf707b`.
+- Last committed implementation slice: Slice 23C, Alert Repository Merge,
+  committed at `3c658a8`.
 - Last committed implementation gate: Gate 20-0, Presentation Semantics and
   Localization Safety, committed at `587b0ad`.
-- Last committed documentation sync: Post-20-0 Authority Sync, committed at
-  `a0bca26`.
-- Current changeset: Slice 23C, Alert Repository Merge, is verified but not
-  committed; `.codex/plans/current.md` records its acceptance evidence.
+- Last committed documentation sync: Slice 23C Authority Sync, committed at
+  `3c658a8`.
+- Current changeset: none; Slice 23C, Alert Repository Merge, is committed at
+  `3c658a8`.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -519,10 +519,10 @@ Boundaries:
 
 ### 2026-09-05-post-20b-authority-sync
 
-Status: ready
+Status: committed
 Mode: documentation-only
 Slice: Post-20B Authority Sync
-Commit: not committed
+Commit: `0fb2ce6`
 
 Result:
 - Updated README to distinguish the implemented provider-neutral unit
@@ -595,10 +595,10 @@ Boundaries:
 
 ### 2026-09-05-slice-21-optional-device-location
 
-Status: verified
+Status: committed
 Mode: feature
 Slice: Slice 21, Optional Device Location
-Commit: not committed
+Commit: `3ea5ae6`
 
 Result:
 - Added an app-local coarse-location acquisition path with a cancellable
@@ -779,10 +779,10 @@ Boundaries:
 
 ### 2026-09-06-slice-23c-alert-repository-merge
 
-Status: verified, not committed
+Status: committed
 Mode: feature
 Slice: Slice 23C, Alert Repository Merge
-Commit: not committed
+Commit: `3c658a8`
 
 Result:
 - Corrected `AlertProvider` to the synchronous blocking result boundary.
