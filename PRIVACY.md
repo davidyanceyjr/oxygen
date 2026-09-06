@@ -38,6 +38,9 @@ such as IP address. NWS lookup is independent of forecast retrieval, is gated
 per exact selected point in process memory for 30 seconds, and is not persisted
 or run in the background.
 
+Opening the alert detail surface reuses the same foreground alert result and
+does not add a separate network request.
+
 Open-Meteo provider privacy implications and reviewed terms are recorded in
 docs/data-sources/OPEN_METEO_FORECAST.md and
 docs/data-sources/OPEN_METEO_GEOCODING.md.
@@ -66,7 +69,7 @@ location and can restore the last cached forecast offline.
 The installed app also stores the last selected location and saved-location
 records locally. Saved rows can be shown and selected from the location-entry
 surface, with search-result save, confirmed removal, and persisted unit choices.
-The app does not currently include alert detail navigation or alert
-persistence/cache, background alert polling or notifications, air-quality lookup,
-radar, conditional GET requests, 304 not-modified handling, or
-release-candidate fallback behavior.
+The app includes alert detail navigation, but not alert persistence/cache,
+background alert polling or notifications, air-quality lookup, radar,
+conditional GET requests, 304 not-modified handling, or release-candidate
+fallback behavior.

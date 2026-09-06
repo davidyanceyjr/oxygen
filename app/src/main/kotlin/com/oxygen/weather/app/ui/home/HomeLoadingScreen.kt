@@ -74,6 +74,7 @@ fun HomeLoadingScreen(
     onRefresh: () -> Unit = {},
     onChangeLocation: () -> Unit = {},
     onOpenAbout: () -> Unit = {},
+    onAlertDetailsRequested: () -> Unit = {},
 ) {
     val baseRoles = LocalOxygenHomeDesign.current
     val roles = if (appearance.effects == EffectsLevel.OFF) {
@@ -94,6 +95,7 @@ fun HomeLoadingScreen(
                     onRefresh = onRefresh,
                     onChangeLocation = onChangeLocation,
                     onOpenAbout = onOpenAbout,
+                    onAlertDetailsRequested = onAlertDetailsRequested,
                 )
                 return@CompositionLocalProvider
             }
@@ -200,6 +202,7 @@ private fun ReadyContent(
     onRefresh: () -> Unit,
     onChangeLocation: () -> Unit,
     onOpenAbout: () -> Unit,
+    onAlertDetailsRequested: () -> Unit,
 ) {
     val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
@@ -262,6 +265,7 @@ private fun ReadyContent(
                     when (pages[pageIndex]) {
                         HomePage.Now -> NowPage(
                             state = state,
+                            onAlertDetailsRequested = onAlertDetailsRequested,
                         )
                         HomePage.Hourly -> HourlyPage(state)
                         HomePage.Daily -> DailyPage(state)
@@ -444,6 +448,7 @@ private fun ReadyHeader(
 @Composable
 private fun NowPage(
     state: HomeForecastPresentationState.ForecastReady,
+    onAlertDetailsRequested: () -> Unit,
 ) {
     val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
@@ -550,7 +555,10 @@ private fun NowPage(
 
     dashboard.alertSummary?.let { alert ->
         DashboardCard(tag = "home-section-alert") {
-            OfficialAlertSummary(alert)
+            OfficialAlertSummary(
+                summary = alert,
+                onAlertDetailsRequested = onAlertDetailsRequested,
+            )
         }
     }
 
@@ -563,7 +571,10 @@ private fun NowPage(
 }
 
 @Composable
-private fun OfficialAlertSummary(summary: HomeAlertSummaryPresentation) {
+private fun OfficialAlertSummary(
+    summary: HomeAlertSummaryPresentation,
+    onAlertDetailsRequested: () -> Unit,
+) {
     val roles = LocalOxygenHomeDesign.current
     val uriHandler = LocalUriHandler.current
     Text("Official alert", style = roles.sectionHeading)
@@ -572,6 +583,15 @@ private fun OfficialAlertSummary(summary: HomeAlertSummaryPresentation) {
     Text("Issuer: ${summary.issuer}", style = MaterialTheme.typography.bodyMedium)
     Text(summary.expires, style = MaterialTheme.typography.bodyMedium)
     Text(summary.sourceCheckedAt, style = MaterialTheme.typography.bodySmall)
+    OutlinedButton(
+        onClick = onAlertDetailsRequested,
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .testTag("home-alert-details")
+            .semantics { contentDescription = summary.detailActionContentDescription },
+    ) {
+        Text(summary.detailActionLabel)
+    }
     TextButton(
         onClick = { uriHandler.openUri(summary.sourceLink) },
         modifier = Modifier

@@ -80,7 +80,8 @@ source-code licensing.
   summary displays this attribution and links to the supplied official source,
   falling back to `https://www.weather.gov/` when the supplied URL is invalid.
 - Current app status: installed for terminal forecast successes, with a
-  process-local 30-second per-point request gate and no alert persistence.
+  process-local 30-second per-point request gate, a Home Now summary, and
+  in-app alert detail navigation; alert persistence/cache is still absent.
 - Contract: `docs/data-sources/NWS_ALERTS.md`.
 - Last terms review date: 2026-09-05.
 
@@ -106,10 +107,10 @@ selected local `LocationId`.
 The installed app also persists saved locations locally, shows saved rows on the
 location-entry surface, marks the current saved location, and can select an
 existing saved row through the local selected-location path, save search results,
-remove saved rows after confirmation, and persist unit choices. It does not yet implement
-alert detail navigation or alert persistence/cache, background alert polling or
-notifications, air-quality lookup, radar, provider-specific MET Norway
-conditional GET/304 handling, or release-candidate fallback behavior.
+remove saved rows after confirmation, and persist unit choices. It does not yet
+implement alert persistence/cache, background alert polling or notifications,
+air-quality lookup, radar, provider-specific MET Norway conditional GET/304
+handling, or release-candidate fallback behavior.
 
 Before any additional provider becomes active, document its current terms,
 attribution, rate/caching requirements, privacy implications, and last review

@@ -63,6 +63,7 @@ fun WeatherBundle.toHomeSuccessPresentation(
     val provenance = mostRelevantProvenance()?.toSourcePresentation(zoneId) ?: bundleFallbackSource(zoneId)
     val effectiveAlertStatus = alertStatus ?: alerts.legacyAlertStatus(selectedLocation)
     val alertSummary = effectiveAlertStatus?.toHomeAlertSummary(alerts, zoneId)
+    val alertDetails = effectiveAlertStatus?.toHomeAlertDetails(alerts, zoneId).orEmpty()
     val precipitationSummary = hourly.nearTermPrecipitationSummary(units)
     val returnedDataUnavailable = current == null && hourly.isEmpty() && daily.isEmpty()
 
@@ -71,6 +72,7 @@ fun WeatherBundle.toHomeSuccessPresentation(
         locationSubtitle = selectedLocation.forecastSubtitle(),
         alerts = alerts,
         alertSummary = alertSummary,
+        alertDetails = alertDetails,
         current = currentPresentation,
         currentUnavailableText = if (currentPresentation == null && !returnedDataUnavailable) {
             "Current conditions unavailable"
@@ -108,6 +110,7 @@ data class HomeSuccessPresentation(
     val locationSubtitle: String,
     val alerts: List<WeatherAlert>,
     val alertSummary: HomeAlertSummaryPresentation?,
+    val alertDetails: List<HomeAlertDetailPresentation>,
     val current: HomeCurrentPresentation?,
     val currentUnavailableText: String?,
     val precipitationSummary: String?,
@@ -139,6 +142,30 @@ data class HomeAlertSummaryPresentation(
     val issuer: String,
     val expires: String,
     val activeAlertCount: Int,
+    val sourceCheckedAt: String,
+    val attribution: String,
+    val sourceLink: String,
+    val sourceLinkLabel: String,
+    val detailActionLabel: String,
+    val detailActionContentDescription: String,
+)
+
+data class HomeAlertDetailPresentation(
+    val id: String,
+    val event: String,
+    val headline: String?,
+    val severity: String,
+    val urgency: String,
+    val certainty: String,
+    val issuer: String,
+    val effective: String,
+    val expires: String,
+    val sent: String?,
+    val onset: String?,
+    val ends: String?,
+    val affectedArea: String,
+    val description: String,
+    val instruction: String,
     val sourceCheckedAt: String,
     val attribution: String,
     val sourceLink: String,
@@ -419,8 +446,46 @@ private fun AlertLookupStatus.toHomeAlertSummary(
         attribution = "Official alerts from NOAA/National Weather Service",
         sourceLink = first.web.validAlertSourceUrl(),
         sourceLinkLabel = "Open official NOAA/National Weather Service alert source",
+        detailActionLabel = "View alert details",
+        detailActionContentDescription = "View official alert details",
     )
 }
+
+private fun AlertLookupStatus.toHomeAlertDetails(
+    alerts: List<WeatherAlert>,
+    zoneId: ZoneId,
+): List<HomeAlertDetailPresentation>? {
+    if (this !is AlertLookupStatus.Available || alerts.isEmpty()) return null
+    require(alerts.map { it.id }.toSet().size == alerts.size) {
+        "Available alerts must have unique IDs"
+    }
+    return alerts.map { alert ->
+        HomeAlertDetailPresentation(
+            id = alert.id,
+            event = alert.event,
+            headline = alert.headline,
+            severity = alert.severity.readableAlertLabel(),
+            urgency = alert.urgency.readableAlertLabel(),
+            certainty = alert.certainty.readableAlertLabel(),
+            issuer = alert.issuer,
+            effective = alert.effective?.formatFetched(zoneId) ?: UNAVAILABLE,
+            expires = alert.expires?.formatFetched(zoneId) ?: UNAVAILABLE,
+            sent = alert.sent?.formatFetched(zoneId),
+            onset = alert.onset?.formatFetched(zoneId),
+            ends = alert.ends?.formatFetched(zoneId),
+            affectedArea = alert.affectedArea?.areaDescription?.takeIf { it.isNotBlank() } ?: UNAVAILABLE,
+            description = alert.description?.takeIf { it.isNotBlank() } ?: UNAVAILABLE,
+            instruction = alert.instruction?.takeIf { it.isNotBlank() } ?: UNAVAILABLE,
+            sourceCheckedAt = "Alert source checked ${metadata.fetchedAt.formatFetched(zoneId)}",
+            attribution = "Official alerts from NOAA/National Weather Service",
+            sourceLink = alert.web.validAlertSourceUrl(),
+            sourceLinkLabel = "Open official NOAA/National Weather Service alert source for ${alert.event}",
+        )
+    }
+}
+
+private fun Enum<*>.readableAlertLabel(): String =
+    name.lowercase(Locale.US).replace('_', ' ').replaceFirstChar { it.uppercase() }
 
 private fun List<WeatherAlert>.legacyAlertStatus(selectedLocation: WeatherLocation): AlertLookupStatus? {
     val first = firstOrNull() ?: return null

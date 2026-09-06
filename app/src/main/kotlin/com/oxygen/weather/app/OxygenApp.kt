@@ -10,8 +10,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.oxygen.weather.app.ui.about.AboutScreen
+import com.oxygen.weather.app.ui.alerts.AlertDetailScreen
 import com.oxygen.weather.app.ui.firstrun.FirstRunLocationEntryScreen
 import com.oxygen.weather.app.ui.home.HomeLoadingScreen
+import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenTheme
 import com.oxygen.weather.app.ui.theme.OxygenThemeId
 
@@ -19,6 +21,7 @@ import com.oxygen.weather.app.ui.theme.OxygenThemeId
 fun OxygenApp(
     stateHolder: OxygenAppStateHolder = remember { OxygenAppStateHolder() },
     onRequestLocationPermission: (Long) -> Unit = {},
+    appearance: OxygenAppearance = OxygenAppearance(),
 ) {
     var themeId by remember { mutableStateOf(OxygenThemeId.OXYGEN) }
     var appState by remember(stateHolder) { mutableStateOf(stateHolder.presentationState) }
@@ -36,8 +39,19 @@ fun OxygenApp(
         }
     }
     val entry = appState.screen as? OxygenAppScreen.FirstRunLocationEntry
-    BackHandler(enabled = entry?.deviceProgress != null || entry?.canReturnHome == true) {
-        stateHolder.onLocationEntryBack()
+    BackHandler(
+        enabled = entry?.deviceProgress != null ||
+            entry?.canReturnHome == true ||
+            appState.screen is OxygenAppScreen.About ||
+            appState.screen is OxygenAppScreen.AlertDetail,
+    ) {
+        when (appState.screen) {
+            is OxygenAppScreen.FirstRunLocationEntry -> stateHolder.onLocationEntryBack()
+            is OxygenAppScreen.About -> stateHolder.onAboutBack()
+            is OxygenAppScreen.AlertDetail -> stateHolder.onAlertDetailBack()
+            is OxygenAppScreen.Home -> Unit
+        }
+        appState = stateHolder.presentationState
     }
 
     OxygenTheme(themeId = themeId) {
@@ -104,6 +118,7 @@ fun OxygenApp(
             )
             is OxygenAppScreen.Home -> HomeLoadingScreen(
                 state = screen.forecast,
+                appearance = appearance,
                 onRetry = {
                     stateHolder.onHomeForecastRetry()
                     appState = stateHolder.presentationState
@@ -118,6 +133,10 @@ fun OxygenApp(
                 },
                 onOpenAbout = {
                     stateHolder.onOpenAbout()
+                    appState = stateHolder.presentationState
+                },
+                onAlertDetailsRequested = {
+                    stateHolder.onHomeAlertDetailsRequested()
                     appState = stateHolder.presentationState
                 },
             )
@@ -135,6 +154,17 @@ fun OxygenApp(
                 unitPreferenceMessage = screen.unitPreferenceMessage,
                 onUnitPreferenceSelected = {
                     stateHolder.onUnitPreferenceSelected(it)
+                    appState = stateHolder.presentationState
+                },
+            )
+            is OxygenAppScreen.AlertDetail -> AlertDetailScreen(
+                state = screen,
+                onAlertSelected = {
+                    stateHolder.onAlertDetailSelected(it)
+                    appState = stateHolder.presentationState
+                },
+                onBack = {
+                    stateHolder.onAlertDetailBack()
                     appState = stateHolder.presentationState
                 },
             )

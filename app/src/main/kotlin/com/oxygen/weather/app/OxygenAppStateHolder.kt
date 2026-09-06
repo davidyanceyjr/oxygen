@@ -315,6 +315,39 @@ class OxygenAppStateHolder(
     }
 
     @Synchronized
+    fun onHomeAlertDetailsRequested() {
+        val home = presentationState.screen as? OxygenAppScreen.Home ?: return
+        val ready = home.forecast as? HomeForecastPresentationState.ForecastReady ?: return
+        val firstAlert = ready.dashboard.alertDetails.firstOrNull() ?: return
+        presentationState = presentationState.copy(
+            screen = OxygenAppScreen.AlertDetail(
+                selectedAlertId = firstAlert.id,
+                returnHome = home,
+            ),
+        )
+        publishState()
+    }
+
+    @Synchronized
+    fun onAlertDetailSelected(alertId: String) {
+        val detail = presentationState.screen as? OxygenAppScreen.AlertDetail ?: return
+        val ready = detail.returnHome.forecast as? HomeForecastPresentationState.ForecastReady ?: return
+        if (ready.dashboard.alertDetails.none { it.id == alertId }) return
+        if (detail.selectedAlertId == alertId) return
+        presentationState = presentationState.copy(
+            screen = detail.copy(selectedAlertId = alertId),
+        )
+        publishState()
+    }
+
+    @Synchronized
+    fun onAlertDetailBack() {
+        val detail = presentationState.screen as? OxygenAppScreen.AlertDetail ?: return
+        presentationState = presentationState.copy(screen = detail.returnHome)
+        publishState()
+    }
+
+    @Synchronized
     fun onChangeLocation() {
         val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
             ?: return
@@ -445,9 +478,10 @@ class OxygenAppStateHolder(
         } else {
             HomeForecastPresentationState.Loading.from(location)
         }
-        presentationState = OxygenAppPresentationState(
-            screen = OxygenAppScreen.Home(
-                forecast = nextForecast,
+        val currentScreen = presentationState.screen
+        presentationState = presentationState.copy(
+            screen = currentScreen.withVisibleOrReturnScreen(
+                OxygenAppScreen.Home(forecast = nextForecast),
             ),
             selectedLocation = location,
             unitPreference = activeUnitPreference,
@@ -786,7 +820,7 @@ class OxygenAppStateHolder(
         val nextHome = OxygenAppScreen.Home(forecast = forecast)
         val currentScreen = presentationState.screen
         presentationState = OxygenAppPresentationState(
-            screen = currentScreen.withVisibleOrReturnScreen(nextHome),
+            screen = currentScreen.withHomeReplacement(nextHome),
             selectedLocation = location,
             unitPreference = activeUnitPreference,
         )
@@ -1140,18 +1174,42 @@ sealed interface OxygenAppScreen {
         val surfaceState: AboutSurfaceState
             get() = aboutSurfaceState(selectedSurface)
     }
+
+    data class AlertDetail(
+        val selectedAlertId: String,
+        val returnHome: Home,
+    ) : OxygenAppScreen
 }
 
 private fun OxygenAppScreen.visibleOrReturnScreen(): OxygenAppScreen =
     when (this) {
-        is OxygenAppScreen.About -> returnScreen
+        is OxygenAppScreen.About -> returnScreen.visibleOrReturnScreen()
+        is OxygenAppScreen.AlertDetail -> returnHome
         else -> this
     }
 
 private fun OxygenAppScreen.withVisibleOrReturnScreen(nextScreen: OxygenAppScreen): OxygenAppScreen =
     when (this) {
-        is OxygenAppScreen.About -> copy(returnScreen = nextScreen)
+        is OxygenAppScreen.About -> copy(returnScreen = returnScreen.withVisibleOrReturnScreen(nextScreen))
+        is OxygenAppScreen.AlertDetail -> {
+            val nextHome = nextScreen as? OxygenAppScreen.Home ?: return this
+            copy(returnHome = nextHome)
+        }
         else -> nextScreen
+    }
+
+private fun OxygenAppScreen.withHomeReplacement(nextHome: OxygenAppScreen.Home): OxygenAppScreen =
+    when (this) {
+        is OxygenAppScreen.About -> copy(returnScreen = returnScreen.withHomeReplacement(nextHome))
+        is OxygenAppScreen.AlertDetail -> {
+            val nextReady = nextHome.forecast as? HomeForecastPresentationState.ForecastReady
+            if (nextReady?.dashboard?.alertDetails?.any { it.id == selectedAlertId } == true) {
+                copy(returnHome = nextHome)
+            } else {
+                nextHome
+            }
+        }
+        else -> nextHome
     }
 
 sealed interface ManualLocationSearchState {

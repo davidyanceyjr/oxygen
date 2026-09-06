@@ -26,6 +26,7 @@ import java.time.Instant
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HomeForecastPresentationMapperTest {
@@ -97,6 +98,88 @@ class HomeForecastPresentationMapperTest {
                 )
                 assertEquals("https://www.weather.gov/", presentation.alertSummary?.sourceLink)
             }
+    }
+
+    @Test
+    fun availableAlertsMapCompleteDetailsInSelectedZoneAndKeepSourceCheckSeparate() {
+        val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
+        val alert = mapperAlert(web = "https://alerts.weather.gov/one").copy(
+            headline = "Flooding is possible",
+            urgency = com.oxygen.weather.core.model.AlertUrgency.IMMEDIATE,
+            certainty = com.oxygen.weather.core.model.AlertCertainty.LIKELY,
+            effective = Instant.parse("2026-08-22T12:00:00Z"),
+            sent = Instant.parse("2026-08-22T11:30:00Z"),
+            onset = Instant.parse("2026-08-22T13:00:00Z"),
+            ends = Instant.parse("2026-08-22T20:00:00Z"),
+            affectedArea = com.oxygen.weather.core.model.AlertAffectedArea(areaDescription = "Dane County"),
+            description = "Line one\nLine two",
+            instruction = "Move to higher ground.\nDo not drive.",
+        )
+
+        val detail = fullWeatherBundle().copy(alerts = listOf(alert)).toHomeSuccessPresentation(
+            selectedLocation = testLocation,
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(testLocation.point, "nws", checkedAt),
+            ),
+        ).alertDetails.single()
+
+        assertEquals("alert-1", detail.id)
+        assertEquals("Flood Watch", detail.event)
+        assertEquals("Flooding is possible", detail.headline)
+        assertEquals("Moderate", detail.severity)
+        assertEquals("Immediate", detail.urgency)
+        assertEquals("Likely", detail.certainty)
+        assertEquals("Aug 22, 7:00 AM CDT", detail.effective)
+        assertEquals("Aug 22, 1:00 PM CDT", detail.expires)
+        assertEquals("Aug 22, 6:30 AM CDT", detail.sent)
+        assertEquals("Aug 22, 8:00 AM CDT", detail.onset)
+        assertEquals("Aug 22, 3:00 PM CDT", detail.ends)
+        assertEquals("Dane County", detail.affectedArea)
+        assertEquals("Line one\nLine two", detail.description)
+        assertEquals("Move to higher ground.\nDo not drive.", detail.instruction)
+        assertEquals("Alert source checked Aug 22, 10:05 AM CDT", detail.sourceCheckedAt)
+        assertEquals("https://alerts.weather.gov/one", detail.sourceLink)
+        assertTrue(detail.sourceLinkLabel.contains("Flood Watch"))
+    }
+
+    @Test
+    fun nonAvailableStatusesHaveNoAlertDetailsAndMissingValuesStayUnavailable() {
+        val statuses = listOf(
+            AlertLookupStatus.NotRequested,
+            AlertLookupStatus.NoAlerts(AlertSuccessMetadata(testLocation.point, "nws", Instant.parse("2026-08-22T15:05:00Z"))),
+            AlertLookupStatus.UnsupportedRegion,
+            AlertLookupStatus.Failed(com.oxygen.weather.core.provider.AlertProviderError.Network),
+            AlertLookupStatus.SkippedByRateLimit("nws", testLocation.point, Instant.parse("2026-08-22T15:06:00Z")),
+        )
+        statuses.forEach { status ->
+            assertTrue(fullWeatherBundle().toHomeSuccessPresentation(testLocation, alertStatus = status).alertDetails.isEmpty())
+        }
+
+        val missing = mapperAlert().copy(
+            effective = null,
+            expires = null,
+            affectedArea = null,
+            description = null,
+            instruction = null,
+        )
+        val detail = fullWeatherBundle().copy(alerts = listOf(missing)).toHomeSuccessPresentation(
+            testLocation,
+            alertStatus = AlertLookupStatus.Available(AlertSuccessMetadata(testLocation.point, "nws", Instant.parse("2026-08-22T15:05:00Z"))),
+        ).alertDetails.single()
+        assertEquals("Unavailable", detail.effective)
+        assertEquals("Unavailable", detail.expires)
+        assertEquals("Unavailable", detail.affectedArea)
+        assertEquals("Unavailable", detail.description)
+        assertEquals("Unavailable", detail.instruction)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun availableDuplicateAlertIdsAreRejected() {
+        val alert = mapperAlert()
+        fullWeatherBundle().copy(alerts = listOf(alert, alert)).toHomeSuccessPresentation(
+            testLocation,
+            alertStatus = AlertLookupStatus.Available(AlertSuccessMetadata(testLocation.point, "nws", Instant.parse("2026-08-22T15:05:00Z"))),
+        )
     }
     @Test
     fun `mapper keeps canonical values separate from formatted Home text`() {

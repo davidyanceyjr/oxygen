@@ -350,6 +350,111 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun officialAlertDetailFlowSelectsSecondAlertPreservesVerbatimTextAndReturnsHome() {
+        val location = weatherLocation(name = "Alert Detail City")
+        val baseAlert = fullWeatherBundle(location).alerts.single()
+        val alerts = listOf(
+            baseAlert.copy(
+                id = "detail-alert-1",
+                event = "Flash Flood Warning",
+                headline = "Flooding is possible",
+                issuer = "Madison Warning Office",
+                urgency = com.oxygen.weather.core.model.AlertUrgency.IMMEDIATE,
+                certainty = com.oxygen.weather.core.model.AlertCertainty.LIKELY,
+                effective = Instant.parse("2026-08-22T12:00:00Z"),
+                sent = Instant.parse("2026-08-22T11:30:00Z"),
+                onset = Instant.parse("2026-08-22T13:00:00Z"),
+                ends = Instant.parse("2026-08-22T20:00:00Z"),
+                affectedArea = com.oxygen.weather.core.model.AlertAffectedArea(areaDescription = "Dane County"),
+                description = "First alert line one\nFirst alert line two",
+                instruction = "Move to higher ground.\nDo not drive.",
+                web = "https://alerts.weather.gov/detail-one",
+            ),
+            baseAlert.copy(
+                id = "detail-alert-2",
+                event = "Heat Advisory",
+                issuer = "Central Forecast Office",
+                effective = Instant.parse("2026-08-22T14:00:00Z"),
+                expires = Instant.parse("2026-08-22T21:00:00Z"),
+                description = "Second alert description",
+                instruction = "Drink water.\nTake breaks.",
+                web = "https://alerts.weather.gov/detail-two",
+            ),
+        )
+        val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(
+                    WeatherRepositoryResult.Success(
+                        weather = fullWeatherBundle(location).copy(alerts = alerts),
+                        alertStatus = AlertLookupStatus.Available(
+                            AlertSuccessMetadata(location.point, "nws", checkedAt),
+                        ),
+                    ),
+                ),
+            ),
+            forecastExecutor = DirectExecutor,
+        )
+        val openedUris = mutableListOf<String>()
+        val uriHandler = object : UriHandler {
+            override fun openUri(uri: String) {
+                openedUris += uri
+            }
+        }
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1.3f),
+                LocalUriHandler provides uriHandler,
+            ) {
+                Box(Modifier.width(360.dp).height(640.dp)) {
+                    OxygenApp(
+                        stateHolder = holder,
+                        appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-alert-source-link").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-alert-details").performClick()
+        composeRule.onNodeWithTag("alert-detail-title").assertIsDisplayed()
+        composeRule.onNodeWithTag("alert-detail-selector-0").assertIsSelected()
+        composeRule.onNodeWithText("Issuer: Madison Warning Office").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Urgency: Immediate").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Certainty: Likely").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Effective: Aug 22, 7:00 AM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Expires: Aug 22, 1:00 PM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Affected area: Dane County").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("First alert line one\nFirst alert line two").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Move to higher ground.\nDo not drive.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Alert source checked Aug 22, 10:05 AM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Official alerts from NOAA/National Weather Service").performScrollTo().assertIsDisplayed()
+
+        composeRule.onNodeWithTag("alert-detail-selector-1").performScrollTo().performClick()
+        composeRule.onNodeWithTag("alert-detail-selector-1").assertIsSelected()
+        composeRule.onNodeWithText("Issuer: Central Forecast Office").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Second alert description").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Drink water.\nTake breaks.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("alert-detail-source-link").performScrollTo().performClick()
+        assertEquals(listOf("https://alerts.weather.gov/detail-two"), openedUris)
+
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.filesDir.resolve("alert-detail-effects-off-360x640-font-1.3-semantics.txt")
+            .writeText(composeRule.onRoot(useUnmergedTree = true).printToString(maxDepth = 120))
+        val screenshot = composeRule.onRoot().captureToImage().asAndroidBitmap()
+        context.filesDir.resolve("alert-detail-effects-off-360x640-font-1.3.png").outputStream().use {
+            assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, it))
+        }
+
+        composeRule.onNodeWithTag("alert-detail-back").performScrollTo().performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-section-alert").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
     fun representativeWeatherMarksRenderGoldLineTreatmentForProviderNeutralConditions() {
         composeRule.setContent {
             OxygenTheme {
