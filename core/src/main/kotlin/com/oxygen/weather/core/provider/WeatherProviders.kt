@@ -9,6 +9,7 @@ import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.cache.ForecastCacheMetadata
 import java.time.Duration
 import java.time.ZoneId
+import java.time.Instant
 
 fun interface CoordinateTimeZoneResolver {
     fun resolve(point: GeoPoint): CoordinateTimeZoneResult
@@ -30,7 +31,38 @@ interface ForecastProvider {
 
 interface AlertProvider {
     val id: String
-    suspend fun getActiveAlerts(location: GeoPoint): List<WeatherAlert>
+    suspend fun getActiveAlerts(location: GeoPoint): AlertProviderResult
+}
+
+data class AlertSuccessMetadata(
+    val requestPoint: GeoPoint,
+    val providerId: String,
+    val fetchedAt: Instant,
+    val cacheControl: String? = null,
+    val expires: String? = null,
+    val etag: String? = null,
+    val lastModified: String? = null,
+)
+
+sealed interface AlertProviderResult {
+    data class Success(
+        val alerts: List<WeatherAlert>,
+        val metadata: AlertSuccessMetadata,
+    ) : AlertProviderResult
+
+    data class Failure(val error: AlertProviderError) : AlertProviderResult
+}
+
+sealed interface AlertProviderError {
+    data object InvalidPoint : AlertProviderError
+    data object InvalidRequest : AlertProviderError
+    data object UnsupportedRegion : AlertProviderError
+    data object IdentificationRejected : AlertProviderError
+    data object Network : AlertProviderError
+    data class RateLimited(val retryAfter: String? = null) : AlertProviderError
+    data object ProviderUnavailable : AlertProviderError
+    data object InvalidResponse : AlertProviderError
+    data object UnexpectedProvider : AlertProviderError
 }
 
 interface AirQualityProvider {

@@ -743,3 +743,34 @@ Boundaries:
   app UI, installed path, Gradle, dependency, live NWS request, emulator,
   connected test, alert presentation, or `AlertProvider` result-boundary
   behavior changed.
+
+### 2026-09-05-slice-23b-nws-alert-transport-boundary
+
+Status: ready, not committed
+Mode: feature
+Slice: Slice 23B, NWS Alert Transport, Classification, and Provider Boundary
+
+Result:
+- Added provider-neutral alert success metadata and classified failure results.
+- Added configurable NWS HTTPS transport with required identity headers,
+  point validation/query construction, problem-body classification,
+  case-insensitive response headers, and injected clock use.
+- Added the NWS provider adapter mapping parsed alerts into provider-neutral
+  `WeatherAlert` values with deterministic provenance metadata.
+- Added focused client, provider, and provider-contract tests covering empty
+  and non-empty success collections, metadata propagation, invalid input,
+  unsupported-region, ordinary 400, malformed problem, identification
+  rejection, network, rate limit, provider-unavailable, malformed success,
+  and unexpected-provider cases.
+
+Evidence:
+- Core compilation, Slice 23A parser/mapper regression, app compilation, full
+  app/core unit tests, focused 23B client/provider/contract tests, debug
+  assembly, and `git diff --check` passed.
+
+Blockers:
+- None.
+
+Boundaries:
+- No alert/forecast composition, deduplication, cache or persistence, app/UI,
+  background refresh, emulator, connected test, or live NWS behavior changed.
