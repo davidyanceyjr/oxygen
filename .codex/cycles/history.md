@@ -32,14 +32,15 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 25A, Settings Information
-  Architecture, committed at `2484e90`; completion evidence is recorded at
-  `.codex/test-artifacts/2026-09-06-slice-25a-settings-information-architecture/`.
+- Last committed implementation gate: Gate 25, Disclosure Baseline Check,
+  committed at `23a9d49`; completion evidence is recorded at
+  `.codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check/`.
 - Last committed implementation gate: Gate 20-0, Presentation Semantics and
   Localization Safety, committed at `587b0ad`.
-- Last committed documentation sync: Slice 25A post-commit authority sync.
-- Current changeset: none; Slice 25A Settings information architecture is
-  committed and the live authorities are synchronized to that state.
+- Last committed documentation sync: Gate 25 authority sync, committed at
+  `99097d9`.
+- Current changeset: no additional product changes; the uncommitted
+  `.codex/review/findings.md` edit is retained as a review-note change.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
