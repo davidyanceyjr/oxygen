@@ -43,6 +43,9 @@ and `docs/data-sources/`.
   source-check time, and working external source link.
 - Persisted Oxygen default, Metric, US, and UK unit selection through the
   installed Settings / Units surface, with immediate Home remapping.
+- Persisted Off and Subtle effects selection through the installed Settings /
+  Appearance surface, with conservative Off startup/failure handling and an
+  Android disabled-animation override that leaves the saved choice unchanged.
 - Home presentation conversion for provider-neutral unit preferences at the
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
@@ -67,7 +70,7 @@ and `docs/data-sources/`.
 
 - Custom unit editing UI.
 - Alert persistence/cache, background polling, and notifications.
-- Persisted appearance/effects/layout settings.
+- Full effects behavior and persisted theme, layout, and icon-pack settings.
 - Release-candidate verification.
 
 ## Repository structure

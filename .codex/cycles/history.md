@@ -1016,3 +1016,53 @@ Authority sync:
   reconciled before implementation; section 53 and the roadmap now identify
   Slice 26 as the next candidate. This history entry and the active plan were
   synchronized after implementation commit.
+
+### 2026-09-07-slice-26-effects-preference
+
+Status: implemented and verified at the focused Android/state boundary; not committed
+Mode: feature and documentation sync
+Slice: Slice 26, Persisted Effects Off/Subtle Baseline
+Commit state: uncommitted; unrelated `.codex/review/findings.md` edit retained
+
+Result:
+- Added a versioned application-context Preferences DataStore for Off/Subtle
+  effects, with missing/unsupported records defaulting to Subtle and local
+  read/write failures exposed to the Appearance surface.
+- Added guarded pending/confirmed effects state that survives forecast,
+  location, unit, and alert presentation reconstruction without new provider
+  requests. Added Settings Off/Subtle controls with selected semantics,
+  retryable read/write feedback, and no Full alias.
+- Added the Android `ValueAnimator.areAnimatorsEnabled()` adapter, lifecycle
+  resume sampling, conservative effective Off policy, and immediate pager
+  navigation when animators are disabled.
+- Updated privacy/about/specification/README status to describe only this
+  verified baseline; Full effects and other persisted appearance settings
+  remain unfinished.
+
+Evidence:
+- Focused app unit tests passed for storage codec/state defaults, read failure
+  recovery, failed-write retry, and zero forecast request delta.
+- The final seven-case connected filter passed for real DataStore readback and
+  Activity recreation, selector/request preservation, first-run write-failure
+  retry, injected read-error recovery, actual Android animator override, and
+  the planned Settings/Units regressions.
+- Installed production checks passed for compact readable Appearance controls,
+  Off force-stop persistence, Subtle restoration, animator-scale override,
+  restoration at scale 1, and device-setting cleanup.
+- Broad checks passed: compileDebugKotlin, app/core debug unit tests, assemble,
+  and `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-06-slice-26-effects-preference/`.
+
+Blockers:
+- One bounded live manual-search attempt did not reach a real forecast because
+  emulator text-entry/tap interaction left the query unchanged. No installed
+  Home forecast screenshot or real alert/stale session is claimed; deterministic
+  connected evidence covers the changed presentation boundary. TalkBack was
+  not run.
+
+Boundaries:
+- No Full effects, richer procedural scene behavior, persisted theme/layout/
+  icon settings, provider behavior, location permission behavior, or release
+  readiness was added.

@@ -9,6 +9,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalContext
 import com.oxygen.weather.app.ui.alerts.AlertDetailScreen
 import com.oxygen.weather.app.ui.firstrun.FirstRunLocationEntryScreen
 import com.oxygen.weather.app.ui.home.HomeLoadingScreen
@@ -21,10 +24,24 @@ fun OxygenApp(
     stateHolder: OxygenAppStateHolder = remember { OxygenAppStateHolder() },
     onRequestLocationPermission: (Long) -> Unit = {},
     appearance: OxygenAppearance = OxygenAppearance(),
+    motionPreferenceSource: MotionPreferenceSource = EnabledMotionPreferenceSource,
 ) {
-    val themeId = appearance.theme
     var appState by remember(stateHolder) { mutableStateOf(stateHolder.presentationState) }
+    var animationsEnabled by remember(motionPreferenceSource) {
+        mutableStateOf(motionPreferenceSource.areAnimationsEnabled())
+    }
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
+    val lifecycleOwner = LocalContext.current as? androidx.lifecycle.LifecycleOwner
+
+    DisposableEffect(lifecycleOwner, motionPreferenceSource) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                animationsEnabled = motionPreferenceSource.areAnimationsEnabled()
+            }
+        }
+        lifecycleOwner?.lifecycle?.addObserver(observer)
+        onDispose { lifecycleOwner?.lifecycle?.removeObserver(observer) }
+    }
 
     DisposableEffect(stateHolder) {
         stateHolder.setOnStateChanged { state ->
@@ -52,6 +69,16 @@ fun OxygenApp(
         }
         appState = stateHolder.presentationState
     }
+
+    val themeId = appearance.theme
+    val requestedAppearance = if (appState.effectsPreference.isManaged) {
+        appearance.copy(effects = appState.effectsPreference.effectiveRequested)
+    } else {
+        appearance
+    }
+    val effectiveAppearance = requestedAppearance.copy(
+        effects = if (animationsEnabled) requestedAppearance.effects else com.oxygen.weather.app.ui.theme.EffectsLevel.OFF,
+    )
 
     OxygenTheme(themeId = themeId) {
         when (val screen = appState.screen) {
@@ -118,7 +145,8 @@ fun OxygenApp(
             )
             is OxygenAppScreen.Home -> HomeLoadingScreen(
                 state = screen.forecast,
-                appearance = appearance,
+                appearance = effectiveAppearance,
+                animationsEnabled = animationsEnabled,
                 onRetry = {
                     stateHolder.onHomeForecastRetry()
                     appState = stateHolder.presentationState
@@ -142,8 +170,10 @@ fun OxygenApp(
             )
             is OxygenAppScreen.Settings -> SettingsScreen(
                 state = screen,
-                appearance = appearance,
+                appearance = effectiveAppearance,
                 themeId = themeId,
+                effectsPreference = appState.effectsPreference,
+                animationsEnabled = animationsEnabled,
                 onDestinationSelected = {
                     stateHolder.onSettingsDestinationSelected(it)
                     appState = stateHolder.presentationState
@@ -156,6 +186,14 @@ fun OxygenApp(
                 unitPreferenceMessage = screen.unitPreferenceMessage,
                 onUnitPreferenceSelected = {
                     stateHolder.onUnitPreferenceSelected(it)
+                    appState = stateHolder.presentationState
+                },
+                onEffectsPreferenceSelected = {
+                    stateHolder.onEffectsPreferenceSelected(it)
+                    appState = stateHolder.presentationState
+                },
+                onEffectsPreferenceRetry = {
+                    stateHolder.onEffectsPreferenceRetry()
                     appState = stateHolder.presentationState
                 },
             )

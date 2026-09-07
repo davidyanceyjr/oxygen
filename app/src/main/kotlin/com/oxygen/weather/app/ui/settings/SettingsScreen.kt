@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,6 +27,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.AboutSection
+import com.oxygen.weather.app.EffectsPreferencePresentationState
+import com.oxygen.weather.app.EffectsPreferenceReadState
 import com.oxygen.weather.app.OxygenAppScreen
 import com.oxygen.weather.app.SettingsDestination
 import com.oxygen.weather.app.UnitPreferenceMessage
@@ -45,6 +48,10 @@ fun SettingsScreen(
     selectedUnitPreference: UnitPreference? = null,
     unitPreferenceMessage: UnitPreferenceMessage? = null,
     onUnitPreferenceSelected: (UnitPreference?) -> Unit = {},
+    effectsPreference: EffectsPreferencePresentationState = EffectsPreferencePresentationState.notConfigured(),
+    animationsEnabled: Boolean = true,
+    onEffectsPreferenceSelected: (EffectsLevel) -> Unit = {},
+    onEffectsPreferenceRetry: () -> Unit = {},
 ) {
     Surface(Modifier.fillMaxSize()) {
         Column(
@@ -88,6 +95,10 @@ fun SettingsScreen(
                     SettingsDestination.Appearance -> AppearanceSummary(
                         themeId = themeId,
                         effects = appearance.effects,
+                        preference = effectsPreference,
+                        animationsEnabled = animationsEnabled,
+                        onEffectsSelected = onEffectsPreferenceSelected,
+                        onRetry = onEffectsPreferenceRetry,
                     )
                     SettingsDestination.Units -> UnitPreferencesScreen(
                         selectedPreference = selectedUnitPreference,
@@ -179,6 +190,10 @@ private fun SettingsGroup(
 private fun AppearanceSummary(
     themeId: OxygenThemeId,
     effects: EffectsLevel,
+    preference: EffectsPreferencePresentationState,
+    animationsEnabled: Boolean,
+    onEffectsSelected: (EffectsLevel) -> Unit,
+    onRetry: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -194,12 +209,67 @@ private fun AppearanceSummary(
         AppearanceValue("Theme", themeId.displayName)
         AppearanceValue("Layout", "Standard")
         AppearanceValue("Effects", effects.displayName())
-        Text(
-            text = "Appearance selection is not enabled in this build.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
-        )
+        Text("Effects mode")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            EffectsChoice(
+                label = "Off",
+                level = EffectsLevel.OFF,
+                selected = preference.selectedForUi == EffectsLevel.OFF,
+                enabled = preference.pending == null,
+                onClick = { onEffectsSelected(EffectsLevel.OFF) },
+                modifier = Modifier.weight(1f),
+            )
+            EffectsChoice(
+                label = "Subtle",
+                level = EffectsLevel.SUBTLE,
+                selected = preference.selectedForUi == EffectsLevel.SUBTLE,
+                enabled = preference.pending == null,
+                onClick = { onEffectsSelected(EffectsLevel.SUBTLE) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        when {
+            preference.readState == EffectsPreferenceReadState.Loading ->
+                Text("Restoring your saved effects choice. Effects are temporarily Off.")
+            preference.readState == EffectsPreferenceReadState.Failed -> {
+                Text("Oxygen could not read the saved effects choice. Effects are temporarily Off.")
+                OutlinedButton(
+                    onClick = onRetry,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("settings-effects-retry"),
+                ) {
+                    Text("Retry")
+                }
+            }
+            preference.pending != null -> Text("Saving ${preference.pending.displayName()}...")
+            preference.writeError -> Text("Oxygen could not save this choice. Choose it again to retry.")
+            !animationsEnabled && preference.confirmed != null && preference.confirmed != EffectsLevel.OFF ->
+                Text("Android animations are disabled, so effects are temporarily Off. Your saved choice is unchanged.")
+            else -> Text("Your effects choice is saved on this device.")
+        }
     }
+}
+
+@Composable
+private fun EffectsChoice(
+    label: String,
+    level: EffectsLevel,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        enabled = enabled,
+        label = { Text(label) },
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .testTag("settings-effects-${level.name.lowercase()}"),
+    )
 }
 
 @Composable

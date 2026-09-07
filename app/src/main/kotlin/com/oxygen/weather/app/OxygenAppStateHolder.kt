@@ -20,6 +20,7 @@ import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import com.oxygen.weather.core.provider.cache.ForecastCacheStorage
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoGeocodingRepository
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoWeatherRepository
+import com.oxygen.weather.app.ui.theme.EffectsLevel
 import java.time.Clock
 import java.time.Duration
 import java.util.Locale
@@ -46,9 +47,13 @@ class OxygenAppStateHolder(
     private val forecastExecutor: Executor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "oxygen-forecast-refresh").apply { isDaemon = true }
     },
+    private val effectsPreferenceStorage: EffectsPreferenceStorage? = null,
 ) {
     private var startupLocationReadFailed = false
     private val initialSelectedLocation: WeatherLocation? = selectedLocation
+    private val initialEffectsPreference = EffectsPreferencePresentationState.initial(
+        isManaged = effectsPreferenceStorage != null,
+    )
     val canSaveSearchResults: Boolean = savedLocationStorage != null
 
     @Volatile
@@ -57,6 +62,7 @@ class OxygenAppStateHolder(
             screen = OxygenAppScreen.FirstRunLocationEntry(),
             selectedLocation = null,
             savedLocations = SavedLocationsPresentationState.NotLoaded,
+            effectsPreference = initialEffectsPreference,
         )
     } else {
         OxygenAppPresentationState(
@@ -65,6 +71,7 @@ class OxygenAppStateHolder(
             ),
             selectedLocation = initialSelectedLocation,
             savedLocations = SavedLocationsPresentationState.NotLoaded,
+            effectsPreference = initialEffectsPreference,
         )
     }
         private set
@@ -74,14 +81,19 @@ class OxygenAppStateHolder(
     private var activeForecastRequestId = 0L
     private var activeUnitPreference: UnitPreference? = null
     private var activeCanonicalForecast: ActiveCanonicalForecast? = null
+    private var effectsPreferenceWriteId = 0L
     private var deviceAttemptCounter = 0L
     private var activeDeviceAttempt: Long? = null
     private var deviceCancellation: LocationCancellation? = null
 
     init {
         if (initialSelectedLocation == null) {
-            if (selectedLocationStorage !== EmptySelectedLocationStorage || unitPreferenceStorage !== EmptyUnitPreferenceStorage) {
+            if (selectedLocationStorage !== EmptySelectedLocationStorage ||
+                unitPreferenceStorage !== EmptyUnitPreferenceStorage ||
+                effectsPreferenceStorage != null
+            ) {
                 forecastExecutor.execute {
+                    loadStoredEffectsPreference()
                     loadStoredUnitPreference()
                     val restoredLocation = readStoredSelectedLocation()
                     when {
@@ -91,7 +103,7 @@ class OxygenAppStateHolder(
                             startHomeForecastLoad(restoredLocation)
                         }
                         startupLocationReadFailed -> {
-                            presentationState = OxygenAppPresentationState(
+                            presentationState = presentationState.copy(
                                 screen = OxygenAppScreen.FirstRunLocationEntry(
                                     message = FirstRunLocationMessage.LocalStateUnavailable,
                                 ),
@@ -105,6 +117,7 @@ class OxygenAppStateHolder(
             }
         } else {
             forecastExecutor.execute {
+                loadStoredEffectsPreference()
                 loadStoredUnitPreference()
                 restoreCachedHomeForecast(initialSelectedLocation)
                 startHomeForecastLoad(initialSelectedLocation)
@@ -455,6 +468,68 @@ class OxygenAppStateHolder(
         }
     }
 
+    fun onEffectsPreferenceSelected(effects: EffectsLevel) {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != SettingsDestination.Appearance) return
+        val storage = effectsPreferenceStorage ?: return
+        val current = presentationState.effectsPreference
+        if (current.pending != null || effects == EffectsLevel.FULL) return
+
+        val operationId = synchronized(this) {
+            effectsPreferenceWriteId += 1
+            presentationState = presentationState.copy(
+                effectsPreference = current.copy(
+                    pending = effects,
+                    writeError = false,
+                ),
+            )
+            publishState()
+            effectsPreferenceWriteId
+        }
+        forecastExecutor.execute {
+            try {
+                storage.writeEffectsPreference(effects)
+            } catch (_: Exception) {
+                synchronized(this) {
+                    if (operationId != effectsPreferenceWriteId) return@synchronized
+                    presentationState = presentationState.copy(
+                        effectsPreference = presentationState.effectsPreference.copy(
+                            pending = null,
+                            writeError = true,
+                        ),
+                    )
+                    publishState()
+                }
+                return@execute
+            }
+
+            synchronized(this) {
+                if (operationId != effectsPreferenceWriteId) return@synchronized
+                presentationState = presentationState.copy(
+                    effectsPreference = presentationState.effectsPreference.copy(
+                        readState = EffectsPreferenceReadState.Loaded,
+                        confirmed = effects,
+                        pending = null,
+                        writeError = false,
+                    ),
+                )
+                publishState()
+            }
+        }
+    }
+
+    fun onEffectsPreferenceRetry() {
+        if (effectsPreferenceStorage == null) return
+        synchronized(this) {
+            if (presentationState.effectsPreference.pending != null) return
+            presentationState = presentationState.copy(
+                effectsPreference = EffectsPreferencePresentationState.loading(),
+            )
+            publishState()
+        }
+        forecastExecutor.execute { loadStoredEffectsPreference() }
+    }
+
     fun onSettingsBack() {
         val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
         if (settings.selectedDestination != null) {
@@ -720,9 +795,35 @@ class OxygenAppStateHolder(
         publishState()
     }
 
+    private fun loadStoredEffectsPreference() {
+        val storage = effectsPreferenceStorage ?: return
+        val restored = try {
+            storage.readEffectsPreference() ?: EffectsLevel.SUBTLE
+        } catch (_: Exception) {
+            synchronized(this) {
+                presentationState = presentationState.copy(
+                    effectsPreference = EffectsPreferencePresentationState(
+                        readState = EffectsPreferenceReadState.Failed,
+                    ),
+                )
+                publishState()
+            }
+            return
+        }
+        synchronized(this) {
+            presentationState = presentationState.copy(
+                effectsPreference = EffectsPreferencePresentationState(
+                    readState = EffectsPreferenceReadState.Loaded,
+                    confirmed = restored,
+                ),
+            )
+            publishState()
+        }
+    }
+
     @Synchronized
     private fun setHomeLoading(location: WeatherLocation) {
-        presentationState = OxygenAppPresentationState(
+        presentationState = presentationState.copy(
             screen = OxygenAppScreen.Home(
                 forecast = HomeForecastPresentationState.Loading.from(location),
             ),
@@ -738,7 +839,7 @@ class OxygenAppStateHolder(
         val cached = try {
             storage.readBundle(location.id)
         } catch (_: Exception) {
-            presentationState = OxygenAppPresentationState(
+            presentationState = presentationState.copy(
                 screen = OxygenAppScreen.Home(
                     forecast = HomeForecastPresentationState.NoCacheError.from(
                         location = location,
@@ -753,7 +854,7 @@ class OxygenAppStateHolder(
         }
         if (cached == null || !cached.isUsefulCacheFor(location)) return
 
-        presentationState = OxygenAppPresentationState(
+        presentationState = presentationState.copy(
             screen = OxygenAppScreen.Home(
                 forecast = HomeForecastPresentationState.ForecastReady.fromRestoredCache(
                     location = location,
@@ -826,7 +927,7 @@ class OxygenAppStateHolder(
 
         val nextHome = OxygenAppScreen.Home(forecast = forecast)
         val currentScreen = presentationState.screen
-        presentationState = OxygenAppPresentationState(
+        presentationState = presentationState.copy(
             screen = currentScreen.withHomeReplacement(nextHome),
             selectedLocation = location,
             unitPreference = activeUnitPreference,
@@ -872,9 +973,46 @@ data class OxygenAppPresentationState(
     val selectedLocation: WeatherLocation?,
     val savedLocations: SavedLocationsPresentationState = SavedLocationsPresentationState.NotLoaded,
     val unitPreference: UnitPreference? = null,
+    val effectsPreference: EffectsPreferencePresentationState = EffectsPreferencePresentationState.notConfigured(),
 ) {
     val isShowingHome: Boolean = screen is OxygenAppScreen.Home && selectedLocation != null
     val usesScaffoldWeather: Boolean = false
+}
+
+enum class EffectsPreferenceReadState {
+    NotConfigured,
+    Loading,
+    Loaded,
+    Failed,
+}
+
+data class EffectsPreferencePresentationState(
+    val readState: EffectsPreferenceReadState,
+    val confirmed: EffectsLevel? = null,
+    val pending: EffectsLevel? = null,
+    val writeError: Boolean = false,
+) {
+    val isManaged: Boolean
+        get() = readState != EffectsPreferenceReadState.NotConfigured
+
+    val effectiveRequested: EffectsLevel
+        get() = confirmed ?: EffectsLevel.OFF
+
+    val selectedForUi: EffectsLevel
+        get() = pending ?: confirmed ?: EffectsLevel.OFF
+
+    companion object {
+        fun initial(isManaged: Boolean): EffectsPreferencePresentationState =
+            if (isManaged) loading() else notConfigured()
+
+        fun loading(): EffectsPreferencePresentationState = EffectsPreferencePresentationState(
+            readState = EffectsPreferenceReadState.Loading,
+        )
+
+        fun notConfigured(): EffectsPreferencePresentationState = EffectsPreferencePresentationState(
+            readState = EffectsPreferenceReadState.NotConfigured,
+        )
+    }
 }
 
 sealed interface SavedLocationsPresentationState {

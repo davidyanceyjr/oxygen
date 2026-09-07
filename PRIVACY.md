@@ -66,9 +66,11 @@ selected location's cached forecast as stale instead of replacing it with a
 no-cache error. The installed app wires this durable Room cache for the selected
 location and can restore the last cached forecast offline.
 
-The installed app also stores the last selected location and saved-location
-records locally. Saved rows can be shown and selected from the location-entry
-surface, with search-result save, confirmed removal, and persisted unit choices.
+The installed app also stores the last selected location, saved-location
+records, unit choices, and the selected Off/Subtle effects preference locally.
+Saved rows can be shown and selected from the location-entry surface, with
+search-result save and confirmed removal. The effects preference does not send
+data to a provider and does not grant or request location access.
 The app includes alert detail navigation, but not alert persistence/cache,
 background alert polling or notifications, air-quality lookup, radar,
 conditional GET requests, 304 not-modified handling, or release-candidate

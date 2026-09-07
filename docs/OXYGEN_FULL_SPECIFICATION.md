@@ -824,6 +824,13 @@ FULL
 
 The application must respect reduced-motion/accessibility preferences.
 
+The current installed baseline implements only persisted `OFF` and `SUBTLE`
+selection through Settings / Appearance. Missing records default to `SUBTLE`;
+while local restoration fails or is pending, effective presentation is
+conservatively `OFF`. Android disabled-animation policy can temporarily force
+effective `OFF` without changing the stored choice. `FULL`, richer scene
+behavior, and other persisted appearance settings remain unfinished.
+
 ---
 
 ## 26. Procedural Weather Scene Engine
@@ -1934,15 +1941,21 @@ Slice 25A, Settings Information Architecture, is implemented, verified, and
 committed in `2484e90`. The installed Settings root exposes distinct
 Appearance, Units, Locations, Data Sources, Privacy, Open Source Licenses, and
 About destinations while reusing existing production behavior. Appearance
-remains a read-only summary; this slice does not implement appearance
-selection or complete Gate 25's disclosure audit. Units is reached directly
-from Settings; it is not nested under About.
+provides the persisted Off/Subtle effects baseline described below; Full and
+the remaining appearance controls are still unfinished. Units is reached
+directly from Settings; it is not nested under About.
 
 Gate 25, Disclosure Baseline Check, is implemented, verified, and committed in
 `23a9d49`. It reconciled active-provider attribution, data licenses, privacy
 disclosure, source-code license identification, and observable reachability of
-the direct Settings disclosure destinations. Slice 26, Effects Preference, is
-the next implementation candidate; appearance work remains outside this gate.
+the direct Settings disclosure destinations. Slice 26, Effects Preference,
+implements and exercises persisted Off/Subtle selection, conservative
+restoration/failure behavior, Android disabled-motion override, and reduced-
+motion Home page navigation. Full effects, richer scene behavior, and
+persisted theme/layout/icon settings remain later work. The Slice 26 installed
+real-path Home forecast exercise was incomplete in the current cycle because
+one bounded emulator search attempt did not reach a provider result;
+deterministic Android boundary tests and Settings persistence checks passed.
 
 ---
 

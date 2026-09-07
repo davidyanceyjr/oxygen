@@ -1047,7 +1047,7 @@ class HomeDashboardUiTest {
             if (destination == SettingsDestination.Appearance) {
                 composeRule.onNodeWithText("Oxygen").assertIsDisplayed()
                 composeRule.onNodeWithText("Standard").assertIsDisplayed()
-                composeRule.onNodeWithText("Off").assertIsDisplayed()
+                composeRule.onNodeWithTag("settings-effects-off").assertIsDisplayed()
                 composeRule.onAllNodesWithTag("unit-preferences").assertCountEquals(0)
             }
             composeRule.onNodeWithTag("settings-back").performClick()

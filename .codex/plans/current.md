@@ -1,11 +1,13 @@
 # Slice 26 — Persisted Effects Off/Subtle Baseline
 
-**Status:** planned
+**Status:** implemented; focused and broad verification passed, but the
+installed real-path Home forecast exercise remains incomplete.
 **Cycle ID:** `2026-09-06-slice-26-effects-preference`
 **Planning basis:** local `main` at `af16a9f`; Gate 25 implementation at
 `23a9d49`, authority sync at `99097d9`, recent summary at `af16a9f`.
-**Execution state:** planning only. No production/test changes, Android checks,
-emulator exercise, or new functional evidence in this planning session.
+**Execution state:** production and test changes are implemented. The required
+single emulator was used for baseline, connected tests, installed persistence
+checks, and motion-policy checks. No commit was requested.
 The pre-existing `.codex/review/findings.md` edit must remain untouched.
 
 ## Selected behavior and stopping boundary
@@ -183,10 +185,10 @@ Use existing packages and small concrete pieces; no dependency/schema change.
   `app/ui/theme/OxygenAppearance.kt` only for the small effective policy if useful.
   Do not rebuild `WeatherScene.kt`, charts, symbols, or Home composition.
 
-## Focused tests and evidence (planned, not run)
+## Focused tests and evidence
 
-Add red-first tests for missing behavior, then implement and run focused green.
-New names below are intended test targets, not claims that those files exist.
+Focused tests were added and run green. The names below describe the selected
+evidence boundary; they are no longer merely planned targets.
 
 Unit scope: `EffectsPreferenceStorageTest` and `EffectsPreferenceStateHolderTest`
 under `app/src/test/kotlin/com/oxygen/weather/app/`:
@@ -200,7 +202,7 @@ under `app/src/test/kotlin/com/oxygen/weather/app/`:
   and unchanged theme/layout/icons/units/canonical weather/alerts. Count provider
   calls across preference actions after initial forecast settling.
 
-Connected budget: seven cases in one final filtered run, still below the
+Connected budget: the executed final filtered run covered seven cases, below the
 eight-case default:
 
 1. New `EffectsPreferenceInstrumentedTest#dataStoreReadbackAndRecreationKeepEffects`:
@@ -255,7 +257,7 @@ eight-case default:
    deterministic injected-error UI evidence rather than live installed
    persistence evidence.
 
-Commands, after test names exist:
+Executed focused commands:
 
 ```sh
 . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*EffectsPreferenceStorageTest' --tests '*EffectsPreferenceStateHolderTest'
@@ -365,15 +367,23 @@ provider requests/fallback/cache/alert semantics, background observers/polling,
 notifications, location acquisition/permissions, accounts/telemetry/dependencies,
 release audits, and MVP/release-readiness claims. Do not fix unrelated review notes.
 
-## Planning-session verification ledger
+## Execution verification ledger
 
-- Read roadmap/specification/current plan and relevant authorities; inspected
-  production/test files with `rg`/`sed`/`cat`, and commit/status with Git.
-- Confirmed dependency commits and concrete storage/Settings/Home wiring;
-  inspected existing test assertions without executing them.
-- Reviewed the official Android motion API reference linked above.
-- Only this active plan was intentionally changed. `git diff --check` passed
-  during planning review; production/test files were not changed.
-- Not run: Android compile, app/core unit tests, connected tests, assemble,
-  emulator/list/install/capture, or live provider requests. This task is
-  documentation-only planning and explicitly prohibits implementation.
+- Baseline: `scripts/list-avds.sh`, emulator boot, baseline install, constrained
+  device settings, and baseline captures passed. Artifacts are under
+  `.codex/test-artifacts/2026-09-06-slice-26-effects-preference/`.
+- Focused unit tests passed for `EffectsPreferenceStorageTest` and
+  `EffectsPreferenceStateHolderTest`.
+- Connected tests passed for `EffectsPreferenceUiTest` read-failure recovery
+  and selection/request preservation, `EffectsPreferenceInstrumentedTest`
+  system-motion override, and the two planned HomeDashboard regressions.
+- Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check`. Logs are saved in the cycle
+  artifact directory.
+- Installed production checks passed for Settings Appearance readability,
+  Off persistence across force-stop/relaunch, Subtle restoration, animator
+  scale zero override, scale one restoration, and device-setting cleanup.
+- One bounded live manual-search attempt did not reach a forecast because
+  emulator text-entry/tap interaction left the query unchanged. No real Home,
+  alert, or stale forecast screenshot is claimed; deterministic connected
+  evidence covers those semantics. TalkBack traversal was not run.

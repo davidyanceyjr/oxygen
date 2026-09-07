@@ -70,6 +70,7 @@ import kotlinx.coroutines.launch
 fun HomeLoadingScreen(
     state: HomeForecastPresentationState,
     appearance: OxygenAppearance = OxygenAppearance(),
+    animationsEnabled: Boolean = true,
     onRetry: () -> Unit = {},
     onRefresh: () -> Unit = {},
     onChangeLocation: () -> Unit = {},
@@ -92,6 +93,7 @@ fun HomeLoadingScreen(
                 ReadyContent(
                     state = state,
                     appearance = appearance,
+                    animationsEnabled = animationsEnabled,
                     onRefresh = onRefresh,
                     onChangeLocation = onChangeLocation,
                     onOpenSettings = onOpenSettings,
@@ -199,6 +201,7 @@ private fun ErrorContent(
 private fun ReadyContent(
     state: HomeForecastPresentationState.ForecastReady,
     appearance: OxygenAppearance,
+    animationsEnabled: Boolean,
     onRefresh: () -> Unit,
     onChangeLocation: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -244,7 +247,13 @@ private fun ReadyContent(
                                 val previousPage = pages[pagerState.currentPage - 1]
                                 add(
                                     CustomAccessibilityAction("Show previous page: ${previousPage.title}") {
-                                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                                        scope.launch {
+                                            if (animationsEnabled) {
+                                                pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                            } else {
+                                                pagerState.scrollToPage(pagerState.currentPage - 1)
+                                            }
+                                        }
                                         true
                                     },
                                 )
@@ -253,7 +262,13 @@ private fun ReadyContent(
                                 val nextPage = pages[pagerState.currentPage + 1]
                                 add(
                                     CustomAccessibilityAction("Show next page: ${nextPage.title}") {
-                                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                                        scope.launch {
+                                            if (animationsEnabled) {
+                                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                            } else {
+                                                pagerState.scrollToPage(pagerState.currentPage + 1)
+                                            }
+                                        }
                                         true
                                     },
                                 )
@@ -279,7 +294,13 @@ private fun ReadyContent(
                 isRefreshEnabled = state.canRefresh && !state.isRefreshInProgress,
                 refreshLabel = state.refreshLabel,
                 onPageSelected = { pageIndex ->
-                    scope.launch { pagerState.animateScrollToPage(pageIndex) }
+                    scope.launch {
+                        if (animationsEnabled) {
+                            pagerState.animateScrollToPage(pageIndex)
+                        } else {
+                            pagerState.scrollToPage(pageIndex)
+                        }
+                    }
                 },
                 onRefresh = onRefresh,
                 onChangeLocation = onChangeLocation,

@@ -118,6 +118,7 @@ private val privacySections = listOf(
             "Location permission is optional. Manual search works without Android location permission.",
             "Use my location requests coarse foreground permission only after your tap and obtains one approximate position. There is no background acquisition or automatic relocation on launch, restart, or refresh.",
             "The selected approximate position is stored locally and restored for offline weather. It is not automatically added to saved places.",
+            "The selected Off/Subtle effects preference is stored locally. Android disabled-animation policy can temporarily make the effective presentation Off without changing that saved choice.",
         ),
     ),
     AboutSection(
