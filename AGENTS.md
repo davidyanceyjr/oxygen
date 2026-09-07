@@ -193,6 +193,23 @@ or cycle artifact directory.
   reason for any rerun. A passing check is evidence, not a reason to repeat it.
 - If the user asks to stop testing or verification, stop immediately.
 
+Test-volume policy:
+
+- Treat connected tests as scarce evidence. For an implementation slice, run
+  the minimum focused unit tests for changed behavior and no more than eight
+  relevant connected test cases by default. Count test cases, not Gradle tasks
+  or test classes.
+- Do not run an entire connected test class merely because it contains related
+  historical coverage. Exceed the eight-case default only when the acceptance
+  boundary or a documented regression risk requires it, and record the reason
+  in the active plan or verification ledger.
+- Every third implementation roadmap slice is a dedicated test-only and
+  documentation-sync session. That session may run broader connected and
+  repository suites and reconcile the active plan, cycle history, roadmap, and
+  affected repository authorities.
+- Do not defer all testing until that session: every implementation slice still
+  requires focused evidence at its changed state or Android boundary.
+
 Use the repo-local environment wrapper for Android commands:
 
 ```bash
