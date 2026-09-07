@@ -1,461 +1,329 @@
-# Gate 25 - Disclosure Baseline Check
+# Slice 26 — Persisted Effects Off/Subtle Baseline
 
-**Status:** committed
-**Commit state:** implementation committed at `23a9d49`; authority sync committed in this documentation sync
-**Cycle ID:** `2026-09-06-gate-25-disclosure-baseline-check`
-**Planning basis:** local `main` at `a4c4e56`, with Slice 25A committed at
-`2484e90` and its authority sync committed at `87457bd`. The worktree was clean
-at discovery before this plan replaced the completed Slice 25A plan.
-**Review state:** revised after the 2026-09-06 Gate 25 plan review. The eight
-blocking findings and three minimum-evidence corrections were resolved before
-implementation; execution evidence is recorded below.
+**Status:** planned
+**Cycle ID:** `2026-09-06-slice-26-effects-preference`
+**Planning basis:** local `main` at `af16a9f`; Gate 25 implementation at
+`23a9d49`, authority sync at `99097d9`, recent summary at `af16a9f`.
+**Execution state:** planning only. No production/test changes, Android checks,
+emulator exercise, or new functional evidence in this planning session.
+The pre-existing `.codex/review/findings.md` edit must remain untouched.
 
-## Selection rationale
+## Selected behavior and stopping boundary
 
-The roadmap explicitly identifies Gate 25 as the next candidate after committed
-Slice 25A and says not to activate Slice 26 or later appearance work first.
-Gate 25 is dependency-ready:
+Intended result: a user can open Settings / Appearance, select Off or Subtle, return to the same
+weather session, and retain that choice across activity/process restart.
+Effective Off uses the existing undecorated Home rendering, preserves every
+weather/alert/source/stale meaning, and honors Android's disabled-animation
+signal without overwriting the user's stored choice. Subtle remains the default.
 
-- the Repository Engineering Gate is `ready`, satisfying Gate 25's stated
-  prerequisite;
-- Slice 25A is committed and supplies independently reachable Data Sources,
-  Privacy, Open Source Licenses, and About destinations;
-- active Open-Meteo forecast/geocoding/timezone, MET Norway fallback, and NWS
-  alert paths already exist in production code and have prior committed cycle
-  evidence;
-- the root disclosure documents and provider contracts already exist, so this
-  gate can stop at reconciliation and installed reachability rather than adding
-  a new disclosure architecture.
+Stop after this one preference works through production DataStore, app state,
+Settings, Home, and Android motion policy and passes the evidence below. This
+is the roadmap's Slice 26 Effects Off baseline, not the complete appearance
+system. Specification section 25 still specifies OFF/SUBTLE/FULL; richer Full
+behavior remains specified and must not be advertised as implemented by this
+baseline. Do not expose a Full selector that merely aliases Subtle.
 
-This plan selects Gate 25 only. It does not make the gate covered, implemented,
-verified, committed, or ready.
+Implementation budget: target at most 12,000 agent context tokens end-to-end,
+and always less than 33% of the executing context window; use the smaller cap.
+Verification budget: 60 minutes and at most 6,000 of those tokens. If the slice
+cannot fit, record the exact remaining boundary and replan before expanding;
+do not omit required evidence or label incomplete work verified.
 
-## Repository facts observed during planning
+## Authorities and dependency check
 
-- `InstalledForecastRepositoryFactory` currently composes Open-Meteo as the
-  default forecast repository, MET Norway as fallback, a Room-backed forecast
-  cache supplied by `MainActivity`, and `NwsAlertProvider` through
-  `AlertMergingWeatherRepository`.
-- `MainActivity` supplies production Room saved-location/forecast storage and
-  DataStore selected-location/unit storage. Its permission launcher requests
-  coarse location only through the explicit location action callback.
-- The source manifest declares `INTERNET`, `ACCESS_NETWORK_STATE`, and
-  `ACCESS_COARSE_LOCATION`; it does not declare fine or background location.
-- An unretained planning inspection of the release runtime tree and production
-  source found only the expected AndroidX, Kotlin, Room, and serialization roots
-  and no obvious advertising, analytics, telemetry, account, Firebase, Facebook,
-  Adjust, Appsflyer, or Play Services path. This is discovery only. Gate evidence
-  must be regenerated with the exact commands and retained artifacts below.
-- `LICENSE`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, `DATA_SOURCES.md`, and
-  `PRIVACY.md` are present. `README.md`, `PRIVACY.md`, and the installed
-  privacy copy currently describe the active providers, optional coarse
-  foreground location, local persistence, no ads/tracking, and no mandatory
-  account in a way consistent with the inspected production paths.
-- The installed Settings Data Sources copy names the active providers but gives
-  explicit data-license text only for Open-Meteo timezone resolution. It does
-  not state the Open-Meteo forecast/geocoding, GeoNames, or MET Norway license
-  terms even though the About copy says this surface discloses current provider
-  licenses.
-- Root `DATA_SOURCES.md` describes MET Norway data only as NLOD 2.0. The provider
-  contract and the first-party MET Norway pages reviewed on 2026-09-06 describe
-  NLOD 2.0 and CC BY 4.0 together, while production `MetNoForecastMapper` emits
-  `NLOD-2.0 OR CC-BY-4.0`. This conflict requires the bounded provenance
-  correction below before disclosure copy is changed.
-- `docs/data-sources/OPEN_METEO_GEOCODING.md` still says its client and fixtures
-  are future and that the contract does not make geocoding active, despite the
-  installed manual-search production path. The Open-Meteo forecast and MET
-  Norway contracts also retain isolated pre-implementation wording, and the NWS
-  contract retains text saying installed alert presentation is future despite
-  committed Slices 24A and 24B.
-- The installed Open Source Licenses copy names the repository `LICENSE` but
-  does not state the repository's declared `GPL-3.0-or-later` license identifier.
-- Specification section 44 still nests Data Sources, Open Source Licenses, and
-  Privacy under About Oxygen, while Slice 25A exposes them as direct Settings
-  destinations. Section 53 also still calls the units path
-  `Settings / About / Units`. Both are higher-authority conflicts that must be
-  reconciled before production work.
-- The active provider contracts require provider links, including distinct
-  Open-Meteo and GeoNames links for geocoding, but the installed disclosure
-  model can render only static paragraphs.
-- `MetNoForecastClient` already sends `If-Modified-Since` when given a cached
-  Last-Modified value and classifies HTTP 304 as `NotModified`.
-  `MetNoWeatherRepository` does not supply that cache metadata and cannot reuse
-  a cached forecast after 304, so only installed end-to-end revalidation remains
-  deferred.
-- Installed Data Sources copy says NWS lookup follows any terminal forecast
-  result. `AlertMergingWeatherRepository` performs lookup only after forecast
-  success; loading and failure pass through without alert lookup.
-- The roadmap body names Gate 25 as next and records Slice 25A as committed, but
-  its header still says it is synchronized only through `cab3b29`, before the
-  Slice 25A implementation and authority-sync commits.
-- Existing disclosure unit tests mostly assert selected substrings. Existing
-  connected coverage proves Settings destination reachability, but does not
-  prove the missing provider-license matrix is visible through the Compose
-  surface.
+Read/reconcile `AGENTS.md`, README, provider template, module/root Gradle files,
+`scripts/android-env.sh`, roadmap Slice 26 and next-candidate section, and
+specification sections 20–26, 31.3, 34, 37, 44, 49, 51, and 53.
+Use `docs/UI_DEVELOPMENT_WORKFLOW.md` for the installed visual loop. Recent
+history discovery was limited to its contract/summary and last three entries;
+no archived ledger was read.
 
-No Android test, connected test, emulator exercise, or live provider request was
-run while preparing or revising this plan. During execution, the plan review's
-official-page access date remained 2026-09-06 and no live provider request was
-required. The plan review opened the
-Open-Meteo licence page and both named MET Norway licensing pages on 2026-09-06;
-that access date must be recorded in the implementation ledger without changing
-older provider-contract review dates.
+Dependency readiness is supported by source inspection and commit history,
+not fresh runtime verification:
 
-## Pre-implementation authority resolution (resolved)
+- Slice 18I exists at `02f7012`; Standard Home and its existing Off rendering
+  remain in `HomeLoadingScreen.kt`. Do not reopen historical visual work.
+- Slice 25A exists at `2484e90`; `SettingsScreen.kt` has a reachable Appearance
+  destination and `OxygenApp.kt` wires it through the actual Settings route.
+- Small-state persistence exists: `UnitPreferenceStorage.kt` implements a
+  dedicated Preferences DataStore; `MainActivity.kt` injects it and
+  `OxygenAppStateHolder.kt` restores/writes it. DataStore is already an app
+  dependency. Effects storage itself does not exist.
+- Gate 25 is committed at `23a9d49` with recent history recording its evidence
+  and post-commit authority sync. This session did not rerun that evidence.
+- No prerequisite requires Simple, Full, theme selection, or high contrast.
 
-These two conflicts were resolved in order before red-first implementation.
+Cadence: the test-volume rule was introduced at `a4c4e56`, after Slice 25A.
+Gate 25 is the first subsequent implementation cycle (it changed runtime code);
+Slice 26 is the second. Reserve the third session after this slice for test-only
+verification and documentation sync before starting another implementation
+slice. This is the prospective counting basis, not a claim that older broad
+runs satisfied the new policy. Immediate documentation sync is also required
+by this slice's new installed preference/persistence behavior.
 
-1. Amend specification section 44 so Data Sources, Privacy, and Open Source
-   Licenses are required as direct Settings destinations alongside About. The
-   disclosure obligations and five required root files remain unchanged. Amend
-   section 53's obsolete Units path in the same authority-first edit, review the
-   Markdown diff, and only then change production code. This explicitly aligns
-   the higher authority with the already committed Slice 25A architecture.
-2. Treat the first-party MET Norway wording reviewed on 2026-09-06 and the
-   provider contract's conjunctive wording as governing. Add a failing mapper
-   assertion, change new MET Norway provenance to
-   `NLOD-2.0 AND CC-BY-4.0`, and normalize only the exact legacy MET Norway
-   `NLOD-2.0 OR CC-BY-4.0` value at the Home presentation boundary. This avoids
-   a Room schema rewrite while keeping an existing cached forecast truthful.
-   Do not alter provider selection, requests, weather values, cache identity, or
-   unrelated provenance. Reconcile the provider contract and disclosures to the
-   same wording before proceeding to link/copy work.
+## Actual code facts and assumptions corrected
+
+Paths below are relative to `app/src/main/kotlin/com/oxygen/weather/`.
+
+- `app/ui/theme/OxygenAppearance.kt` defines OFF/SUBTLE/FULL, with SUBTLE default,
+  independently of theme/layout/icon pack. Enum presence proves no preference.
+- `app/OxygenApp.kt` takes an injected appearance value and passes it to Settings
+  and Home. Installed `MainActivity` supplies no persisted appearance. The
+  injected preview/test parameter must not override the installed preference.
+- `app/ui/settings/SettingsScreen.kt` shows a read-only effective summary and
+  explicitly says appearance selection is unavailable. It has no effects action.
+- `app/ui/home/HomeLoadingScreen.kt` omits `home-weather-scene` when Off and
+  substitutes opaque surface roles. `app/ui/weather/WeatherScene.kt` draws a
+  static gradient/glow/cloud Canvas. There is no continuous scene animation;
+  Full and Subtle currently enter the same rendering branch. No new animation
+  engine is necessary, and no battery/FPS savings are claimed.
+- Home uses `animateScrollToPage` for tabs/previous/next. These finite user
+  interactions are distinct from continuous decoration; their motion must also
+  respect the platform signal while retaining the same destination semantics.
+- No reduced-motion adapter was found in the inspected production UI path.
+- Unit persistence runs on an executor; effects changes need no canonical
+  weather remapping. Several state-holder transitions construct a new
+  `OxygenAppPresentationState`; simply adding a default field would risk
+  resetting effects during location/forecast transitions. Preserve it explicitly.
+- Existing `HomeDashboardUiTest` cases inject Off into Home/alert/Settings
+  fixtures. They encode useful rendering invariants but do not prove installed
+  selection, persistence, restart, or platform motion handling. Existing unit
+  DataStore instrumentation proves only its separate units storage boundary.
+- Repository status prose still contains historical drift (e.g. root AGENTS'
+  sample-screen sentence versus `MainActivity`'s installed repository wiring;
+  the roadmap sequence introduction mentions 24B as latest despite later gate
+  entries). These are not permission to substitute sample data. They do not
+  conflict with the selected effects contract; avoid unrelated cleanup here.
 
 ## Acceptance boundary
 
-Gate 25 is complete only when all of the following are true at the same
-revision:
+All criteria must hold on the same final revision:
 
-1. Specification sections 44 and 53 explicitly match the committed Slice 25A
-   direct Settings hierarchy before production disclosure changes begin.
-2. The five required root files remain present, internally consistent, and
-   accurate for the inspected repository and installed app:
-   `LICENSE`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, `DATA_SOURCES.md`, and
-   `PRIVACY.md`.
-3. Active/current provider disclosure matches the production composition:
-   Open-Meteo forecast and timezone resolution, Open-Meteo geocoding based on
-   GeoNames, MET Norway forecast fallback after eligible Open-Meteo failures,
-   and foreground selected-point NOAA/NWS alerts after forecast success.
-   Loading or failed forecasts are not described as triggering alert lookup,
-   and roadmap-only providers remain clearly non-active.
-4. Data Sources states the applicable license/attribution baseline for each
-   active data path without presenting provider or government data as Oxygen
-   source code or implying endorsement:
-   Open-Meteo forecast/timezone and geocoding under CC BY 4.0; GeoNames under
-   its documented Creative Commons attribution terms; MET Norway under NLOD
-   2.0 and CC BY 4.0; and the NWS public-information and requested-credit/
-   attribution qualification from its contract. Accessible URI actions are
-   present for Open-Meteo forecast/timezone, Open-Meteo geocoding, GeoNames,
-   MET Norway, and NOAA/NWS using the URLs isolated in disclosure content.
-5. New and legacy-cached MET Norway forecasts present the same corrected
-   conjunctive license wording without changing forecast or cache behavior.
-6. Privacy disclosure names the data each active request sends, including
-   selected coordinates/timezone/weather variables, typed search text,
-   optional altitude, identifying provider headers where required, and normal
-   network metadata. It also remains explicit that manual search needs no
-   location grant, device location is optional coarse foreground acquisition
-   after an explicit action, and alert lookup is foreground/process-local with
-   no alert persistence or background polling.
-7. The installed Open Source Licenses destination identifies Oxygen's declared
-   source license as `GPL-3.0-or-later`, describes upstream software
-   dependencies truthfully, and keeps software licensing distinct from weather,
-   geocoding, and alert data terms.
-8. Installed Settings can reach Data Sources, Privacy, and Open Source Licenses
-   from the normal app entry; the reconciled text is readable by scrolling at
-   the existing compact `360dp x 640dp`, density `1`, font scale `1.3`
-   configuration, provider-link controls expose readable labels and link
-   semantics, and Back returns to Settings. A deterministic connected journey
-   proves its repository request-count delta is zero. The installed manual
-   journey proves only observable navigation, scrolling, Back, external-link
-   handoff, and absence of a location-permission prompt.
-9. Provider contracts no longer describe already active clients, fixtures, or
-   installed UI as future work. They state that the MET Norway client-level
-   `If-Modified-Since` and 304 result boundary are implemented while installed
-   repository/cache revalidation and reuse remain deferred, together with
-   provider health/backoff, alert persistence, background polling, and release
-   verification.
-10. README, specification next-task text, roadmap status/next-candidate metadata,
-   active plan, and recent cycle history agree with the completed gate without
-   claiming Slice 26, MVP readiness, release readiness, or a complete Slice 33
-   audit.
+1. Settings / Appearance is reachable from both first-run and Home. It provides
+   labelled Off and Subtle choices, selected-state semantics, at least 48-dp
+   targets, readable save/error feedback, and existing in-surface/Android Back.
+   Theme and Standard layout remain truthful read-only summaries.
+2. Missing preference defaults to Subtle. Use stable stored values, not enum
+   ordinals. Unknown/version-invalid records fall back without a crash or
+   destructive automatic rewrite. Read failure leaves weather usable, uses a
+   conservative effective Off fallback, and exposes local-storage failure in
+   Appearance; it must not be described as a successfully restored choice.
+3. A successful write changes effective presentation and selected-state feedback
+   without recreating the app state holder or fetching weather/alerts/geocoding.
+   Failed writes retain the last confirmed choice and show a retryable message;
+   choosing again retries. Pending writes cannot silently claim persistence.
+   Serialize or disable overlapping selections so stale completions cannot win.
+4. Restore before rendering decorated Home; no transient Subtle scene when a
+   stored Off preference is still loading. Startup without a selected location
+   also restores effects. The choice survives new storage/state-holder instances,
+   `ActivityScenario.recreate()`, force-stop/relaunch, and location/forecast
+   transitions. The connected and Compose evidence below must cover the first
+   rendered state, not only the settled state after restoration.
+5. Effective Off omits atmospheric gradient/glow/cloud decoration and uses the
+   existing opaque Home roles. No continuous decorative animation is introduced.
+   Current/hourly/daily/details values, missing-value meaning, alert summary and
+   details, attribution, source/update/provenance, stale/failure context, refresh,
+   and navigation remain usable. Toggling preserves the weather session and units.
+6. Android disabled animators force effective Off, including when Subtle was
+   saved. Sample the signal before decorated content and on every foreground
+   resume; changes made in Android Settings must apply on return. Keep the saved
+   choice intact, show why effective Off differs, and restore Subtle when the
+   system allows motion again. With reduced motion, tab/previous/next navigation
+   changes pages without animated programmatic scrolling; the connected evidence
+   must observe the transition while it could still be moving, not only after
+   settling. No permission request or app write to system settings is needed.
+7. Appearance and representative Home/alert/stale content remain readable at
+   360dp x 640dp, density 1, font scale 1.3. Controls wrap/scroll without overlap;
+   selection/error/override meaning is textual and announced in logical order.
+   Inspect installed screenshots and semantics; preserve existing theme tokens.
+8. Deterministic state/Compose evidence proves zero additional repository calls
+   from preference actions, unchanged canonical forecast/cache/alert state, and
+   independence from unit/theme/layout/icon values. Installed manual evidence
+   proves real persistence/rendering; it cannot by itself prove request counts.
 
-The stopping boundary is corrected disclosure plus observable installed
-reachability. The MET Norway provenance wording and accessible disclosure links
-are the only runtime changes. No provider request, selection, fallback,
-persistence schema, permission, forecast value, alert lookup, location, unit,
-appearance, or navigation behavior is added or changed.
-
-## Accuracy source order
-
-Use these sources for the gate audit in this order:
-
-1. Production composition, manifest, Gradle dependency declarations, and
-   provider provenance constants for what the current build actually does.
-2. `docs/OXYGEN_FULL_SPECIFICATION.md` sections 43 through 45 for privacy,
-   attribution, and license obligations.
-3. Active provider contracts for request data, attribution, license, privacy,
-   and deferred behavior.
-4. Prior committed cycle evidence for installed fallback, alert, Settings,
-   location, cache, and units reachability.
-5. Official primary provider terms/license/privacy pages only for validating
-   legal or policy wording. Record the pages and access date actually reviewed;
-   do not advance a terms-review date without reading the source.
-
-If current official provider material conflicts materially with the
-specification or an existing provider contract, stop the gate and reconcile the
-higher authority before changing installed copy. Do not guess at license or
-privacy terms.
+Platform contract: use the public API-26-compatible
+[`ValueAnimator.areAnimatorsEnabled()`](https://developer.android.com/reference/android/animation/ValueAnimator#areAnimatorsEnabled())
+for the bounded Android signal (official reference reviewed 2026-09-06).
+It reports system animation enablement, including duration-scale-zero behavior;
+this is not a claim to detect every OEM accessibility setting. A small
+lifecycle-bound adapter with initial/resume sampling suffices for the normal
+Settings round trip; broader background monitoring is outside this slice.
 
 ## Intended production changes
 
-Keep production changes to the disclosure/link surface and the one factual MET
-Norway provenance correction:
+Use existing packages and small concrete pieces; no dependency/schema change.
 
-- add concise license/attribution text for each active provider/data path to the
-  Data Sources destination;
-- replace the false NWS "terminal forecast result" statement with the exact
-  forecast-success condition;
-- make the Open Source Licenses destination state `GPL-3.0-or-later` explicitly
-  and preserve the source-code versus provider-data distinction;
-- correct privacy wording only if the code/contract matrix proves a factual
-  mismatch;
-- add a small immutable disclosure-link model beside the existing section model
-  and keep all labels and HTTPS URIs centralized in
-  `AboutDisclosureContent.kt`;
-- render those links as labelled, minimum-48-dp actions in `SettingsScreen`
-  using Compose `LocalUriHandler`, matching the existing Home/alert external-URI
-  approach. Each action must expose button/link semantics and its provider name;
-- correct `MetNoForecastMapper` to emit
-  `NLOD-2.0 AND CC-BY-4.0` and normalize only the exact old MET Norway `OR`
-  value in `HomeForecastPresentationMapper` so restored caches display the
-  corrected terms without a database migration;
-- keep paragraphs within the existing compact disclosure length guard;
-- retain the current destination model, Settings route, scrolling layout, and
-  Back behavior.
+- Add `app/EffectsPreferenceStorage.kt`: the actual Preferences DataStore
+  implementation with an application-context singleton delegate, isolated file
+  and stable versioned Off/Subtle values. Keep existing unit/location stores
+  untouched; expose read/write failures to the app boundary. No generic
+  preferences framework or persisted future appearance fields.
+- Extend `app/OxygenAppStateHolder.kt` with load/pending/error/confirmed effects
+  state and a guarded Appearance selection action. Perform I/O off the main
+  thread, publish restore results for first-run as well as Home, preserve effects
+  in every state reconstruction, and reject stale writes. While the initial read
+  is pending, resolve the conservative effective Off state so Home cannot render
+  a transient decorated frame; expose read failure separately from a confirmed
+  choice. Effects changes copy presentation state only; they do not remap or
+  refresh canonical weather.
+- Add a small `app/AndroidMotionPreferenceSource.kt` (or equivalently bounded
+  activity-local adapter) that reads the platform signal at initial/resume time.
+  Keep the effective-effects rule testable and separate from persisted choice.
+- Wire real storage and the motion signal in `MainActivity.kt`; resolve effective
+  appearance in `app/OxygenApp.kt` using the existing appearance value as the
+  base, copying only effects. Preserve theme/layout/icon inputs for previews and
+  tests, with explicit test setup for confirmed preferences and system policy.
+- Replace the read-only effects row in `app/ui/settings/SettingsScreen.kt` with
+  the working selector and feedback, including explicit selected semantics,
+  retryable write/read errors, and wording that distinguishes effective Off from
+  an unconfirmed restored choice. Retain the current destination/navigation
+  architecture and scrollable Settings surface; remove obsolete selection copy.
+- In `app/ui/home/HomeLoadingScreen.kt`, retain the existing Off branch and
+  make programmatic page motion conditional on reduced motion. Change
+  `app/ui/theme/OxygenAppearance.kt` only for the small effective policy if useful.
+  Do not rebuild `WeatherScene.kt`, charts, symbols, or Home composition.
 
-Do not add a license library/generator, navigation abstraction, new screen,
-WebView, dynamic provider discovery, or generic link framework. External URI
-actions are required only for the active-provider attribution rows in this
-gate.
+## Focused tests and evidence (planned, not run)
 
-Expected production files:
+Add red-first tests for missing behavior, then implement and run focused green.
+New names below are intended test targets, not claims that those files exist.
 
-- `app/src/main/kotlin/com/oxygen/weather/app/AboutDisclosureContent.kt`
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/settings/SettingsScreen.kt`
-- `app/src/main/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapper.kt`
-- `core/src/main/kotlin/com/oxygen/weather/core/provider/metno/MetNoForecastMapper.kt`
+Unit scope: `EffectsPreferenceStorageTest` and `EffectsPreferenceStateHolderTest`
+under `app/src/test/kotlin/com/oxygen/weather/app/`:
 
-No changes are intended in `OxygenAppStateHolder`, provider clients or
-repositories, manifests, Gradle files, Room, DataStore, or other runtime
-behavior. If the audit requires anything beyond the files and exact legacy
-normalization above, stop and select a separate implementation slice instead of
-expanding Gate 25.
+- Default, valid Off/Subtle, unsupported record, and read/write failure behavior
+  through storage/state boundaries, not only codec round trips.
+- Pending/success/failure/retry and serialized rapid selection; first-run startup,
+  stored Off before Home, delayed restore, and forecast completion/location
+  change while a preference write is pending must preserve the confirmed choice.
+- Requested/effective motion-policy combinations, system override restoration,
+  and unchanged theme/layout/icons/units/canonical weather/alerts. Count provider
+  calls across preference actions after initial forecast settling.
 
-## Intended document changes
+Connected budget: seven cases in one final filtered run, still below the
+eight-case default:
 
-- Reconcile `DATA_SOURCES.md`, especially MET Norway's conjunctive license
-  wording, provider links, and the per-provider active/deferred boundary.
-- Reconcile stale implementation-status wording in the four active provider
-  contracts without changing provider behavior. For MET Norway, state precisely
-  that the client supports conditional request input and 304 classification,
-  while installed repository-to-cache revalidation/reuse is deferred.
-- Update `THIRD_PARTY_LICENSES.md`, `NOTICE`, and `PRIVACY.md` only where the
-  audit identifies a concrete omission or false statement. Do not replace the
-  later Slice 33 dependency/privacy audit with an exhaustive transitive-license
-  inventory here.
-- Keep `LICENSE` unchanged unless the repository's already-declared
-  GPL-3.0-or-later intent is proven inconsistent. Any license-policy change is
-  outside this gate and requires explicit authority.
-- Resolve specification section 44 and the obsolete section 53 Settings path in
-  the pre-implementation authority edit. After completion evidence exists,
-  record Gate 25 completion and Slice 26 as the next candidate.
-- Update the roadmap synchronization metadata and Gate 25 status only after the
-  gate is verified and committed. Do not mark Slice 26 planned there.
-- Update README only if the audit finds a factual status mismatch; static copy
-  clarification alone does not add an implemented feature.
+1. New `EffectsPreferenceInstrumentedTest#dataStoreReadbackAndRecreationKeepEffects`:
+   real production DataStore and production Activity lifecycle. Set and read back
+   Off/Subtle, call `ActivityScenario.recreate()` on the production Activity,
+   assert the selected choice and effective scene after restoration, and verify
+   existing unit/location values remain retained; restore prior local settings in
+   cleanup. This is the explicit Activity-recreation evidence, not only a new
+   storage/state-holder pair.
+2. New `EffectsPreferenceUiTest#selectionPreservesStaleWeatherAndAlerts`:
+   use the real OxygenApp resolver/wiring with a controllably delayed effects
+   read while Home weather is already available; assert no
+   `home-weather-scene` before releasing a stored Off read and after Off resolves,
+   then select Subtle and verify the scene appears. At compact/large font,
+   assert labelled Off/Subtle controls expose selected semantics and at least
+   48-dp targets; navigate all four pages and alert detail; source/stale/values
+   preserved, including missing-value text and refresh-failure context. Record
+   zero repository request delta for the preference actions, then exercise one
+   explicit refresh and assert only that refresh's expected request delta and
+   resulting failure meaning. Fixtures prove deterministic semantics and the
+   no-flash first rendered state.
+3. New `EffectsPreferenceUiTest#firstRunSaveFailureCanRetryAndReturn`:
+   real Settings route with injected storage failure; selected state, feedback,
+   retry, Back, selected semantics, 48-dp targets, and no location
+   permission/geocoding request. The failed write retains the last confirmed
+   choice until a retry succeeds.
+4. New `EffectsPreferenceInstrumentedTest#systemMotionOverrideKeepsStoredChoice`:
+   actual Android motion source plus production effective resolver, persisted
+   Subtle, system scale zero and return/resume, then restoration; effective Off,
+   truthful UI, stored value unchanged, and no animated programmatic page
+   navigation. Under the reduced-motion state, use a controlled Compose frame
+   clock or equivalent pager observer: after direct tab selection and both
+   available previous/next accessibility actions, sample immediately and on the
+   next frame, asserting the target is already current/settled with zero page
+   offset and no intermediate page or animation frame. A settled label or
+   `waitForIdle()` alone is insufficient. Restore system settings in finally.
+   Do not substitute a fake signal for the Android adapter evidence; record a
+   platform blocker if it cannot be exercised.
+5. Existing `HomeDashboardUiTest#settingsRootReachesAllDestinationsAndLocationsBackWorksWithAndroidBack`:
+   update obsolete read-only effects expectations while retaining route assertions.
+6. Existing `HomeDashboardUiTest#oxygenAppUnitsSelectionReturnsHomeWithAlternateUnitsAndKeepsPagesReachable`:
+   regression for adjacent persisted units and Home behavior.
+7. New `EffectsPreferenceUiTest#initialReadFailureRendersConservativeOffAndRecovers`:
+   through OxygenApp and the rendered Appearance route, inject an initial local
+   preference read failure while representative weather is available. At compact
+   and large font, assert effective Off, no scene, readable local-storage error
+   text that does not claim a restored choice, labelled selected-state semantics,
+   at least 48-dp targets, usable Back/weather navigation, and the defined retry
+   action. Release the injected failure, retry the read, and assert recovery to
+   the confirmed choice. Save `appearance-read-failure.png` plus hierarchy and
+   semantics evidence under the cycle artifact directory; label this as
+   deterministic injected-error UI evidence rather than live installed
+   persistence evidence.
 
-## Execution evidence
-
-Gate 25 is implemented, verified, and committed at `23a9d49`.
-
-Production changes:
-
-- `AboutDisclosureContent.kt` adds the immutable disclosure-link model, active
-  provider/license/privacy text, and centralized HTTPS attribution links.
-- `SettingsScreen.kt` renders labelled, minimum-48-dp external-link actions
-  through `LocalUriHandler`.
-- `HomeForecastPresentationMapper.kt` normalizes only the exact legacy MET
-  Norway `NLOD-2.0 OR CC-BY-4.0` value.
-- `MetNoForecastMapper.kt` emits `NLOD-2.0 AND CC-BY-4.0` for new forecasts.
-
-Focused evidence passed:
-
-- MET Norway client/mapper/repository, disclosure, Home mapper, and installed
-  factory unit tests passed in the focused command recorded in the cycle
-  artifact ledger.
-- The two-case connected run passed on `oxygen_starter`: disclosure
-  reachability/link/scroll/Back/zero-call/zero-permission coverage and the
-  installed MET Norway fallback provenance regression.
-
-Real-path evidence passed on one emulator session:
-
-- Baseline APK from `a4c4e56` and final APK were installed without restarting
-  the emulator. The compact profile was 360x640, density 160, font scale 1.3.
-- Data Sources, Privacy, and Open Source Licenses were manually reached and
-  scrolled; an Open-Meteo link handed off to Chrome and returned to Oxygen.
-- Saved artifacts are under
-  `.codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check/`.
-
-Bounded audit evidence passed: release runtime dependencies, merged release
-manifest summary, classified prohibited-path source search, required root-file
-presence, `:app:compileDebugKotlin`, full app/core debug unit tests,
-`:app:assembleDebug`, and `git diff --check`. No live provider request,
-complete transitive-license audit, or release-candidate verification was run.
-
-Next candidate after this committed gate: Slice 26, Effects Preference.
-
-## Red-first focused evidence
-
-1. Extend `AboutDisclosureStateHolderTest` first so the current test fails on
-   the missing disclosure matrix. Assert active provider role, request-data
-   facts, provider-specific license/attribution terms, source/data license
-   separation, explicit GPL identifier, the NWS forecast-success condition,
-   exact link labels/HTTPS URIs, the client-versus-installed conditional-request
-   boundary, deferred provider separation, and the existing paragraph-length
-   boundary.
-2. Add red assertions to `MetNoForecastMapperTest` for the conjunctive license
-   value and to `HomeForecastPresentationMapperTest` for exact legacy MET Norway
-   normalization plus non-MET/unrelated-license preservation.
-3. Keep `InstalledForecastRepositoryFactoryTest` as a regression for the
-   injected fallback/cache/alert composition semantics it actually covers. Do
-   not claim it proves the factory's concrete default providers. Record the
-   Open-Meteo, MET Norway, Room-cache, and NWS default wiring by direct inspection
-   of `InstalledForecastRepositoryFactory` and `MainActivity` in the ledger.
-4. Add or narrow one `HomeDashboardUiTest` case that opens all three disclosure
-   destinations through `OxygenApp`; records the repository call count after
-   initial state settles; reaches each destination's final required fact;
-   invokes every provider link through a recording `LocalUriHandler`; asserts
-   readable labels, URI action/semantics, compact scroll reachability, and Back;
-   and finally asserts the repository-call count is unchanged. Run only that
-   test case, not the full connected class.
-5. Produce a concise audit ledger mapping each accepted statement to production
-   code, provider contract, official primary source where reviewed, or prior
-   committed cycle evidence. File-presence checks alone are not acceptance
-   evidence.
-
-Primary test files:
-
-- `app/src/test/kotlin/com/oxygen/weather/app/AboutDisclosureStateHolderTest.kt`
-- `app/src/test/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapperTest.kt`
-- `app/src/test/kotlin/com/oxygen/weather/app/InstalledForecastRepositoryFactoryTest.kt`
-- `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
-- `app/src/androidTest/kotlin/com/oxygen/weather/app/InstalledFallbackRepositoryInstrumentedTest.kt`
-- `core/src/test/kotlin/com/oxygen/weather/core/provider/metno/MetNoForecastClientTest.kt`
-- `core/src/test/kotlin/com/oxygen/weather/core/provider/metno/MetNoForecastMapperTest.kt`
-- `core/src/test/kotlin/com/oxygen/weather/core/provider/metno/MetNoWeatherRepositoryTest.kt`
-
-Focused command budget:
+Commands, after test names exist:
 
 ```sh
-. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*MetNoForecastClientTest' --tests '*MetNoForecastMapperTest' --tests '*MetNoWeatherRepositoryTest'
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*AboutDisclosureStateHolderTest' --tests '*HomeForecastPresentationMapperTest' --tests '*InstalledForecastRepositoryFactoryTest'
-. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class='com.oxygen.weather.app.ui.home.HomeDashboardUiTest#settingsDisclosuresShowActiveProviderLicenseAndPrivacyBaseline,com.oxygen.weather.app.InstalledFallbackRepositoryInstrumentedTest#eligibleOpenMeteoFailureRendersMetNorwayHomeReadyThroughInstalledFactory'
+. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*EffectsPreferenceStorageTest' --tests '*EffectsPreferenceStateHolderTest'
+. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class='com.oxygen.weather.app.EffectsPreferenceInstrumentedTest#dataStoreReadbackAndRecreationKeepEffects,com.oxygen.weather.app.ui.settings.EffectsPreferenceUiTest#selectionPreservesStaleWeatherAndAlerts,com.oxygen.weather.app.ui.settings.EffectsPreferenceUiTest#firstRunSaveFailureCanRetryAndReturn,com.oxygen.weather.app.EffectsPreferenceInstrumentedTest#systemMotionOverrideKeepsStoredChoice,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#settingsRootReachesAllDestinationsAndLocationsBackWorksWithAndroidBack,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#oxygenAppUnitsSelectionReturnsHomeWithAlternateUnitsAndKeepsPagesReachable,com.oxygen.weather.app.ui.settings.EffectsPreferenceUiTest#initialReadFailureRendersConservativeOffAndRecovers'
 ```
 
-The connected budget is two test cases: one disclosure/interaction case and one
-installed-factory MET Norway provenance regression made necessary by the
-license correction. Run them in one connected task so the final app/test APKs
-are installed once. Use one emulator session, one baseline app install, the one
-final connected install, 75 minutes, and 12,000 agent tokens for verification.
-Stop at the budget with the exact evidence and gap recorded; do not add or rerun
-a connected case without recording the changed input or specific regression
-risk first.
+No full historical connected class run. Screenshots establish appearance;
+assertions establish semantic behavior; neither alone proves persistence or
+continuous-animation absence. The read-failure screenshot and semantics dump
+are deterministic injected-error evidence. Inspect the production animation
+paths and record a short settled-screen observation, without claiming
+energy/performance metrics.
 
-## Required real-path exercise
+## Required installed real-path exercise
 
-Create
-`.codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check/ledger.md`
-when implementation begins. Use one emulator session. Before any production UI
-change, configure the emulator to `360dp x 640dp`, density `1`, font scale `1.3`,
-install the baseline APK, navigate to Data Sources, and capture
-`data-sources-before.png`. Record the exact configuration commands and original
-device values in the ledger. This is the required comparable visual baseline.
+At execution start create
+`.codex/test-artifacts/2026-09-06-slice-26-effects-preference/ledger.md`.
+Record each command/result, environment, artifact, and rerun reason. Start one
+emulator using the repository wrapper/scripts, confirm ADB boot readiness, and
+retain that emulator for baseline, final tests, and manual exercise:
 
 ```sh
-. scripts/android-env.sh
-adb shell wm size
-adb shell wm density
-adb shell settings get system font_scale
-adb shell wm size 360x640
-adb shell wm density 160
-adb shell settings put system font_scale 1.3
-scripts/capture-screen.sh .codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check/data-sources-before.png
+scripts/list-avds.sh
+scripts/start-emulator.sh
+# In another terminal, after ADB is ready:
+scripts/install-debug.sh
 ```
 
-After the final APK change, install once more without restarting the emulator
-and repeat the same route and device configuration.
+Before meaningful UI changes, save original size/density/font/motion settings;
+configure 360x640, density 160, font scale 1.3 using the wrapped ADB environment.
+Capture/inspect installed `appearance-before.png` and `home-subtle-before.png`
+with `scripts/capture-screen.sh`. Use the existing real selected-location cache,
+or obtain one forecast through normal manual search with no location grant.
+Do not delete user data or seed production Home with sample/test success.
 
-From a fresh normal installed-app entry, without selecting sample data or using
-a test-only screen:
+After visual convergence install each changed APK once; the final connected
+run can supply the final install. Force-stop/relaunch that installed APK for
+manual checks without another build/install:
 
-1. Open Settings.
-2. Open Data Sources and scroll through the active-provider and license text.
-3. Return to Settings, open Privacy, and confirm the optional-location and
-   active-request disclosures are reachable.
-4. Return to Settings, open Open Source Licenses, and confirm the explicit
-   Oxygen source license and provider-data separation are reachable.
-5. From Data Sources, activate one provider attribution link and observe the
-   external URI handoff, then return to Oxygen.
-6. Return to the originating app state and confirm no location permission prompt
-   appeared.
+1. Open normal Settings / Appearance, select Off, verify feedback, return to Home,
+   visit Now/Hourly/Daily/Details, and inspect source/update/weather meaning.
+2. Force-stop and relaunch (`adb shell am force-stop com.oxygen.weather`, then
+   `adb shell am start -n com.oxygen.weather/.MainActivity`); verify Off selected
+   and no scene. Repeat with Subtle to prove both persisted values and restoration.
+3. With Subtle saved, set Android animator duration scale to zero, leave/reenter
+   Oxygen to exercise resume, verify effective Off explanation and usable page
+   navigation. Restore the original scale, return, and verify stored Subtle takes
+   effect again. Record exact commands, original values, and cleanup. The
+   override case may share the installed test's platform setup but must show the
+   normal production activity path too.
+4. Capture `appearance-off.png`, `home-off.png`, `appearance-system-override.png`,
+   `home-subtle-restored.png`, and corresponding hierarchy/semantics evidence.
+   Inspect readable labels/selected state, Back, and no clipping in the normal
+   installed journey; inspect the connected `appearance-read-failure.png` and
+   its hierarchy/semantics dump for rendered error state. Record TalkBack
+   traversal if available; otherwise name that unverified condition.
 
-Capture `data-sources-after.png` at the same state as the baseline plus final UI
-hierarchy/semantics dumps for Data Sources, Privacy, and Open Source Licenses.
-The installed journey proves only reachability, presentation, scrolling, Back,
-external URI handoff, and absence of a permission prompt. It does not prove
-network or repository call counts; the deterministic connected test supplies
-the zero-additional-call evidence. Unit/composition evidence and the audit
-ledger prove factual alignment. A live weather-provider request is not required
-because this gate changes no provider request behavior and prior committed
-cycles are prerequisite evidence for active paths.
+No live severe alert is required: deterministic connected evidence supplies
+active-alert/stale coexistence. Existing production cache is sufficient for the
+manual effects boundary; live provider success is not a new provider acceptance
+gate. If no real forecast can be obtained/restored within one bounded attempt,
+record that exact blocker and leave installed Home evidence incomplete. Do not
+repeat timed-out platform/provider attempts or replace them with fixture success.
+Restore original device configuration and preference after evidence capture.
 
-## Reproducible privacy and dependency evidence
+## Broad verification and documentation obligations
 
-Use these exact commands once against the final changeset, saving their outputs
-under the cycle artifact directory. If the Android Gradle Plugin changes the
-merged-manifest output path, record the resolved path and reason rather than
-silently substituting a different input.
-
-```sh
-gate_artifact_dir=.codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check
-mkdir -p "$gate_artifact_dir"
-. scripts/android-env.sh && ./gradlew :app:dependencies --configuration releaseRuntimeClasspath > "$gate_artifact_dir/release-runtime-dependencies.txt"
-. scripts/android-env.sh && ./gradlew :app:processReleaseMainManifest
-cp app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml "$gate_artifact_dir/merged-release-AndroidManifest.xml"
-rg -n '<uses-permission|<permission|<application|<activity|<activity-alias|<service|<receiver|<provider|android:exported|usesCleartextTraffic|networkSecurityConfig|allowBackup|dataExtractionRules|fullBackupContent' "$gate_artifact_dir/merged-release-AndroidManifest.xml" > "$gate_artifact_dir/merged-release-manifest-summary.txt"
-rg -n -i --glob '*.kt' --glob '*.kts' --glob '*.xml' '(firebase|appmeasurement|analytics|telemetry|advertisingid|advertising sdk|facebook|appsflyer|adjust sdk|accountmanager|credentialmanager|oauth|sign[ -]?in|login|tracking|uploader|upload)' app/src/main core/src/main app/build.gradle.kts core/build.gradle.kts gradle/libs.versions.toml > "$gate_artifact_dir/privacy-prohibited-path-source-audit.txt" || test $? -eq 1
-```
-
-The ledger must classify every source-audit match rather than equating a search
-exit code with proof. Map no-ad/tracking SDK claims to the dependency tree,
-Gradle declarations, and classified source search; optional foreground location
-and no background component claims to the merged manifest plus `MainActivity`;
-no mandatory account to the classified production-source search and installed
-entry surface; active request-data claims to the concrete clients and provider
-contracts; and local persistence claims to the installed storage composition.
-These are bounded Gate 25 checks, not an exhaustive Slice 33 audit.
-
-Record these primary pages and their actual plan-review access date of
-2026-09-06 in the ledger: `https://open-meteo.com/en/licence`,
-`https://api.met.no/doc/License`, and
-`https://www.met.no/en/free-meteorological-data/Licensing-and-crediting`. Do not
-advance any provider contract's older last-review date unless its own full
-required source set is re-reviewed during implementation.
-
-## Broad verification
-
-After focused evidence and the installed exercise pass, run once against the
-final changeset:
+After visual convergence and focused evidence, run once on the final revision:
 
 ```sh
 . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
@@ -464,55 +332,48 @@ final changeset:
 git diff --check
 ```
 
-Do not rerun a passing command unless relevant source, tests, inputs, or the
-execution environment changed. Record every command, result, and rerun reason in
-the ledger. If provider-source review or the one installed exercise reaches a
-bounded external/platform failure, record the exact gap and do not convert it to
-mock success.
+Assembly already used for the unchanged final APK counts; do not repeat it.
+Repeat any passing check only for a relevant source/test/input/environment change,
+recording why. Build success is not functional or visual proof.
 
-## Documentation and commit obligations
+Before ready, review the actual production/test diff, list changed files, and
+record focused, connected, real-path, broad results and every skipped command.
+Use `implemented` if code exists but required evidence is incomplete.
 
-Before declaring the gate verified:
+Update README's installed/not-implemented lists, specification section 53,
+roadmap Slice 26 boundary/next sequencing, and installed Appearance wording to
+match only verified Off/Subtle behavior. Retain specification section 25's Full
+requirement as unfinished work, explicitly visible in roadmap follow-up scope;
+do not imply all MVP effects levels or all appearance settings are complete.
+Reconcile `PRIVACY.md` and in-app local-storage disclosure only as needed to
+mention the added local preference. Providers/licenses/request terms do not change.
+Append concise self-contained completion evidence to live cycle history when
+ready/committed; do not rewrite/archive history for an ordinary append.
 
-- review the diff for unsupported provider, license, privacy, dependency, or
-  release claims;
-- list every production, test, and authority file actually changed;
-- record focused, connected, real-path, and broad commands actually run;
-- name any skipped command and why;
-- leave Gate 25 `planned` or `implemented` if required evidence is missing.
-
-After the verified implementation/documentation changes are committed, perform
-the required authoritative doc sync:
-
-- append a concise self-contained Gate 25 entry to `.codex/cycles/history.md`;
-- update this plan to the actual evidence and commit state;
-- mark Gate 25 committed and advance roadmap next-candidate guidance to Slice
-  26 only if the commit and evidence support it;
-- confirm specification sections 44 and 53 remain reconciled and update any
-  affected README status;
-- run `git diff --check` for the post-commit documentation sync and commit that
-  sync separately if it changes tracked files.
+If implementation is committed, perform the required post-commit authoritative
+doc sync of plan, history, README, roadmap, and affected specification/disclosure;
+record the actual commit and verify `git diff --check` again for doc changes.
+Schedule the third-session test-only/doc-sync gate before another feature slice.
+No commit is requested by this planning task.
 
 ## Explicitly out of scope
 
-- Effects Off persistence or any Slice 26 behavior.
-- Simple, Standard, Detailed, or Meteorologist layout selection.
-- Paper, Terminal, additional theme, dark/light, or high-contrast selection.
-- Any appearance control, disabled placeholder, preference key, or migration.
-- Provider request, fallback eligibility, cache behavior or schema, alert merge,
-  or geocoding behavior changes. The exact MET Norway license-provenance
-  correction and legacy presentation normalization specified above are the sole
-  provenance exceptions.
-- Location permission flow, device acquisition, saved-location, unit, Room, or
-  DataStore changes.
-- Installed conditional revalidation/cache reuse, provider health/backoff, alert
-  persistence, background work, notifications, air quality, radar, maps,
-  widgets, or accounts. Existing client-level conditional request and 304
-  classification support remains intact and is documented accurately.
-- A complete transitive dependency/license inventory or the broader manifest,
-  exported-component, backup, cleartext, Play Services, and network-security
-  audit reserved for Slice 33.
-- Gate 34 release disclosure verification, Gate 35 broad release-candidate
-  verification, MVP readiness, release readiness, or release claims.
-- Changing Oxygen's source-license policy or importing third-party license
-  tooling/assets.
+Full scene richness/animation; Simple or other layout selection; theme/icon-pack
+selection, Paper/Terminal completion, high contrast, custom units, Home redesign,
+new design system, generic settings/persistence architecture, Room migration,
+provider requests/fallback/cache/alert semantics, background observers/polling,
+notifications, location acquisition/permissions, accounts/telemetry/dependencies,
+release audits, and MVP/release-readiness claims. Do not fix unrelated review notes.
+
+## Planning-session verification ledger
+
+- Read roadmap/specification/current plan and relevant authorities; inspected
+  production/test files with `rg`/`sed`/`cat`, and commit/status with Git.
+- Confirmed dependency commits and concrete storage/Settings/Home wiring;
+  inspected existing test assertions without executing them.
+- Reviewed the official Android motion API reference linked above.
+- Only this active plan was intentionally changed. `git diff --check` passed
+  during planning review; production/test files were not changed.
+- Not run: Android compile, app/core unit tests, connected tests, assemble,
+  emulator/list/install/capture, or live provider requests. This task is
+  documentation-only planning and explicitly prohibits implementation.
