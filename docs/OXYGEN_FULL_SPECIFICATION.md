@@ -1542,10 +1542,13 @@ The application requires:
 
 ```text
 Settings
+  Appearance
+  Units
+  Locations
+  Data Sources
+  Privacy
+  Open Source Licenses
   About Oxygen
-    Data Sources
-    Open Source Licenses
-    Privacy
 ```
 
 Example data-source display:
@@ -1910,7 +1913,7 @@ null/unavailable semantics. It did not add persisted units UI, provider
 changes, Settings information architecture, or MVP-readiness claims.
 
 Slice 20C made a persisted Oxygen default, Metric, US, and UK unit preference
-reachable through Settings / About / Units and exercised the alternate-unit
+reachable through Settings / Units and exercised the alternate-unit
 choice through the normal Home presentation boundary. Its dedicated versioned
 Preferences DataStore also preserves provider-neutral custom preferences for
 future editing. It preserves canonical provider/storage units, provider
@@ -1928,11 +1931,17 @@ wiring, Paper/Terminal theme completion, radar, maps, air quality, widgets,
 background refresh, notifications, release-readiness, or MVP-readiness claims.
 
 Slice 25A, Settings Information Architecture, is implemented, verified, and
-committed in `2484e90`. The installed Settings root exposes
-distinct Appearance, Units, Locations, Data Sources, Privacy, Open Source
-Licenses, and About destinations while reusing existing production behavior.
-Appearance remains a read-only summary; this slice does not implement
-appearance selection or complete Gate 25's disclosure audit.
+committed in `2484e90`. The installed Settings root exposes distinct
+Appearance, Units, Locations, Data Sources, Privacy, Open Source Licenses, and
+About destinations while reusing existing production behavior. Appearance
+remains a read-only summary; this slice does not implement appearance
+selection or complete Gate 25's disclosure audit. Units is reached directly
+from Settings; it is not nested under About.
+
+Gate 25, Disclosure Baseline Check, is the next implementation candidate. It
+must reconcile active-provider attribution, data licenses, privacy disclosure,
+source-code license identification, and observable reachability of the direct
+Settings disclosure destinations before appearance work begins.
 
 ---
 

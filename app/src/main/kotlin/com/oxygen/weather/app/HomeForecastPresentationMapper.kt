@@ -40,6 +40,8 @@ private val HOUR_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("h a", 
 private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
 private val DAY_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.US)
 private val FETCHED_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, h:mm a z", Locale.US)
+private const val LEGACY_MET_NORWAY_LICENSE = "NLOD-2.0 OR CC-BY-4.0"
+private const val CURRENT_MET_NORWAY_LICENSE = "NLOD-2.0 AND CC-BY-4.0"
 
 fun WeatherBundle.toHomeSuccessPresentation(
     selectedLocation: WeatherLocation,
@@ -549,7 +551,11 @@ private fun DataProvenance.toSourcePresentation(zoneId: ZoneId): HomeSourcePrese
         dataType = type.displayLabel(),
         fetchedAt = "Fetched ${fetchedAt.formatFetched(zoneId)}",
         issuedAt = issuedAt?.let { "Issued ${it.formatFetched(zoneId)}" },
-        license = licenseId,
+        license = if (providerId == "met-norway" && licenseId == LEGACY_MET_NORWAY_LICENSE) {
+            CURRENT_MET_NORWAY_LICENSE
+        } else {
+            licenseId
+        },
     )
 
 private fun Instant.formatLocalTime(zoneId: ZoneId): String = TIME_FORMAT.format(atZone(zoneId))

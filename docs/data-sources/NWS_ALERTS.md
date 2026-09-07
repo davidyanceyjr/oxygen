@@ -98,7 +98,7 @@
   description, instructions, and source/provenance. Critical official
   instructions must not be paraphrased in a way that changes meaning. Severity
   must not be communicated by color alone.
-- **Error responses:** Future client/result boundaries must distinguish:
+- **Error responses:** The installed client/provider result boundary distinguishes:
   `Success(alerts)`, including empty success; `UnsupportedRegion`;
   local `InvalidPoint`; `NetworkUnavailable`; `RateLimited`;
   `ProviderUnavailable`; `InvalidRequest`; `InvalidResponse`;
@@ -147,13 +147,13 @@
   failure cannot invalidate the displayed forecast. Forecast and alert freshness
   remain separate; stale forecast with fresh alerts and fresh forecast with
   alert failure must both be representable.
-- **Fixture/sample response location:** Future fixtures live under
-  `core/src/test/resources/providers/nws/`. Slice 23A must add no-alert,
-  one-alert, many-alert, missing-optionals, unknown-enums, geometry polygon,
+- **Fixture/sample response location:** Implemented fixtures live under
+  `core/src/test/resources/providers/nws/`, covering no-alert, one-alert,
+  many-alert, missing-optionals, unknown-enums, geometry polygon,
   null-geometry, duplicate ID, update references, cancel references,
   near-future-effective, expired/superseded cached input, malformed envelope,
   malformed problem envelope, and unsupported-region problem fixtures. Parser
-  tests must not require live internet.
+  tests do not require live internet.
 - **Official documentation:**
   - API service docs: https://www.weather.gov/documentation/services-web-api
   - OpenAPI schema: https://api.weather.gov/openapi.json

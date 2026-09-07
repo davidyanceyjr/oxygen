@@ -20,6 +20,12 @@ data class SettingsDestinationState(
 data class AboutSection(
     val heading: String,
     val body: List<String>,
+    val links: List<AboutDisclosureLink> = emptyList(),
+)
+
+data class AboutDisclosureLink(
+    val label: String,
+    val uri: String,
 )
 
 val settingsDestinationOptions: List<SettingsDestination> = SettingsDestination.entries
@@ -63,10 +69,23 @@ private val dataSourceSections = listOf(
         heading = "Active App Providers",
         body = listOf(
             "Forecasts: Open-Meteo is the installed-app default forecast provider for selected locations.",
+            "Open-Meteo forecast and timezone data: CC BY 4.0.",
             "MET Norway can serve Home forecasts after eligible Open-Meteo terminal forecast failures.",
+            "MET Norway data: NLOD 2.0 and CC BY 4.0.",
             "Location search: Open-Meteo Geocoding API, based on GeoNames data, powers manual place search.",
+            "Open-Meteo geocoding data: CC BY 4.0.",
+            "GeoNames data: Creative Commons attribution license.",
             "Timezone resolution by Open-Meteo.com (CC BY 4.0): an explicitly requested approximate device point is resolved with a metadata-only timezone=auto request before its normal forecast request.",
-            "Official alerts: selected-point NOAA/National Weather Service active alerts are requested in the foreground after a terminal forecast result.",
+            "Official alerts: selected-point NOAA/National Weather Service active alerts are requested in the foreground after forecast success.",
+            "NWS information is public information; requested credits apply and third-party page content may have separate terms.",
+            "NOAA/National Weather Service does not endorse Oxygen.",
+        ),
+        links = listOf(
+            AboutDisclosureLink("Open-Meteo forecast and timezone documentation", "https://open-meteo.com/en/docs"),
+            AboutDisclosureLink("MET Norway licensing and attribution", "https://api.met.no/doc/License"),
+            AboutDisclosureLink("Open-Meteo geocoding documentation", "https://open-meteo.com/en/docs/geocoding-api"),
+            AboutDisclosureLink("GeoNames licensing and attribution", "https://www.geonames.org/about.html"),
+            AboutDisclosureLink("NOAA/National Weather Service information", "https://www.weather.gov/"),
         ),
     ),
     AboutSection(
@@ -109,7 +128,7 @@ private val privacySections = listOf(
             "MET Norway fallback requests send selected coordinates, optional altitude, an identifying User-Agent/contact header, and normal network metadata.",
             "Open-Meteo geocoding requests send the typed place query, bounded result count, optional locale/filter parameters where implemented, and normal network metadata such as IP address.",
             "Open-Meteo geocoding data is based on GeoNames.",
-            "Foreground selected-point NWS alert requests send the selected coordinates, required Oxygen User-Agent/contact identity, and normal network metadata such as IP address.",
+            "Foreground selected-point NWS alert requests send the selected coordinates, required Oxygen User-Agent/contact header, and normal network metadata such as IP address.",
             "NWS alert results are kept in process memory for the foreground rate-limit window; Oxygen does not persist or background-poll alert data.",
         ),
     ),
@@ -126,7 +145,7 @@ private val openSourceLicenseSections = listOf(
     AboutSection(
         heading = "Oxygen Source Code",
         body = listOf(
-            "Oxygen source code is licensed under the repository LICENSE file.",
+            "Oxygen source code is licensed under GPL-3.0-or-later; see the repository LICENSE file.",
             "This product includes software developed for Oxygen Weather. Android, Jetpack, Kotlin, and Gradle dependencies remain subject to their upstream licenses.",
         ),
     ),

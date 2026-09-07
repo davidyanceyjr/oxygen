@@ -1071,6 +1071,91 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun settingsDisclosuresShowActiveProviderLicenseAndPrivacyBaseline() {
+        val location = weatherLocation(name = "Disclosure Fixture City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+        val openedUris = mutableListOf<String>()
+        var permissionRequests = 0
+        val uriHandler = object : UriHandler {
+            override fun openUri(uri: String) {
+                openedUris += uri
+            }
+        }
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1.3f),
+                LocalUriHandler provides uriHandler,
+            ) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        OxygenApp(
+                            stateHolder = stateHolder,
+                            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                            onRequestLocationPermission = { permissionRequests++ },
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val repositoryCallsAfterHome = repository.locations.size
+
+        composeRule.onNodeWithTag("home-about-entry").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("settings-destination-datasources").performScrollTo().performClick()
+        composeRule.onNodeWithText("Open-Meteo forecast and timezone data: CC BY 4.0.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("MET Norway data: NLOD 2.0 and CC BY 4.0.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("NWS information is public information; requested credits apply and third-party page content may have separate terms.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        val disclosureLinks = listOf(
+            "Open-Meteo forecast and timezone documentation" to "https://open-meteo.com/en/docs",
+            "MET Norway licensing and attribution" to "https://api.met.no/doc/License",
+            "Open-Meteo geocoding documentation" to "https://open-meteo.com/en/docs/geocoding-api",
+            "GeoNames licensing and attribution" to "https://www.geonames.org/about.html",
+            "NOAA/National Weather Service information" to "https://www.weather.gov/",
+        )
+        disclosureLinks.forEach { (label, _) ->
+            composeRule.onNodeWithContentDescription(label).performScrollTo().assertIsDisplayed().performClick()
+        }
+        composeRule.writeSemanticsArtifact("data-sources-360x640-font-1.3-semantics.txt")
+        composeRule.onNodeWithTag("settings-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("settings-destination-privacy").performScrollTo().performClick()
+        composeRule.onNodeWithText("Manual search works without Android location permission", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Foreground selected-point NWS alert requests", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("privacy-360x640-font-1.3-semantics.txt")
+        composeRule.onNodeWithTag("settings-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("settings-destination-opensourcelicenses").performScrollTo().performClick()
+        composeRule.onNodeWithText("Oxygen source code is licensed under GPL-3.0-or-later; see the repository LICENSE file.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Weather-data attribution and licensing are separate from Oxygen source-code licensing.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("open-source-licenses-360x640-font-1.3-semantics.txt")
+        composeRule.onNodeWithTag("settings-back").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(disclosureLinks.map { it.second }, openedUris)
+        assertEquals(repositoryCallsAfterHome, repository.locations.size)
+        assertEquals(0, permissionRequests)
+        composeRule.onNodeWithTag("settings-content").assertIsDisplayed()
+    }
+
+    @Test
     fun oxygenAppUnitsSelectionReturnsHomeWithAlternateUnitsAndKeepsPagesReachable() {
         val location = weatherLocation(name = "Units Fixture City")
         val repository = RecordingWeatherRepository(

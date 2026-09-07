@@ -18,7 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -241,6 +243,7 @@ private fun SettingsBottomActions(
 
 @Composable
 private fun AboutSectionView(section: AboutSection) {
+    val uriHandler = LocalUriHandler.current
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -259,5 +262,22 @@ private fun AboutSectionView(section: AboutSection) {
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
             )
         }
+        section.links.forEach { link ->
+            OutlinedButton(
+                onClick = { uriHandler.openUri(link.uri) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .semantics { contentDescription = link.label }
+                    .testTag("disclosure-link-${link.label.toTestTagSuffix()}"),
+            ) {
+                Text(link.label)
+            }
+        }
     }
 }
+
+private fun String.toTestTagSuffix(): String =
+    lowercase()
+        .replace(Regex("[^a-z0-9]+"), "-")
+        .trim('-')

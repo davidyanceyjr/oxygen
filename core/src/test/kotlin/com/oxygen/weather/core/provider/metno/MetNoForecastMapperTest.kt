@@ -232,7 +232,7 @@ class MetNoForecastMapperTest {
     private fun assertMetNoProvenance(type: DataType, provenance: DataProvenance) {
         assertEquals("met-norway", provenance.providerId)
         assertEquals("MET Norway", provenance.sourceName)
-        assertEquals("NLOD-2.0 OR CC-BY-4.0", provenance.licenseId)
+        assertEquals("NLOD-2.0 AND CC-BY-4.0", provenance.licenseId)
         assertEquals(Instant.parse("2026-08-23T10:15:00Z"), provenance.issuedAt)
         assertEquals(fetchedAt, provenance.fetchedAt)
         assertEquals(type, provenance.type)

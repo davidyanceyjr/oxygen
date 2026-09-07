@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.printToString
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -85,10 +86,11 @@ class InstalledFallbackRepositoryInstrumentedTest {
         composeRule.setContent {
             OxygenApp(stateHolder = stateHolder)
         }
+        composeRule.waitForIdle()
 
         composeRule.onNodeWithText("Android MET Norway Fallback City", substring = true).assertIsDisplayed()
         composeRule.onAllNodesWithText("MET Norway", substring = true).assertCountEquals(2)
-        composeRule.onNodeWithText("Model estimate", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Model estimate", substring = true).performScrollTo().assertIsDisplayed()
         assertEquals(listOf(location), FailingOpenMeteoRepository.locations)
         assertNotNull(metNorwayTransport.request)
         assertEquals(MetNoForecastClient.DEFAULT_USER_AGENT, metNorwayTransport.request?.headers?.get("User-Agent"))
@@ -298,7 +300,7 @@ private fun assertMetNorwayForecast(
 ) {
     assertEquals(location, ready.location)
     assertEquals("MET Norway", ready.dashboard.source.sourceName)
-    assertEquals("NLOD-2.0 OR CC-BY-4.0", ready.dashboard.source.license)
+    assertEquals("NLOD-2.0 AND CC-BY-4.0", ready.dashboard.source.license)
     assertEquals("Model estimate", ready.dashboard.source.dataType)
     assertTrue(ready.dashboard.source.fetchedAt.contains("Aug 23"))
     assertTrue(ready.dashboard.source.issuedAt.orEmpty().contains("Aug 23"))

@@ -31,6 +31,28 @@ import org.junit.Test
 
 class HomeForecastPresentationMapperTest {
     @Test
+    fun `home presentation normalizes only legacy MET Norway license provenance`() {
+        fun presentationSource(providerId: String, licenseId: String): String? =
+            fullWeatherBundle().copy(
+                current = requireNotNull(fullWeatherBundle().current).copy(
+                    provenance = DataProvenance(
+                        providerId = providerId,
+                        sourceName = "Source",
+                        issuedAt = Instant.parse("2026-08-22T11:45:00Z"),
+                        fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
+                        type = DataType.MODEL_ESTIMATE,
+                        licenseId = licenseId,
+                    ),
+                ),
+            ).toHomeSuccessPresentation(testLocation).source.license
+
+        assertEquals("NLOD-2.0 AND CC-BY-4.0", presentationSource("met-norway", "NLOD-2.0 OR CC-BY-4.0"))
+        assertEquals("NLOD-2.0 AND CC-BY-4.0", presentationSource("met-norway", "NLOD-2.0 AND CC-BY-4.0"))
+        assertEquals("NLOD-2.0 OR CC-BY-4.0", presentationSource("other-provider", "NLOD-2.0 OR CC-BY-4.0"))
+        assertEquals("Other license", presentationSource("met-norway", "Other license"))
+    }
+
+    @Test
     fun availableAlertSummaryUsesSelectedZoneMetadataCountAndSafeSourceLink() {
         val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
         val alerts = listOf(

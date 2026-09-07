@@ -140,13 +140,29 @@ class AboutDisclosureStateHolderTest {
         assertTrue(text.contains("Provider-specific MET Norway cache headers are persisted"))
         assertTrue(text.contains("cached fallback provenance remains provider-neutral"))
         assertTrue(text.contains("304 not-modified handling"))
-        assertTrue(text.contains("Official alerts: selected-point NOAA/National Weather Service"))
+        assertTrue(text.contains("Official alerts: selected-point NOAA/National Weather Service active alerts are requested in the foreground after forecast success"))
+        assertTrue(text.contains("Open-Meteo forecast and timezone data: CC BY 4.0"))
+        assertTrue(text.contains("Open-Meteo geocoding data: CC BY 4.0"))
+        assertTrue(text.contains("GeoNames data: Creative Commons attribution license"))
+        assertTrue(text.contains("MET Norway data: NLOD 2.0 and CC BY 4.0"))
+        assertTrue(text.contains("NWS information is public information"))
         assertTrue(text.contains("Environment and Climate Change Canada alerts"))
         assertTrue(text.contains("Open-Meteo/CAMS air quality"))
         assertTrue(text.contains("roadmap-only"))
         assertFalse(text.contains("saved-location save/remove UI"))
         assertFalse(text.contains("unit settings are implemented"))
         assertTrue(text.contains("Home Now page shows one official-alert summary"))
+
+        assertEquals(
+            listOf(
+                AboutDisclosureLink("Open-Meteo forecast and timezone documentation", "https://open-meteo.com/en/docs"),
+                AboutDisclosureLink("MET Norway licensing and attribution", "https://api.met.no/doc/License"),
+                AboutDisclosureLink("Open-Meteo geocoding documentation", "https://open-meteo.com/en/docs/geocoding-api"),
+                AboutDisclosureLink("GeoNames licensing and attribution", "https://www.geonames.org/about.html"),
+                AboutDisclosureLink("NOAA/National Weather Service information", "https://www.weather.gov/"),
+            ),
+            settingsDestinationState(SettingsDestination.DataSources).sections.flatMap { it.links },
+        )
     }
 
     @Test
@@ -160,6 +176,7 @@ class AboutDisclosureStateHolderTest {
         assertTrue(text.contains("Manual search works without Android location permission"))
         assertTrue(text.contains("selected coordinates"))
         assertTrue(text.contains("timezone"))
+        assertTrue(text.contains("requested weather variables"))
         assertTrue(text.contains("typed place query"))
         assertTrue(text.contains("GeoNames"))
         assertTrue(text.contains("optional altitude"))
@@ -167,13 +184,15 @@ class AboutDisclosureStateHolderTest {
         assertTrue(text.contains("IP address"))
         assertTrue(text.contains("provider logs"))
         assertTrue(text.contains("used only after eligible Open-Meteo terminal forecast failures"))
+        assertTrue(text.contains("Foreground selected-point NWS alert requests"))
+        assertTrue(text.contains("Oxygen does not persist or background-poll alert data"))
     }
 
     @Test
     fun `open source licenses separate source code license from weather data attribution`() {
         val text = settingsDestinationState(SettingsDestination.OpenSourceLicenses).visibleText()
 
-        assertTrue(text.contains("Oxygen source code is licensed under the repository LICENSE file"))
+        assertTrue(text.contains("Oxygen source code is licensed under GPL-3.0-or-later"))
         assertTrue(text.contains("Weather-data attribution and licensing are separate"))
         assertTrue(text.contains("Open-Meteo forecast and geocoding disclosures"))
         assertTrue(text.contains("GeoNames attribution"))
@@ -198,7 +217,7 @@ class AboutDisclosureStateHolderTest {
         assertEquals("MET Norway", ready.dashboard.source.sourceName)
         assertEquals("Model estimate", ready.dashboard.source.dataType)
         assertEquals("Fetched Aug 22, 7:00 AM CDT", ready.dashboard.source.fetchedAt)
-        assertEquals("NLOD 2.0", ready.dashboard.source.license)
+        assertEquals("NLOD-2.0 AND CC-BY-4.0", ready.dashboard.source.license)
         assertFalse(ready.dashboard.visibleText().contains("metno-provider-id"))
     }
 
@@ -295,7 +314,7 @@ private fun metNorwayBundle(location: WeatherLocation): WeatherBundle =
             time = Instant.parse("2026-08-22T12:00:00Z"),
             temperatureC = 17.0,
             condition = WeatherCondition.CLOUDY,
-            provenance = provenance("metno-provider-id", "MET Norway", "NLOD 2.0"),
+            provenance = provenance("metno-provider-id", "MET Norway", "NLOD-2.0 AND CC-BY-4.0"),
         ),
         fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
     )
