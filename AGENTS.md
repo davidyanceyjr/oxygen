@@ -49,6 +49,18 @@ Current modules:
 
 The screen currently uses `SampleWeather.bundle`. Treat it as scaffold data, not a real provider integration.
 
+## Tracking Workflow
+
+Use four components to track project state:
+
+- `git commit` records the last completed implementation.
+- `.codex/plans/current.md` holds the active slice and its next action.
+- `.codex/plans/mvp-roadmap.md` lists ordered candidate slices.
+- `.codex/cycles/history.md` records completed slices and evidence.
+- `.codex/cycles/archive/` holds older live-history material when the live file grows too large.
+
+Keep the actionable item near the top of operational files. Prefer minimal reads of the current slice, roadmap candidate section, and recent history summary. When live history needs to grow beyond a compact readable tail, archive older content instead of letting the live file expand indefinitely.
+
 ## Authority Order
 
 Use this precedence unless a more specific nested `AGENTS.md` exists:
@@ -83,6 +95,13 @@ Do not substitute any of the following for working behavior:
 A behavior is implemented only when its production path exists. It is verified only when the intended behavior has been exercised at an observable boundary.
 
 When blocked, report the exact blocker. Do not replace failed implementation with future-work prose or a polished completion summary.
+
+## Slice Size Rule
+
+- One bounded user-visible behavior per slice.
+- Prefer one primary production path and one primary acceptance boundary.
+- Split a slice when it needs multiple independent state machines, multiple new persistence layers, multiple unrelated UI surfaces, or multiple platform adapters.
+- Keep doc-sync work separate from product scope; use it to close a committed slice, not to widen it.
 
 ## Status Vocabulary
 
@@ -123,7 +142,7 @@ discover -> baseline-green -> design-if-needed -> build
          -> focused-green -> broad-checks -> review -> ready
 ```
 
-Keep `.codex/plans/current.md` current for substantial implementation cycles. Append completed cycle evidence to `.codex/cycles/history.md` when a cycle is ready or committed.
+Keep `.codex/plans/current.md` focused on one bounded active slice. Append concise completion evidence to `.codex/cycles/history.md` when a cycle is ready or committed, and archive older live-history material before any history rewrite or compression.
 
 After every commit, perform an authoritative doc sync before considering the work closed: reconcile the active plan, live cycle history, and any affected repository authorities such as `README.md` and `docs/OXYGEN_FULL_SPECIFICATION.md` with the commit's actual state.
 
@@ -237,7 +256,7 @@ scripts/start-emulator.sh
 scripts/install-debug.sh
 ```
 
-Run `scripts/start-emulator.sh` in one terminal, then `scripts/install-debug.sh` in another. Use `OXYGEN_EMULATOR_WINDOW=1` when a visible emulator window is needed.
+Run `scripts/start-emulator.sh` in one terminal and `scripts/install-debug.sh` in another. Use `OXYGEN_EMULATOR_WINDOW=1` when a visible emulator window is needed.
 
 ## Completion Standard
 
