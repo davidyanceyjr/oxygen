@@ -59,7 +59,7 @@ Use four components to track project state:
 - `.codex/cycles/history.md` records completed slices and evidence.
 - `.codex/cycles/archive/` holds older live-history material when the live file grows too large.
 
-Keep the actionable item near the top of operational files. Prefer minimal reads of the current slice, roadmap candidate section, and recent history summary. When live history needs to grow beyond a compact readable tail, archive older content instead of letting the live file expand indefinitely.
+Keep the actionable item near the top of operational files. Prefer minimal reads of the current slice, roadmap candidate section, and recent history summary. Archive older live-history content before the readable tail gets too large.
 
 ## Authority Order
 
@@ -100,7 +100,7 @@ When blocked, report the exact blocker. Do not replace failed implementation wit
 
 - One bounded user-visible behavior per slice.
 - Prefer one primary production path and one primary acceptance boundary.
-- Split a slice when it needs multiple independent state machines, multiple new persistence layers, multiple unrelated UI surfaces, or multiple platform adapters.
+- Split a slice when it needs multiple independent state machines, new persistence layers, unrelated UI surfaces, or platform adapters.
 - Keep doc-sync work separate from product scope; use it to close a committed slice, not to widen it.
 
 ## Status Vocabulary
@@ -142,7 +142,7 @@ discover -> baseline-green -> design-if-needed -> build
          -> focused-green -> broad-checks -> review -> ready
 ```
 
-Keep `.codex/plans/current.md` focused on one bounded active slice. Append concise completion evidence to `.codex/cycles/history.md` when a cycle is ready or committed, and archive older live-history material before any history rewrite or compression.
+Keep `.codex/plans/current.md` focused on one bounded active slice. Append concise completion evidence to `.codex/cycles/history.md` when a cycle is ready or committed.
 
 After every commit, perform an authoritative doc sync before considering the work closed: reconcile the active plan, live cycle history, and any affected repository authorities such as `README.md` and `docs/OXYGEN_FULL_SPECIFICATION.md` with the commit's actual state.
 
