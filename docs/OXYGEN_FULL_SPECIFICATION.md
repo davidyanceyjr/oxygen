@@ -1927,8 +1927,8 @@ appearance settings beyond the selected unit preference, additional provider
 wiring, Paper/Terminal theme completion, radar, maps, air quality, widgets,
 background refresh, notifications, release-readiness, or MVP-readiness claims.
 
-Slice 25A, Settings Information Architecture, is implemented and verified in
-the current uncommitted changeset. The installed Settings root exposes
+Slice 25A, Settings Information Architecture, is implemented, verified, and
+committed in `2484e90`. The installed Settings root exposes
 distinct Appearance, Units, Locations, Data Sources, Privacy, Open Source
 Licenses, and About destinations while reusing existing production behavior.
 Appearance remains a read-only summary; this slice does not implement

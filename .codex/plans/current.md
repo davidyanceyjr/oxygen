@@ -1,7 +1,8 @@
 # Slice 25A - Settings Information Architecture
 
-**Status:** verified
-**Commit state:** uncommitted
+**Status:** committed
+**Commit state:** committed
+**Implementation commit:** `2484e90`
 **Cycle ID:** `2026-09-06-slice-25a-settings-information-architecture`
 **Planning basis:** `cab3b29` after committed Slice 24B completion evidence at
 `b7e3514`. The worktree was clean at discovery.
@@ -9,8 +10,7 @@
 **Authority reconciliation:** The 2026-09-06 pre-implementation documentation
 sync aligns the roadmap, specification next-task text, README status, and live
 cycle summary with committed behavior through Slice 24B. Gate 25 remains
-specified and incomplete; Slice 25A is now verified in this uncommitted
-changeset.
+specified and incomplete; Slice 25A is committed in `2484e90`.
 
 ## Scope resolution
 
@@ -24,7 +24,7 @@ Slice 25A was sequenced before or with Slice 20C but was never separately
 planned, verified, or committed. Slice 20C added a real Units destination to the
 older `Settings / About` surface; it did not complete the seven-destination
 Settings contract. This cycle closes that gap without reopening unit behavior.
-The current uncommitted changeset implements and verifies the slice.
+The committed changeset implements and verifies the slice.
 
 ## Observed baseline
 

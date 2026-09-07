@@ -1424,8 +1424,9 @@ Must prove:
 
 ## Slice 25A: Settings Information Architecture
 
-Status: verified
-Commit state: uncommitted
+Status: committed
+Commit state: committed
+Commit: `2484e90`
 
 Prerequisite:
 
@@ -1433,7 +1434,7 @@ Prerequisite:
 
 Release intent: Create a scalable Settings architecture before multiple preference families accumulate.
 
-Verified result: The installed Settings root now exposes all seven destinations,
+Committed result: The installed Settings root now exposes all seven destinations,
 retains existing Units and disclosure behavior, opens the real Locations
 surface, and returns through both in-surface and Android Back. Appearance is a
 read-only summary of the effective presentation.
@@ -1917,7 +1918,7 @@ Sequencing rationale:
 - Installed-app MET Norway fallback is pulled forward after the saved-location list/select UI because fallback is an MVP acceptance requirement and repository-only fallback evidence is insufficient for release.
 - Save-result and remove-location UI return after fallback real-path verification so Saved Locations can complete before Units.
 - Unit conversion follows once location switching and fallback provenance are stable.
-- Settings information architecture is established before multiple preference families make the current Settings/About surface too broad; Slice 25A is now verified in the current uncommitted changeset.
+- Settings information architecture is established before multiple preference families make the current Settings/About surface too broad; Slice 25A is now committed.
 - Appearance persistence remains after the Standard Home design system and accessibility baseline, which are already committed.
 
 ---
@@ -1925,8 +1926,8 @@ Sequencing rationale:
 ## Next Candidate Slice
 
 Candidate: Gate 25: Disclosure Baseline Check. Slice 25A Settings Information
-Architecture is verified in the current uncommitted changeset; Gate 25 remains
-the next separate audit before Slice 26 or release work relies on it.
+Architecture is committed; Gate 25 remains the next separate audit before Slice
+26 or release work relies on it.
 
 Immediate planning boundary:
 
@@ -1954,7 +1955,7 @@ Immediate planning boundary:
 -> 23C alert repository merge committed at 3c658a8
 -> 24A alert summary/banner UI committed at cf9ddaf
 -> 24B alert detail UI committed at ceb6253
--> Slice 25A Settings information architecture verified (uncommitted)
+-> Slice 25A Settings information architecture committed at `2484e90`
 -> next candidate: Gate 25 disclosure baseline check
 ```
 
@@ -1966,6 +1967,6 @@ Those implementation boundaries are historical and already committed. Slice
 18J-R was a provider-path recovery slice required by the blocked Slice 18J
 evidence boundary, not a new visual gate.
 
-After this authority sync, Slice 25A is complete through verification but not
-committed. Do not treat Slice 26 or later roadmap entries as active
-implementation work; Gate 25 remains the separate next audit.
+After this authority sync, Slice 25A is complete and committed. Do not treat
+Slice 26 or later roadmap entries as active implementation work; Gate 25
+remains the separate next audit.

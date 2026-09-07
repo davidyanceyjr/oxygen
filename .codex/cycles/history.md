@@ -32,16 +32,14 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 24B, Official Alert Detail
-  Navigation, committed at `ceb6253`; completion evidence is recorded at
-  `b7e3514`.
+- Last committed implementation slice: Slice 25A, Settings Information
+  Architecture, committed at `2484e90`; completion evidence is recorded at
+  `.codex/test-artifacts/2026-09-06-slice-25a-settings-information-architecture/`.
 - Last committed implementation gate: Gate 20-0, Presentation Semantics and
   Localization Safety, committed at `587b0ad`.
-- Last committed documentation sync: Slice 24A Authority Sync, committed at
-  `cc2af8b`.
-- Current changeset: verified but uncommitted Slice 25A Settings information
-  architecture implementation plus its authority sync; Gate 25 remains a
-  separate disclosure audit.
+- Last committed documentation sync: Slice 25A post-commit authority sync.
+- Current changeset: none; Slice 25A Settings information architecture is
+  committed and the live authorities are synchronized to that state.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -935,9 +933,10 @@ Boundaries:
 
 ### 2026-09-06-slice-25a-settings-information-architecture
 
-Status: verified
+Status: committed
 Mode: feature
-Commit state: uncommitted
+Commit state: committed
+Commit: `2484e90`
 
 Result:
 - Replaced the mixed Settings / About root with a coherent Settings root and
