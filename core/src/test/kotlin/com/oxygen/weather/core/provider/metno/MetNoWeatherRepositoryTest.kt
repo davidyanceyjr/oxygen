@@ -86,7 +86,7 @@ class MetNoWeatherRepositoryTest {
         assertEquals(DataType.MODEL_ESTIMATE, bundle.current.provenance.type)
         assertEquals("met-norway", bundle.current.provenance.providerId)
         assertEquals("MET Norway", bundle.current.provenance.sourceName)
-        assertEquals("NLOD-2.0 OR CC-BY-4.0", bundle.current.provenance.licenseId)
+        assertEquals("NLOD-2.0 AND CC-BY-4.0", bundle.current.provenance.licenseId)
         assertEquals(Instant.parse("2026-08-23T10:15:00Z"), bundle.current.provenance.issuedAt)
         assertEquals(fetchedAt, bundle.current.provenance.fetchedAt)
         assertEquals(DataType.FORECAST, bundle.hourly.first().provenance.type)

@@ -1,6 +1,7 @@
 package com.oxygen.weather.app
 
 import com.oxygen.weather.core.model.CurrentConditions
+import com.oxygen.weather.core.model.AlertSeverity
 import com.oxygen.weather.core.model.DailyForecast
 import com.oxygen.weather.core.model.DataProvenance
 import com.oxygen.weather.core.model.DataType
@@ -15,16 +16,193 @@ import com.oxygen.weather.core.model.UnitPreferencePreset
 import com.oxygen.weather.core.model.VisibilityUnit
 import com.oxygen.weather.core.model.WindSpeedUnit
 import com.oxygen.weather.core.model.WeatherBundle
+import com.oxygen.weather.core.model.WeatherAlert
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
+import com.oxygen.weather.core.provider.AlertLookupStatus
+import com.oxygen.weather.core.provider.AlertSuccessMetadata
 import java.time.Instant
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HomeForecastPresentationMapperTest {
+    @Test
+    fun `home presentation normalizes only legacy MET Norway license provenance`() {
+        fun presentationSource(providerId: String, licenseId: String): String? =
+            fullWeatherBundle().copy(
+                current = requireNotNull(fullWeatherBundle().current).copy(
+                    provenance = DataProvenance(
+                        providerId = providerId,
+                        sourceName = "Source",
+                        issuedAt = Instant.parse("2026-08-22T11:45:00Z"),
+                        fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
+                        type = DataType.MODEL_ESTIMATE,
+                        licenseId = licenseId,
+                    ),
+                ),
+            ).toHomeSuccessPresentation(testLocation).source.license
+
+        assertEquals("NLOD-2.0 AND CC-BY-4.0", presentationSource("met-norway", "NLOD-2.0 OR CC-BY-4.0"))
+        assertEquals("NLOD-2.0 AND CC-BY-4.0", presentationSource("met-norway", "NLOD-2.0 AND CC-BY-4.0"))
+        assertEquals("NLOD-2.0 OR CC-BY-4.0", presentationSource("other-provider", "NLOD-2.0 OR CC-BY-4.0"))
+        assertEquals("Other license", presentationSource("met-norway", "Other license"))
+    }
+
+    @Test
+    fun availableAlertSummaryUsesSelectedZoneMetadataCountAndSafeSourceLink() {
+        val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
+        val alerts = listOf(
+            mapperAlert().copy(
+                event = "Flash Flood Warning",
+                severity = AlertSeverity.SEVERE,
+                expires = Instant.parse("2026-08-22T18:00:00Z"),
+                web = " https://alerts.weather.gov/example ",
+            ),
+            mapperAlert(id = "alert-2", event = "Heat Advisory"),
+            mapperAlert(id = "alert-3", event = "Wind Advisory"),
+        )
+
+        val presentation = fullWeatherBundle().copy(alerts = alerts).toHomeSuccessPresentation(
+            selectedLocation = testLocation,
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(
+                    requestPoint = testLocation.point,
+                    providerId = "nws",
+                    fetchedAt = checkedAt,
+                ),
+            ),
+        )
+
+        assertEquals(alerts, presentation.alerts)
+        assertEquals("Flash Flood Warning", presentation.alertSummary?.event)
+        assertEquals("Severe", presentation.alertSummary?.severity)
+        assertEquals("Expires 1:00 PM", presentation.alertSummary?.expires)
+        assertEquals(3, presentation.alertSummary?.activeAlertCount)
+        assertEquals("Alert source checked Aug 22, 10:05 AM CDT", presentation.alertSummary?.sourceCheckedAt)
+        assertEquals("https://alerts.weather.gov/example", presentation.alertSummary?.sourceLink)
+        assertEquals(HomeSuccessSection.Current, presentation.sectionOrder[1])
+        assertEquals(HomeSuccessSection.Alerts, presentation.sectionOrder[2])
+    }
+
+    @Test
+    fun nonAvailableAlertStatusPreservesCompleteAlertsWithoutSummary() {
+        val weather = fullWeatherBundle()
+        val presentation = weather.toHomeSuccessPresentation(
+            selectedLocation = testLocation,
+            alertStatus = AlertLookupStatus.Failed(com.oxygen.weather.core.provider.AlertProviderError.Network),
+        )
+
+        assertEquals(weather.alerts, presentation.alerts)
+        assertNull(presentation.alertSummary)
+        assertEquals(HomeSuccessSection.Current, presentation.sectionOrder[1])
+    }
+
+    @Test
+    fun invalidAlertSourceUrlUsesOfficialWeatherFallback() {
+        listOf(null, "", "alerts.weather.gov", "http://alerts.weather.gov", "https:///missing-host", "mailto:nws@example.com")
+            .forEach { url ->
+                val weather = fullWeatherBundle().copy(
+                    alerts = listOf(mapperAlert(web = url)),
+                )
+                val presentation = weather.toHomeSuccessPresentation(
+                    selectedLocation = testLocation,
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(
+                            requestPoint = testLocation.point,
+                            providerId = "nws",
+                            fetchedAt = Instant.parse("2026-08-22T15:05:00Z"),
+                        ),
+                    ),
+                )
+                assertEquals("https://www.weather.gov/", presentation.alertSummary?.sourceLink)
+            }
+    }
+
+    @Test
+    fun availableAlertsMapCompleteDetailsInSelectedZoneAndKeepSourceCheckSeparate() {
+        val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
+        val alert = mapperAlert(web = "https://alerts.weather.gov/one").copy(
+            headline = "Flooding is possible",
+            urgency = com.oxygen.weather.core.model.AlertUrgency.IMMEDIATE,
+            certainty = com.oxygen.weather.core.model.AlertCertainty.LIKELY,
+            effective = Instant.parse("2026-08-22T12:00:00Z"),
+            sent = Instant.parse("2026-08-22T11:30:00Z"),
+            onset = Instant.parse("2026-08-22T13:00:00Z"),
+            ends = Instant.parse("2026-08-22T20:00:00Z"),
+            affectedArea = com.oxygen.weather.core.model.AlertAffectedArea(areaDescription = "Dane County"),
+            description = "Line one\nLine two",
+            instruction = "Move to higher ground.\nDo not drive.",
+        )
+
+        val detail = fullWeatherBundle().copy(alerts = listOf(alert)).toHomeSuccessPresentation(
+            selectedLocation = testLocation,
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(testLocation.point, "nws", checkedAt),
+            ),
+        ).alertDetails.single()
+
+        assertEquals("alert-1", detail.id)
+        assertEquals("Flood Watch", detail.event)
+        assertEquals("Flooding is possible", detail.headline)
+        assertEquals("Moderate", detail.severity)
+        assertEquals("Immediate", detail.urgency)
+        assertEquals("Likely", detail.certainty)
+        assertEquals("Aug 22, 7:00 AM CDT", detail.effective)
+        assertEquals("Aug 22, 1:00 PM CDT", detail.expires)
+        assertEquals("Aug 22, 6:30 AM CDT", detail.sent)
+        assertEquals("Aug 22, 8:00 AM CDT", detail.onset)
+        assertEquals("Aug 22, 3:00 PM CDT", detail.ends)
+        assertEquals("Dane County", detail.affectedArea)
+        assertEquals("Line one\nLine two", detail.description)
+        assertEquals("Move to higher ground.\nDo not drive.", detail.instruction)
+        assertEquals("Alert source checked Aug 22, 10:05 AM CDT", detail.sourceCheckedAt)
+        assertEquals("https://alerts.weather.gov/one", detail.sourceLink)
+        assertTrue(detail.sourceLinkLabel.contains("Flood Watch"))
+    }
+
+    @Test
+    fun nonAvailableStatusesHaveNoAlertDetailsAndMissingValuesStayUnavailable() {
+        val statuses = listOf(
+            AlertLookupStatus.NotRequested,
+            AlertLookupStatus.NoAlerts(AlertSuccessMetadata(testLocation.point, "nws", Instant.parse("2026-08-22T15:05:00Z"))),
+            AlertLookupStatus.UnsupportedRegion,
+            AlertLookupStatus.Failed(com.oxygen.weather.core.provider.AlertProviderError.Network),
+            AlertLookupStatus.SkippedByRateLimit("nws", testLocation.point, Instant.parse("2026-08-22T15:06:00Z")),
+        )
+        statuses.forEach { status ->
+            assertTrue(fullWeatherBundle().toHomeSuccessPresentation(testLocation, alertStatus = status).alertDetails.isEmpty())
+        }
+
+        val missing = mapperAlert().copy(
+            effective = null,
+            expires = null,
+            affectedArea = null,
+            description = null,
+            instruction = null,
+        )
+        val detail = fullWeatherBundle().copy(alerts = listOf(missing)).toHomeSuccessPresentation(
+            testLocation,
+            alertStatus = AlertLookupStatus.Available(AlertSuccessMetadata(testLocation.point, "nws", Instant.parse("2026-08-22T15:05:00Z"))),
+        ).alertDetails.single()
+        assertEquals("Unavailable", detail.effective)
+        assertEquals("Unavailable", detail.expires)
+        assertEquals("Unavailable", detail.affectedArea)
+        assertEquals("Unavailable", detail.description)
+        assertEquals("Unavailable", detail.instruction)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun availableDuplicateAlertIdsAreRejected() {
+        val alert = mapperAlert()
+        fullWeatherBundle().copy(alerts = listOf(alert, alert)).toHomeSuccessPresentation(
+            testLocation,
+            alertStatus = AlertLookupStatus.Available(AlertSuccessMetadata(testLocation.point, "nws", Instant.parse("2026-08-22T15:05:00Z"))),
+        )
+    }
     @Test
     fun `mapper keeps canonical values separate from formatted Home text`() {
         val presentation = fullWeatherBundle().toHomeSuccessPresentation(testLocation)
@@ -324,3 +502,22 @@ class HomeForecastPresentationMapperTest {
         )
     }
 }
+
+private fun mapperAlert(
+    id: String = "alert-1",
+    event: String = "Flood Watch",
+    web: String? = null,
+): WeatherAlert = WeatherAlert(
+    id = id,
+    event = event,
+    severity = AlertSeverity.MODERATE,
+    expires = Instant.parse("2026-08-22T18:00:00Z"),
+    issuer = "Test Weather Office",
+    web = web,
+    provenance = DataProvenance(
+        providerId = "nws",
+        sourceName = "NOAA/National Weather Service",
+        fetchedAt = Instant.parse("2026-08-22T15:00:00Z"),
+        type = DataType.OFFICIAL_ALERT,
+    ),
+)

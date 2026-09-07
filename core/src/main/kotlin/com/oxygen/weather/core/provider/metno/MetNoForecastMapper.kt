@@ -17,7 +17,7 @@ import kotlin.math.roundToInt
 object MetNoForecastMapper {
     private const val PROVIDER_ID = "met-norway"
     private const val SOURCE_NAME = "MET Norway"
-    private const val LICENSE_ID = "NLOD-2.0 OR CC-BY-4.0"
+    private const val LICENSE_ID = "NLOD-2.0 AND CC-BY-4.0"
 
     fun map(
         location: WeatherLocation,

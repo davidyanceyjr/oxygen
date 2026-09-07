@@ -38,8 +38,14 @@ and `docs/data-sources/`.
   failures, with MET Norway provenance shown through the normal Home surface.
 - Provider-neutral forecast/official-alert repository merging in `:core`, with
   explicit alert lookup status and forecast-only cache composition.
+- Foreground selected-point NOAA/National Weather Service active-alert lookup,
+  with a Home Now summary, detail navigation, total count, attribution,
+  source-check time, and working external source link.
 - Persisted Oxygen default, Metric, US, and UK unit selection through the
-  installed Settings / About / Units surface, with immediate Home remapping.
+  installed Settings / Units surface, with immediate Home remapping.
+- Persisted Off and Subtle effects selection through the installed Settings /
+  Appearance surface, with conservative Off startup/failure handling and an
+  Android disabled-animation override that leaves the saved choice unchanged.
 - Home presentation conversion for provider-neutral unit preferences at the
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
@@ -49,13 +55,12 @@ and `docs/data-sources/`.
 - Standard Home Now, Hourly, Daily, and Details visual baselines.
 - Art-sheet-aligned Standard Home weather marks, surface roles, typography
   roles, and app-local design roles for the installed Home surface.
-- Settings/About surfaces for Units, Data Sources, Privacy, and Open Source
-  Licenses.
+- Installed Settings destinations for Appearance, Units, Locations, Data
+  Sources, Privacy, Open Source Licenses, and About.
 - Oxygen package/application identity, theme foundation, and Compose Home UI.
 
 ## Implemented but not active in the installed app
 
-- MET Norway forecast provider path and core fallback-selection behavior.
 - File-backed forecast cache storage retained as a core repository boundary
   implementation, while the installed app uses Room storage.
 - Provider-neutral custom-unit model and alternate-unit Home presentation
@@ -64,13 +69,13 @@ and `docs/data-sources/`.
 ## Not implemented yet
 
 - Custom unit editing UI.
-- Installed-app official weather alert presentation and merge.
-- Persisted appearance/effects/layout settings.
+- Alert persistence/cache, background polling, and notifications.
+- Full effects behavior and persisted theme, layout, and icon-pack settings.
 - Release-candidate verification.
 
 ## Repository structure
 
-- `:app` Android application, Compose UI, Home surface, About surfaces, theme,
+- `:app` Android application, Compose UI, Home and Settings surfaces, theme,
   and sample/scaffold preview path.
 - `:core` provider-neutral domain models, provider interfaces, Open-Meteo and
   MET Norway provider paths, fallback selection, and cache infrastructure.
@@ -175,8 +180,9 @@ cached fallback forecasts, and cached/stale MET Norway forecasts retain
 MET Norway provenance. Conditional GET requests, 304 not-modified handling, and
 release-candidate fallback verification remain later work.
 
-Custom unit editing, installed-app official weather alert presentation, air
-quality, radar, and release-candidate verification are not implemented yet.
+Custom unit editing, alert persistence/cache, background alert polling,
+notifications, air quality, radar, and release-candidate verification are not
+implemented yet.
 
 ## Specification
 

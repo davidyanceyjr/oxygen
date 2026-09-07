@@ -57,7 +57,8 @@ fun FirstRunLocationEntryScreen(
     onUseMyLocation: () -> Unit,
     onCancelDeviceLocation: () -> Unit = {},
     onBack: () -> Unit,
-    onOpenAbout: () -> Unit,
+    onOpenSettings: () -> Unit,
+    showSettingsEntry: Boolean = true,
 ) {
     Surface(Modifier.fillMaxSize()) {
         Column(
@@ -143,7 +144,8 @@ fun FirstRunLocationEntryScreen(
                 onUseMyLocation = onUseMyLocation,
                 onCancelDeviceLocation = onCancelDeviceLocation,
                 onBack = onBack,
-                onOpenAbout = onOpenAbout,
+                onOpenSettings = onOpenSettings,
+                showSettingsEntry = showSettingsEntry,
             )
         }
     }
@@ -344,7 +346,8 @@ private fun LocationEntryBottomActions(
     onUseMyLocation: () -> Unit,
     onCancelDeviceLocation: () -> Unit,
     onBack: () -> Unit,
-    onOpenAbout: () -> Unit,
+    onOpenSettings: () -> Unit,
+    showSettingsEntry: Boolean,
 ) {
     Column(
         modifier = Modifier
@@ -380,16 +383,18 @@ private fun LocationEntryBottomActions(
                 Text("Cancel location lookup")
             }
         }
-        OutlinedButton(
-            onClick = onOpenAbout,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .testTag("location-entry-about"),
-        ) {
-            Text("Settings / About")
+        if (showSettingsEntry) {
+            OutlinedButton(
+                onClick = onOpenSettings,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("location-entry-about"),
+            ) {
+                Text("Settings")
+            }
         }
-        if (state.canReturnHome) {
+        if (state.canReturn) {
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier

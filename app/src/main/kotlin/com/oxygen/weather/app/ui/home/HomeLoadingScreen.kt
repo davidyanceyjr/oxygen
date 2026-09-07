@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.HomeDailyPresentation
+import com.oxygen.weather.app.HomeAlertSummaryPresentation
 import com.oxygen.weather.app.HomeHourlyPresentation
 import com.oxygen.weather.app.HomeMetricIdentity
 import com.oxygen.weather.app.HomeMetricPresentation
@@ -68,10 +70,12 @@ import kotlinx.coroutines.launch
 fun HomeLoadingScreen(
     state: HomeForecastPresentationState,
     appearance: OxygenAppearance = OxygenAppearance(),
+    animationsEnabled: Boolean = true,
     onRetry: () -> Unit = {},
     onRefresh: () -> Unit = {},
     onChangeLocation: () -> Unit = {},
-    onOpenAbout: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
+    onAlertDetailsRequested: () -> Unit = {},
 ) {
     val baseRoles = LocalOxygenHomeDesign.current
     val roles = if (appearance.effects == EffectsLevel.OFF) {
@@ -89,9 +93,11 @@ fun HomeLoadingScreen(
                 ReadyContent(
                     state = state,
                     appearance = appearance,
+                    animationsEnabled = animationsEnabled,
                     onRefresh = onRefresh,
                     onChangeLocation = onChangeLocation,
-                    onOpenAbout = onOpenAbout,
+                    onOpenSettings = onOpenSettings,
+                    onAlertDetailsRequested = onAlertDetailsRequested,
                 )
                 return@CompositionLocalProvider
             }
@@ -123,10 +129,10 @@ fun HomeLoadingScreen(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                     )
                     OutlinedButton(
-                        onClick = onOpenAbout,
+                        onClick = onOpenSettings,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Settings / About")
+                        Text("Settings")
                     }
                     OutlinedButton(
                         onClick = onChangeLocation,
@@ -195,9 +201,11 @@ private fun ErrorContent(
 private fun ReadyContent(
     state: HomeForecastPresentationState.ForecastReady,
     appearance: OxygenAppearance,
+    animationsEnabled: Boolean,
     onRefresh: () -> Unit,
     onChangeLocation: () -> Unit,
-    onOpenAbout: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onAlertDetailsRequested: () -> Unit,
 ) {
     val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
@@ -239,7 +247,13 @@ private fun ReadyContent(
                                 val previousPage = pages[pagerState.currentPage - 1]
                                 add(
                                     CustomAccessibilityAction("Show previous page: ${previousPage.title}") {
-                                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                                        scope.launch {
+                                            if (animationsEnabled) {
+                                                pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                            } else {
+                                                pagerState.scrollToPage(pagerState.currentPage - 1)
+                                            }
+                                        }
                                         true
                                     },
                                 )
@@ -248,7 +262,13 @@ private fun ReadyContent(
                                 val nextPage = pages[pagerState.currentPage + 1]
                                 add(
                                     CustomAccessibilityAction("Show next page: ${nextPage.title}") {
-                                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                                        scope.launch {
+                                            if (animationsEnabled) {
+                                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                            } else {
+                                                pagerState.scrollToPage(pagerState.currentPage + 1)
+                                            }
+                                        }
                                         true
                                     },
                                 )
@@ -260,6 +280,7 @@ private fun ReadyContent(
                     when (pages[pageIndex]) {
                         HomePage.Now -> NowPage(
                             state = state,
+                            onAlertDetailsRequested = onAlertDetailsRequested,
                         )
                         HomePage.Hourly -> HourlyPage(state)
                         HomePage.Daily -> DailyPage(state)
@@ -273,11 +294,17 @@ private fun ReadyContent(
                 isRefreshEnabled = state.canRefresh && !state.isRefreshInProgress,
                 refreshLabel = state.refreshLabel,
                 onPageSelected = { pageIndex ->
-                    scope.launch { pagerState.animateScrollToPage(pageIndex) }
+                    scope.launch {
+                        if (animationsEnabled) {
+                            pagerState.animateScrollToPage(pageIndex)
+                        } else {
+                            pagerState.scrollToPage(pageIndex)
+                        }
+                    }
                 },
                 onRefresh = onRefresh,
                 onChangeLocation = onChangeLocation,
-                onOpenAbout = onOpenAbout,
+                onOpenSettings = onOpenSettings,
             )
         }
     }
@@ -292,7 +319,7 @@ private fun HomeFooterNavigation(
     onPageSelected: (Int) -> Unit,
     onRefresh: () -> Unit,
     onChangeLocation: () -> Unit,
-    onOpenAbout: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val roles = LocalOxygenHomeDesign.current
     Column(
@@ -364,7 +391,7 @@ private fun HomeFooterNavigation(
                 Text(text = refreshLabel)
             }
             TextButton(
-                onClick = onOpenAbout,
+                onClick = onOpenSettings,
                 modifier = Modifier
                     .heightIn(min = 48.dp)
                     .testTag("home-about-entry"),
@@ -442,6 +469,7 @@ private fun ReadyHeader(
 @Composable
 private fun NowPage(
     state: HomeForecastPresentationState.ForecastReady,
+    onAlertDetailsRequested: () -> Unit,
 ) {
     val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
@@ -546,13 +574,12 @@ private fun NowPage(
         }
     }
 
-    dashboard.alerts.forEach { alert ->
+    dashboard.alertSummary?.let { alert ->
         DashboardCard(tag = "home-section-alert") {
-            Text(alert.event, style = roles.sectionHeading)
-            Text(alert.headline, style = MaterialTheme.typography.bodyMedium)
-            Text("${alert.severity} | ${alert.issuer}", style = MaterialTheme.typography.bodySmall)
-            alert.effective?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-            alert.expires?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            OfficialAlertSummary(
+                summary = alert,
+                onAlertDetailsRequested = onAlertDetailsRequested,
+            )
         }
     }
 
@@ -561,6 +588,46 @@ private fun NowPage(
             Text("Near-term precipitation", style = roles.sectionHeading)
             Text(it, style = MaterialTheme.typography.bodyMedium)
         }
+    }
+}
+
+@Composable
+private fun OfficialAlertSummary(
+    summary: HomeAlertSummaryPresentation,
+    onAlertDetailsRequested: () -> Unit,
+) {
+    val roles = LocalOxygenHomeDesign.current
+    val uriHandler = LocalUriHandler.current
+    Text("Official alert", style = roles.sectionHeading)
+    Text(summary.event, style = MaterialTheme.typography.titleMedium)
+    Text("Severity: ${summary.severity}", style = MaterialTheme.typography.bodyMedium)
+    Text("Issuer: ${summary.issuer}", style = MaterialTheme.typography.bodyMedium)
+    Text(summary.expires, style = MaterialTheme.typography.bodyMedium)
+    Text(summary.sourceCheckedAt, style = MaterialTheme.typography.bodySmall)
+    OutlinedButton(
+        onClick = onAlertDetailsRequested,
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .testTag("home-alert-details")
+            .semantics { contentDescription = summary.detailActionContentDescription },
+    ) {
+        Text(summary.detailActionLabel)
+    }
+    TextButton(
+        onClick = { uriHandler.openUri(summary.sourceLink) },
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .testTag("home-alert-source-link")
+            .semantics { contentDescription = summary.sourceLinkLabel },
+    ) {
+        Text(summary.attribution)
+    }
+    if (summary.activeAlertCount > 1) {
+        Text(
+            text = "${summary.activeAlertCount} active alerts",
+            modifier = Modifier.testTag("home-alert-count"),
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 

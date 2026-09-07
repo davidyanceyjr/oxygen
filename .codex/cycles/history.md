@@ -32,17 +32,16 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 23C, Alert Repository Merge,
-  committed at `3c658a8`.
-- Last committed implementation gate: Gate 20-0, Presentation Semantics and
-  Localization Safety, committed at `587b0ad`.
-- Last committed documentation sync: Slice 23C Authority Sync, committed at
-  `3c658a8`.
-- Current changeset: none; Slice 23C, Alert Repository Merge, is committed at
-  `3c658a8`.
-- Current process correction: the live cycle history was compressed on
-  2026-09-04 after archiving the previous live file at
-  `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
+- Last committed implementation gate: Slice 26, Persisted Effects Off/Subtle
+  Baseline, committed at `c7b578a`; completion evidence is recorded at
+  `.codex/test-artifacts/2026-09-06-slice-26-effects-preference/`.
+- Last committed documentation sync: AGENTS workflow and slice-size guidance,
+  committed at `98a26d3`.
+- Current changeset: no additional product changes; the uncommitted
+  `.codex/review/findings.md` edit is retained as a review-note change.
+- Current process correction: the active plan now points at Slice 27A, Simple
+  Layout Definition, and the live cycle history continues to keep only the
+  recent tail in the primary readable section.
 
 ## Recent Cycles
 
@@ -811,3 +810,258 @@ Blockers:
 Boundaries:
 - No app factory wiring, UI, Room schema, alert cache, forecast provider
   semantics, or connected/emulator test was added.
+
+### 2026-09-06-slice-24a-alert-summary-banner-ui
+
+Status: committed
+Mode: feature
+Slice: Slice 24A, Alert Summary/Banner UI
+Commit: `cf9ddaf`
+Authority sync: `cc2af8b`
+
+Result:
+- Installed the production composition
+  `Open-Meteo -> FallbackWeatherRepository -> CachedWeatherRepository ->
+  AlertMergingWeatherRepository(NwsAlertProvider)`.
+- Added provider-neutral successful alert metadata and process-local
+  per-provider/per-point 30-second alert request gating, including failed-call
+  backoff, positive `Retry-After` extension, exact-boundary retry, and retained
+  in-memory successful results on skips.
+- Carried `WeatherBundle` plus `AlertLookupStatus` through the app canonical
+  forecast session so unit remaps preserve the alert source-check time and
+  cached restores remain `NotRequested`.
+- Rendered the effects-independent Home Now official-alert summary with
+  selected-zone expiry/source-check time, total count, NOAA/NWS attribution,
+  validated HTTPS source link/fallback, and direct complete `WeatherAlert`
+  values retained for later detail work.
+- Reconciled README, data-source, privacy, disclosure, and full-specification
+  status while retaining detail, persistence/cache, background, notification,
+  and non-NWS-region boundaries.
+
+Evidence:
+- Core focused merge/provider/cache tests passed, including final gate
+  hardening.
+- App focused factory/mapper/state/disclosure tests passed.
+- `HomeDashboardUiTest` passed all 37 connected tests; the dedicated alert test
+  passed again against the final APK/test APK and produced the exact 360x640,
+  density-1, font-scale-1.3, effects-off PNG and semantics artifacts.
+- Final `:app:compileDebugKotlin`, all app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-06-slice-24a-alert-summary-banner-ui/`.
+
+Blockers:
+- None. The fresh installed target had no selected location, so installed
+  launch captures are first-run evidence; deterministic connected Home fixture
+  coverage is the alert acceptance evidence.
+
+Boundaries:
+- Existing Now-page overflow scrolling remains an explicit compatibility
+  exception used at large font scale for readable content; normal-scale Home
+  navigation composition was not changed.
+- No alert detail navigation, alert persistence/cache, background polling,
+  notifications, provider routing changes, Room alert entities, or live NWS
+  request was added.
+
+### 2026-09-06-slice-24b-official-alert-detail-navigation
+
+Status: committed
+Mode: feature
+Slice: Slice 24B, Official Alert Detail Navigation
+Commit: `ceb6253`
+
+Result:
+- Added the Home Now official-alert detail route for the active forecast
+  session, including first-alert opening, multi-alert selection, in-surface and
+  system back handling, and return-to-Home behavior.
+- Added the dedicated alert detail Compose screen, mapper output for per-alert
+  presentation, and state-holder route preservation through refresh and unit
+  remap flows.
+- Added focused mapper, state-holder, and connected Home UI tests for the new
+  alert detail behavior.
+- Updated the repository-facing docs so installed alert detail navigation is
+  described as implemented while alert persistence/cache and background alert
+  polling remain future work.
+
+Evidence:
+- `git diff --check` passed in this session after the implementation and doc
+  sync edits.
+- The user said the relevant Android tests had already passed and no rerun was
+  requested in this session.
+
+Blockers:
+- None.
+
+Boundaries:
+- `scripts/start-emulator.sh` was left untouched as an unrelated worktree
+  change.
+- Alert persistence/cache, background polling, notifications, and other future
+  alert work remain out of scope.
+
+### 2026-09-06-pre-25a-authority-sync
+
+Status: verified
+Mode: documentation-only
+Commit state: uncommitted
+
+Result:
+- Reconciled roadmap statuses and sequencing through committed Slice 24B and
+  selected Slice 25A as the one planned next implementation slice.
+- Corrected the live history summary and README contradictions about active MET
+  Norway fallback and installed official-alert presentation.
+- Updated the specification next-task section and removed the active plan's
+  assumption that an emulator was already connected.
+
+Evidence:
+- `git diff --check` passed.
+- Android compile, unit, connected, and assemble commands were not run because
+  this changeset is Markdown-only and changes no production behavior.
+
+Artifacts:
+- None.
+
+Blockers:
+- None.
+
+Boundaries:
+- Gate 25 remains specified and incomplete. Slice 25A remains planned, not
+  covered, implemented, verified, or committed.
+- No Kotlin, Compose, Gradle, manifest, provider, persistence, permission,
+  installed-app, or release behavior changed.
+
+### 2026-09-06-slice-25a-settings-information-architecture
+
+Status: committed
+Mode: feature
+Commit state: committed
+Commit: `2484e90`
+
+Result:
+- Replaced the mixed Settings / About root with a coherent Settings root and
+  distinct Appearance, Units, Locations, Data Sources, Privacy, Open Source
+  Licenses, and About destinations.
+- Preserved existing unit and disclosure behavior, routed Locations through the
+  real location-entry surface, and preserved exact return routing through
+  Settings to Home or first-run state.
+- Added a truthful read-only Appearance summary of the effective theme, Standard
+  layout, and runtime effects; no appearance preference behavior was added.
+
+Evidence:
+- Focused app state-holder tests passed.
+- `HomeDashboardUiTest` passed all 39 connected tests, including compact
+  360x640/font-scale-1.3 coverage, in-surface Back, and Android Back.
+- Final app compile, app/core debug unit tests, debug assemble, and
+  `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-06-slice-25a-settings-information-architecture/`.
+
+Blockers:
+- None.
+
+Boundaries:
+- Gate 25 disclosure auditing remains separate and incomplete.
+- Effects Off is covered by the deterministic connected fixture; the installed
+  default summary reports its actual Subtle runtime effects and no preference
+  selector was introduced.
+
+### 2026-09-06-gate-25-disclosure-baseline-check
+
+Status: committed
+Mode: feature and documentation sync
+Gate: Gate 25, Disclosure Baseline Check
+Implementation commit: `23a9d49`
+
+Result:
+- Added active-provider attribution/license/privacy disclosure text and five
+  centralized HTTPS attribution links for Open-Meteo forecast/timezone and
+  geocoding, GeoNames, MET Norway, and NOAA/NWS.
+- Added labelled minimum-48-dp Settings link actions through LocalUriHandler;
+  corrected the NWS condition to forecast success and identified Oxygen's
+  `GPL-3.0-or-later` source license.
+- Corrected new MET Norway provenance to `NLOD-2.0 AND CC-BY-4.0` and
+  normalized only that exact legacy `OR` value at Home presentation.
+- Reconciled the specification, root DATA_SOURCES disclosure, and active
+  provider contracts with the installed behavior and direct Settings hierarchy.
+
+Evidence:
+- Focused app/core unit tests passed for disclosure content, Home provenance,
+  MET Norway mapper/repository/client, and installed factory behavior.
+- The planned two-case connected run passed on `oxygen_starter`, covering the
+  disclosure journey, all five links, compact scrolling/semantics, Back,
+  unchanged repository call count, no permission request, and the installed
+  MET Norway fallback provenance regression.
+- One-emulator baseline/final manual route passed at 360x640, density 160,
+  font scale 1.3, including Chrome external-link handoff and return. Release
+  dependency/manifest/source audits, compile, full unit suites, assemble, and
+  `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check/`.
+
+Blockers:
+- None. Live provider requests, the complete Slice 33 dependency/privacy audit,
+  and release-candidate verification remain out of scope.
+
+Boundaries:
+- No provider request, selection, fallback eligibility, persistence schema,
+  permission, forecast value, alert lookup, location, unit, appearance, or
+  navigation behavior changed.
+
+Authority sync:
+- Specification section 44 and the obsolete section 53 Units path were
+  reconciled before implementation; section 53 and the roadmap now identify
+  Slice 26 as the next candidate. This history entry and the active plan were
+  synchronized after implementation commit.
+
+### 2026-09-07-slice-26-effects-preference
+
+Status: committed and verified at the focused Android/state boundary
+Mode: feature and documentation sync
+Slice: Slice 26, Persisted Effects Off/Subtle Baseline
+Commit: `c7b578a`
+Commit state: committed; unrelated `.codex/review/findings.md` edit retained
+
+Result:
+- Added a versioned application-context Preferences DataStore for Off/Subtle
+  effects, with missing/unsupported records defaulting to Subtle and local
+  read/write failures exposed to the Appearance surface.
+- Added guarded pending/confirmed effects state that survives forecast,
+  location, unit, and alert presentation reconstruction without new provider
+  requests. Added Settings Off/Subtle controls with selected semantics,
+  retryable read/write feedback, and no Full alias.
+- Added the Android `ValueAnimator.areAnimatorsEnabled()` adapter, lifecycle
+  resume sampling, conservative effective Off policy, and immediate pager
+  navigation when animators are disabled.
+- Updated privacy/about/specification/README status to describe only this
+  verified baseline; Full effects and other persisted appearance settings
+  remain unfinished.
+
+Evidence:
+- Focused app unit tests passed for storage codec/state defaults, read failure
+  recovery, failed-write retry, and zero forecast request delta.
+- The final seven-case connected filter passed for real DataStore readback and
+  Activity recreation, selector/request preservation, first-run write-failure
+  retry, injected read-error recovery, actual Android animator override, and
+  the planned Settings/Units regressions.
+- Installed production checks passed for compact readable Appearance controls,
+  Off force-stop persistence, Subtle restoration, animator-scale override,
+  restoration at scale 1, and device-setting cleanup.
+- Broad checks passed: compileDebugKotlin, app/core debug unit tests, assemble,
+  and `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-06-slice-26-effects-preference/`.
+
+Blockers:
+- One bounded live manual-search attempt did not reach a real forecast because
+  emulator text-entry/tap interaction left the query unchanged. No installed
+  Home forecast screenshot or real alert/stale session is claimed; deterministic
+  connected evidence covers the changed presentation boundary. TalkBack was
+  not run.
+
+Boundaries:
+- No Full effects, richer procedural scene behavior, persisted theme/layout/
+  icon settings, provider behavior, location permission behavior, or release
+  readiness was added.

@@ -49,6 +49,18 @@ Current modules:
 
 The screen currently uses `SampleWeather.bundle`. Treat it as scaffold data, not a real provider integration.
 
+## Tracking Workflow
+
+Use four components to track project state:
+
+- `git commit` records the last completed implementation.
+- `.codex/plans/current.md` holds the active slice and its next action.
+- `.codex/plans/mvp-roadmap.md` lists ordered candidate slices.
+- `.codex/cycles/history.md` records completed slices and evidence.
+- `.codex/cycles/archive/` holds older live-history material when the live file grows too large.
+
+Keep the actionable item near the top of operational files. Prefer minimal reads of the current slice, roadmap candidate section, and recent history summary. Archive older live-history content before the readable tail gets too large.
+
 ## Authority Order
 
 Use this precedence unless a more specific nested `AGENTS.md` exists:
@@ -62,6 +74,8 @@ Use this precedence unless a more specific nested `AGENTS.md` exists:
 7. Historical notes in `.codex/cycles/history.md`.
 
 Tests and current behavior are evidence of implementation, not permission to silently contradict the intended contract.
+
+The specification constrains behavior and architecture; it does not choose or sequence slices. Slice selection comes from the active plan and roadmap, which should be derived from the planning sources you trust.
 
 When authorities materially conflict, stop implementation, identify the exact conflict, and resolve or update the higher-level authority before coding.
 
@@ -83,6 +97,13 @@ Do not substitute any of the following for working behavior:
 A behavior is implemented only when its production path exists. It is verified only when the intended behavior has been exercised at an observable boundary.
 
 When blocked, report the exact blocker. Do not replace failed implementation with future-work prose or a polished completion summary.
+
+## Slice Size Rule
+
+- One bounded user-visible behavior per slice.
+- Prefer one primary production path and one primary acceptance boundary.
+- Split a slice when it needs multiple independent state machines, new persistence layers, unrelated UI surfaces, or platform adapters.
+- Keep doc-sync work separate from product scope; use it to close a committed slice, not to widen it.
 
 ## Status Vocabulary
 
@@ -123,7 +144,7 @@ discover -> baseline-green -> design-if-needed -> build
          -> focused-green -> broad-checks -> review -> ready
 ```
 
-Keep `.codex/plans/current.md` current for substantial implementation cycles. Append completed cycle evidence to `.codex/cycles/history.md` when a cycle is ready or committed.
+Keep `.codex/plans/current.md` focused on one bounded active slice. Append concise completion evidence to `.codex/cycles/history.md` when a cycle is ready or committed.
 
 After every commit, perform an authoritative doc sync before considering the work closed: reconcile the active plan, live cycle history, and any affected repository authorities such as `README.md` and `docs/OXYGEN_FULL_SPECIFICATION.md` with the commit's actual state.
 
@@ -193,6 +214,23 @@ or cycle artifact directory.
   reason for any rerun. A passing check is evidence, not a reason to repeat it.
 - If the user asks to stop testing or verification, stop immediately.
 
+Test-volume policy:
+
+- Treat connected tests as scarce evidence. For an implementation slice, run
+  the minimum focused unit tests for changed behavior and no more than eight
+  relevant connected test cases by default. Count test cases, not Gradle tasks
+  or test classes.
+- Do not run an entire connected test class merely because it contains related
+  historical coverage. Exceed the eight-case default only when the acceptance
+  boundary or a documented regression risk requires it, and record the reason
+  in the active plan or verification ledger.
+- Every third implementation roadmap slice is a dedicated test-only and
+  documentation-sync session. That session may run broader connected and
+  repository suites and reconcile the active plan, cycle history, roadmap, and
+  affected repository authorities.
+- Do not defer all testing until that session: every implementation slice still
+  requires focused evidence at its changed state or Android boundary.
+
 Use the repo-local environment wrapper for Android commands:
 
 ```bash
@@ -220,7 +258,7 @@ scripts/start-emulator.sh
 scripts/install-debug.sh
 ```
 
-Run `scripts/start-emulator.sh` in one terminal, then `scripts/install-debug.sh` in another. Use `OXYGEN_EMULATOR_WINDOW=1` when a visible emulator window is needed.
+Run `scripts/start-emulator.sh` in one terminal and `scripts/install-debug.sh` in another. Use `OXYGEN_EMULATOR_WINDOW=1` when a visible emulator window is needed.
 
 ## Completion Standard
 

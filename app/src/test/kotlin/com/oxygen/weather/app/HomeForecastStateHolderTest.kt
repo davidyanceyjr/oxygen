@@ -18,6 +18,8 @@ import com.oxygen.weather.core.model.UnitPreference
 import com.oxygen.weather.core.model.UnitPreferencePreset
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.ForecastFreshness
+import com.oxygen.weather.core.provider.AlertLookupStatus
+import com.oxygen.weather.core.provider.AlertSuccessMetadata
 import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
@@ -39,6 +41,146 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HomeForecastStateHolderTest {
+    @Test
+    fun alertDetailNavigationSelectsAlertsReturnsHomeAndDoesNotRefresh() {
+        val location = weatherLocation("alert-detail-navigation", "Alert Detail City")
+        val first = fullWeatherBundle(location).alerts.single()
+        val alerts = listOf(first, first.copy(id = "alert-2", event = "Heat Advisory"))
+        val alertStatus = AlertLookupStatus.Available(
+            AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location).copy(alerts = alerts), alertStatus = alertStatus)),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectForecastExecutor,
+        )
+        val requestsBeforeNavigation = repository.locations.toList()
+        val homeBefore = stateHolder.presentationState.screen as? OxygenAppScreen.Home
+        assertTrue(homeBefore != null)
+        assertEquals(2, (homeBefore!!.forecast as HomeForecastPresentationState.ForecastReady).dashboard.alertDetails.size)
+
+        stateHolder.onHomeAlertDetailsRequested()
+
+        val opened = stateHolder.presentationState.screen as OxygenAppScreen.AlertDetail
+        assertEquals("alert-1", opened.selectedAlertId)
+        assertEquals(2, opened.returnHome.forecast.let { (it as HomeForecastPresentationState.ForecastReady).dashboard.alertDetails.size })
+        stateHolder.onAlertDetailSelected("unknown")
+        assertEquals(opened, stateHolder.presentationState.screen)
+        stateHolder.onAlertDetailSelected("alert-2")
+        assertEquals("alert-2", (stateHolder.presentationState.screen as OxygenAppScreen.AlertDetail).selectedAlertId)
+        assertEquals(requestsBeforeNavigation, repository.locations)
+
+        stateHolder.onAlertDetailBack()
+
+        assertTrue(stateHolder.presentationState.screen is OxygenAppScreen.Home)
+        assertEquals(requestsBeforeNavigation, repository.locations)
+    }
+
+    @Test
+    fun alertDetailRemapsThroughAboutAndRefreshPreservesSelectionWhenStillAvailable() {
+        val location = weatherLocation("alert-detail-remap", "Alert Detail Remap City")
+        val first = fullWeatherBundle(location).alerts.single()
+        val initialAlerts = listOf(first, first.copy(id = "alert-2", event = "Heat Advisory"))
+        val updatedAlerts = listOf(first.copy(event = "Updated Flood Watch"), first.copy(id = "alert-2", event = "Updated Heat Advisory"))
+        val alertStatus = AlertLookupStatus.Available(
+            AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(fullWeatherBundle(location).copy(alerts = initialAlerts), alertStatus = alertStatus),
+                WeatherRepositoryResult.Success(fullWeatherBundle(location).copy(alerts = updatedAlerts), alertStatus = alertStatus),
+            ),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            unitPreferenceStorage = RecordingUnitPreferenceStorage(),
+            forecastExecutor = DirectForecastExecutor,
+        )
+        stateHolder.onHomeAlertDetailsRequested()
+        stateHolder.onAlertDetailSelected("alert-2")
+        stateHolder.onOpenSettings()
+        stateHolder.onSettingsDestinationSelected(SettingsDestination.Units)
+        stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.METRIC))
+
+        val settings = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        val remappedDetail = settings.returnScreen as OxygenAppScreen.AlertDetail
+        assertEquals("alert-2", remappedDetail.selectedAlertId)
+        assertEquals("18 deg C", remappedDetail.returnHome.forecast.let { (it as HomeForecastPresentationState.ForecastReady).dashboard.current?.temperature })
+
+        stateHolder.onSettingsBack()
+        stateHolder.onSettingsBack()
+        stateHolder.onHomeForecastRefresh()
+
+        val refreshedDetail = stateHolder.presentationState.screen as OxygenAppScreen.AlertDetail
+        val refreshedHome = refreshedDetail.returnHome.forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals("alert-2", refreshedDetail.selectedAlertId)
+        assertEquals("Updated Heat Advisory", refreshedHome.dashboard.alertDetails.single { it.id == "alert-2" }.event)
+        assertEquals(listOf(location, location), repository.locations)
+    }
+
+    @Test
+    fun freshRefreshFailureLeavesAlertDetailAndUsesExistingNoCacheRoute() {
+        val location = weatherLocation("alert-detail-failure", "Alert Detail Failure City")
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location),
+                    alertStatus = AlertLookupStatus.Available(AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z"))),
+                ),
+                WeatherRepositoryResult.Failure(ForecastError.NetworkUnavailable),
+            ),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectForecastExecutor,
+        )
+        stateHolder.onHomeAlertDetailsRequested()
+        stateHolder.onHomeForecastRefresh()
+
+        assertTrue(stateHolder.presentationState.screen is OxygenAppScreen.Home)
+        assertTrue((stateHolder.presentationState.screen as OxygenAppScreen.Home).forecast is HomeForecastPresentationState.NoCacheError)
+    }
+
+    @Test
+    fun availableAlertSummarySurvivesUnitRemapWithIndependentSourceCheckTime() {
+        val location = weatherLocation("alert-unit-remap", "Alert Unit Remap City")
+        val alertCheckedAt = Instant.parse("2026-08-22T15:05:00Z")
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location),
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(location.point, "nws", alertCheckedAt),
+                    ),
+                ),
+            ),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectForecastExecutor,
+        )
+        val before = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+
+        stateHolder.onOpenSettings()
+        stateHolder.onSettingsDestinationSelected(SettingsDestination.Units)
+        stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.METRIC))
+
+        val settings = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        val after = (settings.returnScreen as OxygenAppScreen.Home)
+            .forecast as HomeForecastPresentationState.ForecastReady
+        assertEquals(before.dashboard.alertSummary, after.dashboard.alertSummary)
+        assertEquals("Alert source checked Aug 22, 10:05 AM CDT", after.dashboard.alertSummary?.sourceCheckedAt)
+        assertEquals(before.freshness, after.freshness)
+        assertEquals(listOf(location), repository.locations)
+    }
+
     @Test
     fun `startup applies persisted unit preference without changing canonical forecast`() {
         val location = weatherLocation("persisted-units", "Persisted Units City")
@@ -79,12 +221,12 @@ class HomeForecastStateHolderTest {
         val before = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
 
-        stateHolder.onOpenAbout()
-        stateHolder.onAboutSurfaceSelected(AboutSurfaceId.Units)
+        stateHolder.onOpenSettings()
+        stateHolder.onSettingsDestinationSelected(SettingsDestination.Units)
         stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.METRIC))
 
-        val about = stateHolder.presentationState.screen as OxygenAppScreen.About
-        val remapped = (about.returnScreen as OxygenAppScreen.Home)
+        val settings = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        val remapped = (settings.returnScreen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
         assertEquals(UnitPreference.Preset(UnitPreferencePreset.METRIC), storage.writes.single())
         assertEquals("18 deg C", remapped.dashboard.current?.temperature)
@@ -110,15 +252,15 @@ class HomeForecastStateHolderTest {
         val before = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
 
-        stateHolder.onOpenAbout()
-        stateHolder.onAboutSurfaceSelected(AboutSurfaceId.Units)
+        stateHolder.onOpenSettings()
+        stateHolder.onSettingsDestinationSelected(SettingsDestination.Units)
         stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.US))
 
-        val about = stateHolder.presentationState.screen as OxygenAppScreen.About
-        val current = (about.returnScreen as OxygenAppScreen.Home)
+        val settings = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        val current = (settings.returnScreen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
         assertEquals(before.dashboard, current.dashboard)
-        assertEquals(UnitPreferenceMessage.LocalStateUnavailable, about.unitPreferenceMessage)
+        assertEquals(UnitPreferenceMessage.LocalStateUnavailable, settings.unitPreferenceMessage)
         assertEquals(listOf(location), repository.locations)
     }
     @Test
@@ -321,7 +463,7 @@ class HomeForecastStateHolderTest {
         val firstRun = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
         assertEquals("", firstRun.query)
         assertEquals(ManualLocationSearchState.Idle, firstRun.searchState)
-        assertTrue(firstRun.canReturnHome)
+        assertTrue(firstRun.canReturn)
         assertEquals(oldLocation, stateHolder.presentationState.selectedLocation)
         assertFalse(stateHolder.presentationState.isShowingHome)
 
@@ -352,7 +494,7 @@ class HomeForecastStateHolderTest {
 
         stateHolder.onChangeLocation()
         val firstRun = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
-        assertTrue(firstRun.canReturnHome)
+        assertTrue(firstRun.canReturn)
 
         stateHolder.onLocationEntryBack()
 
@@ -982,7 +1124,6 @@ class HomeForecastStateHolderTest {
         assertEquals(
             listOf(
                 HomeSuccessSection.LocationHeader,
-                HomeSuccessSection.Alerts,
                 HomeSuccessSection.Current,
                 HomeSuccessSection.NearTermPrecipitation,
                 HomeSuccessSection.Hourly,

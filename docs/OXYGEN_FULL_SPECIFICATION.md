@@ -824,6 +824,13 @@ FULL
 
 The application must respect reduced-motion/accessibility preferences.
 
+The current installed baseline implements only persisted `OFF` and `SUBTLE`
+selection through Settings / Appearance. Missing records default to `SUBTLE`;
+while local restoration fails or is pending, effective presentation is
+conservatively `OFF`. Android disabled-animation policy can temporarily force
+effective `OFF` without changing the stored choice. `FULL`, richer scene
+behavior, and other persisted appearance settings remain unfinished.
+
 ---
 
 ## 26. Procedural Weather Scene Engine
@@ -1542,10 +1549,13 @@ The application requires:
 
 ```text
 Settings
+  Appearance
+  Units
+  Locations
+  Data Sources
+  Privacy
+  Open Source Licenses
   About Oxygen
-    Data Sources
-    Open Source Licenses
-    Privacy
 ```
 
 Example data-source display:
@@ -1851,9 +1861,8 @@ Do not update these simply because a newer version exists. Update them as a deli
 
 Gate 19F: Saved Locations Documentation Sync, Slice 20A: Unit Preference
 Contract, Gate 20-0: Presentation Semantics and Localization Safety, and
-Slice 20B: Unit Conversion Presentation Boundary are committed. Slice 20C,
-persisted alternate-unit reachability through the installed path, is implemented
-and verified in the current changeset.
+Slice 20B: Unit Conversion Presentation Boundary, and Slice 20C, persisted
+alternate-unit reachability through the installed path, are committed.
 
 The completed Standard Home interaction, visual pages, operational states,
 design-system roles, accessibility navigation, effects-disabled rendering,
@@ -1888,9 +1897,13 @@ release-candidate fallback verification remain unimplemented.
 
 NWS alert provider contract, parser/mapper fixtures, transport boundary, and
 forecast/alert repository merge are implemented through Slices 22, 23A, 23B,
-and committed Slice 23C. The core merge composes official alerts with forecast
-results without activating installed-app alert presentation. Official alerts
-remain semantically distinct from forecast-derived risk.
+and committed Slice 23C. Slice 24A installs foreground selected-point NWS
+lookup and a Home Now summary, count, attribution, source-check time, and
+working source link. Slice 24B adds the in-app alert detail surface and
+navigation for the active Home forecast session, including multi-alert
+selection and return to the same ready Home state. Alert persistence/cache,
+background polling, notifications, and non-NWS alert regions remain later work.
+Official alerts remain semantically distinct from forecast-derived risk.
 
 Gate 19F kept README, roadmap, disclosure, and active-cycle status aligned with
 verified saved-location behavior without changing app behavior or claiming
@@ -1907,7 +1920,7 @@ null/unavailable semantics. It did not add persisted units UI, provider
 changes, Settings information architecture, or MVP-readiness claims.
 
 Slice 20C made a persisted Oxygen default, Metric, US, and UK unit preference
-reachable through Settings / About / Units and exercised the alternate-unit
+reachable through Settings / Units and exercised the alternate-unit
 choice through the normal Home presentation boundary. Its dedicated versioned
 Preferences DataStore also preserves provider-neutral custom preferences for
 future editing. It preserves canonical provider/storage units, provider
@@ -1923,6 +1936,27 @@ Slice 20C did not add device-location permission flow, alert lookup, persisted
 appearance settings beyond the selected unit preference, additional provider
 wiring, Paper/Terminal theme completion, radar, maps, air quality, widgets,
 background refresh, notifications, release-readiness, or MVP-readiness claims.
+
+Slice 25A, Settings Information Architecture, is implemented, verified, and
+committed in `2484e90`. The installed Settings root exposes distinct
+Appearance, Units, Locations, Data Sources, Privacy, Open Source Licenses, and
+About destinations while reusing existing production behavior. Appearance
+provides the persisted Off/Subtle effects baseline described below; Full and
+the remaining appearance controls are still unfinished. Units is reached
+directly from Settings; it is not nested under About.
+
+Gate 25, Disclosure Baseline Check, is implemented, verified, and committed in
+`23a9d49`. It reconciled active-provider attribution, data licenses, privacy
+disclosure, source-code license identification, and observable reachability of
+the direct Settings disclosure destinations. Slice 26, Effects Preference,
+implements and exercises persisted Off/Subtle selection, conservative
+restoration/failure behavior, Android disabled-motion override, and reduced-
+motion Home page navigation. Full effects, richer scene behavior, and
+persisted theme/layout/icon settings remain later work. Slice 27A, Simple
+Layout Definition, is the next bounded implementation candidate. The Slice 26
+installed real-path Home forecast exercise was incomplete in the current cycle
+because one bounded emulator search attempt did not reach a provider result;
+deterministic Android boundary tests and Settings persistence checks passed.
 
 ---
 

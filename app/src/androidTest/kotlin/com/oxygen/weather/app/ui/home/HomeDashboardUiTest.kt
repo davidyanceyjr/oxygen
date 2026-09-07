@@ -15,6 +15,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
@@ -43,11 +45,12 @@ import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.espresso.Espresso.pressBack
 import com.oxygen.weather.app.HomeForecastMessage
 import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.HomeMetricIdentity
 import com.oxygen.weather.app.HomeSuccessSection
-import com.oxygen.weather.app.AboutSurfaceId
+import com.oxygen.weather.app.SettingsDestination
 import com.oxygen.weather.app.ManualLocationCandidate
 import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.app.OxygenApp
@@ -61,7 +64,7 @@ import com.oxygen.weather.app.LocationPermissionResult
 import com.oxygen.weather.app.FirstRunLocationMessage
 import com.oxygen.weather.app.SavedLocationsMessage
 import com.oxygen.weather.app.SavedLocationsPresentationState
-import com.oxygen.weather.app.ui.about.AboutScreen
+import com.oxygen.weather.app.ui.settings.SettingsScreen
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
 import com.oxygen.weather.app.ui.firstrun.FirstRunLocationEntryScreen
 import com.oxygen.weather.app.ui.theme.EffectsLevel
@@ -83,6 +86,8 @@ import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.ForecastFreshness
+import com.oxygen.weather.core.provider.AlertLookupStatus
+import com.oxygen.weather.core.provider.AlertSuccessMetadata
 import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
@@ -150,7 +155,7 @@ class HomeDashboardUiTest {
                 onCancelDeviceLocation = {
                     state.value = state.value.copy(deviceProgress = null, message = FirstRunLocationMessage.DeviceTimezoneUnavailable)
                 },
-                onBack = {}, onOpenAbout = {},
+                onBack = {}, onOpenSettings = {},
             )
         }
         composeRule.onNodeWithText(DeviceLocationProgress.Resolving.text).performScrollTo().assertIsDisplayed()
@@ -228,8 +233,8 @@ class HomeDashboardUiTest {
         assertEquals(
             listOf(
                 HomeSuccessSection.LocationHeader,
-                HomeSuccessSection.Alerts,
                 HomeSuccessSection.Current,
+                HomeSuccessSection.Alerts,
                 HomeSuccessSection.NearTermPrecipitation,
                 HomeSuccessSection.Hourly,
                 HomeSuccessSection.Daily,
@@ -241,6 +246,213 @@ class HomeDashboardUiTest {
             state.dashboard.sectionOrder,
         )
         composeRule.writeSemanticsArtifact("fresh-dashboard-semantics.txt")
+    }
+
+    @Test
+    fun officialAlertSummaryIsReadableEffectsOffAndOpensValidatedSourceLinks() {
+        val location = weatherLocation(name = "Alert Summary City")
+        val baseAlert = fullWeatherBundle(location).alerts.single()
+        val alerts = listOf(
+            baseAlert.copy(
+                event = "Flash Flood Warning",
+                severity = AlertSeverity.SEVERE,
+                issuer = "National Weather Service",
+                web = "https://alerts.weather.gov/example",
+            ),
+            baseAlert.copy(id = "alert-2", event = "Heat Advisory"),
+            baseAlert.copy(id = "alert-3", event = "Wind Advisory"),
+        )
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = alerts),
+            freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                staleAge = Duration.ofMinutes(45),
+                refreshFailure = ForecastError.NetworkUnavailable,
+            ),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(
+                    requestPoint = location.point,
+                    providerId = "nws",
+                    fetchedAt = Instant.parse("2026-08-22T15:05:00Z"),
+                ),
+            ),
+        )
+        val openedUris = mutableListOf<String>()
+        val uriHandler = object : UriHandler {
+            override fun openUri(uri: String) {
+                openedUris += uri
+            }
+        }
+        val renderedState = mutableStateOf(state)
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1.3f),
+                LocalUriHandler provides uriHandler,
+            ) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        HomeLoadingScreen(
+                            state = renderedState.value,
+                            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.assertSemanticsTreeOrder(
+            "home-section-current",
+            "home-section-stale",
+            "home-section-alert",
+            "home-alert-source-link",
+            "home-alert-count",
+            "home-section-precipitation",
+        )
+        composeRule.onNodeWithTag("home-section-alert").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Official alert").assertIsDisplayed()
+        composeRule.onNodeWithText("Flash Flood Warning").assertIsDisplayed()
+        composeRule.onNodeWithText("Severity: Severe").assertIsDisplayed()
+        composeRule.onNodeWithText("Issuer: National Weather Service").assertIsDisplayed()
+        composeRule.onNodeWithText("Expires 1:00 PM").assertIsDisplayed()
+        composeRule.onNodeWithText("Alert source checked Aug 22, 10:05 AM CDT").assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("alert-summary-effects-off-360x640-font-1.3-semantics.txt")
+        val screenshot = composeRule.onRoot().captureToImage().asAndroidBitmap()
+        val screenshotFile = File(
+            InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
+            "alert-summary-effects-off-360x640-font-1.3.png",
+        )
+        screenshotFile.outputStream().use { output ->
+            assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, output))
+        }
+        composeRule.onNodeWithTag("home-alert-source-link")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.onNodeWithTag("home-alert-count").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("3 active alerts").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Open official NOAA/National Weather Service alert source")
+            .assertExists()
+        assertEquals(listOf("https://alerts.weather.gov/example"), openedUris)
+
+        val invalidState = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(
+                alerts = listOf(baseAlert.copy(web = "http://alerts.weather.gov/example")),
+            ),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+        composeRule.runOnIdle { renderedState.value = invalidState }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-alert-source-link").performScrollTo().performClick()
+        assertEquals("https://www.weather.gov/", openedUris.last())
+    }
+
+    @Test
+    fun officialAlertDetailFlowSelectsSecondAlertPreservesVerbatimTextAndReturnsHome() {
+        val location = weatherLocation(name = "Alert Detail City")
+        val baseAlert = fullWeatherBundle(location).alerts.single()
+        val alerts = listOf(
+            baseAlert.copy(
+                id = "detail-alert-1",
+                event = "Flash Flood Warning",
+                headline = "Flooding is possible",
+                issuer = "Madison Warning Office",
+                urgency = com.oxygen.weather.core.model.AlertUrgency.IMMEDIATE,
+                certainty = com.oxygen.weather.core.model.AlertCertainty.LIKELY,
+                effective = Instant.parse("2026-08-22T12:00:00Z"),
+                sent = Instant.parse("2026-08-22T11:30:00Z"),
+                onset = Instant.parse("2026-08-22T13:00:00Z"),
+                ends = Instant.parse("2026-08-22T20:00:00Z"),
+                affectedArea = com.oxygen.weather.core.model.AlertAffectedArea(areaDescription = "Dane County"),
+                description = "First alert line one\nFirst alert line two",
+                instruction = "Move to higher ground.\nDo not drive.",
+                web = "https://alerts.weather.gov/detail-one",
+            ),
+            baseAlert.copy(
+                id = "detail-alert-2",
+                event = "Heat Advisory",
+                issuer = "Central Forecast Office",
+                effective = Instant.parse("2026-08-22T14:00:00Z"),
+                expires = Instant.parse("2026-08-22T21:00:00Z"),
+                description = "Second alert description",
+                instruction = "Drink water.\nTake breaks.",
+                web = "https://alerts.weather.gov/detail-two",
+            ),
+        )
+        val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(
+                    WeatherRepositoryResult.Success(
+                        weather = fullWeatherBundle(location).copy(alerts = alerts),
+                        alertStatus = AlertLookupStatus.Available(
+                            AlertSuccessMetadata(location.point, "nws", checkedAt),
+                        ),
+                    ),
+                ),
+            ),
+            forecastExecutor = DirectExecutor,
+        )
+        val openedUris = mutableListOf<String>()
+        val uriHandler = object : UriHandler {
+            override fun openUri(uri: String) {
+                openedUris += uri
+            }
+        }
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1.3f),
+                LocalUriHandler provides uriHandler,
+            ) {
+                Box(Modifier.width(360.dp).height(640.dp)) {
+                    OxygenApp(
+                        stateHolder = holder,
+                        appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-alert-source-link").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-alert-details").performClick()
+        composeRule.onNodeWithTag("alert-detail-title").assertIsDisplayed()
+        composeRule.onNodeWithTag("alert-detail-selector-0").assertIsSelected()
+        composeRule.onNodeWithText("Issuer: Madison Warning Office").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Urgency: Immediate").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Certainty: Likely").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Effective: Aug 22, 7:00 AM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Expires: Aug 22, 1:00 PM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Affected area: Dane County").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("First alert line one\nFirst alert line two").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Move to higher ground.\nDo not drive.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Alert source checked Aug 22, 10:05 AM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Official alerts from NOAA/National Weather Service").performScrollTo().assertIsDisplayed()
+
+        composeRule.onNodeWithTag("alert-detail-selector-1").performScrollTo().performClick()
+        composeRule.onNodeWithTag("alert-detail-selector-1").assertIsSelected()
+        composeRule.onNodeWithText("Issuer: Central Forecast Office").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Second alert description").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Drink water.\nTake breaks.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("alert-detail-source-link").performScrollTo().performClick()
+        assertEquals(listOf("https://alerts.weather.gov/detail-two"), openedUris)
+
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.filesDir.resolve("alert-detail-effects-off-360x640-font-1.3-semantics.txt")
+            .writeText(composeRule.onRoot(useUnmergedTree = true).printToString(maxDepth = 120))
+        val screenshot = composeRule.onRoot().captureToImage().asAndroidBitmap()
+        context.filesDir.resolve("alert-detail-effects-off-360x640-font-1.3.png").outputStream().use {
+            assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, it))
+        }
+
+        composeRule.onNodeWithTag("alert-detail-back").performScrollTo().performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-section-alert").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -352,7 +564,7 @@ class HomeDashboardUiTest {
                 onSavedLocationSelected = {},
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -398,7 +610,7 @@ class HomeDashboardUiTest {
                 onSavedLocationSelected = { selectedIds += it },
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -451,7 +663,7 @@ class HomeDashboardUiTest {
                 onSavedLocationRemoveConfirmed = { confirmedIds += it },
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -506,7 +718,7 @@ class HomeDashboardUiTest {
                 onSavedLocationSelected = {},
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -547,7 +759,7 @@ class HomeDashboardUiTest {
                 onSavedLocationSelected = {},
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -595,7 +807,7 @@ class HomeDashboardUiTest {
                 onSavedLocationSelected = {},
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -755,38 +967,192 @@ class HomeDashboardUiTest {
     @Test
     fun aboutOverviewKeepsBackActionBottomReachable() {
         composeRule.setCompactContent {
-            AboutScreen(
-                state = OxygenAppScreen.About(
+            SettingsScreen(
+                state = OxygenAppScreen.Settings(
                     returnScreen = OxygenAppScreen.FirstRunLocationEntry(),
                 ),
-                onSurfaceSelected = {},
+                appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                themeId = com.oxygen.weather.app.ui.theme.OxygenThemeId.OXYGEN,
+                onDestinationSelected = {},
                 onBack = {},
             )
         }
 
-        composeRule.onNodeWithTag("about-bottom-actions").assertIsDisplayed()
-        composeRule.onNodeWithTag("about-back").assertIsDisplayed()
-        composeRule.assertInLowerReachZone("about-bottom-actions", rootHeight = 640f)
-        composeRule.assertMinimumTouchTarget("about-back")
+        composeRule.onNodeWithTag("settings-bottom-actions").assertIsDisplayed()
+        composeRule.onNodeWithTag("settings-back").assertIsDisplayed()
+        composeRule.assertInLowerReachZone("settings-bottom-actions", rootHeight = 640f)
+        composeRule.assertMinimumTouchTarget("settings-back")
     }
 
     @Test
     fun aboutDetailKeepsBackActionBottomReachable() {
         composeRule.setCompactContent {
-            AboutScreen(
-                state = OxygenAppScreen.About(
+            SettingsScreen(
+                state = OxygenAppScreen.Settings(
                     returnScreen = OxygenAppScreen.FirstRunLocationEntry(),
-                    selectedSurface = AboutSurfaceId.Privacy,
+                    selectedDestination = SettingsDestination.Privacy,
                 ),
-                onSurfaceSelected = {},
+                appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                themeId = com.oxygen.weather.app.ui.theme.OxygenThemeId.OXYGEN,
+                onDestinationSelected = {},
                 onBack = {},
             )
         }
 
         composeRule.onNodeWithText("Privacy Baseline").assertIsDisplayed()
-        composeRule.onNodeWithTag("about-bottom-actions").assertIsDisplayed()
-        composeRule.assertInLowerReachZone("about-bottom-actions", rootHeight = 640f)
-        composeRule.assertMinimumTouchTarget("about-back")
+        composeRule.onNodeWithTag("settings-bottom-actions").assertIsDisplayed()
+        composeRule.assertInLowerReachZone("settings-bottom-actions", rootHeight = 640f)
+        composeRule.assertMinimumTouchTarget("settings-back")
+    }
+
+    @Test
+    fun settingsRootReachesAllDestinationsAndLocationsBackWorksWithAndroidBack() {
+        val location = weatherLocation(name = "Settings Fixture City")
+        val saved = weatherLocation(name = "Saved Settings City")
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location)))),
+            savedLocationStorage = RecordingSavedLocationStorage(listOf(saved)),
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 1.3f)) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        OxygenApp(
+                            stateHolder = stateHolder,
+                            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-about-entry").performClick()
+        composeRule.waitForIdle()
+
+        listOf(
+            SettingsDestination.Appearance,
+            SettingsDestination.Units,
+            SettingsDestination.DataSources,
+            SettingsDestination.Privacy,
+            SettingsDestination.OpenSourceLicenses,
+            SettingsDestination.About,
+        ).forEach { destination ->
+            composeRule.onNodeWithTag("settings-destination-${destination.name.lowercase()}")
+                .performScrollTo()
+                .performClick()
+            composeRule.onNodeWithText(destination.title).performScrollTo().assertIsDisplayed()
+            if (destination == SettingsDestination.Appearance) {
+                composeRule.onNodeWithText("Oxygen").assertIsDisplayed()
+                composeRule.onNodeWithText("Standard").assertIsDisplayed()
+                composeRule.onNodeWithTag("settings-effects-off").assertIsDisplayed()
+                composeRule.onAllNodesWithTag("unit-preferences").assertCountEquals(0)
+            }
+            composeRule.onNodeWithTag("settings-back").performClick()
+            composeRule.waitForIdle()
+        }
+
+        composeRule.onNodeWithTag("settings-destination-locations").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("location-entry-saved-locations").performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithTag("location-entry-about").assertCountEquals(0)
+        composeRule.onNodeWithTag("location-entry-back").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings-content").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("settings-destination-locations").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        pressBack()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings-content").assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("settings-root-and-locations-360x640-font-1.3-semantics.txt")
+    }
+
+    @Test
+    fun settingsDisclosuresShowActiveProviderLicenseAndPrivacyBaseline() {
+        val location = weatherLocation(name = "Disclosure Fixture City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+        val openedUris = mutableListOf<String>()
+        var permissionRequests = 0
+        val uriHandler = object : UriHandler {
+            override fun openUri(uri: String) {
+                openedUris += uri
+            }
+        }
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1.3f),
+                LocalUriHandler provides uriHandler,
+            ) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        OxygenApp(
+                            stateHolder = stateHolder,
+                            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                            onRequestLocationPermission = { permissionRequests++ },
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val repositoryCallsAfterHome = repository.locations.size
+
+        composeRule.onNodeWithTag("home-about-entry").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("settings-destination-datasources").performScrollTo().performClick()
+        composeRule.onNodeWithText("Open-Meteo forecast and timezone data: CC BY 4.0.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("MET Norway data: NLOD 2.0 and CC BY 4.0.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("NWS information is public information; requested credits apply and third-party page content may have separate terms.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        val disclosureLinks = listOf(
+            "Open-Meteo forecast and timezone documentation" to "https://open-meteo.com/en/docs",
+            "MET Norway licensing and attribution" to "https://api.met.no/doc/License",
+            "Open-Meteo geocoding documentation" to "https://open-meteo.com/en/docs/geocoding-api",
+            "GeoNames licensing and attribution" to "https://www.geonames.org/about.html",
+            "NOAA/National Weather Service information" to "https://www.weather.gov/",
+        )
+        disclosureLinks.forEach { (label, _) ->
+            composeRule.onNodeWithContentDescription(label).performScrollTo().assertIsDisplayed().performClick()
+        }
+        composeRule.writeSemanticsArtifact("data-sources-360x640-font-1.3-semantics.txt")
+        composeRule.onNodeWithTag("settings-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("settings-destination-privacy").performScrollTo().performClick()
+        composeRule.onNodeWithText("Manual search works without Android location permission", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Foreground selected-point NWS alert requests", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("privacy-360x640-font-1.3-semantics.txt")
+        composeRule.onNodeWithTag("settings-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("settings-destination-opensourcelicenses").performScrollTo().performClick()
+        composeRule.onNodeWithText("Oxygen source code is licensed under GPL-3.0-or-later; see the repository LICENSE file.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Weather-data attribution and licensing are separate from Oxygen source-code licensing.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("open-source-licenses-360x640-font-1.3-semantics.txt")
+        composeRule.onNodeWithTag("settings-back").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(disclosureLinks.map { it.second }, openedUris)
+        assertEquals(repositoryCallsAfterHome, repository.locations.size)
+        assertEquals(0, permissionRequests)
+        composeRule.onNodeWithTag("settings-content").assertIsDisplayed()
     }
 
     @Test
@@ -817,14 +1183,14 @@ class HomeDashboardUiTest {
             "unit-choice-us",
             "unit-choice-uk",
         )
-        composeRule.assertMinimumTouchTarget("about-back")
+        composeRule.assertMinimumTouchTarget("settings-back")
 
         composeRule.onNodeWithTag("unit-choice-metric").performScrollTo().performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("unit-choice-metric").assertIsSelected()
-        composeRule.onNodeWithTag("about-back").performClick()
+        composeRule.onNodeWithTag("settings-back").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag("about-back").performClick()
+        composeRule.onNodeWithTag("settings-back").performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("18 deg C").assertIsDisplayed()
@@ -1225,7 +1591,7 @@ class HomeDashboardUiTest {
 
         composeRule.setHomeContent(HomeForecastPresentationState.Loading.from(location))
         composeRule.onNodeWithText("Loading weather for Retry City").assertIsDisplayed()
-        composeRule.onNodeWithText("Settings / About").assertIsDisplayed()
+        composeRule.onNodeWithText("Settings").assertIsDisplayed()
         composeRule.onNodeWithText("Weather data by Open-Meteo.").assertIsDisplayed()
         composeRule.writeSemanticsArtifact("loading-semantics.txt")
     }
@@ -1242,7 +1608,7 @@ class HomeDashboardUiTest {
         )
         composeRule.onNodeWithText(HomeForecastMessage.NetworkUnavailable.text).assertIsDisplayed()
         composeRule.onNodeWithText("Retry").assertIsDisplayed()
-        composeRule.onNodeWithText("Settings / About").assertIsDisplayed()
+        composeRule.onNodeWithText("Settings").assertIsDisplayed()
         composeRule.writeSemanticsArtifact("no-cache-error-semantics.txt")
     }
 
@@ -1589,6 +1955,16 @@ private fun ComposeTestRule.assertVerticalOrder(vararg tags: String) {
     }
     tops.zipWithNext().forEach { (before, after) ->
         assertTrue("${before.first} should render above ${after.first}", before.second < after.second)
+    }
+}
+
+private fun ComposeTestRule.assertSemanticsTreeOrder(vararg tags: String) {
+    val tree = onRoot().printToString()
+    tags.toList().zipWithNext().forEach { (before, after) ->
+        assertTrue(
+            "$before should precede $after in the rendered Home tree",
+            tree.indexOf("Tag: '$before'") < tree.indexOf("Tag: '$after'"),
+        )
     }
 }
 

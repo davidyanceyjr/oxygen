@@ -13,8 +13,10 @@ import com.oxygen.weather.core.provider.cache.CachedWeatherRepository
 import com.oxygen.weather.core.provider.cache.ForecastCacheMetadata
 import com.oxygen.weather.core.provider.cache.ForecastCacheStorage
 import java.time.Duration
+import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -27,6 +29,31 @@ class AlertMergingWeatherRepositoryTest {
         zoneId = ZoneId.of("America/Chicago"),
     )
     private val forecastFetchedAt = Instant.parse("2026-09-06T14:00:00Z")
+
+    @Test
+    fun rateLimitGateReusesSuccessfulAlertsAndAllowsExactThirtySecondRetry() {
+        val clock = MutableAlertClock(Instant.parse("2026-09-06T14:00:00Z"))
+        val alert = alert("gated", "Gated alert")
+        val provider = RecordingAlertProvider(
+            AlertProviderResult.Success(listOf(alert), alertMetadata()),
+        )
+        val repository = AlertMergingWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(bundle())),
+            alertProvider = provider,
+            clock = clock,
+        )
+
+        val first = terminalSuccess(repository.refresh(location))
+        val skipped = terminalSuccess(repository.refresh(location))
+        clock.advanceSeconds(30)
+        val eligible = terminalSuccess(repository.refresh(location))
+
+        assertEquals(2, provider.locations.size)
+        assertEquals(listOf(alert), first.weather.alerts)
+        assertEquals(AlertLookupStatus.Available(alertMetadata()), skipped.alertStatus)
+        assertEquals(listOf(alert), skipped.weather.alerts)
+        assertEquals(AlertLookupStatus.Available(alertMetadata()), eligible.alertStatus)
+    }
 
     @Test
     fun forwardsLoadingAndForecastFailureWithoutLookingUpAlerts() {
@@ -63,7 +90,7 @@ class AlertMergingWeatherRepositoryTest {
 
         assertEquals(listOf(location.point), provider.locations)
         assertEquals(listOf(lastA, lastB, onlyC), success.weather.alerts)
-        assertEquals(AlertLookupStatus.Available, success.alertStatus)
+        assertEquals(AlertLookupStatus.Available(alertMetadata()), success.alertStatus)
         assertEquals(forecast.copy(alerts = listOf(lastA, lastB, onlyC)), success.weather)
     }
 
@@ -78,7 +105,7 @@ class AlertMergingWeatherRepositoryTest {
                 emptyProvider,
             ).refresh(location),
         )
-        assertEquals(AlertLookupStatus.NoAlerts, emptySuccess.alertStatus)
+        assertEquals(AlertLookupStatus.NoAlerts(alertMetadata()), emptySuccess.alertStatus)
         assertEquals(emptyList<WeatherAlert>(), emptySuccess.weather.alerts)
 
         val unsupportedProvider = RecordingAlertProvider(
@@ -152,7 +179,7 @@ class AlertMergingWeatherRepositoryTest {
             assertEquals(upstreamSuccess.weather.copy(alerts = listOf(alert)), merged.weather)
             assertEquals(upstreamSuccess.freshness, merged.freshness)
             assertEquals(upstreamSuccess.cacheMetadata, merged.cacheMetadata)
-            assertEquals(AlertLookupStatus.Available, merged.alertStatus)
+            assertEquals(AlertLookupStatus.Available(alertMetadata()), merged.alertStatus)
             assertEquals(forecastFetchedAt, merged.weather.fetchedAt)
             assertEquals("met-norway", requireNotNull(merged.weather.current).provenance.providerId)
         }
@@ -178,7 +205,7 @@ class AlertMergingWeatherRepositoryTest {
         assertEquals(listOf(forecast), storage.replacements)
         assertTrue(storage.replacements.all { it.alerts.isEmpty() })
         assertEquals(listOf(alert), merged.weather.alerts)
-        assertEquals(AlertLookupStatus.Available, merged.alertStatus)
+        assertEquals(AlertLookupStatus.Available(alertMetadata()), merged.alertStatus)
     }
 
     private fun alert(id: String, headline: String): WeatherAlert = WeatherAlert(
@@ -224,6 +251,20 @@ class AlertMergingWeatherRepositoryTest {
 
     private fun terminalSuccess(results: Sequence<WeatherRepositoryResult>): WeatherRepositoryResult.Success =
         results.first { it !is WeatherRepositoryResult.Loading } as WeatherRepositoryResult.Success
+}
+
+private class MutableAlertClock(initial: Instant) : Clock() {
+    private var current = initial
+
+    override fun getZone(): ZoneId = ZoneOffset.UTC
+
+    override fun withZone(zone: ZoneId): Clock = this
+
+    override fun instant(): Instant = current
+
+    fun advanceSeconds(seconds: Long) {
+        current = current.plusSeconds(seconds)
+    }
 }
 
 private class FixedWeatherRepository(

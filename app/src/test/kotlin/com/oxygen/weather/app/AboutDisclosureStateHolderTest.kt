@@ -9,6 +9,7 @@ import com.oxygen.weather.core.model.LocationId
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
+import com.oxygen.weather.core.location.SavedLocationStorage
 import com.oxygen.weather.core.provider.GeocodingRepository
 import com.oxygen.weather.core.provider.GeocodingRepositoryResult
 import com.oxygen.weather.core.provider.WeatherRepository
@@ -24,6 +25,40 @@ import org.junit.Test
 
 class AboutDisclosureStateHolderTest {
     @Test
+    fun `settings exposes seven distinct destinations and locations returns to exact first-run state`() {
+        val saved = weatherLocation("saved-madison", "Madison")
+        val storage = RecordingSettingsSavedLocationStorage(listOf(saved))
+        val stateHolder = OxygenAppStateHolder(
+            savedLocationStorage = storage,
+            forecastExecutor = DirectAboutExecutor,
+        )
+
+        stateHolder.onManualLocationQueryChanged("Chicago")
+        stateHolder.onOpenSettings()
+        val root = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        assertEquals(SettingsDestination.entries.toList(), root.destinationOptions)
+
+        root.destinationOptions.filter { it != SettingsDestination.Locations }.forEach { destination ->
+            stateHolder.onSettingsDestinationSelected(destination)
+            assertEquals(destination, (stateHolder.presentationState.screen as OxygenAppScreen.Settings).selectedDestination)
+            stateHolder.onSettingsBack()
+        }
+
+        stateHolder.onSettingsDestinationSelected(SettingsDestination.Locations)
+        val locations = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
+        assertTrue(locations.returnScreen is OxygenAppScreen.Settings)
+        assertEquals(listOf(saved), (stateHolder.presentationState.savedLocations as SavedLocationsPresentationState.Loaded).locations)
+        stateHolder.onLocationEntryBack()
+
+        assertTrue(stateHolder.presentationState.screen is OxygenAppScreen.Settings)
+        stateHolder.onSettingsBack()
+        val returned = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
+        assertEquals("Chicago", returned.query)
+        assertEquals(null, stateHolder.presentationState.selectedLocation)
+        assertEquals(1, storage.listCalls)
+    }
+
+    @Test
     fun `settings about is reachable from first-run and preserves search state on return`() {
         val stateHolder = OxygenAppStateHolder(
             geocodingRepository = StaticResultGeocodingRepository(
@@ -37,16 +72,16 @@ class AboutDisclosureStateHolderTest {
         val beforeAbout = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
         assertTrue(beforeAbout.searchState is ManualLocationSearchState.Results)
 
-        stateHolder.onOpenAbout()
+        stateHolder.onOpenSettings()
 
-        val about = stateHolder.presentationState.screen as OxygenAppScreen.About
-        assertEquals("Settings / About", about.title)
+        val settings = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        assertEquals("Settings", settings.title)
         assertEquals(
-            listOf(AboutSurfaceId.Units, AboutSurfaceId.DataSources, AboutSurfaceId.Privacy, AboutSurfaceId.OpenSourceLicenses),
-            about.surfaceOptions,
+            SettingsDestination.entries.toList(),
+            settings.destinationOptions,
         )
 
-        stateHolder.onAboutBack()
+        stateHolder.onSettingsBack()
 
         val returned = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
         assertEquals("Madison", returned.query)
@@ -68,16 +103,16 @@ class AboutDisclosureStateHolderTest {
         val readyBefore = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
 
-        stateHolder.onOpenAbout()
-        stateHolder.onAboutSurfaceSelected(AboutSurfaceId.Privacy)
+        stateHolder.onOpenSettings()
+        stateHolder.onSettingsDestinationSelected(SettingsDestination.Privacy)
 
-        val privacy = stateHolder.presentationState.screen as OxygenAppScreen.About
-        assertEquals(AboutSurfaceId.Privacy, privacy.selectedSurface)
-        assertTrue(privacy.surfaceState.visibleText().contains("no advertising SDK"))
+        val privacy = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        assertEquals(SettingsDestination.Privacy, privacy.selectedDestination)
+        assertTrue(privacy.destinationState.visibleText().contains("no advertising SDK"))
 
-        stateHolder.onAboutBack()
-        assertTrue((stateHolder.presentationState.screen as OxygenAppScreen.About).selectedSurface == null)
-        stateHolder.onAboutBack()
+        stateHolder.onSettingsBack()
+        assertTrue((stateHolder.presentationState.screen as OxygenAppScreen.Settings).selectedDestination == null)
+        stateHolder.onSettingsBack()
 
         val readyAfter = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
@@ -88,7 +123,7 @@ class AboutDisclosureStateHolderTest {
 
     @Test
     fun `data sources disclosure separates active implemented and roadmap-only providers`() {
-        val text = aboutSurfaceState(AboutSurfaceId.DataSources).visibleText()
+        val text = settingsDestinationState(SettingsDestination.DataSources).visibleText()
 
         assertTrue(text.contains("Open-Meteo is the installed-app default forecast provider"))
         assertTrue(text.contains("Open-Meteo Geocoding API"))
@@ -105,18 +140,34 @@ class AboutDisclosureStateHolderTest {
         assertTrue(text.contains("Provider-specific MET Norway cache headers are persisted"))
         assertTrue(text.contains("cached fallback provenance remains provider-neutral"))
         assertTrue(text.contains("304 not-modified handling"))
-        assertTrue(text.contains("NOAA/NWS alerts"))
+        assertTrue(text.contains("Official alerts: selected-point NOAA/National Weather Service active alerts are requested in the foreground after forecast success"))
+        assertTrue(text.contains("Open-Meteo forecast and timezone data: CC BY 4.0"))
+        assertTrue(text.contains("Open-Meteo geocoding data: CC BY 4.0"))
+        assertTrue(text.contains("GeoNames data: Creative Commons attribution license"))
+        assertTrue(text.contains("MET Norway data: NLOD 2.0 and CC BY 4.0"))
+        assertTrue(text.contains("NWS information is public information"))
         assertTrue(text.contains("Environment and Climate Change Canada alerts"))
         assertTrue(text.contains("Open-Meteo/CAMS air quality"))
         assertTrue(text.contains("roadmap-only"))
         assertFalse(text.contains("saved-location save/remove UI"))
         assertFalse(text.contains("unit settings are implemented"))
-        assertFalse(text.contains("alerts are implemented"))
+        assertTrue(text.contains("Home Now page shows one official-alert summary"))
+
+        assertEquals(
+            listOf(
+                AboutDisclosureLink("Open-Meteo forecast and timezone documentation", "https://open-meteo.com/en/docs"),
+                AboutDisclosureLink("MET Norway licensing and attribution", "https://api.met.no/doc/License"),
+                AboutDisclosureLink("Open-Meteo geocoding documentation", "https://open-meteo.com/en/docs/geocoding-api"),
+                AboutDisclosureLink("GeoNames licensing and attribution", "https://www.geonames.org/about.html"),
+                AboutDisclosureLink("NOAA/National Weather Service information", "https://www.weather.gov/"),
+            ),
+            settingsDestinationState(SettingsDestination.DataSources).sections.flatMap { it.links },
+        )
     }
 
     @Test
     fun `privacy disclosure contains active request facts and MET Norway capability facts`() {
-        val text = aboutSurfaceState(AboutSurfaceId.Privacy).visibleText()
+        val text = settingsDestinationState(SettingsDestination.Privacy).visibleText()
 
         assertTrue(text.contains("no advertising SDK"))
         assertTrue(text.contains("behavioral tracking"))
@@ -125,6 +176,7 @@ class AboutDisclosureStateHolderTest {
         assertTrue(text.contains("Manual search works without Android location permission"))
         assertTrue(text.contains("selected coordinates"))
         assertTrue(text.contains("timezone"))
+        assertTrue(text.contains("requested weather variables"))
         assertTrue(text.contains("typed place query"))
         assertTrue(text.contains("GeoNames"))
         assertTrue(text.contains("optional altitude"))
@@ -132,13 +184,15 @@ class AboutDisclosureStateHolderTest {
         assertTrue(text.contains("IP address"))
         assertTrue(text.contains("provider logs"))
         assertTrue(text.contains("used only after eligible Open-Meteo terminal forecast failures"))
+        assertTrue(text.contains("Foreground selected-point NWS alert requests"))
+        assertTrue(text.contains("Oxygen does not persist or background-poll alert data"))
     }
 
     @Test
     fun `open source licenses separate source code license from weather data attribution`() {
-        val text = aboutSurfaceState(AboutSurfaceId.OpenSourceLicenses).visibleText()
+        val text = settingsDestinationState(SettingsDestination.OpenSourceLicenses).visibleText()
 
-        assertTrue(text.contains("Oxygen source code is licensed under the repository LICENSE file"))
+        assertTrue(text.contains("Oxygen source code is licensed under GPL-3.0-or-later"))
         assertTrue(text.contains("Weather-data attribution and licensing are separate"))
         assertTrue(text.contains("Open-Meteo forecast and geocoding disclosures"))
         assertTrue(text.contains("GeoNames attribution"))
@@ -163,13 +217,13 @@ class AboutDisclosureStateHolderTest {
         assertEquals("MET Norway", ready.dashboard.source.sourceName)
         assertEquals("Model estimate", ready.dashboard.source.dataType)
         assertEquals("Fetched Aug 22, 7:00 AM CDT", ready.dashboard.source.fetchedAt)
-        assertEquals("NLOD 2.0", ready.dashboard.source.license)
+        assertEquals("NLOD-2.0 AND CC-BY-4.0", ready.dashboard.source.license)
         assertFalse(ready.dashboard.visibleText().contains("metno-provider-id"))
     }
 
     @Test
     fun `disclosure paragraphs stay bounded for narrow large-text rendering`() {
-        val allParagraphs = AboutSurfaceId.entries.flatMap { aboutSurfaceState(it).sections }.flatMap { it.body }
+        val allParagraphs = SettingsDestination.entries.flatMap { settingsDestinationState(it).sections }.flatMap { it.body }
 
         assertTrue(allParagraphs.isNotEmpty())
         allParagraphs.forEach { paragraph ->
@@ -180,6 +234,21 @@ class AboutDisclosureStateHolderTest {
 
 private object DirectAboutExecutor : Executor {
     override fun execute(command: Runnable) = command.run()
+}
+
+private class RecordingSettingsSavedLocationStorage(
+    private val locations: List<WeatherLocation>,
+) : SavedLocationStorage {
+    var listCalls = 0
+
+    override fun saveLocation(location: WeatherLocation) = Unit
+
+    override fun listLocations(): List<WeatherLocation> {
+        listCalls++
+        return locations
+    }
+
+    override fun removeLocation(locationId: LocationId) = Unit
 }
 
 private class StaticResultGeocodingRepository(
@@ -245,7 +314,7 @@ private fun metNorwayBundle(location: WeatherLocation): WeatherBundle =
             time = Instant.parse("2026-08-22T12:00:00Z"),
             temperatureC = 17.0,
             condition = WeatherCondition.CLOUDY,
-            provenance = provenance("metno-provider-id", "MET Norway", "NLOD 2.0"),
+            provenance = provenance("metno-provider-id", "MET Norway", "NLOD-2.0 AND CC-BY-4.0"),
         ),
         fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
     )
@@ -264,7 +333,7 @@ private fun provenance(
         licenseId = licenseId,
     )
 
-private fun AboutSurfaceState.visibleText(): String =
+private fun SettingsDestinationState.visibleText(): String =
     buildString {
         append(title).append('\n')
         sections.forEach { section ->

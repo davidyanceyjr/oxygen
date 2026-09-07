@@ -1,11 +1,10 @@
 # NWS Alerts Provider Contract
 
 - **Provider:** NOAA/National Weather Service weather.gov API active alerts.
-- **Purpose:** Roadmap-only provider contract for selected-point official
-  weather alerts in the United States, NWS-served territories, and relevant
-  marine areas accepted by the NWS active-alert service. This document specifies
-  the future provider path for Slices 23A-23C; it does not make NWS alerts
-  active in the installed app.
+- **Purpose:** Active installed-app provider contract for selected-point
+  official weather alerts in the United States, NWS-served territories, and
+  relevant marine areas accepted by the NWS active-alert service. This
+  document specifies the installed provider path and its data/privacy rules.
 - **Coverage:** Coverage is the point coverage accepted by
   `GET /alerts/active?point={lat},{lon}`, not CONUS, country code, or forecast
   provider choice. Oxygen should attempt any locally valid WGS84 point and let
@@ -93,13 +92,13 @@
   alerts can have `geometry: null`; null geometry is therefore usable for a
   point-filtered result and must fall back to area/zones/geocodes for affected
   area. Fabricate no polygons or county/zone membership.
-- **UI-required banner/detail fields:** Slice 24 needs provider-neutral data for
-  visible severity text, event name, headline or event fallback, issuer/source,
-  effective/onset/expires/end timing, affected area, description, instructions,
-  and source/provenance. Critical official instructions must not be paraphrased
-  in a way that changes meaning. Severity must not be communicated by color
-  alone.
-- **Error responses:** Future client/result boundaries must distinguish:
+- **UI-required banner/detail fields:** Slices 24A and 24B need provider-neutral
+  data for visible severity text, event name, headline or event fallback,
+  issuer/source, effective/onset/expires/end timing, affected area,
+  description, instructions, and source/provenance. Critical official
+  instructions must not be paraphrased in a way that changes meaning. Severity
+  must not be communicated by color alone.
+- **Error responses:** The installed client/provider result boundary distinguishes:
   `Success(alerts)`, including empty success; `UnsupportedRegion`;
   local `InvalidPoint`; `NetworkUnavailable`; `RateLimited`;
   `ProviderUnavailable`; `InvalidRequest`; `InvalidResponse`;
@@ -139,22 +138,22 @@
   logs include date/time, originating IP, browser/OS if provided, referrer if
   provided, requested object, completion status, and pages visited, and those
   logs may be preserved indefinitely for security and service-integrity needs.
-  Oxygen must disclose NWS as roadmap-only until the live path exists, then as
-  an active provider before use. No new Android permission, account, telemetry,
-  background collection, or advertising SDK is introduced by this contract.
+  Oxygen discloses NWS as an active provider in the installed app. No new
+  Android permission, account, telemetry, background collection, or
+  advertising SDK is introduced by this contract.
 - **Failover behavior:** Official alert lookup is independent from forecast
   provider selection and fallback. Open-Meteo/MET Norway forecast success or
   failure cannot create, suppress, or invalidate official alerts. NWS alert
   failure cannot invalidate the displayed forecast. Forecast and alert freshness
   remain separate; stale forecast with fresh alerts and fresh forecast with
   alert failure must both be representable.
-- **Fixture/sample response location:** Future fixtures live under
-  `core/src/test/resources/providers/nws/`. Slice 23A must add no-alert,
-  one-alert, many-alert, missing-optionals, unknown-enums, geometry polygon,
+- **Fixture/sample response location:** Implemented fixtures live under
+  `core/src/test/resources/providers/nws/`, covering no-alert, one-alert,
+  many-alert, missing-optionals, unknown-enums, geometry polygon,
   null-geometry, duplicate ID, update references, cancel references,
   near-future-effective, expired/superseded cached input, malformed envelope,
   malformed problem envelope, and unsupported-region problem fixtures. Parser
-  tests must not require live internet.
+  tests do not require live internet.
 - **Official documentation:**
   - API service docs: https://www.weather.gov/documentation/services-web-api
   - OpenAPI schema: https://api.weather.gov/openapi.json
@@ -185,10 +184,9 @@ Slice 23C owns forecast/alert repository composition and separate freshness;
 the core merge is implemented, while installed-app alert presentation remains
 out of scope.
 
-Home currently renders scaffold/sample alerts through `HomeAlertPresentation`
-and `home-section-alert`; this is not a live NWS provider path. Alert
-persistence does not exist. Forecast cache storage is forecast-only and rejects
-alert-bearing bundles.
+Home currently renders live NWS alert summary and detail presentation through
+the installed alert path. Alert persistence does not exist. Forecast cache
+storage is forecast-only and rejects alert-bearing bundles.
 
 ## Dated Evidence
 

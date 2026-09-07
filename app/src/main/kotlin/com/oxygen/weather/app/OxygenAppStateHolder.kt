@@ -7,6 +7,7 @@ import com.oxygen.weather.core.model.UnitPreference
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.provider.ForecastError
+import com.oxygen.weather.core.provider.AlertLookupStatus
 import com.oxygen.weather.core.provider.CoordinateTimeZoneResolver
 import com.oxygen.weather.core.provider.CoordinateTimeZoneResult
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoTimeZoneResolver
@@ -19,6 +20,7 @@ import com.oxygen.weather.core.provider.WeatherRepositoryResult
 import com.oxygen.weather.core.provider.cache.ForecastCacheStorage
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoGeocodingRepository
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoWeatherRepository
+import com.oxygen.weather.app.ui.theme.EffectsLevel
 import java.time.Clock
 import java.time.Duration
 import java.util.Locale
@@ -45,9 +47,13 @@ class OxygenAppStateHolder(
     private val forecastExecutor: Executor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "oxygen-forecast-refresh").apply { isDaemon = true }
     },
+    private val effectsPreferenceStorage: EffectsPreferenceStorage? = null,
 ) {
     private var startupLocationReadFailed = false
     private val initialSelectedLocation: WeatherLocation? = selectedLocation
+    private val initialEffectsPreference = EffectsPreferencePresentationState.initial(
+        isManaged = effectsPreferenceStorage != null,
+    )
     val canSaveSearchResults: Boolean = savedLocationStorage != null
 
     @Volatile
@@ -56,6 +62,7 @@ class OxygenAppStateHolder(
             screen = OxygenAppScreen.FirstRunLocationEntry(),
             selectedLocation = null,
             savedLocations = SavedLocationsPresentationState.NotLoaded,
+            effectsPreference = initialEffectsPreference,
         )
     } else {
         OxygenAppPresentationState(
@@ -64,6 +71,7 @@ class OxygenAppStateHolder(
             ),
             selectedLocation = initialSelectedLocation,
             savedLocations = SavedLocationsPresentationState.NotLoaded,
+            effectsPreference = initialEffectsPreference,
         )
     }
         private set
@@ -72,15 +80,20 @@ class OxygenAppStateHolder(
     private var onStateChanged: ((OxygenAppPresentationState) -> Unit)? = null
     private var activeForecastRequestId = 0L
     private var activeUnitPreference: UnitPreference? = null
-    private var activeCanonicalForecast: WeatherBundle? = null
+    private var activeCanonicalForecast: ActiveCanonicalForecast? = null
+    private var effectsPreferenceWriteId = 0L
     private var deviceAttemptCounter = 0L
     private var activeDeviceAttempt: Long? = null
     private var deviceCancellation: LocationCancellation? = null
 
     init {
         if (initialSelectedLocation == null) {
-            if (selectedLocationStorage !== EmptySelectedLocationStorage || unitPreferenceStorage !== EmptyUnitPreferenceStorage) {
+            if (selectedLocationStorage !== EmptySelectedLocationStorage ||
+                unitPreferenceStorage !== EmptyUnitPreferenceStorage ||
+                effectsPreferenceStorage != null
+            ) {
                 forecastExecutor.execute {
+                    loadStoredEffectsPreference()
                     loadStoredUnitPreference()
                     val restoredLocation = readStoredSelectedLocation()
                     when {
@@ -90,7 +103,7 @@ class OxygenAppStateHolder(
                             startHomeForecastLoad(restoredLocation)
                         }
                         startupLocationReadFailed -> {
-                            presentationState = OxygenAppPresentationState(
+                            presentationState = presentationState.copy(
                                 screen = OxygenAppScreen.FirstRunLocationEntry(
                                     message = FirstRunLocationMessage.LocalStateUnavailable,
                                 ),
@@ -104,6 +117,7 @@ class OxygenAppStateHolder(
             }
         } else {
             forecastExecutor.execute {
+                loadStoredEffectsPreference()
                 loadStoredUnitPreference()
                 restoreCachedHomeForecast(initialSelectedLocation)
                 startHomeForecastLoad(initialSelectedLocation)
@@ -314,6 +328,39 @@ class OxygenAppStateHolder(
     }
 
     @Synchronized
+    fun onHomeAlertDetailsRequested() {
+        val home = presentationState.screen as? OxygenAppScreen.Home ?: return
+        val ready = home.forecast as? HomeForecastPresentationState.ForecastReady ?: return
+        val firstAlert = ready.dashboard.alertDetails.firstOrNull() ?: return
+        presentationState = presentationState.copy(
+            screen = OxygenAppScreen.AlertDetail(
+                selectedAlertId = firstAlert.id,
+                returnHome = home,
+            ),
+        )
+        publishState()
+    }
+
+    @Synchronized
+    fun onAlertDetailSelected(alertId: String) {
+        val detail = presentationState.screen as? OxygenAppScreen.AlertDetail ?: return
+        val ready = detail.returnHome.forecast as? HomeForecastPresentationState.ForecastReady ?: return
+        if (ready.dashboard.alertDetails.none { it.id == alertId }) return
+        if (detail.selectedAlertId == alertId) return
+        presentationState = presentationState.copy(
+            screen = detail.copy(selectedAlertId = alertId),
+        )
+        publishState()
+    }
+
+    @Synchronized
+    fun onAlertDetailBack() {
+        val detail = presentationState.screen as? OxygenAppScreen.AlertDetail ?: return
+        presentationState = presentationState.copy(screen = detail.returnHome)
+        publishState()
+    }
+
+    @Synchronized
     fun onChangeLocation() {
         val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
             ?: return
@@ -335,40 +382,47 @@ class OxygenAppStateHolder(
     }
 
     @Synchronized
-    fun onOpenAbout() {
+    fun onOpenSettings() {
         cancelDeviceLocation()
         val currentScreen = presentationState.screen
-        if (currentScreen is OxygenAppScreen.About) return
+        if (currentScreen is OxygenAppScreen.Settings ||
+            (currentScreen is OxygenAppScreen.FirstRunLocationEntry && currentScreen.returnScreen is OxygenAppScreen.Settings)
+        ) return
 
         presentationState = presentationState.copy(
-            screen = OxygenAppScreen.About(
+            screen = OxygenAppScreen.Settings(
                 returnScreen = currentScreen,
-                selectedSurface = null,
             ),
         )
         publishState()
     }
 
-    fun onAboutSurfaceSelected(surfaceId: AboutSurfaceId) {
-        updateAboutState {
-            it.copy(
-                selectedSurface = surfaceId,
-                unitPreferenceMessage = null,
+    fun onSettingsDestinationSelected(destination: SettingsDestination) {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (destination == SettingsDestination.Locations) {
+            presentationState = presentationState.copy(
+                screen = OxygenAppScreen.FirstRunLocationEntry(
+                    returnScreen = settings.copy(selectedDestination = null),
+                ),
             )
+            publishState()
+            loadSavedLocations()
+            return
         }
+        updateSettingsState { it.copy(selectedDestination = destination, unitPreferenceMessage = null) }
     }
 
     fun onUnitPreferenceSelected(preference: UnitPreference?) {
-        val about = presentationState.screen as? OxygenAppScreen.About ?: return
-        if (about.selectedSurface != AboutSurfaceId.Units) return
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != SettingsDestination.Units) return
 
-        updateAboutState { it.copy(unitPreferenceMessage = null) }
+        updateSettingsState { it.copy(unitPreferenceMessage = null) }
         forecastExecutor.execute {
             try {
                 unitPreferenceStorage.writeUnitPreference(preference)
             } catch (_: Exception) {
                 synchronized(this) {
-                    updateAboutState {
+                    updateSettingsState {
                         it.copy(unitPreferenceMessage = UnitPreferenceMessage.LocalStateUnavailable)
                     }
                 }
@@ -386,12 +440,13 @@ class OxygenAppStateHolder(
                     currentReady != null &&
                     canonical != null &&
                     selectedLocation != null &&
-                    canonical.location == selectedLocation &&
+                    canonical.weather.location == selectedLocation &&
                     currentReady.location == selectedLocation
                 ) {
-                    val dashboard = canonical.toHomeSuccessPresentation(
+                    val dashboard = canonical.weather.toHomeSuccessPresentation(
                         selectedLocation = selectedLocation,
                         unitPreference = activeUnitPreference,
+                        alertStatus = canonical.alertStatus,
                     )
                     OxygenAppScreen.Home(
                         forecast = currentReady.copy(
@@ -413,14 +468,76 @@ class OxygenAppStateHolder(
         }
     }
 
-    fun onAboutBack() {
-        val about = presentationState.screen as? OxygenAppScreen.About ?: return
-        if (about.selectedSurface != null) {
+    fun onEffectsPreferenceSelected(effects: EffectsLevel) {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != SettingsDestination.Appearance) return
+        val storage = effectsPreferenceStorage ?: return
+        val current = presentationState.effectsPreference
+        if (current.pending != null || effects == EffectsLevel.FULL) return
+
+        val operationId = synchronized(this) {
+            effectsPreferenceWriteId += 1
             presentationState = presentationState.copy(
-                screen = about.copy(selectedSurface = null),
+                effectsPreference = current.copy(
+                    pending = effects,
+                    writeError = false,
+                ),
+            )
+            publishState()
+            effectsPreferenceWriteId
+        }
+        forecastExecutor.execute {
+            try {
+                storage.writeEffectsPreference(effects)
+            } catch (_: Exception) {
+                synchronized(this) {
+                    if (operationId != effectsPreferenceWriteId) return@synchronized
+                    presentationState = presentationState.copy(
+                        effectsPreference = presentationState.effectsPreference.copy(
+                            pending = null,
+                            writeError = true,
+                        ),
+                    )
+                    publishState()
+                }
+                return@execute
+            }
+
+            synchronized(this) {
+                if (operationId != effectsPreferenceWriteId) return@synchronized
+                presentationState = presentationState.copy(
+                    effectsPreference = presentationState.effectsPreference.copy(
+                        readState = EffectsPreferenceReadState.Loaded,
+                        confirmed = effects,
+                        pending = null,
+                        writeError = false,
+                    ),
+                )
+                publishState()
+            }
+        }
+    }
+
+    fun onEffectsPreferenceRetry() {
+        if (effectsPreferenceStorage == null) return
+        synchronized(this) {
+            if (presentationState.effectsPreference.pending != null) return
+            presentationState = presentationState.copy(
+                effectsPreference = EffectsPreferencePresentationState.loading(),
+            )
+            publishState()
+        }
+        forecastExecutor.execute { loadStoredEffectsPreference() }
+    }
+
+    fun onSettingsBack() {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != null) {
+            presentationState = presentationState.copy(
+                screen = settings.copy(selectedDestination = null),
             )
         } else {
-            presentationState = presentationState.copy(screen = about.returnScreen)
+            presentationState = presentationState.copy(screen = settings.returnScreen)
         }
         publishState()
     }
@@ -428,7 +545,7 @@ class OxygenAppStateHolder(
     @Synchronized
     private fun startHomeForecastLoad(location: WeatherLocation) {
         val requestId = nextForecastRequestId()
-        if (activeCanonicalForecast?.location != location) {
+        if (activeCanonicalForecast?.weather?.location != location) {
             activeCanonicalForecast = null
         }
         val currentHome = presentationState.screen.visibleOrReturnScreen() as? OxygenAppScreen.Home
@@ -443,9 +560,10 @@ class OxygenAppStateHolder(
         } else {
             HomeForecastPresentationState.Loading.from(location)
         }
-        presentationState = OxygenAppPresentationState(
-            screen = OxygenAppScreen.Home(
-                forecast = nextForecast,
+        val currentScreen = presentationState.screen
+        presentationState = presentationState.copy(
+            screen = currentScreen.withVisibleOrReturnScreen(
+                OxygenAppScreen.Home(forecast = nextForecast),
             ),
             selectedLocation = location,
             unitPreference = activeUnitPreference,
@@ -649,9 +767,9 @@ class OxygenAppStateHolder(
         publishState()
     }
 
-    private fun updateAboutState(update: (OxygenAppScreen.About) -> OxygenAppScreen.About) {
-        val about = presentationState.screen as? OxygenAppScreen.About ?: return
-        presentationState = presentationState.copy(screen = update(about))
+    private fun updateSettingsState(update: (OxygenAppScreen.Settings) -> OxygenAppScreen.Settings) {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        presentationState = presentationState.copy(screen = update(settings))
         publishState()
     }
 
@@ -677,9 +795,35 @@ class OxygenAppStateHolder(
         publishState()
     }
 
+    private fun loadStoredEffectsPreference() {
+        val storage = effectsPreferenceStorage ?: return
+        val restored = try {
+            storage.readEffectsPreference() ?: EffectsLevel.SUBTLE
+        } catch (_: Exception) {
+            synchronized(this) {
+                presentationState = presentationState.copy(
+                    effectsPreference = EffectsPreferencePresentationState(
+                        readState = EffectsPreferenceReadState.Failed,
+                    ),
+                )
+                publishState()
+            }
+            return
+        }
+        synchronized(this) {
+            presentationState = presentationState.copy(
+                effectsPreference = EffectsPreferencePresentationState(
+                    readState = EffectsPreferenceReadState.Loaded,
+                    confirmed = restored,
+                ),
+            )
+            publishState()
+        }
+    }
+
     @Synchronized
     private fun setHomeLoading(location: WeatherLocation) {
-        presentationState = OxygenAppPresentationState(
+        presentationState = presentationState.copy(
             screen = OxygenAppScreen.Home(
                 forecast = HomeForecastPresentationState.Loading.from(location),
             ),
@@ -695,7 +839,7 @@ class OxygenAppStateHolder(
         val cached = try {
             storage.readBundle(location.id)
         } catch (_: Exception) {
-            presentationState = OxygenAppPresentationState(
+            presentationState = presentationState.copy(
                 screen = OxygenAppScreen.Home(
                     forecast = HomeForecastPresentationState.NoCacheError.from(
                         location = location,
@@ -710,7 +854,7 @@ class OxygenAppStateHolder(
         }
         if (cached == null || !cached.isUsefulCacheFor(location)) return
 
-        presentationState = OxygenAppPresentationState(
+        presentationState = presentationState.copy(
             screen = OxygenAppScreen.Home(
                 forecast = HomeForecastPresentationState.ForecastReady.fromRestoredCache(
                     location = location,
@@ -722,7 +866,10 @@ class OxygenAppStateHolder(
             selectedLocation = location,
             unitPreference = activeUnitPreference,
         )
-        activeCanonicalForecast = cached
+        activeCanonicalForecast = ActiveCanonicalForecast(
+            weather = cached,
+            alertStatus = AlertLookupStatus.NotRequested,
+        )
         publishState()
     }
 
@@ -762,26 +909,37 @@ class OxygenAppStateHolder(
                 message = result.error.toHomeForecastMessage(),
             )
             is WeatherRepositoryResult.Success -> {
-                activeCanonicalForecast = result.weather.takeIf { it.location == location }
+                activeCanonicalForecast = result.weather.takeIf { it.location == location }?.let {
+                    ActiveCanonicalForecast(
+                        weather = it,
+                        alertStatus = result.alertStatus,
+                    )
+                }
                 HomeForecastPresentationState.ForecastReady.from(
                     location = location,
                     weather = result.weather,
                     freshness = result.freshness,
                     unitPreference = activeUnitPreference,
+                    alertStatus = result.alertStatus,
                 )
             }
         }
 
         val nextHome = OxygenAppScreen.Home(forecast = forecast)
         val currentScreen = presentationState.screen
-        presentationState = OxygenAppPresentationState(
-            screen = currentScreen.withVisibleOrReturnScreen(nextHome),
+        presentationState = presentationState.copy(
+            screen = currentScreen.withHomeReplacement(nextHome),
             selectedLocation = location,
             unitPreference = activeUnitPreference,
         )
         publishState()
     }
 }
+
+private data class ActiveCanonicalForecast(
+    val weather: WeatherBundle,
+    val alertStatus: AlertLookupStatus,
+)
 
 private fun OxygenAppPresentationState.retainVisibleCacheAfterRefreshFailure(
     location: WeatherLocation,
@@ -815,9 +973,46 @@ data class OxygenAppPresentationState(
     val selectedLocation: WeatherLocation?,
     val savedLocations: SavedLocationsPresentationState = SavedLocationsPresentationState.NotLoaded,
     val unitPreference: UnitPreference? = null,
+    val effectsPreference: EffectsPreferencePresentationState = EffectsPreferencePresentationState.notConfigured(),
 ) {
     val isShowingHome: Boolean = screen is OxygenAppScreen.Home && selectedLocation != null
     val usesScaffoldWeather: Boolean = false
+}
+
+enum class EffectsPreferenceReadState {
+    NotConfigured,
+    Loading,
+    Loaded,
+    Failed,
+}
+
+data class EffectsPreferencePresentationState(
+    val readState: EffectsPreferenceReadState,
+    val confirmed: EffectsLevel? = null,
+    val pending: EffectsLevel? = null,
+    val writeError: Boolean = false,
+) {
+    val isManaged: Boolean
+        get() = readState != EffectsPreferenceReadState.NotConfigured
+
+    val effectiveRequested: EffectsLevel
+        get() = confirmed ?: EffectsLevel.OFF
+
+    val selectedForUi: EffectsLevel
+        get() = pending ?: confirmed ?: EffectsLevel.OFF
+
+    companion object {
+        fun initial(isManaged: Boolean): EffectsPreferencePresentationState =
+            if (isManaged) loading() else notConfigured()
+
+        fun loading(): EffectsPreferencePresentationState = EffectsPreferencePresentationState(
+            readState = EffectsPreferenceReadState.Loading,
+        )
+
+        fun notConfigured(): EffectsPreferencePresentationState = EffectsPreferencePresentationState(
+            readState = EffectsPreferenceReadState.NotConfigured,
+        )
+    }
 }
 
 sealed interface SavedLocationsPresentationState {
@@ -911,10 +1106,12 @@ sealed interface HomeForecastPresentationState {
                 weather: WeatherBundle,
                 freshness: ForecastFreshness = ForecastFreshness.Fresh,
                 unitPreference: UnitPreference? = null,
+                alertStatus: AlertLookupStatus? = null,
             ): ForecastReady {
                 val dashboard = weather.toHomeSuccessPresentation(
                     selectedLocation = location,
                     unitPreference = unitPreference,
+                    alertStatus = alertStatus,
                 )
                 return ForecastReady(
                     location = location,
@@ -940,6 +1137,7 @@ sealed interface HomeForecastPresentationState {
                 val dashboard = weather.toHomeSuccessPresentation(
                     selectedLocation = location,
                     unitPreference = unitPreference,
+                    alertStatus = AlertLookupStatus.NotRequested,
                 )
                 val ageText = staleAge.toStaleAgeText()
                 return ForecastReady(
@@ -1094,7 +1292,7 @@ sealed interface OxygenAppScreen {
         val message: FirstRunLocationMessage? = null,
         val deviceProgress: DeviceLocationProgress? = null,
         val searchState: ManualLocationSearchState = ManualLocationSearchState.Idle,
-        val returnScreen: Home? = null,
+        val returnScreen: OxygenAppScreen? = null,
         val title: String = "Choose a location",
         val searchLabel: String = "Search for a location",
         val searchActionLabel: String = "Search",
@@ -1103,7 +1301,7 @@ sealed interface OxygenAppScreen {
         val geocodingDisclosure: String = "Location search by Open-Meteo, based on GeoNames data.",
         val geocodingPrivacyNote: String = "Your typed search is sent to Open-Meteo to find matching places.",
     ) : OxygenAppScreen {
-        val canReturnHome: Boolean
+        val canReturn: Boolean
             get() = returnScreen != null
     }
 
@@ -1111,28 +1309,52 @@ sealed interface OxygenAppScreen {
         val forecast: HomeForecastPresentationState,
     ) : OxygenAppScreen
 
-    data class About(
+    data class Settings(
         val returnScreen: OxygenAppScreen,
-        val selectedSurface: AboutSurfaceId? = null,
+        val selectedDestination: SettingsDestination? = null,
         val unitPreferenceMessage: UnitPreferenceMessage? = null,
-        val title: String = "Settings / About",
-        val surfaceOptions: List<AboutSurfaceId> = aboutSurfaceOptions,
+        val title: String = "Settings",
+        val destinationOptions: List<SettingsDestination> = settingsDestinationOptions,
     ) : OxygenAppScreen {
-        val surfaceState: AboutSurfaceState
-            get() = aboutSurfaceState(selectedSurface)
+        val destinationState: SettingsDestinationState
+            get() = settingsDestinationState(selectedDestination)
     }
+
+    data class AlertDetail(
+        val selectedAlertId: String,
+        val returnHome: Home,
+    ) : OxygenAppScreen
 }
 
 private fun OxygenAppScreen.visibleOrReturnScreen(): OxygenAppScreen =
     when (this) {
-        is OxygenAppScreen.About -> returnScreen
+        is OxygenAppScreen.Settings -> returnScreen.visibleOrReturnScreen()
+        is OxygenAppScreen.AlertDetail -> returnHome
         else -> this
     }
 
 private fun OxygenAppScreen.withVisibleOrReturnScreen(nextScreen: OxygenAppScreen): OxygenAppScreen =
     when (this) {
-        is OxygenAppScreen.About -> copy(returnScreen = nextScreen)
+        is OxygenAppScreen.Settings -> copy(returnScreen = returnScreen.withVisibleOrReturnScreen(nextScreen))
+        is OxygenAppScreen.AlertDetail -> {
+            val nextHome = nextScreen as? OxygenAppScreen.Home ?: return this
+            copy(returnHome = nextHome)
+        }
         else -> nextScreen
+    }
+
+private fun OxygenAppScreen.withHomeReplacement(nextHome: OxygenAppScreen.Home): OxygenAppScreen =
+    when (this) {
+        is OxygenAppScreen.Settings -> copy(returnScreen = returnScreen.withHomeReplacement(nextHome))
+        is OxygenAppScreen.AlertDetail -> {
+            val nextReady = nextHome.forecast as? HomeForecastPresentationState.ForecastReady
+            if (nextReady?.dashboard?.alertDetails?.any { it.id == selectedAlertId } == true) {
+                copy(returnHome = nextHome)
+            } else {
+                nextHome
+            }
+        }
+        else -> nextHome
     }
 
 sealed interface ManualLocationSearchState {

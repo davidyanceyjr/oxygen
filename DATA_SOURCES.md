@@ -19,6 +19,7 @@ source-code licensing.
 - Attribution: Weather data by Open-Meteo.com.
 - Data license: Creative Commons Attribution 4.0 International (CC BY 4.0), as
   recorded in docs/data-sources/OPEN_METEO_FORECAST.md.
+- Documentation: https://open-meteo.com/en/docs.
 - Last terms review date: 2026-09-05.
 
 ### Approximate Device Timezone: Open-Meteo
@@ -32,6 +33,7 @@ source-code licensing.
 - No background acquisition or automatic relocation occurs. Manual search
   remains fully usable without permission.
 - Attribution: Timezone resolution by Open-Meteo.com. Data license: CC BY 4.0.
+- Documentation: https://open-meteo.com/en/docs.
 - Last terms review date: 2026-09-05; contract: `docs/data-sources/OPEN_METEO_FORECAST.md`.
 
 ### Location Search: Open-Meteo Geocoding API / GeoNames
@@ -45,6 +47,8 @@ source-code licensing.
 - Data license: Open-Meteo API data are offered under CC BY 4.0; GeoNames
   describes its geographical database as available under a Creative Commons
   attribution license, as recorded in docs/data-sources/OPEN_METEO_GEOCODING.md.
+- Documentation: Open-Meteo https://open-meteo.com/en/docs/geocoding-api;
+  GeoNames https://www.geonames.org/about.html.
 - Last terms review date: 2026-08-19.
 
 ### Forecasts: MET Norway
@@ -66,9 +70,29 @@ source-code licensing.
   longitude, optional altitude when present, an identifying User-Agent/contact
   header, and normal client network metadata such as IP address.
 - Attribution: Weather forecast from MET Norway.
-- Data license: Norwegian Licence for Open Government Data (NLOD) 2.0, as
-  recorded in docs/data-sources/MET_NORWAY_FORECAST.md.
+- Data license: Norwegian Licence for Open Government Data (NLOD) 2.0 and
+  Creative Commons Attribution 4.0 International (CC BY 4.0), as recorded in
+  docs/data-sources/MET_NORWAY_FORECAST.md.
+- Licensing and attribution: https://api.met.no/doc/License.
 - Last terms review date: 2026-08-23.
+
+### Official Alerts: NOAA/National Weather Service
+
+- Purpose: Foreground active-alert lookup for the selected point in supported
+  NWS-served regions, with one summary and a source link on Home Now.
+- Request data: selected latitude and longitude, required identifying
+  User-Agent/contact header, and normal network metadata such as IP address.
+- Attribution: Official alerts from NOAA/National Weather Service. The Home
+  summary displays this attribution and links to the supplied official source,
+  falling back to `https://www.weather.gov/` when the supplied URL is invalid.
+- Data terms: NWS information is public information; requested byline, photo,
+  and image credits apply, and third-party page content may have separate
+  licenses. NWS does not endorse Oxygen.
+- Current app status: installed after forecast success, with a
+  process-local 30-second per-point request gate, a Home Now summary, and
+  in-app alert detail navigation; alert persistence/cache is still absent.
+- Contract: `docs/data-sources/NWS_ALERTS.md`.
+- Last terms review date: 2026-09-05.
 
 ## Roadmap-Only Providers
 
@@ -76,7 +100,7 @@ These providers are specified by the roadmap or product specification but are
 not active/current until their own contracts, production paths, app wiring, and
 verification evidence are complete:
 
-- NOAA/NWS — United States official alerts and later observations/radar.
+- NOAA/NWS — later observations/radar.
 - Environment and Climate Change Canada — Canadian official alerts.
 - Open-Meteo/CAMS — air-quality path where appropriate.
 
@@ -92,9 +116,10 @@ selected local `LocationId`.
 The installed app also persists saved locations locally, shows saved rows on the
 location-entry surface, marks the current saved location, and can select an
 existing saved row through the local selected-location path, save search results,
-remove saved rows after confirmation, and persist unit choices. It does not yet implement
-official alert lookup, air-quality lookup, radar, provider-specific MET Norway
-conditional GET/304 handling, or release-candidate fallback behavior.
+remove saved rows after confirmation, and persist unit choices. It does not yet
+implement alert persistence/cache, background alert polling or notifications,
+air-quality lookup, radar, provider-specific MET Norway conditional GET/304
+handling, or release-candidate fallback behavior.
 
 Before any additional provider becomes active, document its current terms,
 attribution, rate/caching requirements, privacy implications, and last review
