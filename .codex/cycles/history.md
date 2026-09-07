@@ -32,18 +32,16 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation gate: Gate 25, Disclosure Baseline Check,
-  committed at `23a9d49`; completion evidence is recorded at
-  `.codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check/`.
-- Last committed implementation gate: Gate 20-0, Presentation Semantics and
-  Localization Safety, committed at `587b0ad`.
-- Last committed documentation sync: Gate 25 authority sync, committed at
-  `99097d9`.
+- Last committed implementation gate: Slice 26, Persisted Effects Off/Subtle
+  Baseline, committed at `c7b578a`; completion evidence is recorded at
+  `.codex/test-artifacts/2026-09-06-slice-26-effects-preference/`.
+- Last committed documentation sync: AGENTS workflow and slice-size guidance,
+  committed at `98a26d3`.
 - Current changeset: no additional product changes; the uncommitted
   `.codex/review/findings.md` edit is retained as a review-note change.
-- Current process correction: the live cycle history was compressed on
-  2026-09-04 after archiving the previous live file at
-  `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
+- Current process correction: the active plan now points at Slice 27A, Simple
+  Layout Definition, and the live cycle history continues to keep only the
+  recent tail in the primary readable section.
 
 ## Recent Cycles
 

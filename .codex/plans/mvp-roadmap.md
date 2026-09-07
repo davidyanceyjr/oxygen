@@ -4,9 +4,9 @@ Status: specified
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-06
+Revised: 2026-09-07
 Reconciled against remote `main`: `be38405`
-Synchronized through local commit: `23a9d49`
+Synchronized through local commit: `98a26d3`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -1933,7 +1933,7 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 26: Effects Preference. Gate 25 disclosure baseline is
+Candidate: Slice 27A: Simple Layout Definition. Gate 25 disclosure baseline is
 committed at `23a9d49` after Slice 25A Settings Information Architecture.
 
 Immediate planning boundary:
@@ -1964,11 +1964,11 @@ Immediate planning boundary:
 -> 24B alert detail UI committed at ceb6253
 -> Slice 25A Settings information architecture committed at `2484e90`
 -> Gate 25 disclosure baseline check committed at `23a9d49`
--> next candidate: Slice 26 Effects Preference
+-> next candidate: Slice 27A Simple Layout Definition
 ```
 
-Gate 25 is a committed disclosure prerequisite. Slice 26 may now be selected as
-the next bounded implementation slice; release work and release-candidate
+Gate 25 is a committed disclosure prerequisite. Slice 27A may now be selected
+as the next bounded implementation slice; release work and release-candidate
 claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
@@ -1977,5 +1977,5 @@ Those implementation boundaries are historical and already committed. Slice
 evidence boundary, not a new visual gate.
 
 After this authority sync, Gate 25 is complete and committed. Do not treat
-Slice 26 or later roadmap entries as active implementation work until a new
+Slice 27B or later roadmap entries as active implementation work until a new
 bounded plan selects one.

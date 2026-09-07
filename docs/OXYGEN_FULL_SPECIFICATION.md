@@ -1952,9 +1952,10 @@ the direct Settings disclosure destinations. Slice 26, Effects Preference,
 implements and exercises persisted Off/Subtle selection, conservative
 restoration/failure behavior, Android disabled-motion override, and reduced-
 motion Home page navigation. Full effects, richer scene behavior, and
-persisted theme/layout/icon settings remain later work. The Slice 26 installed
-real-path Home forecast exercise was incomplete in the current cycle because
-one bounded emulator search attempt did not reach a provider result;
+persisted theme/layout/icon settings remain later work. Slice 27A, Simple
+Layout Definition, is the next bounded implementation candidate. The Slice 26
+installed real-path Home forecast exercise was incomplete in the current cycle
+because one bounded emulator search attempt did not reach a provider result;
 deterministic Android boundary tests and Settings persistence checks passed.
 
 ---

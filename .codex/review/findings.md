@@ -1,99 +1,133 @@
-# Slice 24B plan review findings
+# Slice 26 plan review
 
-Reviewed 2026-09-06 against the active plan, the current app state and Compose
-seams, the full specification, the provider contract, README, disclosures, and
-the recent Slice 24A completion record. No production code or plan content was
-changed by this review.
+Reviewed 2026-09-06 against local `main` at `af16a9f`, including the uncommitted
+active plan. This is a plan/source review, not functional verification. Only
+this findings file was changed; the active plan and implementation were left
+untouched. The current user's request to write this file supersedes the plan's
+line 9 instruction to preserve the previous review.
 
-## Blockers before implementation
+Slice 26 is dependency-ready and correctly selected. The roadmap names it as
+the next candidate after committed Gate 25 and requires Slice 18I, Slice 25A,
+and small-state persistence. Git history confirms `02f7012`, `2484e90`, and
+`23a9d49`; production Home, Settings routing, MainActivity injection, and the
+existing Preferences DataStore implementation support those prerequisites.
+The six proposed connected targets include two existing methods whose names
+match the repository. New effects storage, selection, and motion handling
+remain planned, not implemented or verified.
 
-1. **Failed-refresh retention is broader than the behavior the plan says it
-   preserves.** The plan requires a failed refresh to retain the current detail
-   (lines 101-103 and 137-138) while also preserving existing stale-forecast
-   behavior (lines 46-49). Today,
-   `retainVisibleCacheAfterRefreshFailure` only retains a `ForecastReady` value
-   whose freshness is already cache-derived; a fresh live result returns `null`
-   and becomes `NoCacheError` ([OxygenAppStateHolder.kt](../../app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt#L802)).
-   Decide which contract applies before coding: either constrain the detail
-   failure test and promise to the existing restored/stale-cache case, or
-   deliberately retain a fresh in-memory dashboard after a later failure and
-   update the forecast-freshness semantics and regression scope accordingly.
-   The latter is behavior beyond alert navigation, so it cannot be smuggled in
-   under the current compatibility claim.
+The production boundary is appropriately narrow: one persisted Off/Subtle
+preference, effective motion policy, Settings feedback, and the existing Home
+rendering/navigation path. The current scene is static; adding an animation
+engine or claiming battery savings would be unsupported. Deferring Full is
+faithful to the roadmap's **Off baseline**, provided the specified third level
+remains explicit unfinished scope as the plan requires. No prerequisite calls
+for Simple, theme selection, or high contrast in this slice.
 
-2. **The refresh-start transition must explicitly preserve `AlertDetail`.** The
-   plan correctly specifies that loading remains on the selected detail (lines
-   97-103 and 134-136), but the current refresh start path directly assigns an
-   `OxygenAppScreen.Home` at lines 448-455 of
-   [OxygenAppStateHolder.kt](../../app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt#L431).
-   Only the later result path uses `withVisibleOrReturnScreen` (lines 786-790).
-   State that `startHomeForecastLoad` must update the detail route's
-   `returnHome`, rather than replace the visible screen, and make the focused
-   test assert the screen remains `AlertDetail` immediately after the loading
-   emission. Otherwise the promised retained-selection flow cannot occur.
+The plan is close, but three evidence gaps prevent implementation readiness.
+They can be corrected within the proposed test budget without expanding the
+product scope.
 
-## Material gaps
+| Acceptance requirement | Planned work and evidence | Review |
+| --- | --- | --- |
+| 1. Reachable, accessible Off/Subtle selector and Back | SettingsScreen and OxygenApp wiring; connected cases 2, 3, 5; installed baseline/final captures | Covered in plan; make the new controls' selected semantics and 48-dp bounds explicit assertions in those cases. |
+| 2. Default, invalid records, read failure | Concrete effects DataStore; focused storage/state tests | Storage behavior is addressed; rendered read-failure evidence is missing (finding 2). |
+| 3. Confirmed/pending/error/retry and ordering | Guarded state-holder action, off-main-thread writes; focused race tests and connected write-failure case | Covered in plan. Preserve the distinction between confirmed choice and effective fallback. |
+| 4. Restore before decoration and across lifecycle/transitions | Startup/state reconstruction work; delayed-restore unit tests, DataStore recreation case, installed force-stop/relaunch | Persistence is addressed; first-render and actual Activity recreation checks need clarification (finding 1). |
+| 5. Off preserves weather, alerts, source, stale/failure meaning, units and navigation | Existing Off branch; connected stale/alert journey and units regression; installed four-page journey | Appropriately bounded. Include missing-value and refresh-failure text in the existing fixture assertions, and exercise refresh once after selection with the expected request delta. |
+| 6. Android override and unanimated navigation | Initial/resume adapter, effective resolver, conditional Home page motion; actual system-setting connected/manual exercise | Real platform input is required correctly; the temporal navigation assertion is unspecified (finding 3). |
+| 7. Compact/large-font readability and accessible feedback | 360dp x 640dp/font 1.3 evidence, baseline/final screenshots and semantics | Normal and override paths are addressed; failure feedback needs the rendered evidence in finding 2. |
+| 8. No additional requests or changes to canonical data/other preferences | Focused recording repositories/state tests and connected call-count delta after initial settling | Correct separation of deterministic call-count proof from installed visual evidence. |
 
-1. **The multi-alert selector needs an explicit selected-state contract.** The
-   plan asks for accessible, individually labelled selector rows (lines 14-15
-   and 116-117), but does not require an exposed selected state or test it.
-   Add a semantic `selected` state (and a readable selected/current label where
-   needed) for the active alert, then assert it changes when alert two is
-   selected. An event/severity/expiry label alone does not tell a screen-reader
-   user which long alert body they are reading.
+1. **Cover the promised first rendered state and name actual Activity recreation.**
+   Plan lines 116–119 require no transient decorated Home while stored Off is
+   loading and survival across Activity recreation. Lines 188–190 put delayed
+   restore in unit scope; connected case 1 says only “recreated app boundary,”
+   and the manual journey checks the settled result after force-stop. A correct
+   state-holder policy does not prove OxygenApp applies it before the first
+   decorated frame. The existing unit-preference instrumentation constructs a
+   new storage/state-holder pair; it does not recreate an Activity
+   (`OfflineLaunchPersistenceInstrumentedTest.kt:155`).
 
-2. **The plan should name the exact route update rules, not only the generic
-   helper.** `visibleOrReturnScreen` and `withVisibleOrReturnScreen` presently
-   understand only `About` ([OxygenAppStateHolder.kt](../../app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt#L1145)).
-   The new route needs both helpers to recurse through `AlertDetail` while
-   preserving its selected ID and replacing only its immutable `returnHome`.
-   Specify that behavior alongside the proposed screen type; otherwise unit
-   remapping, refresh results, location-entry return handling, and About's
-   existing nesting can each receive subtly different implementations. The
-   proposed unit tests cover some outcomes but not this common routing rule.
+   Minimum change: explicitly make connected case 1 recreate the production
+   Activity (for example, `ActivityScenario.recreate()`) and assert the selected
+   choice/effective scene after restoration. Extend the planned Compose case
+   with a controllably delayed effects read while Home weather is already
+   available: assert scene absence before releasing the read, then after Off
+   resolves. Use the real OxygenApp resolver/wiring. This separates storage
+   readback, Activity lifecycle, and the no-flash guarantee without adding a
+   new persistence architecture or another full suite.
 
-3. **The detailed screen’s provenance labels need fixture assertions, not just
-   the source URI.** The plan requires issuer, attribution, source-check time,
-   and an alert-specific semantic label, and it already tests the selected
-   alert's URL/text well. Add assertions that the rendered detail keeps the
-   selected alert's issuer and the `AlertLookupStatus.Available.metadata`
-   source-check time, with NOAA/NWS attribution. This protects the required
-   distinction between an alert's effective/sent time and its lookup time; the
-   NWS contract expressly forbids substituting one for the other.
+2. **Exercise read-failure feedback through the rendered Appearance route.**
+   Plan lines 108–110 require a usable weather path, conservative effective Off,
+   and a visible local-storage error without falsely claiming restoration.
+   The unit list covers read failure, but connected case 3 injects a *write*
+   failure. Those are different states: a failed initial read has no confirmed
+   stored choice. The installed steps never induce either failure, yet lines
+   269–270 ask the resulting captures to establish readable error state.
+   Successful-selection screenshots cannot establish that claim.
 
-## Authority drift
+   Minimum change: add an initial read-failure phase to the planned error UI
+   evidence, or add one focused connected case (seven remains below the
+   eight-case default). Through OxygenApp, assert effective Off, explicit
+   unconfirmed/error wording, usable Back/weather navigation, and the defined
+   recovery action. At compact/large font, retain a rendered failure capture
+   and semantics with selector targets, selected-state meaning, error text,
+   and logical traversal. Label injected-error evidence as deterministic UI
+   evidence; keep the normal installed journey focused on real persistence
+   and rendering. Do not require deliberate corruption of user data.
 
-The installed Slice 24A summary is correctly described in README's feature
-list and in `DATA_SOURCES.md`, `PRIVACY.md`, the About disclosure, and the full
-specification. Two lower-authority statements remain stale:
+3. **Define an observable test for the absence of page-transition motion.**
+   Plan lines 129–130 and connected case 4 promise unanimated programmatic
+   navigation, but specify only the resulting condition. Home currently calls
+   `animateScrollToPage` in its previous/next accessibility actions and tab
+   callback (`HomeLoadingScreen.kt:247`, `:256`, `:282`). Settled page labels,
+   screenshots, or `waitForIdle()` can pass after an animated transition too.
+   Checking the Android source and effective enum alone leaves the pager
+   behavior unproved.
 
-- README line 182 still says installed official-alert presentation is absent.
-- `docs/data-sources/NWS_ALERTS.md` lines 4-8, 142-143, and 184-190 still call
-  NWS roadmap-only and say installed presentation is out of scope.
+   Minimum change: state the temporal assertion in case 4 (or the existing
+   Compose journey): use controlled frames or an equivalent observable pager
+   transition check to establish destination change without intermediate
+   animated scrolling, for direct tabs and both available accessibility page
+   actions under reduced motion. Retain the actual Android zero-scale/resume
+   exercise and stored-Subtle readback; a fake signal may supplement it but
+   cannot replace it. No animation framework or performance benchmark is
+   needed.
 
-The active plan now includes both corrections at lines 185-197. That resolves
-the scope omission noted in the previous review; make the contract change in
-the same post-implementation authority sync, retaining detail navigation as
-future work until this slice is actually verified and committed. No provider
-request or terms change is warranted by this documentation drift.
+The Android API assumption itself is supported: `areAnimatorsEnabled()` is
+available from API 26 and reports system animation disablement, including
+zero animator duration scale. The proposed initial/resume sampling is a
+bounded implementation choice, not proof of every OEM accessibility signal.
+[Official Android ValueAnimator reference](https://developer.android.com/reference/android/animation/ValueAnimator#areAnimatorsEnabled()).
 
-## Size and LLM-slop assessment
+Broad verification, artifact retention, one-emulator lifecycle, timeout policy,
+and out-of-scope limits are otherwise concrete and appropriate. The plan names
+focused unit commands, a filtered six-case connected command, compile, full
+app/core debug unit suites, assemble, and whitespace validation. It correctly
+credits an unchanged final assembly rather than requiring another build.
+README, specification section 53, roadmap boundary/sequencing, privacy/local
+storage disclosure, append-only cycle evidence, and post-commit authoritative
+doc sync are all assigned. The prospective cadence count is supported by
+`a4c4e56` introducing the test-volume policy after Slice 25A; the next session
+after Slice 26 is explicitly reserved for test-only/documentation sync.
 
-The active plan is 203 lines, 1,487 words, and 11,833 bytes. A practical
-planning-token estimate is about 2,900-3,600 tokens, roughly 21-26% of its
-14,000-token implementation budget. The plan is still usable, but the budget
-is tight once state-machine work, connected instrumentation, screenshot
-inspection, and authority sync are included. Do not add ceremony before the two
-blockers are resolved.
+Known historical sample-screen/sequence-summary drift does not block this
+preference contract and should not trigger unrelated cleanup. The prior Gate
+25 review is not a current effects-slice blocker list. No unsupported claim of
+new runtime verification was found in the active plan.
 
-The plan is largely concrete rather than performative: it defines a real
-installed/connected boundary, names source and state transitions, gives exact
-fixtures, and prohibits mock-only proof. No fake production path, TODO-only
-claim, status inflation, or test-existence-only substitute was found.
+Review evidence: read the plan, relevant roadmap/specification sections, root
+AGENTS/README/provider template, Gradle/environment/UI workflow files, current
+production/tests, the live history contract/summary and latest three entries,
+Git commit history/status, and the retained Gate 25 ledger. Checked the official
+Android API reference. Ran `git diff --check` after writing this review.
+Not run: Android compile, unit tests, connected tests, assemble, emulator,
+install/capture, or live providers; this task explicitly excludes implementation
+and does not require re-verifying previously committed behavior. No commit or
+post-commit sync was performed.
 
-The removable padding is repeated negative scope. The same exclusions appear
-in the slice boundary (lines 30-33), compatibility rules (37-39), focused-test
-tail (149-150), and documentation paragraph (193-197). Keep the first list
-and the one compatibility sentence that protects repository behavior; collapse
-the later repetitions into a short completion boundary. This is modest cleanup,
-not a reason to rewrite an otherwise behavior-oriented plan.
+NEEDS REVISION
+
+Blocking issues: add rendered delayed-restore and explicit Activity-recreation
+evidence; add rendered read-failure/accessibility evidence; specify a temporal
+assertion for reduced-motion page navigation.

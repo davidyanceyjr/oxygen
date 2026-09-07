@@ -75,6 +75,8 @@ Use this precedence unless a more specific nested `AGENTS.md` exists:
 
 Tests and current behavior are evidence of implementation, not permission to silently contradict the intended contract.
 
+The specification constrains behavior and architecture; it does not choose or sequence slices. Slice selection comes from the active plan and roadmap, which should be derived from the planning sources you trust.
+
 When authorities materially conflict, stop implementation, identify the exact conflict, and resolve or update the higher-level authority before coding.
 
 ## No-SLOP Rule
