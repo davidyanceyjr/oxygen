@@ -1,13 +1,13 @@
 # Slice 26 — Persisted Effects Off/Subtle Baseline
 
-**Status:** implemented; focused and broad verification passed, but the
+**Status:** committed; focused and broad verification passed, but the
 installed real-path Home forecast exercise remains incomplete.
 **Cycle ID:** `2026-09-06-slice-26-effects-preference`
 **Planning basis:** local `main` at `af16a9f`; Gate 25 implementation at
 `23a9d49`, authority sync at `99097d9`, recent summary at `af16a9f`.
-**Execution state:** production and test changes are implemented. The required
-single emulator was used for baseline, connected tests, installed persistence
-checks, and motion-policy checks. No commit was requested.
+**Execution state:** production and test changes are committed at `c7b578a`.
+The required single emulator was used for baseline, connected tests, installed
+persistence checks, and motion-policy checks.
 The pre-existing `.codex/review/findings.md` edit must remain untouched.
 
 ## Selected behavior and stopping boundary

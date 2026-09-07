@@ -1019,10 +1019,11 @@ Authority sync:
 
 ### 2026-09-07-slice-26-effects-preference
 
-Status: implemented and verified at the focused Android/state boundary; not committed
+Status: committed and verified at the focused Android/state boundary
 Mode: feature and documentation sync
 Slice: Slice 26, Persisted Effects Off/Subtle Baseline
-Commit state: uncommitted; unrelated `.codex/review/findings.md` edit retained
+Commit: `c7b578a`
+Commit state: committed; unrelated `.codex/review/findings.md` edit retained
 
 Result:
 - Added a versioned application-context Preferences DataStore for Off/Subtle
