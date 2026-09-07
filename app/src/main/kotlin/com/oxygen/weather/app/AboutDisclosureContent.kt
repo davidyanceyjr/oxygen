@@ -1,16 +1,19 @@
 package com.oxygen.weather.app
 
-enum class AboutSurfaceId(
+enum class SettingsDestination(
     val title: String,
 ) {
+    Appearance("Appearance"),
     Units("Units"),
+    Locations("Locations"),
     DataSources("Data Sources"),
     Privacy("Privacy"),
     OpenSourceLicenses("Open Source Licenses"),
+    About("About"),
 }
 
-data class AboutSurfaceState(
-    val title: String = "Settings / About",
+data class SettingsDestinationState(
+    val title: String = "Settings",
     val sections: List<AboutSection> = aboutOverviewSections,
 )
 
@@ -19,23 +22,29 @@ data class AboutSection(
     val body: List<String>,
 )
 
-val aboutSurfaceOptions: List<AboutSurfaceId> = AboutSurfaceId.entries
+val settingsDestinationOptions: List<SettingsDestination> = SettingsDestination.entries
 
-fun aboutSurfaceState(surfaceId: AboutSurfaceId?): AboutSurfaceState =
-    when (surfaceId) {
-        null -> AboutSurfaceState()
-        AboutSurfaceId.Units -> AboutSurfaceState(title = AboutSurfaceId.Units.title)
-        AboutSurfaceId.DataSources -> AboutSurfaceState(
-            title = AboutSurfaceId.DataSources.title,
+fun settingsDestinationState(destination: SettingsDestination?): SettingsDestinationState =
+    when (destination) {
+        null -> SettingsDestinationState()
+        SettingsDestination.Appearance -> SettingsDestinationState(title = SettingsDestination.Appearance.title, sections = emptyList())
+        SettingsDestination.Units -> SettingsDestinationState(title = SettingsDestination.Units.title, sections = emptyList())
+        SettingsDestination.Locations -> SettingsDestinationState(title = SettingsDestination.Locations.title, sections = emptyList())
+        SettingsDestination.DataSources -> SettingsDestinationState(
+            title = SettingsDestination.DataSources.title,
             sections = dataSourceSections,
         )
-        AboutSurfaceId.Privacy -> AboutSurfaceState(
-            title = AboutSurfaceId.Privacy.title,
+        SettingsDestination.Privacy -> SettingsDestinationState(
+            title = SettingsDestination.Privacy.title,
             sections = privacySections,
         )
-        AboutSurfaceId.OpenSourceLicenses -> AboutSurfaceState(
-            title = AboutSurfaceId.OpenSourceLicenses.title,
+        SettingsDestination.OpenSourceLicenses -> SettingsDestinationState(
+            title = SettingsDestination.OpenSourceLicenses.title,
             sections = openSourceLicenseSections,
+        )
+        SettingsDestination.About -> SettingsDestinationState(
+            title = SettingsDestination.About.title,
+            sections = aboutOverviewSections,
         )
     }
 

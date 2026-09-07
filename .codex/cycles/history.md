@@ -32,16 +32,16 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation slice: Slice 24A, Alert Summary/Banner UI,
-  committed at `cf9ddaf`.
+- Last committed implementation slice: Slice 24B, Official Alert Detail
+  Navigation, committed at `ceb6253`; completion evidence is recorded at
+  `b7e3514`.
 - Last committed implementation gate: Gate 20-0, Presentation Semantics and
   Localization Safety, committed at `587b0ad`.
-- Last prior documentation sync: Slice 23C Authority Sync, committed at
-  `24fa4ac`.
 - Last committed documentation sync: Slice 24A Authority Sync, committed at
   `cc2af8b`.
-- Current changeset: none; Slice 24A, Alert Summary/Banner UI, is committed at
-  `cf9ddaf`.
+- Current changeset: verified but uncommitted Slice 25A Settings information
+  architecture implementation plus its authority sync; Gate 25 remains a
+  separate disclosure audit.
 - Current process correction: the live cycle history was compressed on
   2026-09-04 after archiving the previous live file at
   `.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md`.
@@ -901,3 +901,69 @@ Boundaries:
   change.
 - Alert persistence/cache, background polling, notifications, and other future
   alert work remain out of scope.
+
+### 2026-09-06-pre-25a-authority-sync
+
+Status: verified
+Mode: documentation-only
+Commit state: uncommitted
+
+Result:
+- Reconciled roadmap statuses and sequencing through committed Slice 24B and
+  selected Slice 25A as the one planned next implementation slice.
+- Corrected the live history summary and README contradictions about active MET
+  Norway fallback and installed official-alert presentation.
+- Updated the specification next-task section and removed the active plan's
+  assumption that an emulator was already connected.
+
+Evidence:
+- `git diff --check` passed.
+- Android compile, unit, connected, and assemble commands were not run because
+  this changeset is Markdown-only and changes no production behavior.
+
+Artifacts:
+- None.
+
+Blockers:
+- None.
+
+Boundaries:
+- Gate 25 remains specified and incomplete. Slice 25A remains planned, not
+  covered, implemented, verified, or committed.
+- No Kotlin, Compose, Gradle, manifest, provider, persistence, permission,
+  installed-app, or release behavior changed.
+
+### 2026-09-06-slice-25a-settings-information-architecture
+
+Status: verified
+Mode: feature
+Commit state: uncommitted
+
+Result:
+- Replaced the mixed Settings / About root with a coherent Settings root and
+  distinct Appearance, Units, Locations, Data Sources, Privacy, Open Source
+  Licenses, and About destinations.
+- Preserved existing unit and disclosure behavior, routed Locations through the
+  real location-entry surface, and preserved exact return routing through
+  Settings to Home or first-run state.
+- Added a truthful read-only Appearance summary of the effective theme, Standard
+  layout, and runtime effects; no appearance preference behavior was added.
+
+Evidence:
+- Focused app state-holder tests passed.
+- `HomeDashboardUiTest` passed all 39 connected tests, including compact
+  360x640/font-scale-1.3 coverage, in-surface Back, and Android Back.
+- Final app compile, app/core debug unit tests, debug assemble, and
+  `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-06-slice-25a-settings-information-architecture/`.
+
+Blockers:
+- None.
+
+Boundaries:
+- Gate 25 disclosure auditing remains separate and incomplete.
+- Effects Off is covered by the deterministic connected fixture; the installed
+  default summary reports its actual Subtle runtime effects and no preference
+  selector was introduced.

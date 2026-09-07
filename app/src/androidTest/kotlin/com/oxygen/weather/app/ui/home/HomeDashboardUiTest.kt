@@ -45,11 +45,12 @@ import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.espresso.Espresso.pressBack
 import com.oxygen.weather.app.HomeForecastMessage
 import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.HomeMetricIdentity
 import com.oxygen.weather.app.HomeSuccessSection
-import com.oxygen.weather.app.AboutSurfaceId
+import com.oxygen.weather.app.SettingsDestination
 import com.oxygen.weather.app.ManualLocationCandidate
 import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.app.OxygenApp
@@ -63,7 +64,7 @@ import com.oxygen.weather.app.LocationPermissionResult
 import com.oxygen.weather.app.FirstRunLocationMessage
 import com.oxygen.weather.app.SavedLocationsMessage
 import com.oxygen.weather.app.SavedLocationsPresentationState
-import com.oxygen.weather.app.ui.about.AboutScreen
+import com.oxygen.weather.app.ui.settings.SettingsScreen
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
 import com.oxygen.weather.app.ui.firstrun.FirstRunLocationEntryScreen
 import com.oxygen.weather.app.ui.theme.EffectsLevel
@@ -154,7 +155,7 @@ class HomeDashboardUiTest {
                 onCancelDeviceLocation = {
                     state.value = state.value.copy(deviceProgress = null, message = FirstRunLocationMessage.DeviceTimezoneUnavailable)
                 },
-                onBack = {}, onOpenAbout = {},
+                onBack = {}, onOpenSettings = {},
             )
         }
         composeRule.onNodeWithText(DeviceLocationProgress.Resolving.text).performScrollTo().assertIsDisplayed()
@@ -563,7 +564,7 @@ class HomeDashboardUiTest {
                 onSavedLocationSelected = {},
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -609,7 +610,7 @@ class HomeDashboardUiTest {
                 onSavedLocationSelected = { selectedIds += it },
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -662,7 +663,7 @@ class HomeDashboardUiTest {
                 onSavedLocationRemoveConfirmed = { confirmedIds += it },
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -717,7 +718,7 @@ class HomeDashboardUiTest {
                 onSavedLocationSelected = {},
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -758,7 +759,7 @@ class HomeDashboardUiTest {
                 onSavedLocationSelected = {},
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -806,7 +807,7 @@ class HomeDashboardUiTest {
                 onSavedLocationSelected = {},
                 onUseMyLocation = {},
                 onBack = {},
-                onOpenAbout = {},
+                onOpenSettings = {},
             )
         }
 
@@ -966,38 +967,107 @@ class HomeDashboardUiTest {
     @Test
     fun aboutOverviewKeepsBackActionBottomReachable() {
         composeRule.setCompactContent {
-            AboutScreen(
-                state = OxygenAppScreen.About(
+            SettingsScreen(
+                state = OxygenAppScreen.Settings(
                     returnScreen = OxygenAppScreen.FirstRunLocationEntry(),
                 ),
-                onSurfaceSelected = {},
+                appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                themeId = com.oxygen.weather.app.ui.theme.OxygenThemeId.OXYGEN,
+                onDestinationSelected = {},
                 onBack = {},
             )
         }
 
-        composeRule.onNodeWithTag("about-bottom-actions").assertIsDisplayed()
-        composeRule.onNodeWithTag("about-back").assertIsDisplayed()
-        composeRule.assertInLowerReachZone("about-bottom-actions", rootHeight = 640f)
-        composeRule.assertMinimumTouchTarget("about-back")
+        composeRule.onNodeWithTag("settings-bottom-actions").assertIsDisplayed()
+        composeRule.onNodeWithTag("settings-back").assertIsDisplayed()
+        composeRule.assertInLowerReachZone("settings-bottom-actions", rootHeight = 640f)
+        composeRule.assertMinimumTouchTarget("settings-back")
     }
 
     @Test
     fun aboutDetailKeepsBackActionBottomReachable() {
         composeRule.setCompactContent {
-            AboutScreen(
-                state = OxygenAppScreen.About(
+            SettingsScreen(
+                state = OxygenAppScreen.Settings(
                     returnScreen = OxygenAppScreen.FirstRunLocationEntry(),
-                    selectedSurface = AboutSurfaceId.Privacy,
+                    selectedDestination = SettingsDestination.Privacy,
                 ),
-                onSurfaceSelected = {},
+                appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                themeId = com.oxygen.weather.app.ui.theme.OxygenThemeId.OXYGEN,
+                onDestinationSelected = {},
                 onBack = {},
             )
         }
 
         composeRule.onNodeWithText("Privacy Baseline").assertIsDisplayed()
-        composeRule.onNodeWithTag("about-bottom-actions").assertIsDisplayed()
-        composeRule.assertInLowerReachZone("about-bottom-actions", rootHeight = 640f)
-        composeRule.assertMinimumTouchTarget("about-back")
+        composeRule.onNodeWithTag("settings-bottom-actions").assertIsDisplayed()
+        composeRule.assertInLowerReachZone("settings-bottom-actions", rootHeight = 640f)
+        composeRule.assertMinimumTouchTarget("settings-back")
+    }
+
+    @Test
+    fun settingsRootReachesAllDestinationsAndLocationsBackWorksWithAndroidBack() {
+        val location = weatherLocation(name = "Settings Fixture City")
+        val saved = weatherLocation(name = "Saved Settings City")
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location)))),
+            savedLocationStorage = RecordingSavedLocationStorage(listOf(saved)),
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 1.3f)) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        OxygenApp(
+                            stateHolder = stateHolder,
+                            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-about-entry").performClick()
+        composeRule.waitForIdle()
+
+        listOf(
+            SettingsDestination.Appearance,
+            SettingsDestination.Units,
+            SettingsDestination.DataSources,
+            SettingsDestination.Privacy,
+            SettingsDestination.OpenSourceLicenses,
+            SettingsDestination.About,
+        ).forEach { destination ->
+            composeRule.onNodeWithTag("settings-destination-${destination.name.lowercase()}")
+                .performScrollTo()
+                .performClick()
+            composeRule.onNodeWithText(destination.title).performScrollTo().assertIsDisplayed()
+            if (destination == SettingsDestination.Appearance) {
+                composeRule.onNodeWithText("Oxygen").assertIsDisplayed()
+                composeRule.onNodeWithText("Standard").assertIsDisplayed()
+                composeRule.onNodeWithText("Off").assertIsDisplayed()
+                composeRule.onAllNodesWithTag("unit-preferences").assertCountEquals(0)
+            }
+            composeRule.onNodeWithTag("settings-back").performClick()
+            composeRule.waitForIdle()
+        }
+
+        composeRule.onNodeWithTag("settings-destination-locations").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("location-entry-saved-locations").performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithTag("location-entry-about").assertCountEquals(0)
+        composeRule.onNodeWithTag("location-entry-back").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings-content").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("settings-destination-locations").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        pressBack()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings-content").assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("settings-root-and-locations-360x640-font-1.3-semantics.txt")
     }
 
     @Test
@@ -1028,14 +1098,14 @@ class HomeDashboardUiTest {
             "unit-choice-us",
             "unit-choice-uk",
         )
-        composeRule.assertMinimumTouchTarget("about-back")
+        composeRule.assertMinimumTouchTarget("settings-back")
 
         composeRule.onNodeWithTag("unit-choice-metric").performScrollTo().performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("unit-choice-metric").assertIsSelected()
-        composeRule.onNodeWithTag("about-back").performClick()
+        composeRule.onNodeWithTag("settings-back").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag("about-back").performClick()
+        composeRule.onNodeWithTag("settings-back").performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("18 deg C").assertIsDisplayed()
@@ -1436,7 +1506,7 @@ class HomeDashboardUiTest {
 
         composeRule.setHomeContent(HomeForecastPresentationState.Loading.from(location))
         composeRule.onNodeWithText("Loading weather for Retry City").assertIsDisplayed()
-        composeRule.onNodeWithText("Settings / About").assertIsDisplayed()
+        composeRule.onNodeWithText("Settings").assertIsDisplayed()
         composeRule.onNodeWithText("Weather data by Open-Meteo.").assertIsDisplayed()
         composeRule.writeSemanticsArtifact("loading-semantics.txt")
     }
@@ -1453,7 +1523,7 @@ class HomeDashboardUiTest {
         )
         composeRule.onNodeWithText(HomeForecastMessage.NetworkUnavailable.text).assertIsDisplayed()
         composeRule.onNodeWithText("Retry").assertIsDisplayed()
-        composeRule.onNodeWithText("Settings / About").assertIsDisplayed()
+        composeRule.onNodeWithText("Settings").assertIsDisplayed()
         composeRule.writeSemanticsArtifact("no-cache-error-semantics.txt")
     }
 

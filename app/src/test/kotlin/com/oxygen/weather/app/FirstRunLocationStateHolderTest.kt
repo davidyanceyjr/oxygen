@@ -587,7 +587,7 @@ private class DeviceHarness(deviceExecutor: Executor = DirectExecutor) {
             "manual" -> holder.onManualLocationCandidateSelected(manual.locationId)
             "saved" -> holder.onSavedLocationSelected(manual.locationId)
             "back" -> holder.onLocationEntryBack()
-            "about" -> holder.onOpenAbout()
+            "about" -> holder.onOpenSettings()
             "cancel", "stop" -> holder.cancelDeviceLocation() // same boundary MainActivity.onStop invokes
         }
     }

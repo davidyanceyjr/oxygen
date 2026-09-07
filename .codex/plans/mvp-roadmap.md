@@ -4,9 +4,9 @@ Status: specified
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-04
-Reconciled against remote `main`: `ca28c2c`
-Synchronized through local commit: `00cb88a`
+Revised: 2026-09-06
+Reconciled against remote `main`: `be38405`
+Synchronized through local commit: `cab3b29`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -1204,7 +1204,7 @@ Evidence:
 
 ### Slice 20B: Unit Conversion Presentation Boundary
 
-Status: specified
+Status: committed at `1a2b5a0`
 
 Prerequisites:
 
@@ -1225,7 +1225,7 @@ Must prove:
 
 ### Slice 20C: Persisted Units UI
 
-Status: specified
+Status: committed at `1b52718`
 
 Prerequisites:
 
@@ -1248,7 +1248,7 @@ Must prove:
 
 ## Slice 21: Optional Device Location
 
-Status: specified
+Status: committed at `3ea5ae6`
 
 Prerequisites:
 
@@ -1271,7 +1271,7 @@ Manual location remains sufficient for successful onboarding and normal use.
 
 ## Slice 22: NWS Alert Provider Contract
 
-Status: specified
+Status: committed at `858c0a4`
 
 Prerequisites:
 
@@ -1311,7 +1311,7 @@ Planning note: use bounded sub-slices.
 
 ### Slice 23A: NWS Alert Fixtures, Parsing, and Mapping
 
-Status: specified
+Status: committed at `17dab0c`
 
 Must prove:
 
@@ -1326,7 +1326,7 @@ Must prove:
 
 ### Slice 23B: NWS Alert Client and Error Classification
 
-Status: specified
+Status: committed at `dcf707b`
 
 Must prove:
 
@@ -1337,7 +1337,7 @@ Must prove:
 
 ### Slice 23C: Alert Repository Merge
 
-Status: specified
+Status: committed at `3c658a8`
 
 Must prove:
 
@@ -1359,7 +1359,7 @@ Planning note: use bounded sub-slices.
 
 ### Slice 24A: Alert Summary/Banner UI
 
-Status: specified
+Status: committed at `cf9ddaf`
 
 Prerequisites:
 
@@ -1379,7 +1379,7 @@ Must prove:
 
 ### Slice 24B: Alert Detail UI
 
-Status: specified
+Status: committed at `ceb6253`
 
 Prerequisite:
 
@@ -1424,13 +1424,19 @@ Must prove:
 
 ## Slice 25A: Settings Information Architecture
 
-Status: specified
+Status: verified
+Commit state: uncommitted
 
 Prerequisite:
 
 - Slice 18I.
 
 Release intent: Create a scalable Settings architecture before multiple preference families accumulate.
+
+Verified result: The installed Settings root now exposes all seven destinations,
+retains existing Units and disclosure behavior, opens the real Locations
+surface, and returns through both in-surface and Android Back. Appearance is a
+read-only summary of the effective presentation.
 
 Must prove distinct reachable categories as appropriate:
 
@@ -1864,8 +1870,9 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 
 ## Recommended Sequence From Current Committed State
 
-Remote `main` is reconciled through merge `bfb2970`. The latest completed local
-implementation gate is Gate 20-0, committed at `587b0ad`.
+Remote `main` is reconciled through merge `be38405`. The latest completed local
+implementation slice is Slice 24B, implemented at `ceb6253` with completion
+evidence recorded at `b7e3514`.
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
@@ -1910,14 +1917,16 @@ Sequencing rationale:
 - Installed-app MET Norway fallback is pulled forward after the saved-location list/select UI because fallback is an MVP acceptance requirement and repository-only fallback evidence is insufficient for release.
 - Save-result and remove-location UI return after fallback real-path verification so Saved Locations can complete before Units.
 - Unit conversion follows once location switching and fallback provenance are stable.
-- Settings information architecture is established before multiple preference families make the current Settings/About surface too broad.
+- Settings information architecture is established before multiple preference families make the current Settings/About surface too broad; Slice 25A is now verified in the current uncommitted changeset.
 - Appearance persistence remains after the Standard Home design system and accessibility baseline, which are already committed.
 
 ---
 
 ## Next Candidate Slice
 
-Candidate: Slice 20B: Unit Conversion Presentation Boundary.
+Candidate: Gate 25: Disclosure Baseline Check. Slice 25A Settings Information
+Architecture is verified in the current uncommitted changeset; Gate 25 remains
+the next separate audit before Slice 26 or release work relies on it.
 
 Immediate planning boundary:
 
@@ -1936,14 +1945,27 @@ Immediate planning boundary:
 -> 19F saved locations documentation sync committed at 8386484
 -> 20A unit preference contract committed at 3f6d741
 -> 20-0 presentation semantics and localization safety committed at 587b0ad
--> next candidate: Slice 20B unit conversion presentation boundary
+-> 20B unit conversion presentation boundary committed at 1a2b5a0
+-> 20C persisted units UI committed at 1b52718
+-> 21 optional device location verified and committed at 3ea5ae6
+-> 22 NWS alert provider contract committed at 858c0a4
+-> 23A NWS alert fixtures/parsing/mapping committed at 17dab0c
+-> 23B NWS transport/provider boundary committed at dcf707b
+-> 23C alert repository merge committed at 3c658a8
+-> 24A alert summary/banner UI committed at cf9ddaf
+-> 24B alert detail UI committed at ceb6253
+-> Slice 25A Settings information architecture verified (uncommitted)
+-> next candidate: Gate 25 disclosure baseline check
 ```
+
+Gate 25 remains a separate specified disclosure audit and must complete before
+Slice 26 or release work relies on that disclosure prerequisite.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice
 18J-R was a provider-path recovery slice required by the blocked Slice 18J
 evidence boundary, not a new visual gate.
 
-To start the next implementation slice after this authority sync is committed,
-replace `.codex/plans/current.md` with one bounded Slice 20B plan. Do not treat
-later roadmap entries as active work.
+After this authority sync, Slice 25A is complete through verification but not
+committed. Do not treat Slice 26 or later roadmap entries as active
+implementation work; Gate 25 remains the separate next audit.

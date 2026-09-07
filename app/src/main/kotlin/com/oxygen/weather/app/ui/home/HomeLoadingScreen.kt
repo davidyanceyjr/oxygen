@@ -73,7 +73,7 @@ fun HomeLoadingScreen(
     onRetry: () -> Unit = {},
     onRefresh: () -> Unit = {},
     onChangeLocation: () -> Unit = {},
-    onOpenAbout: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     onAlertDetailsRequested: () -> Unit = {},
 ) {
     val baseRoles = LocalOxygenHomeDesign.current
@@ -94,7 +94,7 @@ fun HomeLoadingScreen(
                     appearance = appearance,
                     onRefresh = onRefresh,
                     onChangeLocation = onChangeLocation,
-                    onOpenAbout = onOpenAbout,
+                    onOpenSettings = onOpenSettings,
                     onAlertDetailsRequested = onAlertDetailsRequested,
                 )
                 return@CompositionLocalProvider
@@ -127,10 +127,10 @@ fun HomeLoadingScreen(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                     )
                     OutlinedButton(
-                        onClick = onOpenAbout,
+                        onClick = onOpenSettings,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Settings / About")
+                        Text("Settings")
                     }
                     OutlinedButton(
                         onClick = onChangeLocation,
@@ -201,7 +201,7 @@ private fun ReadyContent(
     appearance: OxygenAppearance,
     onRefresh: () -> Unit,
     onChangeLocation: () -> Unit,
-    onOpenAbout: () -> Unit,
+    onOpenSettings: () -> Unit,
     onAlertDetailsRequested: () -> Unit,
 ) {
     val roles = LocalOxygenHomeDesign.current
@@ -283,7 +283,7 @@ private fun ReadyContent(
                 },
                 onRefresh = onRefresh,
                 onChangeLocation = onChangeLocation,
-                onOpenAbout = onOpenAbout,
+                onOpenSettings = onOpenSettings,
             )
         }
     }
@@ -298,7 +298,7 @@ private fun HomeFooterNavigation(
     onPageSelected: (Int) -> Unit,
     onRefresh: () -> Unit,
     onChangeLocation: () -> Unit,
-    onOpenAbout: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val roles = LocalOxygenHomeDesign.current
     Column(
@@ -370,7 +370,7 @@ private fun HomeFooterNavigation(
                 Text(text = refreshLabel)
             }
             TextButton(
-                onClick = onOpenAbout,
+                onClick = onOpenSettings,
                 modifier = Modifier
                     .heightIn(min = 48.dp)
                     .testTag("home-about-entry"),

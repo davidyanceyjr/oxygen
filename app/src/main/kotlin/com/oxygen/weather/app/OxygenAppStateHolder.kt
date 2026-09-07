@@ -369,40 +369,47 @@ class OxygenAppStateHolder(
     }
 
     @Synchronized
-    fun onOpenAbout() {
+    fun onOpenSettings() {
         cancelDeviceLocation()
         val currentScreen = presentationState.screen
-        if (currentScreen is OxygenAppScreen.About) return
+        if (currentScreen is OxygenAppScreen.Settings ||
+            (currentScreen is OxygenAppScreen.FirstRunLocationEntry && currentScreen.returnScreen is OxygenAppScreen.Settings)
+        ) return
 
         presentationState = presentationState.copy(
-            screen = OxygenAppScreen.About(
+            screen = OxygenAppScreen.Settings(
                 returnScreen = currentScreen,
-                selectedSurface = null,
             ),
         )
         publishState()
     }
 
-    fun onAboutSurfaceSelected(surfaceId: AboutSurfaceId) {
-        updateAboutState {
-            it.copy(
-                selectedSurface = surfaceId,
-                unitPreferenceMessage = null,
+    fun onSettingsDestinationSelected(destination: SettingsDestination) {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (destination == SettingsDestination.Locations) {
+            presentationState = presentationState.copy(
+                screen = OxygenAppScreen.FirstRunLocationEntry(
+                    returnScreen = settings.copy(selectedDestination = null),
+                ),
             )
+            publishState()
+            loadSavedLocations()
+            return
         }
+        updateSettingsState { it.copy(selectedDestination = destination, unitPreferenceMessage = null) }
     }
 
     fun onUnitPreferenceSelected(preference: UnitPreference?) {
-        val about = presentationState.screen as? OxygenAppScreen.About ?: return
-        if (about.selectedSurface != AboutSurfaceId.Units) return
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != SettingsDestination.Units) return
 
-        updateAboutState { it.copy(unitPreferenceMessage = null) }
+        updateSettingsState { it.copy(unitPreferenceMessage = null) }
         forecastExecutor.execute {
             try {
                 unitPreferenceStorage.writeUnitPreference(preference)
             } catch (_: Exception) {
                 synchronized(this) {
-                    updateAboutState {
+                    updateSettingsState {
                         it.copy(unitPreferenceMessage = UnitPreferenceMessage.LocalStateUnavailable)
                     }
                 }
@@ -448,14 +455,14 @@ class OxygenAppStateHolder(
         }
     }
 
-    fun onAboutBack() {
-        val about = presentationState.screen as? OxygenAppScreen.About ?: return
-        if (about.selectedSurface != null) {
+    fun onSettingsBack() {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != null) {
             presentationState = presentationState.copy(
-                screen = about.copy(selectedSurface = null),
+                screen = settings.copy(selectedDestination = null),
             )
         } else {
-            presentationState = presentationState.copy(screen = about.returnScreen)
+            presentationState = presentationState.copy(screen = settings.returnScreen)
         }
         publishState()
     }
@@ -685,9 +692,9 @@ class OxygenAppStateHolder(
         publishState()
     }
 
-    private fun updateAboutState(update: (OxygenAppScreen.About) -> OxygenAppScreen.About) {
-        val about = presentationState.screen as? OxygenAppScreen.About ?: return
-        presentationState = presentationState.copy(screen = update(about))
+    private fun updateSettingsState(update: (OxygenAppScreen.Settings) -> OxygenAppScreen.Settings) {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        presentationState = presentationState.copy(screen = update(settings))
         publishState()
     }
 
@@ -1147,7 +1154,7 @@ sealed interface OxygenAppScreen {
         val message: FirstRunLocationMessage? = null,
         val deviceProgress: DeviceLocationProgress? = null,
         val searchState: ManualLocationSearchState = ManualLocationSearchState.Idle,
-        val returnScreen: Home? = null,
+        val returnScreen: OxygenAppScreen? = null,
         val title: String = "Choose a location",
         val searchLabel: String = "Search for a location",
         val searchActionLabel: String = "Search",
@@ -1156,7 +1163,7 @@ sealed interface OxygenAppScreen {
         val geocodingDisclosure: String = "Location search by Open-Meteo, based on GeoNames data.",
         val geocodingPrivacyNote: String = "Your typed search is sent to Open-Meteo to find matching places.",
     ) : OxygenAppScreen {
-        val canReturnHome: Boolean
+        val canReturn: Boolean
             get() = returnScreen != null
     }
 
@@ -1164,15 +1171,15 @@ sealed interface OxygenAppScreen {
         val forecast: HomeForecastPresentationState,
     ) : OxygenAppScreen
 
-    data class About(
+    data class Settings(
         val returnScreen: OxygenAppScreen,
-        val selectedSurface: AboutSurfaceId? = null,
+        val selectedDestination: SettingsDestination? = null,
         val unitPreferenceMessage: UnitPreferenceMessage? = null,
-        val title: String = "Settings / About",
-        val surfaceOptions: List<AboutSurfaceId> = aboutSurfaceOptions,
+        val title: String = "Settings",
+        val destinationOptions: List<SettingsDestination> = settingsDestinationOptions,
     ) : OxygenAppScreen {
-        val surfaceState: AboutSurfaceState
-            get() = aboutSurfaceState(selectedSurface)
+        val destinationState: SettingsDestinationState
+            get() = settingsDestinationState(selectedDestination)
     }
 
     data class AlertDetail(
@@ -1183,14 +1190,14 @@ sealed interface OxygenAppScreen {
 
 private fun OxygenAppScreen.visibleOrReturnScreen(): OxygenAppScreen =
     when (this) {
-        is OxygenAppScreen.About -> returnScreen.visibleOrReturnScreen()
+        is OxygenAppScreen.Settings -> returnScreen.visibleOrReturnScreen()
         is OxygenAppScreen.AlertDetail -> returnHome
         else -> this
     }
 
 private fun OxygenAppScreen.withVisibleOrReturnScreen(nextScreen: OxygenAppScreen): OxygenAppScreen =
     when (this) {
-        is OxygenAppScreen.About -> copy(returnScreen = returnScreen.withVisibleOrReturnScreen(nextScreen))
+        is OxygenAppScreen.Settings -> copy(returnScreen = returnScreen.withVisibleOrReturnScreen(nextScreen))
         is OxygenAppScreen.AlertDetail -> {
             val nextHome = nextScreen as? OxygenAppScreen.Home ?: return this
             copy(returnHome = nextHome)
@@ -1200,7 +1207,7 @@ private fun OxygenAppScreen.withVisibleOrReturnScreen(nextScreen: OxygenAppScree
 
 private fun OxygenAppScreen.withHomeReplacement(nextHome: OxygenAppScreen.Home): OxygenAppScreen =
     when (this) {
-        is OxygenAppScreen.About -> copy(returnScreen = returnScreen.withHomeReplacement(nextHome))
+        is OxygenAppScreen.Settings -> copy(returnScreen = returnScreen.withHomeReplacement(nextHome))
         is OxygenAppScreen.AlertDetail -> {
             val nextReady = nextHome.forecast as? HomeForecastPresentationState.ForecastReady
             if (nextReady?.dashboard?.alertDetails?.any { it.id == selectedAlertId } == true) {

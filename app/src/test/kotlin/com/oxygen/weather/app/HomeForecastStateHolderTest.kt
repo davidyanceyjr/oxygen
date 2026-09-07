@@ -102,17 +102,17 @@ class HomeForecastStateHolderTest {
         )
         stateHolder.onHomeAlertDetailsRequested()
         stateHolder.onAlertDetailSelected("alert-2")
-        stateHolder.onOpenAbout()
-        stateHolder.onAboutSurfaceSelected(AboutSurfaceId.Units)
+        stateHolder.onOpenSettings()
+        stateHolder.onSettingsDestinationSelected(SettingsDestination.Units)
         stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.METRIC))
 
-        val about = stateHolder.presentationState.screen as OxygenAppScreen.About
-        val remappedDetail = about.returnScreen as OxygenAppScreen.AlertDetail
+        val settings = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        val remappedDetail = settings.returnScreen as OxygenAppScreen.AlertDetail
         assertEquals("alert-2", remappedDetail.selectedAlertId)
         assertEquals("18 deg C", remappedDetail.returnHome.forecast.let { (it as HomeForecastPresentationState.ForecastReady).dashboard.current?.temperature })
 
-        stateHolder.onAboutBack()
-        stateHolder.onAboutBack()
+        stateHolder.onSettingsBack()
+        stateHolder.onSettingsBack()
         stateHolder.onHomeForecastRefresh()
 
         val refreshedDetail = stateHolder.presentationState.screen as OxygenAppScreen.AlertDetail
@@ -168,12 +168,12 @@ class HomeForecastStateHolderTest {
         val before = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
 
-        stateHolder.onOpenAbout()
-        stateHolder.onAboutSurfaceSelected(AboutSurfaceId.Units)
+        stateHolder.onOpenSettings()
+        stateHolder.onSettingsDestinationSelected(SettingsDestination.Units)
         stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.METRIC))
 
-        val about = stateHolder.presentationState.screen as OxygenAppScreen.About
-        val after = (about.returnScreen as OxygenAppScreen.Home)
+        val settings = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        val after = (settings.returnScreen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
         assertEquals(before.dashboard.alertSummary, after.dashboard.alertSummary)
         assertEquals("Alert source checked Aug 22, 10:05 AM CDT", after.dashboard.alertSummary?.sourceCheckedAt)
@@ -221,12 +221,12 @@ class HomeForecastStateHolderTest {
         val before = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
 
-        stateHolder.onOpenAbout()
-        stateHolder.onAboutSurfaceSelected(AboutSurfaceId.Units)
+        stateHolder.onOpenSettings()
+        stateHolder.onSettingsDestinationSelected(SettingsDestination.Units)
         stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.METRIC))
 
-        val about = stateHolder.presentationState.screen as OxygenAppScreen.About
-        val remapped = (about.returnScreen as OxygenAppScreen.Home)
+        val settings = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        val remapped = (settings.returnScreen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
         assertEquals(UnitPreference.Preset(UnitPreferencePreset.METRIC), storage.writes.single())
         assertEquals("18 deg C", remapped.dashboard.current?.temperature)
@@ -252,15 +252,15 @@ class HomeForecastStateHolderTest {
         val before = (stateHolder.presentationState.screen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
 
-        stateHolder.onOpenAbout()
-        stateHolder.onAboutSurfaceSelected(AboutSurfaceId.Units)
+        stateHolder.onOpenSettings()
+        stateHolder.onSettingsDestinationSelected(SettingsDestination.Units)
         stateHolder.onUnitPreferenceSelected(UnitPreference.Preset(UnitPreferencePreset.US))
 
-        val about = stateHolder.presentationState.screen as OxygenAppScreen.About
-        val current = (about.returnScreen as OxygenAppScreen.Home)
+        val settings = stateHolder.presentationState.screen as OxygenAppScreen.Settings
+        val current = (settings.returnScreen as OxygenAppScreen.Home)
             .forecast as HomeForecastPresentationState.ForecastReady
         assertEquals(before.dashboard, current.dashboard)
-        assertEquals(UnitPreferenceMessage.LocalStateUnavailable, about.unitPreferenceMessage)
+        assertEquals(UnitPreferenceMessage.LocalStateUnavailable, settings.unitPreferenceMessage)
         assertEquals(listOf(location), repository.locations)
     }
     @Test
@@ -463,7 +463,7 @@ class HomeForecastStateHolderTest {
         val firstRun = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
         assertEquals("", firstRun.query)
         assertEquals(ManualLocationSearchState.Idle, firstRun.searchState)
-        assertTrue(firstRun.canReturnHome)
+        assertTrue(firstRun.canReturn)
         assertEquals(oldLocation, stateHolder.presentationState.selectedLocation)
         assertFalse(stateHolder.presentationState.isShowingHome)
 
@@ -494,7 +494,7 @@ class HomeForecastStateHolderTest {
 
         stateHolder.onChangeLocation()
         val firstRun = stateHolder.presentationState.screen as OxygenAppScreen.FirstRunLocationEntry
-        assertTrue(firstRun.canReturnHome)
+        assertTrue(firstRun.canReturn)
 
         stateHolder.onLocationEntryBack()
 
