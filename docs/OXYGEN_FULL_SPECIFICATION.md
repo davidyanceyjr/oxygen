@@ -1938,10 +1938,11 @@ remains a read-only summary; this slice does not implement appearance
 selection or complete Gate 25's disclosure audit. Units is reached directly
 from Settings; it is not nested under About.
 
-Gate 25, Disclosure Baseline Check, is the next implementation candidate. It
-must reconcile active-provider attribution, data licenses, privacy disclosure,
-source-code license identification, and observable reachability of the direct
-Settings disclosure destinations before appearance work begins.
+Gate 25, Disclosure Baseline Check, is implemented, verified, and committed in
+`23a9d49`. It reconciled active-provider attribution, data licenses, privacy
+disclosure, source-code license identification, and observable reachability of
+the direct Settings disclosure destinations. Slice 26, Effects Preference, is
+the next implementation candidate; appearance work remains outside this gate.
 
 ---
 

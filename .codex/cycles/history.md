@@ -966,3 +966,52 @@ Boundaries:
 - Effects Off is covered by the deterministic connected fixture; the installed
   default summary reports its actual Subtle runtime effects and no preference
   selector was introduced.
+
+### 2026-09-06-gate-25-disclosure-baseline-check
+
+Status: committed
+Mode: feature and documentation sync
+Gate: Gate 25, Disclosure Baseline Check
+Implementation commit: `23a9d49`
+
+Result:
+- Added active-provider attribution/license/privacy disclosure text and five
+  centralized HTTPS attribution links for Open-Meteo forecast/timezone and
+  geocoding, GeoNames, MET Norway, and NOAA/NWS.
+- Added labelled minimum-48-dp Settings link actions through LocalUriHandler;
+  corrected the NWS condition to forecast success and identified Oxygen's
+  `GPL-3.0-or-later` source license.
+- Corrected new MET Norway provenance to `NLOD-2.0 AND CC-BY-4.0` and
+  normalized only that exact legacy `OR` value at Home presentation.
+- Reconciled the specification, root DATA_SOURCES disclosure, and active
+  provider contracts with the installed behavior and direct Settings hierarchy.
+
+Evidence:
+- Focused app/core unit tests passed for disclosure content, Home provenance,
+  MET Norway mapper/repository/client, and installed factory behavior.
+- The planned two-case connected run passed on `oxygen_starter`, covering the
+  disclosure journey, all five links, compact scrolling/semantics, Back,
+  unchanged repository call count, no permission request, and the installed
+  MET Norway fallback provenance regression.
+- One-emulator baseline/final manual route passed at 360x640, density 160,
+  font scale 1.3, including Chrome external-link handoff and return. Release
+  dependency/manifest/source audits, compile, full unit suites, assemble, and
+  `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check/`.
+
+Blockers:
+- None. Live provider requests, the complete Slice 33 dependency/privacy audit,
+  and release-candidate verification remain out of scope.
+
+Boundaries:
+- No provider request, selection, fallback eligibility, persistence schema,
+  permission, forecast value, alert lookup, location, unit, appearance, or
+  navigation behavior changed.
+
+Authority sync:
+- Specification section 44 and the obsolete section 53 Units path were
+  reconciled before implementation; section 53 and the roadmap now identify
+  Slice 26 as the next candidate. This history entry and the active plan were
+  synchronized after implementation commit.

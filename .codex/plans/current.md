@@ -1,252 +1,518 @@
-# Slice 25A - Settings Information Architecture
+# Gate 25 - Disclosure Baseline Check
 
 **Status:** committed
-**Commit state:** committed
-**Implementation commit:** `2484e90`
-**Cycle ID:** `2026-09-06-slice-25a-settings-information-architecture`
-**Planning basis:** `cab3b29` after committed Slice 24B completion evidence at
-`b7e3514`. The worktree was clean at discovery.
+**Commit state:** implementation committed at `23a9d49`; authority sync committed in this documentation sync
+**Cycle ID:** `2026-09-06-gate-25-disclosure-baseline-check`
+**Planning basis:** local `main` at `a4c4e56`, with Slice 25A committed at
+`2484e90` and its authority sync committed at `87457bd`. The worktree was clean
+at discovery before this plan replaced the completed Slice 25A plan.
+**Review state:** revised after the 2026-09-06 Gate 25 plan review. The eight
+blocking findings and three minimum-evidence corrections were resolved before
+implementation; execution evidence is recorded below.
 
-**Authority reconciliation:** The 2026-09-06 pre-implementation documentation
-sync aligns the roadmap, specification next-task text, README status, and live
-cycle summary with committed behavior through Slice 24B. Gate 25 remains
-specified and incomplete; Slice 25A is committed in `2484e90`.
+## Selection rationale
 
-## Scope resolution
+The roadmap explicitly identifies Gate 25 as the next candidate after committed
+Slice 25A and says not to activate Slice 26 or later appearance work first.
+Gate 25 is dependency-ready:
 
-The roadmap contains two different numbered items: `Gate 25`, the disclosure
-baseline audit, and `Slice 25A`, the Settings information-architecture feature.
-This plan selects only Slice 25A because the requested work is an implementation
-slice. Gate 25 remains a separate documentation/audit cycle and must complete
-before Slice 26 or release work claims its disclosure prerequisite.
+- the Repository Engineering Gate is `ready`, satisfying Gate 25's stated
+  prerequisite;
+- Slice 25A is committed and supplies independently reachable Data Sources,
+  Privacy, Open Source Licenses, and About destinations;
+- active Open-Meteo forecast/geocoding/timezone, MET Norway fallback, and NWS
+  alert paths already exist in production code and have prior committed cycle
+  evidence;
+- the root disclosure documents and provider contracts already exist, so this
+  gate can stop at reconciliation and installed reachability rather than adding
+  a new disclosure architecture.
 
-Slice 25A was sequenced before or with Slice 20C but was never separately
-planned, verified, or committed. Slice 20C added a real Units destination to the
-older `Settings / About` surface; it did not complete the seven-destination
-Settings contract. This cycle closes that gap without reopening unit behavior.
-The committed changeset implements and verifies the slice.
+This plan selects Gate 25 only. It does not make the gate covered, implemented,
+verified, committed, or ready.
 
-## Observed baseline
+## Repository facts observed during planning
 
-- Home and location entry can open one `Settings / About` route.
-- The route exposes Units, Data Sources, Privacy, and Open Source Licenses.
-- Units is backed by the production unit-preference path.
-- Saved locations, search, selection, removal, and optional device location are
-  real behavior, but they are reached through the separate location-entry flow.
-- Appearance is not persisted or user-selectable. The installed app currently
-  renders the Oxygen theme, Standard Home layout, and the supplied runtime
-  `OxygenAppearance.effects` value.
-- There is no separately reachable About destination; About copy is rendered on
-  the root surface.
+- `InstalledForecastRepositoryFactory` currently composes Open-Meteo as the
+  default forecast repository, MET Norway as fallback, a Room-backed forecast
+  cache supplied by `MainActivity`, and `NwsAlertProvider` through
+  `AlertMergingWeatherRepository`.
+- `MainActivity` supplies production Room saved-location/forecast storage and
+  DataStore selected-location/unit storage. Its permission launcher requests
+  coarse location only through the explicit location action callback.
+- The source manifest declares `INTERNET`, `ACCESS_NETWORK_STATE`, and
+  `ACCESS_COARSE_LOCATION`; it does not declare fine or background location.
+- An unretained planning inspection of the release runtime tree and production
+  source found only the expected AndroidX, Kotlin, Room, and serialization roots
+  and no obvious advertising, analytics, telemetry, account, Firebase, Facebook,
+  Adjust, Appsflyer, or Play Services path. This is discovery only. Gate evidence
+  must be regenerated with the exact commands and retained artifacts below.
+- `LICENSE`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, `DATA_SOURCES.md`, and
+  `PRIVACY.md` are present. `README.md`, `PRIVACY.md`, and the installed
+  privacy copy currently describe the active providers, optional coarse
+  foreground location, local persistence, no ads/tracking, and no mandatory
+  account in a way consistent with the inspected production paths.
+- The installed Settings Data Sources copy names the active providers but gives
+  explicit data-license text only for Open-Meteo timezone resolution. It does
+  not state the Open-Meteo forecast/geocoding, GeoNames, or MET Norway license
+  terms even though the About copy says this surface discloses current provider
+  licenses.
+- Root `DATA_SOURCES.md` describes MET Norway data only as NLOD 2.0. The provider
+  contract and the first-party MET Norway pages reviewed on 2026-09-06 describe
+  NLOD 2.0 and CC BY 4.0 together, while production `MetNoForecastMapper` emits
+  `NLOD-2.0 OR CC-BY-4.0`. This conflict requires the bounded provenance
+  correction below before disclosure copy is changed.
+- `docs/data-sources/OPEN_METEO_GEOCODING.md` still says its client and fixtures
+  are future and that the contract does not make geocoding active, despite the
+  installed manual-search production path. The Open-Meteo forecast and MET
+  Norway contracts also retain isolated pre-implementation wording, and the NWS
+  contract retains text saying installed alert presentation is future despite
+  committed Slices 24A and 24B.
+- The installed Open Source Licenses copy names the repository `LICENSE` but
+  does not state the repository's declared `GPL-3.0-or-later` license identifier.
+- Specification section 44 still nests Data Sources, Open Source Licenses, and
+  Privacy under About Oxygen, while Slice 25A exposes them as direct Settings
+  destinations. Section 53 also still calls the units path
+  `Settings / About / Units`. Both are higher-authority conflicts that must be
+  reconciled before production work.
+- The active provider contracts require provider links, including distinct
+  Open-Meteo and GeoNames links for geocoding, but the installed disclosure
+  model can render only static paragraphs.
+- `MetNoForecastClient` already sends `If-Modified-Since` when given a cached
+  Last-Modified value and classifies HTTP 304 as `NotModified`.
+  `MetNoWeatherRepository` does not supply that cache metadata and cannot reuse
+  a cached forecast after 304, so only installed end-to-end revalidation remains
+  deferred.
+- Installed Data Sources copy says NWS lookup follows any terminal forecast
+  result. `AlertMergingWeatherRepository` performs lookup only after forecast
+  success; loading and failure pass through without alert lookup.
+- The roadmap body names Gate 25 as next and records Slice 25A as committed, but
+  its header still says it is synchronized only through `cab3b29`, before the
+  Slice 25A implementation and authority-sync commits.
+- Existing disclosure unit tests mostly assert selected substrings. Existing
+  connected coverage proves Settings destination reachability, but does not
+  prove the missing provider-license matrix is visible through the Compose
+  surface.
+
+No Android test, connected test, emulator exercise, or live provider request was
+run while preparing or revising this plan. During execution, the plan review's
+official-page access date remained 2026-09-06 and no live provider request was
+required. The plan review opened the
+Open-Meteo licence page and both named MET Norway licensing pages on 2026-09-06;
+that access date must be recorded in the implementation ledger without changing
+older provider-contract review dates.
+
+## Pre-implementation authority resolution (resolved)
+
+These two conflicts were resolved in order before red-first implementation.
+
+1. Amend specification section 44 so Data Sources, Privacy, and Open Source
+   Licenses are required as direct Settings destinations alongside About. The
+   disclosure obligations and five required root files remain unchanged. Amend
+   section 53's obsolete Units path in the same authority-first edit, review the
+   Markdown diff, and only then change production code. This explicitly aligns
+   the higher authority with the already committed Slice 25A architecture.
+2. Treat the first-party MET Norway wording reviewed on 2026-09-06 and the
+   provider contract's conjunctive wording as governing. Add a failing mapper
+   assertion, change new MET Norway provenance to
+   `NLOD-2.0 AND CC-BY-4.0`, and normalize only the exact legacy MET Norway
+   `NLOD-2.0 OR CC-BY-4.0` value at the Home presentation boundary. This avoids
+   a Room schema rewrite while keeping an existing cached forecast truthful.
+   Do not alter provider selection, requests, weather values, cache identity, or
+   unrelated provenance. Reconcile the provider contract and disclosures to the
+   same wording before proceeding to link/copy work.
 
 ## Acceptance boundary
 
-Replace the mixed `Settings / About` surface with a coherent, scrollable
-`Settings` root that exposes these distinct destinations:
+Gate 25 is complete only when all of the following are true at the same
+revision:
 
-- Appearance;
-- Units;
-- Locations;
-- Data Sources;
-- Privacy;
-- Open Source Licenses;
-- About.
+1. Specification sections 44 and 53 explicitly match the committed Slice 25A
+   direct Settings hierarchy before production disclosure changes begin.
+2. The five required root files remain present, internally consistent, and
+   accurate for the inspected repository and installed app:
+   `LICENSE`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, `DATA_SOURCES.md`, and
+   `PRIVACY.md`.
+3. Active/current provider disclosure matches the production composition:
+   Open-Meteo forecast and timezone resolution, Open-Meteo geocoding based on
+   GeoNames, MET Norway forecast fallback after eligible Open-Meteo failures,
+   and foreground selected-point NOAA/NWS alerts after forecast success.
+   Loading or failed forecasts are not described as triggering alert lookup,
+   and roadmap-only providers remain clearly non-active.
+4. Data Sources states the applicable license/attribution baseline for each
+   active data path without presenting provider or government data as Oxygen
+   source code or implying endorsement:
+   Open-Meteo forecast/timezone and geocoding under CC BY 4.0; GeoNames under
+   its documented Creative Commons attribution terms; MET Norway under NLOD
+   2.0 and CC BY 4.0; and the NWS public-information and requested-credit/
+   attribution qualification from its contract. Accessible URI actions are
+   present for Open-Meteo forecast/timezone, Open-Meteo geocoding, GeoNames,
+   MET Norway, and NOAA/NWS using the URLs isolated in disclosure content.
+5. New and legacy-cached MET Norway forecasts present the same corrected
+   conjunctive license wording without changing forecast or cache behavior.
+6. Privacy disclosure names the data each active request sends, including
+   selected coordinates/timezone/weather variables, typed search text,
+   optional altitude, identifying provider headers where required, and normal
+   network metadata. It also remains explicit that manual search needs no
+   location grant, device location is optional coarse foreground acquisition
+   after an explicit action, and alert lookup is foreground/process-local with
+   no alert persistence or background polling.
+7. The installed Open Source Licenses destination identifies Oxygen's declared
+   source license as `GPL-3.0-or-later`, describes upstream software
+   dependencies truthfully, and keeps software licensing distinct from weather,
+   geocoding, and alert data terms.
+8. Installed Settings can reach Data Sources, Privacy, and Open Source Licenses
+   from the normal app entry; the reconciled text is readable by scrolling at
+   the existing compact `360dp x 640dp`, density `1`, font scale `1.3`
+   configuration, provider-link controls expose readable labels and link
+   semantics, and Back returns to Settings. A deterministic connected journey
+   proves its repository request-count delta is zero. The installed manual
+   journey proves only observable navigation, scrolling, Back, external-link
+   handoff, and absence of a location-permission prompt.
+9. Provider contracts no longer describe already active clients, fixtures, or
+   installed UI as future work. They state that the MET Norway client-level
+   `If-Modified-Since` and 304 result boundary are implemented while installed
+   repository/cache revalidation and reuse remain deferred, together with
+   provider health/backoff, alert persistence, background polling, and release
+   verification.
+10. README, specification next-task text, roadmap status/next-candidate metadata,
+   active plan, and recent cycle history agree with the completed gate without
+   claiming Slice 26, MVP readiness, release readiness, or a complete Slice 33
+   audit.
 
-Each destination must lead to truthful installed behavior:
+The stopping boundary is corrected disclosure plus observable installed
+reachability. The MET Norway provenance wording and accessible disclosure links
+are the only runtime changes. No provider request, selection, fallback,
+persistence schema, permission, forecast value, alert lookup, location, unit,
+appearance, or navigation behavior is added or changed.
 
-- Appearance is a read-only summary of the effective theme, Standard layout,
-  and runtime effects level. It has no selector, disabled control, future-work
-  placeholder, or persistence claim.
-- Units retains the existing persisted Oxygen default, Metric, US, and UK
-  selection behavior unchanged.
-- Locations enters the existing production location surface, including saved
-  rows, manual search, optional device location, selection, save, and removal.
-  Back returns to the same Settings root; choosing a location continues through
-  the existing selected-location Home path.
-- Data Sources, Privacy, and Open Source Licenses retain their existing content
-  and remain independently reachable.
-- About contains the current Oxygen identity/product copy that is presently on
-  the mixed root.
+## Accuracy source order
 
-The root groups destinations by meaning, uses visible text rather than icon-only
-navigation, exposes at least 48 dp touch targets, and remains readable at
-`360dp x 640dp`, density `1`, font scale `1.3`, and `EffectsLevel.OFF`.
-In-surface Back and Android Back return from a destination to Settings, then to
-the exact originating Home or first-run/location state.
+Use these sources for the gate audit in this order:
 
-## Compatibility contract
+1. Production composition, manifest, Gradle dependency declarations, and
+   provider provenance constants for what the current build actually does.
+2. `docs/OXYGEN_FULL_SPECIFICATION.md` sections 43 through 45 for privacy,
+   attribution, and license obligations.
+3. Active provider contracts for request data, attribution, license, privacy,
+   and deferred behavior.
+4. Prior committed cycle evidence for installed fallback, alert, Settings,
+   location, cache, and units reachability.
+5. Official primary provider terms/license/privacy pages only for validating
+   legal or policy wording. Record the pages and access date actually reviewed;
+   do not advance a terms-review date without reading the source.
 
-- Do not change forecast, alert, fallback, geocoding, location acquisition,
-  saved-location, cache, unit-conversion, or persistence semantics.
-- Do not add dependencies, permissions, storage keys, Room entities/migrations,
-  provider requests, analytics, accounts, background work, or network calls.
-- Do not implement theme, layout, contrast, custom-unit, or effects selection.
-  Those remain Slices 26 through 29.
-- Do not create empty routes, disabled future controls, TODO copy, or duplicate
-  location/unit implementations.
-- Preserve every existing disclosure statement unless Gate 25 later proves a
-  factual correction is required.
-- Preserve Home refresh and unit-remap updates to the Home state beneath an open
-  Settings route. Preserve alert detail, stale-cache, retry, and location-switch
-  behavior.
-- Preserve first-run manual search state when Settings is opened and closed.
-  Entering Locations from Settings may use a fresh location-entry state, but
-  backing out through Settings must restore the original first-run state.
-- Keep `OxygenAppearance` and canonical weather data unchanged. The Appearance
-  summary reports effective presentation; it does not become preference state.
-- Treat unused theme/layout enum values as scaffold, not selectable or effective
-  settings. Report only the theme and layout the installed surface actually uses.
+If current official provider material conflicts materially with the
+specification or an existing provider contract, stop the gate and reconcile the
+higher authority before changing installed copy. Do not guess at license or
+privacy terms.
 
-## Production design
+## Intended production changes
 
-### Settings model and route
+Keep production changes to the disclosure/link surface and the one factual MET
+Norway provenance correction:
 
-Evolve the current About-specific names into one Settings route and a small
-semantic destination enum. Migrate all production and test consumers in the
-same changeset; do not retain a parallel legacy route.
+- add concise license/attribution text for each active provider/data path to the
+  Data Sources destination;
+- replace the false NWS "terminal forecast result" statement with the exact
+  forecast-success condition;
+- make the Open Source Licenses destination state `GPL-3.0-or-later` explicitly
+  and preserve the source-code versus provider-data distinction;
+- correct privacy wording only if the code/contract matrix proves a factual
+  mismatch;
+- add a small immutable disclosure-link model beside the existing section model
+  and keep all labels and HTTPS URIs centralized in
+  `AboutDisclosureContent.kt`;
+- render those links as labelled, minimum-48-dp actions in `SettingsScreen`
+  using Compose `LocalUriHandler`, matching the existing Home/alert external-URI
+  approach. Each action must expose button/link semantics and its provider name;
+- correct `MetNoForecastMapper` to emit
+  `NLOD-2.0 AND CC-BY-4.0` and normalize only the exact old MET Norway `OR`
+  value in `HomeForecastPresentationMapper` so restored caches display the
+  corrected terms without a database migration;
+- keep paragraphs within the existing compact disclosure length guard;
+- retain the current destination model, Settings route, scrolling layout, and
+  Back behavior.
 
-The Settings route owns one `selectedDestination` and its exact `returnScreen`.
-Selecting a normal destination changes only `selectedDestination`. Back from a
-destination clears it; Back from the root restores `returnScreen`.
-
-Keep the existing recursive visible/return-screen handling so forecast refresh,
-unit remapping, and other valid Home replacements update the one Home state
-beneath Settings. Extend route tests rather than introducing a navigation
-library for this bounded app.
-
-### Locations handoff
-
-Generalize the location-entry return target from Home-only to an app screen so
-Settings can open the existing location surface and receive Back. Keep a
-separate `canReturn` presentation fact for Back visibility; retain Home-specific
-logic only where Home is actually required.
-
-The Settings -> Locations transition must:
-
-1. preserve the Settings route and its original return screen;
-2. load saved rows through the existing storage method;
-3. perform no forecast/provider request merely by opening or backing out;
-4. route a selected search/saved/device location through the existing Home
-   selection path, intentionally leaving Settings;
-5. suppress redundant Settings-within-Settings entry on this nested location
-   surface.
-
-### Compose surface
-
-Move the mixed About UI into `ui/settings/SettingsScreen.kt`. Render a compact
-root with clear category headings and full-width labelled rows. Reuse the
-existing units and disclosure bodies. Render the Appearance summary from the
-actual `OxygenThemeId` and `OxygenAppearance.effects` passed to the app; label
-the fixed current layout as Standard. Render the prior root product copy only in
-About.
-
-Use existing Material 3 and Oxygen theme roles. Do not introduce a new design
-system, icon set, animation, preference widget abstraction, or responsive
-navigation framework in this slice.
+Do not add a license library/generator, navigation abstraction, new screen,
+WebView, dynamic provider discovery, or generic link framework. External URI
+actions are required only for the active-provider attribution rows in this
+gate.
 
 Expected production files:
 
-- `app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt`
-- `app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt`
 - `app/src/main/kotlin/com/oxygen/weather/app/AboutDisclosureContent.kt`
-  (rename only if all consumers move atomically)
 - `app/src/main/kotlin/com/oxygen/weather/app/ui/settings/SettingsScreen.kt`
-  (new Settings surface; the old About surface is removed)
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/firstrun/FirstRunLocationEntryScreen.kt`
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`
+- `app/src/main/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapper.kt`
+- `core/src/main/kotlin/com/oxygen/weather/core/provider/metno/MetNoForecastMapper.kt`
 
-## Red-first focused coverage
+No changes are intended in `OxygenAppStateHolder`, provider clients or
+repositories, manifests, Gradle files, Room, DataStore, or other runtime
+behavior. If the audit requires anything beyond the files and exact legacy
+normalization above, stop and select a separate implementation slice instead of
+expanding Gate 25.
 
-Extend or rename existing tests only where their responsibility changes.
+## Intended document changes
 
-1. State-holder coverage proves all seven destinations are distinct and
-   reachable from Home and first run; destination/root Back restores the exact
-   prior state; unknown or out-of-context events are no-ops.
-2. Location routing coverage proves Settings -> Locations loads real saved rows,
-   Back returns to Settings without a repository refresh or storage mutation,
-   and saved/manual selection still reaches Home through existing identity and
-   stale-request protections.
-3. Unit regression coverage proves selection still persists and immediately
-   remaps the Home return state without provider refresh or cache mutation.
-4. Route-helper coverage proves refresh/loading/success replacement while
-   Settings is visible updates its return Home and does not dismiss the selected
-   non-location destination.
-5. Compose coverage follows Home -> Settings -> each destination, verifies the
-   read-only effective Appearance values and absence of preference controls,
-   follows Locations into the real location surface and back, and exercises
-   both in-surface and Android Back.
-6. Compact connected coverage asserts root rows and Back controls have readable
-   bounds, no sibling overlap, usable scroll reachability, and minimum touch
-   targets at the acceptance configuration.
+- Reconcile `DATA_SOURCES.md`, especially MET Norway's conjunctive license
+  wording, provider links, and the per-provider active/deferred boundary.
+- Reconcile stale implementation-status wording in the four active provider
+  contracts without changing provider behavior. For MET Norway, state precisely
+  that the client supports conditional request input and 304 classification,
+  while installed repository-to-cache revalidation/reuse is deferred.
+- Update `THIRD_PARTY_LICENSES.md`, `NOTICE`, and `PRIVACY.md` only where the
+  audit identifies a concrete omission or false statement. Do not replace the
+  later Slice 33 dependency/privacy audit with an exhaustive transitive-license
+  inventory here.
+- Keep `LICENSE` unchanged unless the repository's already-declared
+  GPL-3.0-or-later intent is proven inconsistent. Any license-policy change is
+  outside this gate and requires explicit authority.
+- Resolve specification section 44 and the obsolete section 53 Settings path in
+  the pre-implementation authority edit. After completion evidence exists,
+  record Gate 25 completion and Slice 26 as the next candidate.
+- Update the roadmap synchronization metadata and Gate 25 status only after the
+  gate is verified and committed. Do not mark Slice 26 planned there.
+- Update README only if the audit finds a factual status mismatch; static copy
+  clarification alone does not add an implemented feature.
+
+## Execution evidence
+
+Gate 25 is implemented, verified, and committed at `23a9d49`.
+
+Production changes:
+
+- `AboutDisclosureContent.kt` adds the immutable disclosure-link model, active
+  provider/license/privacy text, and centralized HTTPS attribution links.
+- `SettingsScreen.kt` renders labelled, minimum-48-dp external-link actions
+  through `LocalUriHandler`.
+- `HomeForecastPresentationMapper.kt` normalizes only the exact legacy MET
+  Norway `NLOD-2.0 OR CC-BY-4.0` value.
+- `MetNoForecastMapper.kt` emits `NLOD-2.0 AND CC-BY-4.0` for new forecasts.
+
+Focused evidence passed:
+
+- MET Norway client/mapper/repository, disclosure, Home mapper, and installed
+  factory unit tests passed in the focused command recorded in the cycle
+  artifact ledger.
+- The two-case connected run passed on `oxygen_starter`: disclosure
+  reachability/link/scroll/Back/zero-call/zero-permission coverage and the
+  installed MET Norway fallback provenance regression.
+
+Real-path evidence passed on one emulator session:
+
+- Baseline APK from `a4c4e56` and final APK were installed without restarting
+  the emulator. The compact profile was 360x640, density 160, font scale 1.3.
+- Data Sources, Privacy, and Open Source Licenses were manually reached and
+  scrolled; an Open-Meteo link handed off to Chrome and returned to Oxygen.
+- Saved artifacts are under
+  `.codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check/`.
+
+Bounded audit evidence passed: release runtime dependencies, merged release
+manifest summary, classified prohibited-path source search, required root-file
+presence, `:app:compileDebugKotlin`, full app/core debug unit tests,
+`:app:assembleDebug`, and `git diff --check`. No live provider request,
+complete transitive-license audit, or release-candidate verification was run.
+
+Next candidate after this committed gate: Slice 26, Effects Preference.
+
+## Red-first focused evidence
+
+1. Extend `AboutDisclosureStateHolderTest` first so the current test fails on
+   the missing disclosure matrix. Assert active provider role, request-data
+   facts, provider-specific license/attribution terms, source/data license
+   separation, explicit GPL identifier, the NWS forecast-success condition,
+   exact link labels/HTTPS URIs, the client-versus-installed conditional-request
+   boundary, deferred provider separation, and the existing paragraph-length
+   boundary.
+2. Add red assertions to `MetNoForecastMapperTest` for the conjunctive license
+   value and to `HomeForecastPresentationMapperTest` for exact legacy MET Norway
+   normalization plus non-MET/unrelated-license preservation.
+3. Keep `InstalledForecastRepositoryFactoryTest` as a regression for the
+   injected fallback/cache/alert composition semantics it actually covers. Do
+   not claim it proves the factory's concrete default providers. Record the
+   Open-Meteo, MET Norway, Room-cache, and NWS default wiring by direct inspection
+   of `InstalledForecastRepositoryFactory` and `MainActivity` in the ledger.
+4. Add or narrow one `HomeDashboardUiTest` case that opens all three disclosure
+   destinations through `OxygenApp`; records the repository call count after
+   initial state settles; reaches each destination's final required fact;
+   invokes every provider link through a recording `LocalUriHandler`; asserts
+   readable labels, URI action/semantics, compact scroll reachability, and Back;
+   and finally asserts the repository-call count is unchanged. Run only that
+   test case, not the full connected class.
+5. Produce a concise audit ledger mapping each accepted statement to production
+   code, provider contract, official primary source where reviewed, or prior
+   committed cycle evidence. File-presence checks alone are not acceptance
+   evidence.
 
 Primary test files:
 
 - `app/src/test/kotlin/com/oxygen/weather/app/AboutDisclosureStateHolderTest.kt`
-- `app/src/test/kotlin/com/oxygen/weather/app/HomeForecastStateHolderTest.kt`
-- `app/src/test/kotlin/com/oxygen/weather/app/FirstRunLocationStateHolderTest.kt`
+- `app/src/test/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapperTest.kt`
+- `app/src/test/kotlin/com/oxygen/weather/app/InstalledForecastRepositoryFactoryTest.kt`
 - `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
+- `app/src/androidTest/kotlin/com/oxygen/weather/app/InstalledFallbackRepositoryInstrumentedTest.kt`
+- `core/src/test/kotlin/com/oxygen/weather/core/provider/metno/MetNoForecastClientTest.kt`
+- `core/src/test/kotlin/com/oxygen/weather/core/provider/metno/MetNoForecastMapperTest.kt`
+- `core/src/test/kotlin/com/oxygen/weather/core/provider/metno/MetNoWeatherRepositoryTest.kt`
 
-## Visual and real-path evidence
-
-Created
-`.codex/test-artifacts/2026-09-06-slice-25a-settings-information-architecture/`
-and start `ledger.md` before verification. Capture the installed Settings/About
-baseline before meaningful UI edits using the single task emulator session and
-`scripts/capture-screen.sh`. Start or reuse that session through the repo-local
-emulator helpers; no device was connected during the documentation sync.
-
-After convergence, install the changed APK once, launch through the normal app
-entry, and capture:
-
-- `settings-root-360x640-font-1.3.png`;
-- `settings-appearance-effects-off-360x640-font-1.3.png`;
-- `settings-locations-360x640-font-1.3.png`;
-- matching semantics text for the Settings root and nested Locations journey.
-
-The deterministic connected journey is the acceptance boundary when installed
-provider availability or saved state cannot supply every destination state.
-Screenshots prove presentation only; the state and connected interaction tests
-prove navigation behavior.
-
-## Verification budget
-
-Budget: one emulator session, one APK install after the final APK change,
-60 minutes, and 10,000 agent tokens. Record each command, result, and reason for
-any rerun. Do not rerun a passing command unless relevant code, fixtures, or the
-environment changed.
+Focused command budget:
 
 ```sh
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*AboutDisclosureStateHolderTest' --tests '*HomeForecastStateHolderTest' --tests '*FirstRunLocationStateHolderTest'
-. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest
+. scripts/android-env.sh && ./gradlew :core:testDebugUnitTest --tests '*MetNoForecastClientTest' --tests '*MetNoForecastMapperTest' --tests '*MetNoWeatherRepositoryTest'
+. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*AboutDisclosureStateHolderTest' --tests '*HomeForecastPresentationMapperTest' --tests '*InstalledForecastRepositoryFactoryTest'
+. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class='com.oxygen.weather.app.ui.home.HomeDashboardUiTest#settingsDisclosuresShowActiveProviderLicenseAndPrivacyBaseline,com.oxygen.weather.app.InstalledFallbackRepositoryInstrumentedTest#eligibleOpenMeteoFailureRendersMetNorwayHomeReadyThroughInstalledFactory'
+```
+
+The connected budget is two test cases: one disclosure/interaction case and one
+installed-factory MET Norway provenance regression made necessary by the
+license correction. Run them in one connected task so the final app/test APKs
+are installed once. Use one emulator session, one baseline app install, the one
+final connected install, 75 minutes, and 12,000 agent tokens for verification.
+Stop at the budget with the exact evidence and gap recorded; do not add or rerun
+a connected case without recording the changed input or specific regression
+risk first.
+
+## Required real-path exercise
+
+Create
+`.codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check/ledger.md`
+when implementation begins. Use one emulator session. Before any production UI
+change, configure the emulator to `360dp x 640dp`, density `1`, font scale `1.3`,
+install the baseline APK, navigate to Data Sources, and capture
+`data-sources-before.png`. Record the exact configuration commands and original
+device values in the ledger. This is the required comparable visual baseline.
+
+```sh
+. scripts/android-env.sh
+adb shell wm size
+adb shell wm density
+adb shell settings get system font_scale
+adb shell wm size 360x640
+adb shell wm density 160
+adb shell settings put system font_scale 1.3
+scripts/capture-screen.sh .codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check/data-sources-before.png
+```
+
+After the final APK change, install once more without restarting the emulator
+and repeat the same route and device configuration.
+
+From a fresh normal installed-app entry, without selecting sample data or using
+a test-only screen:
+
+1. Open Settings.
+2. Open Data Sources and scroll through the active-provider and license text.
+3. Return to Settings, open Privacy, and confirm the optional-location and
+   active-request disclosures are reachable.
+4. Return to Settings, open Open Source Licenses, and confirm the explicit
+   Oxygen source license and provider-data separation are reachable.
+5. From Data Sources, activate one provider attribution link and observe the
+   external URI handoff, then return to Oxygen.
+6. Return to the originating app state and confirm no location permission prompt
+   appeared.
+
+Capture `data-sources-after.png` at the same state as the baseline plus final UI
+hierarchy/semantics dumps for Data Sources, Privacy, and Open Source Licenses.
+The installed journey proves only reachability, presentation, scrolling, Back,
+external URI handoff, and absence of a permission prompt. It does not prove
+network or repository call counts; the deterministic connected test supplies
+the zero-additional-call evidence. Unit/composition evidence and the audit
+ledger prove factual alignment. A live weather-provider request is not required
+because this gate changes no provider request behavior and prior committed
+cycles are prerequisite evidence for active paths.
+
+## Reproducible privacy and dependency evidence
+
+Use these exact commands once against the final changeset, saving their outputs
+under the cycle artifact directory. If the Android Gradle Plugin changes the
+merged-manifest output path, record the resolved path and reason rather than
+silently substituting a different input.
+
+```sh
+gate_artifact_dir=.codex/test-artifacts/2026-09-06-gate-25-disclosure-baseline-check
+mkdir -p "$gate_artifact_dir"
+. scripts/android-env.sh && ./gradlew :app:dependencies --configuration releaseRuntimeClasspath > "$gate_artifact_dir/release-runtime-dependencies.txt"
+. scripts/android-env.sh && ./gradlew :app:processReleaseMainManifest
+cp app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml "$gate_artifact_dir/merged-release-AndroidManifest.xml"
+rg -n '<uses-permission|<permission|<application|<activity|<activity-alias|<service|<receiver|<provider|android:exported|usesCleartextTraffic|networkSecurityConfig|allowBackup|dataExtractionRules|fullBackupContent' "$gate_artifact_dir/merged-release-AndroidManifest.xml" > "$gate_artifact_dir/merged-release-manifest-summary.txt"
+rg -n -i --glob '*.kt' --glob '*.kts' --glob '*.xml' '(firebase|appmeasurement|analytics|telemetry|advertisingid|advertising sdk|facebook|appsflyer|adjust sdk|accountmanager|credentialmanager|oauth|sign[ -]?in|login|tracking|uploader|upload)' app/src/main core/src/main app/build.gradle.kts core/build.gradle.kts gradle/libs.versions.toml > "$gate_artifact_dir/privacy-prohibited-path-source-audit.txt" || test $? -eq 1
+```
+
+The ledger must classify every source-audit match rather than equating a search
+exit code with proof. Map no-ad/tracking SDK claims to the dependency tree,
+Gradle declarations, and classified source search; optional foreground location
+and no background component claims to the merged manifest plus `MainActivity`;
+no mandatory account to the classified production-source search and installed
+entry surface; active request-data claims to the concrete clients and provider
+contracts; and local persistence claims to the installed storage composition.
+These are bounded Gate 25 checks, not an exhaustive Slice 33 audit.
+
+Record these primary pages and their actual plan-review access date of
+2026-09-06 in the ledger: `https://open-meteo.com/en/licence`,
+`https://api.met.no/doc/License`, and
+`https://www.met.no/en/free-meteorological-data/Licensing-and-crediting`. Do not
+advance any provider contract's older last-review date unless its own full
+required source set is re-reviewed during implementation.
+
+## Broad verification
+
+After focused evidence and the installed exercise pass, run once against the
+final changeset:
+
+```sh
 . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
 . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
 . scripts/android-env.sh && ./gradlew :app:assembleDebug
 git diff --check
 ```
 
-## Completion and authority sync
+Do not rerun a passing command unless relevant source, tests, inputs, or the
+execution environment changed. Record every command, result, and rerun reason in
+the ledger. If provider-source review or the one installed exercise reaches a
+bounded external/platform failure, record the exact gap and do not convert it to
+mock success.
 
-Review completed: no duplicate route, placeholder UI, accidental preference
-behavior, or compatibility-contract expansion was found. The changed
-production/test files and actual command evidence are recorded in the cycle
-ledger.
+## Documentation and commit obligations
 
-Verification result: all seven destinations are reachable; Units and
-disclosures retain their existing behavior; Locations uses the real
-location-entry surface and returns through Settings; compact connected coverage
-passed with both in-surface and Android Back. Appearance reports the actual
-theme, Standard layout, and runtime effects without adding preference controls.
+Before declaring the gate verified:
 
-After an implementation commit, append one concise self-contained cycle entry
-and synchronize:
+- review the diff for unsupported provider, license, privacy, dependency, or
+  release claims;
+- list every production, test, and authority file actually changed;
+- record focused, connected, real-path, and broad commands actually run;
+- name any skipped command and why;
+- leave Gate 25 `planned` or `implemented` if required evidence is missing.
 
-- `.codex/plans/current.md` to the actual committed/verified state;
-- `.codex/cycles/history.md` recent summary;
-- `.codex/plans/mvp-roadmap.md` for the factual 25A status and current next
-  candidate, without marking Gate 25 complete;
-- `README.md` and `docs/OXYGEN_FULL_SPECIFICATION.md` only where installed
-  Settings reachability/status changed.
+After the verified implementation/documentation changes are committed, perform
+the required authoritative doc sync:
 
-Do not change `DATA_SOURCES.md`, `PRIVACY.md`, `THIRD_PARTY_LICENSES.md`,
-`NOTICE`, or provider contracts merely to make Gate 25 appear complete. Their
-accuracy audit belongs to the separate Gate 25 cycle.
+- append a concise self-contained Gate 25 entry to `.codex/cycles/history.md`;
+- update this plan to the actual evidence and commit state;
+- mark Gate 25 committed and advance roadmap next-candidate guidance to Slice
+  26 only if the commit and evidence support it;
+- confirm specification sections 44 and 53 remain reconciled and update any
+  affected README status;
+- run `git diff --check` for the post-commit documentation sync and commit that
+  sync separately if it changes tracked files.
+
+## Explicitly out of scope
+
+- Effects Off persistence or any Slice 26 behavior.
+- Simple, Standard, Detailed, or Meteorologist layout selection.
+- Paper, Terminal, additional theme, dark/light, or high-contrast selection.
+- Any appearance control, disabled placeholder, preference key, or migration.
+- Provider request, fallback eligibility, cache behavior or schema, alert merge,
+  or geocoding behavior changes. The exact MET Norway license-provenance
+  correction and legacy presentation normalization specified above are the sole
+  provenance exceptions.
+- Location permission flow, device acquisition, saved-location, unit, Room, or
+  DataStore changes.
+- Installed conditional revalidation/cache reuse, provider health/backoff, alert
+  persistence, background work, notifications, air quality, radar, maps,
+  widgets, or accounts. Existing client-level conditional request and 304
+  classification support remains intact and is documented accurately.
+- A complete transitive dependency/license inventory or the broader manifest,
+  exported-component, backup, cleartext, Play Services, and network-security
+  audit reserved for Slice 33.
+- Gate 34 release disclosure verification, Gate 35 broad release-candidate
+  verification, MVP readiness, release readiness, or release claims.
+- Changing Oxygen's source-license policy or importing third-party license
+  tooling/assets.

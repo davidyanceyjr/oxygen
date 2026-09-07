@@ -6,7 +6,7 @@ Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
 Revised: 2026-09-06
 Reconciled against remote `main`: `be38405`
-Synchronized through local commit: `cab3b29`
+Synchronized through local commit: `23a9d49`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -1405,7 +1405,8 @@ Long official text may scroll. Large font and TalkBack reading order must remain
 
 ## Gate 25: Disclosure Baseline Check
 
-Status: specified
+Status: committed
+Commit: `23a9d49`
 
 Prerequisite:
 
@@ -1419,6 +1420,13 @@ Must prove:
 - active/current provider claims match production paths;
 - weather-data licensing remains separate from source-code licensing;
 - privacy still reflects no ads, no tracking, no account requirement, optional location permission, and provider request data.
+
+Committed result: Active Open-Meteo forecast/timezone and geocoding, GeoNames,
+MET Norway fallback, and foreground NOAA/NWS alert disclosures now include
+applicable attribution/license terms, provider links, and request/privacy
+facts. The installed direct Settings destinations are scrollable and reachable
+without repository calls or location permission requests. MET Norway's new and
+legacy-cached Home provenance presents `NLOD-2.0 AND CC-BY-4.0`.
 
 ---
 
@@ -1925,9 +1933,8 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Gate 25: Disclosure Baseline Check. Slice 25A Settings Information
-Architecture is committed; Gate 25 remains the next separate audit before Slice
-26 or release work relies on it.
+Candidate: Slice 26: Effects Preference. Gate 25 disclosure baseline is
+committed at `23a9d49` after Slice 25A Settings Information Architecture.
 
 Immediate planning boundary:
 
@@ -1956,17 +1963,19 @@ Immediate planning boundary:
 -> 24A alert summary/banner UI committed at cf9ddaf
 -> 24B alert detail UI committed at ceb6253
 -> Slice 25A Settings information architecture committed at `2484e90`
--> next candidate: Gate 25 disclosure baseline check
+-> Gate 25 disclosure baseline check committed at `23a9d49`
+-> next candidate: Slice 26 Effects Preference
 ```
 
-Gate 25 remains a separate specified disclosure audit and must complete before
-Slice 26 or release work relies on that disclosure prerequisite.
+Gate 25 is a committed disclosure prerequisite. Slice 26 may now be selected as
+the next bounded implementation slice; release work and release-candidate
+claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice
 18J-R was a provider-path recovery slice required by the blocked Slice 18J
 evidence boundary, not a new visual gate.
 
-After this authority sync, Slice 25A is complete and committed. Do not treat
-Slice 26 or later roadmap entries as active implementation work; Gate 25
-remains the separate next audit.
+After this authority sync, Gate 25 is complete and committed. Do not treat
+Slice 26 or later roadmap entries as active implementation work until a new
+bounded plan selects one.
