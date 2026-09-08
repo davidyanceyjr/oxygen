@@ -1953,19 +1953,18 @@ implements and exercises persisted Off/Subtle selection, conservative
 restoration/failure behavior, Android disabled-motion override, and reduced-
 motion Home page navigation.
 
-Slice 27A, Simple Layout Definition, is implemented, verified, and committed
-in `660e376`. The installed Settings / Appearance surface can select Simple
-for the current app session only; Standard remains the launch/restart default.
-Simple Home exposes `Now -> Forecast`, with Hourly and Daily choices inside
-Forecast, while retaining source/update/provenance, stale/cache failure
-context, and official-alert reachability where supplied. Switching layout or
-Hourly/Daily presentation does not refetch forecast, alert, location, or
-geocoding data. Persisted layout selection/restoration is the next Slice 27B
-candidate and remains unimplemented. Full effects, richer scene behavior, and
-persisted theme/icon settings also remain later work. The Slice 26 installed
-real-path Home forecast exercise was incomplete because one bounded emulator
-search attempt did not reach a provider result; deterministic Android boundary
-tests and Settings persistence checks passed.
+Slice 27A, Simple Layout Definition, was implemented, verified, and committed
+in `660e376`. Slice 27B1/27B2 then added the versioned persisted
+Simple/Standard preference and its Settings / Appearance transaction UI. Slice
+27B3 was verified on the installed production path: both Simple and Standard
+restore through Activity recreation and force-stop/relaunch. Simple restores as
+`Now -> Forecast`; Standard restores as `Now -> Hourly -> Daily -> Details`.
+The installed 360x640, font-scale-1.3 journey also verified Effects
+Off, saved-state feedback, and usable forecast/page controls. Switching layout
+or Hourly/Daily presentation does not refetch forecast, alert, location, or
+geocoding data. Full effects, richer scene behavior, and persisted theme/icon
+settings remain later work. The complete Slice 27B3 evidence package is
+retained under `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
 
 ---
 

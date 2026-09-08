@@ -1636,7 +1636,16 @@ Out of scope:
 
 ### Slice 27B3: Installed Layout Restoration Verification
 
-Status: planned
+Status: verified on 2026-09-08
+
+Evidence:
+
+- `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`;
+- one pinned-emulator production journey covered Activity recreation and
+  force-stop/relaunch for Simple and Standard at 360x640/font-scale 1.3 with
+  Effects Off;
+- focused `LayoutPreferenceDataStoreInstrumentedTest` connected check passed
+  1/1; assemble and `git diff --check` passed.
 
 Prerequisites:
 
@@ -2158,10 +2167,9 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 27B3: Installed Layout Restoration Verification. Slice 27B1
-and Slice 27B2 are committed together at `b68ca19` after Slice 27A. Slice 27B3
-remains the next bounded verification slice because no separate ADB-driven
-installed force-stop/relaunch journey has been recorded yet.
+Candidate: Slice 28A1: Paper Theme Rendering Baseline. Slice 27B1/27B2 are
+committed together at `b68ca19`, and Slice 27B3 is verified with retained
+installed evidence at `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
 
 Immediate planning boundary:
 
@@ -2194,11 +2202,11 @@ Immediate planning boundary:
 -> Slice 26 persisted effects preference committed at `c7b578a`
 -> Slice 27A Simple Layout Definition committed at `660e376`
 -> Slice 27B1/27B2 persisted layout storage and Settings UI committed at `b68ca19`
--> next candidate: Slice 27B3 Installed Layout Restoration Verification
+-> Slice 27B3 installed layout restoration verification verified on 2026-09-08
 ```
 
-Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 may
-now be planned as the next bounded verification slice; release work and
+Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 is
+verified; Slice 28A1 is the next bounded candidate. Release work and
 release-candidate claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.

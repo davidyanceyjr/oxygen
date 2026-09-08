@@ -12,5 +12,6 @@ local.properties
 captures/
 .codex/test-artifacts/*
 !.codex/test-artifacts/README.md
+.codex/review/findings.md
 *.jks
 *.keystore

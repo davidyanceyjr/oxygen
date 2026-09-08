@@ -36,17 +36,17 @@ ledger states.
   Settings transaction UI, committed at `b68ca19`; completion evidence is
   recorded at
   `.codex/test-artifacts/2026-09-08-slice-27b-persisted-layout-selection/`.
-- Documentation state: the active plan, roadmap, and this live summary are
-  reconciled with Slice 27B1/27B2's committed state. README and specification
-  layout-persistence claims remain at the prior session-only/restoration-
-  unfinished wording until Slice 27B3 installed force-stop/relaunch evidence
-  passes.
+- Latest verification state: Slice 27B3 passed its pinned installed journey;
+  evidence is recorded at
+  `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
+- Documentation state: the active plan, roadmap, README, specification, and
+  this live summary are reconciled with the verified Slice 27B3 restoration
+  behavior. Slice 28A1 is the next candidate.
 - Local caveat: the unrelated uncommitted `.codex/review/findings.md`
   review-note edit remains retained out of scope.
-- Current process state: Slice 27B3, Installed Layout Force-Stop Restoration
-  Verification, is planned in `.codex/plans/current.md`; the next action is one
-  ADB-driven installed force-stop/relaunch journey for the committed layout
-  persistence path.
+- Current process state: Slice 27B3, Installed Layout Restoration Verification,
+  is verified in `.codex/plans/current.md`; its complete installed evidence is
+  retained under the cycle artifact directory above.
 
 ## Recent Cycles
 
@@ -1170,3 +1170,34 @@ Boundaries:
 - No Detailed or Meteorologist layout, theme/icon settings, Full effects,
   provider/repository/cache/location/unit behavior, release readiness, or
   MVP-complete claim was added.
+### 2026-09-08-slice-27b3-installed-layout-restoration
+
+Status: verified
+Mode: installed verification and documentation sync
+Slice: Slice 27B3, Installed Layout Restoration Verification
+
+Result:
+- Established a ready Chicago Home through the production first-run search and
+  forecast path on one pinned `oxygen_starter` emulator at 360x640 and font
+  scale 1.3, with Effects Off selected through Settings / Appearance.
+- Simple restored as `Now, Page 1 of 2` after explicit Activity recreation and
+  as the first ready page after force-stop/relaunch; no earlier sampled ready
+  Standard page appeared before restored Simple.
+- Standard restored as `Now, Page 1 of 4` after Activity recreation and as the
+  first ready page after force-stop/relaunch. Hourly, Daily, and Details were
+  usable; both restored Settings states showed the saved layout and Effects
+  Off selected.
+
+Evidence:
+- `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
+- Focused `LayoutPreferenceDataStoreInstrumentedTest` connected check passed
+  1/1, 0 skipped, 0 failed on `oxygen_starter`.
+- `:app:assembleDebug` and `git diff --check` passed.
+
+Boundaries:
+- No production code, provider behavior, new layout type, theme/icon/effects
+  implementation, release-readiness, or MVP claim was added.
+- The connected-test harness removed the app during cleanup; the already-built
+  APK was reinstalled and the production first-run path was repeated only to
+  leave the emulator on Standard Home. The acceptance captures precede that
+  cleanup and remain the source of restoration evidence.
