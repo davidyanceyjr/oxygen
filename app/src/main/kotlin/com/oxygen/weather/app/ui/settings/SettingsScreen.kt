@@ -33,8 +33,10 @@ import com.oxygen.weather.app.OxygenAppScreen
 import com.oxygen.weather.app.SettingsDestination
 import com.oxygen.weather.app.UnitPreferenceMessage
 import com.oxygen.weather.app.ui.theme.EffectsLevel
+import com.oxygen.weather.app.ui.theme.LayoutPreset
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenThemeId
+import com.oxygen.weather.app.ui.theme.displayName
 import com.oxygen.weather.app.ui.units.UnitPreferencesScreen
 import com.oxygen.weather.core.model.UnitPreference
 
@@ -52,6 +54,7 @@ fun SettingsScreen(
     animationsEnabled: Boolean = true,
     onEffectsPreferenceSelected: (EffectsLevel) -> Unit = {},
     onEffectsPreferenceRetry: () -> Unit = {},
+    onLayoutSelected: (LayoutPreset) -> Unit = {},
 ) {
     Surface(Modifier.fillMaxSize()) {
         Column(
@@ -94,9 +97,11 @@ fun SettingsScreen(
                     )
                     SettingsDestination.Appearance -> AppearanceSummary(
                         themeId = themeId,
+                        layout = appearance.layout,
                         effects = appearance.effects,
                         preference = effectsPreference,
                         animationsEnabled = animationsEnabled,
+                        onLayoutSelected = onLayoutSelected,
                         onEffectsSelected = onEffectsPreferenceSelected,
                         onRetry = onEffectsPreferenceRetry,
                     )
@@ -189,9 +194,11 @@ private fun SettingsGroup(
 @Composable
 private fun AppearanceSummary(
     themeId: OxygenThemeId,
+    layout: LayoutPreset,
     effects: EffectsLevel,
     preference: EffectsPreferencePresentationState,
     animationsEnabled: Boolean,
+    onLayoutSelected: (LayoutPreset) -> Unit,
     onEffectsSelected: (EffectsLevel) -> Unit,
     onRetry: () -> Unit,
 ) {
@@ -207,8 +214,33 @@ private fun AppearanceSummary(
             fontWeight = FontWeight.SemiBold,
         )
         AppearanceValue("Theme", themeId.displayName)
-        AppearanceValue("Layout", "Standard")
+        AppearanceValue("Layout", "${layout.displayName()} layout")
         AppearanceValue("Effects", effects.displayName())
+        Text("Layout mode")
+        Text(
+            text = "This choice lasts until Oxygen is closed. Standard remains the launch default.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            LayoutChoice(
+                label = "Simple",
+                preset = LayoutPreset.SIMPLE,
+                selected = layout == LayoutPreset.SIMPLE,
+                onClick = { onLayoutSelected(LayoutPreset.SIMPLE) },
+                modifier = Modifier.weight(1f),
+            )
+            LayoutChoice(
+                label = "Standard",
+                preset = LayoutPreset.STANDARD,
+                selected = layout == LayoutPreset.STANDARD,
+                onClick = { onLayoutSelected(LayoutPreset.STANDARD) },
+                modifier = Modifier.weight(1f),
+            )
+        }
         Text("Effects mode")
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -250,6 +282,24 @@ private fun AppearanceSummary(
             else -> Text("Your effects choice is saved on this device.")
         }
     }
+}
+
+@Composable
+private fun LayoutChoice(
+    label: String,
+    preset: LayoutPreset,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .testTag("settings-layout-${preset.name.lowercase()}"),
+    )
 }
 
 @Composable

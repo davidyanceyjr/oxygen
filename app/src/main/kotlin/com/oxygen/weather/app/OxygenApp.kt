@@ -5,6 +5,7 @@ import android.os.Looper
 import androidx.compose.runtime.Composable
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,6 +17,7 @@ import com.oxygen.weather.app.ui.alerts.AlertDetailScreen
 import com.oxygen.weather.app.ui.firstrun.FirstRunLocationEntryScreen
 import com.oxygen.weather.app.ui.home.HomeLoadingScreen
 import com.oxygen.weather.app.ui.settings.SettingsScreen
+import com.oxygen.weather.app.ui.theme.LayoutPreset
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenTheme
 
@@ -30,8 +32,13 @@ fun OxygenApp(
     var animationsEnabled by remember(motionPreferenceSource) {
         mutableStateOf(motionPreferenceSource.areAnimationsEnabled())
     }
+    var sessionLayout by remember { mutableStateOf(appearance.layout) }
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
     val lifecycleOwner = LocalContext.current as? androidx.lifecycle.LifecycleOwner
+
+    LaunchedEffect(appearance.layout) {
+        sessionLayout = appearance.layout
+    }
 
     DisposableEffect(lifecycleOwner, motionPreferenceSource) {
         val observer = LifecycleEventObserver { _, event ->
@@ -71,10 +78,11 @@ fun OxygenApp(
     }
 
     val themeId = appearance.theme
+    val sessionAppearance = appearance.copy(layout = sessionLayout)
     val requestedAppearance = if (appState.effectsPreference.isManaged) {
-        appearance.copy(effects = appState.effectsPreference.effectiveRequested)
+        sessionAppearance.copy(effects = appState.effectsPreference.effectiveRequested)
     } else {
-        appearance
+        sessionAppearance
     }
     val effectiveAppearance = requestedAppearance.copy(
         effects = if (animationsEnabled) requestedAppearance.effects else com.oxygen.weather.app.ui.theme.EffectsLevel.OFF,
@@ -195,6 +203,9 @@ fun OxygenApp(
                 onEffectsPreferenceRetry = {
                     stateHolder.onEffectsPreferenceRetry()
                     appState = stateHolder.presentationState
+                },
+                onLayoutSelected = { layout: LayoutPreset ->
+                    sessionLayout = layout
                 },
             )
             is OxygenAppScreen.AlertDetail -> AlertDetailScreen(

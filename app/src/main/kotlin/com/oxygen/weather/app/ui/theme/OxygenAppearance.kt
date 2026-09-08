@@ -10,3 +10,10 @@ data class OxygenAppearance(
     val effects: EffectsLevel = EffectsLevel.SUBTLE,
     val iconPack: WeatherIconPack = WeatherIconPack.OXYGEN,
 )
+
+fun LayoutPreset.displayName(): String = when (this) {
+    LayoutPreset.SIMPLE -> "Simple"
+    LayoutPreset.STANDARD -> "Standard"
+    LayoutPreset.DETAILED -> "Detailed"
+    LayoutPreset.METEOROLOGIST -> "Meteorologist"
+}
