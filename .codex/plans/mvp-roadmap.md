@@ -6,7 +6,7 @@ Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
 Revised: 2026-09-07
 Reconciled against remote `main`: `be38405`
-Synchronized through local commit: `98a26d3`
+Synchronized through local context-budget split commit after `a7b8434`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -17,6 +17,23 @@ This document is a release map, not an active implementation plan. It records in
 Roadmap entries are not evidence. A slice remains only specified until `.codex/plans/current.md` selects it, production code implements it, and focused plus real-path evidence is recorded. A roadmap status may be synchronized to `committed` only when the corresponding implementation cycle and repository history support that state.
 
 Before implementation starts, copy one bounded behavior slice from this release map into `.codex/plans/current.md` with its acceptance boundary, focused evidence, real-path exercise, broad checks, and out-of-scope limits. Keep implementation slices small enough to stop at a verified boundary.
+
+## Context Budget Rule
+
+Active implementation plans should target completion within roughly 40% of the
+available session context. When a candidate slice would combine several
+high-context concerns, split it before implementation even if the roadmap gains
+more entries.
+
+For normal planning, read this header, the active plan, recent cycle history,
+and only the current candidate plus the remaining-sequence tail. Do not reread
+the full historical roadmap unless resolving a specific authority conflict,
+regression, commit, or release claim.
+
+Split remaining work by independently observable boundaries. Avoid active
+slices that combine more than one new persistence format, state-machine
+transition set, user-facing UI surface, installed/emulator journey, provider
+path, platform adapter, or broad documentation sync.
 
 ## Evidence Rule
 
@@ -1523,13 +1540,22 @@ Planning note: split definition from persistence.
 
 ### Slice 27A: Simple Layout Definition
 
-Status: specified
+Status: committed at `660e376`
 
 Prerequisite:
 
 - Slice 18H.
 
-Release intent: Define Simple before making it selectable.
+Release intent: Define Simple before persisted selection.
+
+Implemented result:
+
+- The installed Settings / Appearance surface can select Simple for the current
+  app session only. Standard remains the launch/restart default.
+- Simple Home exposes `Now -> Forecast`; Forecast exposes Hourly and Daily
+  choices without provider refetch.
+- Source/stale/provenance and official alert reachability remain visible where
+  supplied; Standard Home remains unchanged.
 
 Must prove:
 
@@ -1538,27 +1564,98 @@ Must prove:
 - source/stale/alert information remains reachable;
 - page semantics remain coherent or an explicitly specified alternative replaces them.
 
-### Slice 27B: Persisted Layout Selection
+### Slice 27B1: Layout Preference Storage and State
 
-Status: specified
+Status: committed at `b68ca19`
 
 Prerequisites:
 
-- Slice 27A.
-- Slice 25A.
+- Slice 27A, committed at `660e376`.
 - small-state persistence.
+
+Must prove:
+
+- the versioned DataStore codec accepts only Simple and Standard;
+- malformed, incomplete, future, Detailed, and Meteorologist records resolve to
+  the conservative Standard fallback without aliasing unsupported choices;
+- state-holder startup, retry, pending write, failed write, and successful write
+  transitions preserve the last confirmed effective layout;
+- layout state changes do not rebuild forecast, alert, location, unit, or
+  effects data.
+
+Implemented result:
+
+- Added versioned DataStore codec/storage for Simple and Standard layout
+  preferences only.
+- Added state-holder startup, retry, pending write, failed write, and
+  successful write transitions that preserve the last confirmed effective
+  layout.
+- Added focused unit coverage for codec behavior, event ordering, failed retry,
+  and preservation of forecast/location/unit/effects boundaries.
+
+Out of scope:
+
+- Settings UI changes;
+- installed Activity recreation or force-stop verification;
+- Detailed or Meteorologist storage.
+
+### Slice 27B2: Layout Settings Transaction UI
+
+Status: committed at `b68ca19`
+
+Prerequisites:
+
+- Slice 27B1.
+- Slice 25A.
 
 Must prove:
 
 - Standard remains default;
 - Simple/Standard switching requires no provider refetch;
-- selection persists;
-- both layouts pass compact/large-font checks;
+- Settings / Appearance exposes loading, saved, pending, failure, and retry
+  states truthfully;
+- failed writes retain the last confirmed layout and allow retry;
+- layout controls keep selected semantics, logical traversal, and at least 48dp
+  touch height;
 - layout remains independent from effects/theme.
+
+Implemented result:
+
+- Wired production `MainActivity`, `OxygenAppStateHolder`, `OxygenApp`, and
+  Settings / Appearance layout preference state.
+- Settings / Appearance exposes loading, saved, pending, failure, and retry
+  states for Simple/Standard layout selection.
+- Targeted connected UI coverage passed for commit, read/write failure retry,
+  no forecast refetch, preference independence, selected semantics, and compact
+  48dp layout controls.
 
 Out of scope:
 
-Do not implement Detailed or Meteorologist merely because enum values already exist.
+- Activity recreation and installed force-stop/relaunch persistence evidence;
+- Detailed or Meteorologist controls.
+
+### Slice 27B3: Installed Layout Restoration Verification
+
+Status: planned
+
+Prerequisites:
+
+- Slice 27B2.
+
+Must prove:
+
+- a saved Simple or Standard choice restores through the production
+  `MainActivity -> OxygenAppStateHolder -> OxygenApp -> Home` path;
+- Activity recreation and installed-app force-stop/relaunch preserve the saved
+  layout;
+- restored Simple does not first expose a ready Standard Home;
+- both restored layouts remain usable at compact large-font Effects Off
+  settings.
+
+Out of scope:
+
+- new layout types;
+- theme, icon, high-contrast, or effects behavior changes.
 
 ---
 
@@ -1566,9 +1663,10 @@ Do not implement Detailed or Meteorologist merely because enum values already ex
 
 Status: specified
 
-Planning note: split translation quality from persistence.
+Planning note: split translation quality by one theme at a time, then persist
+only themes that pass the rendering boundary.
 
-### Slice 28A: Theme Translation Completion
+### Slice 28A1: Paper Theme Rendering Baseline
 
 Status: specified
 
@@ -1577,9 +1675,10 @@ Prerequisites:
 - Slice 18G.
 - Slice 18I.
 
-Release intent: Make every MVP theme a deliberate translation of semantic design roles.
+Release intent: Make Paper a deliberate translation of semantic design roles
+before it can become a persisted choice.
 
-Must prove for each theme intended for MVP:
+Must prove for Paper:
 
 - semantic surfaces are mapped deliberately;
 - operational/warning states remain readable;
@@ -1590,17 +1689,59 @@ Must prove for each theme intended for MVP:
 
 Theme quality rule:
 
-Existing scaffold values do not guarantee inclusion. Paper or Terminal may be deferred rather than shipped weakly.
+Existing scaffold values do not guarantee inclusion. Paper may be deferred
+rather than shipped weakly.
 
-### Slice 28B: Persisted Theme Selection
+### Slice 28A2: Terminal Theme Rendering Baseline
 
 Status: specified
 
 Prerequisites:
 
-- Slice 28A.
-- Slice 25A.
+- Slice 18G.
+- Slice 18I.
+- Slice 28A1 or an explicit decision to defer Paper.
+
+Release intent: Make Terminal a deliberate translation of semantic design roles
+before it can become a persisted choice.
+
+Must prove for Terminal:
+
+- semantic surfaces are mapped deliberately;
+- operational/warning states remain readable;
+- weather marks remain readable;
+- typography is intentional;
+- effects-off remains complete;
+- weather semantics do not change.
+
+Theme quality rule:
+
+Terminal may be deferred rather than shipped weakly.
+
+### Slice 28B1: Theme Preference Storage and State
+
+Status: specified
+
+Prerequisites:
+
+- at least one verified alternate theme from Slice 28A1 or 28A2.
 - small-state persistence.
+
+Must prove:
+
+- only verified MVP theme choices are accepted;
+- unknown/future theme records fall back conservatively;
+- state-holder read/write failure behavior is observable and retryable;
+- theme state remains independent from layout/effects.
+
+### Slice 28B2: Persisted Theme Settings UI
+
+Status: specified
+
+Prerequisites:
+
+- Slice 28B1.
+- Slice 25A.
 
 Must prove:
 
@@ -1611,7 +1752,7 @@ Must prove:
 
 ---
 
-## Slice 29: High-Contrast Presentation Baseline
+## Slice 29A: High-Contrast Rendering Contract
 
 Status: specified
 
@@ -1619,15 +1760,34 @@ Prerequisites:
 
 - Slice 18G.
 - Slice 18I.
-- Slice 25A.
 
 Must prove:
 
 - high contrast is a semantic accessibility presentation, not merely brighter colors;
 - required meaning never depends on color;
 - compact + large font + effects off remains usable;
-- operational and alert states remain distinct;
-- preference persists if user-selectable.
+- operational and alert states remain distinct.
+
+Out of scope:
+
+- persisted setting or Settings UI.
+
+## Slice 29B: High-Contrast Preference UI
+
+Status: specified
+
+Prerequisites:
+
+- Slice 29A.
+- Slice 25A.
+- small-state persistence.
+
+Must prove:
+
+- high contrast is reachable only if the rendering contract passed;
+- preference persists across restart;
+- provider refetch is not required;
+- contrast remains independent from theme/layout/effects.
 
 ---
 
@@ -1724,7 +1884,7 @@ Must prove at installed Android boundary:
 
 ---
 
-## Slice 33: MVP Privacy and Dependency Audit
+## Slice 33A: Dependency and Manifest Privacy Audit
 
 Status: specified
 
@@ -1739,7 +1899,22 @@ Must prove review of:
 - background location;
 - exported components;
 - backup/data-extraction behavior where relevant;
-- cleartext/network-security configuration where relevant;
+- cleartext/network-security configuration where relevant.
+
+Out of scope:
+
+- provider disclosure text and Settings navigation checks.
+
+## Slice 33B: Provider Disclosure and Local Data Privacy Audit
+
+Status: specified
+
+Prerequisite:
+
+- Slice 33A.
+
+Must prove review of:
+
 - active forecast/geocoding/alert providers;
 - attribution/privacy/license reachability.
 
@@ -1747,26 +1922,41 @@ No provider is active/current in disclosures unless its production path can fetc
 
 ---
 
-## Gate 34: About, Settings, and Data-Source Release Check
+## Gate 34A: Settings and About Release Check
 
 Status: specified
 
 Must prove:
 
 - Settings IA matches implemented preferences;
-- Data Sources lists only active providers as active;
-- forecast/geocoding/alert claims match repository docs;
 - Open Source Licenses and Privacy remain reachable;
 - source-code license and weather-data licenses remain distinct;
 - no placeholder appearance option is exposed as implemented.
 
----
-
-## Gate 35: Oxygen MVP Broad Verification and Release Candidate
+## Gate 34B: Data-Source Release Check
 
 Status: specified
 
-Release intent: Verify MVP behavior against the repository completion standard.
+Prerequisite:
+
+- Gate 34A.
+- Slice 33B.
+
+Must prove:
+
+- Data Sources lists only active providers as active;
+- forecast/geocoding/alert claims match repository docs;
+- attribution links and provider privacy claims are reachable;
+- release-facing provider claims match installed behavior.
+
+---
+
+## Gate 35A: MVP Core Behavior Verification
+
+Status: specified
+
+Release intent: Verify core weather and local-state MVP behavior against the
+repository completion standard before presentation/release evidence is bundled.
 
 Must prove:
 
@@ -1781,11 +1971,23 @@ Must prove:
 - saved-location add/select/remove;
 - units;
 - official alerts;
+- source/provenance.
+
+## Gate 35B: MVP Presentation and Accessibility Verification
+
+Status: specified
+
+Prerequisite:
+
+- Gate 35A.
+
+Must prove:
+
 - implemented presentation settings;
 - effects Off;
 - high contrast if included;
-- source/provenance;
-- disclosure/privacy.
+- disclosure/privacy;
+- compact, large-font, reduced-motion, and RTL behavior where applicable.
 
 Required installed-app UI evidence includes:
 
@@ -1802,6 +2004,19 @@ Required installed-app UI evidence includes:
 - large font;
 - compact phone;
 - representative operational failure.
+
+## Gate 35C: Release Candidate Decision
+
+Status: specified
+
+Prerequisite:
+
+- Gate 35A.
+- Gate 35B.
+- Gate 34B.
+
+Release intent: Make the release-candidate status decision only after the broad
+verification evidence exists.
 
 Release-candidate status is blocked if:
 
@@ -1880,8 +2095,8 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 ## Recommended Sequence From Current Committed State
 
 Remote `main` is reconciled through merge `be38405`. The latest completed local
-implementation slice is Slice 24B, implemented at `ceb6253` with completion
-evidence recorded at `b7e3514`.
+implementation slice is Slice 27A, implemented at `660e376` with completion
+evidence recorded at `.codex/test-artifacts/2026-09-07-slice-27a-simple-layout-definition/`.
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
@@ -1908,13 +2123,23 @@ Use this as sequencing guidance, not permission to work multiple slices at once.
 21. Slice 24B — Alert Detail UI
 22. Gate 25 — Disclosure Baseline Check
 23. Slice 26 — Effects Preference
-24. Slice 27A / 27B — Simple Layout Definition and Selection
-25. Slice 28A / 28B — Theme Translation and Selection
-26. Slice 29 — High Contrast
-27. Gate 30 — Accessibility Presentation Verification
-28. Slice 33 — Privacy and Dependency Audit
-29. Gate 34 — About/Settings/Data-Source Release Check
-30. Gate 35 — MVP Release Candidate Verification
+24. Slice 27B1 — Layout Preference Storage and State
+25. Slice 27B2 — Layout Settings Transaction UI
+26. Slice 27B3 — Installed Layout Restoration Verification
+27. Slice 28A1 — Paper Theme Rendering Baseline
+28. Slice 28A2 — Terminal Theme Rendering Baseline, or explicitly defer it
+29. Slice 28B1 — Theme Preference Storage and State
+30. Slice 28B2 — Persisted Theme Settings UI
+31. Slice 29A — High-Contrast Rendering Contract
+32. Slice 29B — High-Contrast Preference UI
+33. Gate 30 — Accessibility Presentation Verification
+34. Slice 33A — Dependency and Manifest Privacy Audit
+35. Slice 33B — Provider Disclosure and Local Data Privacy Audit
+36. Gate 34A — Settings and About Release Check
+37. Gate 34B — Data-Source Release Check
+38. Gate 35A — MVP Core Behavior Verification
+39. Gate 35B — MVP Presentation and Accessibility Verification
+40. Gate 35C — Release Candidate Decision
 
 Run recurring documentation-sync gates at the defined cadence.
 
@@ -1933,8 +2158,10 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 27A: Simple Layout Definition. Gate 25 disclosure baseline is
-committed at `23a9d49` after Slice 25A Settings Information Architecture.
+Candidate: Slice 27B3: Installed Layout Restoration Verification. Slice 27B1
+and Slice 27B2 are committed together at `b68ca19` after Slice 27A. Slice 27B3
+remains the next bounded verification slice because no separate ADB-driven
+installed force-stop/relaunch journey has been recorded yet.
 
 Immediate planning boundary:
 
@@ -1964,18 +2191,20 @@ Immediate planning boundary:
 -> 24B alert detail UI committed at ceb6253
 -> Slice 25A Settings information architecture committed at `2484e90`
 -> Gate 25 disclosure baseline check committed at `23a9d49`
--> next candidate: Slice 27A Simple Layout Definition
+-> Slice 26 persisted effects preference committed at `c7b578a`
+-> Slice 27A Simple Layout Definition committed at `660e376`
+-> Slice 27B1/27B2 persisted layout storage and Settings UI committed at `b68ca19`
+-> next candidate: Slice 27B3 Installed Layout Restoration Verification
 ```
 
-Gate 25 is a committed disclosure prerequisite. Slice 27A may now be selected
-as the next bounded implementation slice; release work and release-candidate
-claims remain outside this boundary.
+Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 may
+now be planned as the next bounded verification slice; release work and
+release-candidate claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice
 18J-R was a provider-path recovery slice required by the blocked Slice 18J
 evidence boundary, not a new visual gate.
 
-After this authority sync, Gate 25 is complete and committed. Do not treat
-Slice 27B or later roadmap entries as active implementation work until a new
+Do not treat later roadmap entries as active implementation work until a new
 bounded plan selects one.

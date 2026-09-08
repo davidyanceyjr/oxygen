@@ -21,6 +21,7 @@ import com.oxygen.weather.core.provider.cache.ForecastCacheStorage
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoGeocodingRepository
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoWeatherRepository
 import com.oxygen.weather.app.ui.theme.EffectsLevel
+import com.oxygen.weather.app.ui.theme.LayoutPreset
 import java.time.Clock
 import java.time.Duration
 import java.util.Locale
@@ -35,6 +36,8 @@ class OxygenAppStateHolder(
     private val unitPreferenceStorage: UnitPreferenceStorage = EmptyUnitPreferenceStorage,
     private val savedLocationStorage: SavedLocationStorage? = null,
     private val forecastCacheStorage: ForecastCacheStorage? = null,
+    private val layoutPreferenceStorage: LayoutPreferenceStorage? = null,
+    private val initialLayout: LayoutPreset = LayoutPreset.STANDARD,
     private val clock: Clock = Clock.systemUTC(),
     private val deviceLocationSource: DeviceLocationSource? = null,
     private val timeZoneResolver: CoordinateTimeZoneResolver = OpenMeteoTimeZoneResolver(),
@@ -51,6 +54,8 @@ class OxygenAppStateHolder(
 ) {
     private var startupLocationReadFailed = false
     private val initialSelectedLocation: WeatherLocation? = selectedLocation
+    private val managedLayoutStorage = layoutPreferenceStorage != null
+    private val initialEffectiveLayout = if (managedLayoutStorage) LayoutPreset.STANDARD else initialLayout
     private val initialEffectsPreference = EffectsPreferencePresentationState.initial(
         isManaged = effectsPreferenceStorage != null,
     )
@@ -62,6 +67,12 @@ class OxygenAppStateHolder(
             screen = OxygenAppScreen.FirstRunLocationEntry(),
             selectedLocation = null,
             savedLocations = SavedLocationsPresentationState.NotLoaded,
+            layout = initialEffectiveLayout,
+            layoutPreference = if (managedLayoutStorage) {
+                LayoutPreferencePresentationState.loading()
+            } else {
+                LayoutPreferencePresentationState.notConfigured(initialLayout)
+            },
             effectsPreference = initialEffectsPreference,
         )
     } else {
@@ -71,6 +82,12 @@ class OxygenAppStateHolder(
             ),
             selectedLocation = initialSelectedLocation,
             savedLocations = SavedLocationsPresentationState.NotLoaded,
+            layout = initialEffectiveLayout,
+            layoutPreference = if (managedLayoutStorage) {
+                LayoutPreferencePresentationState.loading()
+            } else {
+                LayoutPreferencePresentationState.notConfigured(initialLayout)
+            },
             effectsPreference = initialEffectsPreference,
         )
     }
@@ -82,6 +99,8 @@ class OxygenAppStateHolder(
     private var activeUnitPreference: UnitPreference? = null
     private var activeCanonicalForecast: ActiveCanonicalForecast? = null
     private var effectsPreferenceWriteId = 0L
+    private var layoutPreferenceWriteId = 0L
+    private var lastFailedLayoutSelection: LayoutPreset? = null
     private var deviceAttemptCounter = 0L
     private var activeDeviceAttempt: Long? = null
     private var deviceCancellation: LocationCancellation? = null
@@ -90,9 +109,11 @@ class OxygenAppStateHolder(
         if (initialSelectedLocation == null) {
             if (selectedLocationStorage !== EmptySelectedLocationStorage ||
                 unitPreferenceStorage !== EmptyUnitPreferenceStorage ||
-                effectsPreferenceStorage != null
+                effectsPreferenceStorage != null ||
+                managedLayoutStorage
             ) {
                 forecastExecutor.execute {
+                    loadStoredLayoutPreference()
                     loadStoredEffectsPreference()
                     loadStoredUnitPreference()
                     val restoredLocation = readStoredSelectedLocation()
@@ -117,6 +138,7 @@ class OxygenAppStateHolder(
             }
         } else {
             forecastExecutor.execute {
+                if (managedLayoutStorage) loadStoredLayoutPreference()
                 loadStoredEffectsPreference()
                 loadStoredUnitPreference()
                 restoreCachedHomeForecast(initialSelectedLocation)
@@ -464,6 +486,96 @@ class OxygenAppStateHolder(
                     unitPreference = activeUnitPreference,
                 )
                 publishState()
+            }
+        }
+    }
+
+    fun onLayoutSelected(layout: LayoutPreset) {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != SettingsDestination.Appearance) return
+
+        val storage = layoutPreferenceStorage
+        val currentState = presentationState
+        if (currentState.layout == layout && currentState.layoutPreference.pending == null) {
+            return
+        }
+
+        if (storage == null) {
+            synchronized(this) {
+                presentationState = presentationState.copy(
+                    layout = layout,
+                    layoutPreference = LayoutPreferencePresentationState.notConfigured(layout),
+                )
+                publishState()
+            }
+            return
+        }
+
+        val operationId = synchronized(this) {
+            if (currentState.layoutPreference.pending != null) return
+            layoutPreferenceWriteId += 1
+            lastFailedLayoutSelection = layout
+            presentationState = presentationState.copy(
+                layoutPreference = currentState.layoutPreference.copy(
+                    pending = layout,
+                    writeError = false,
+                ),
+            )
+            publishState()
+            layoutPreferenceWriteId
+        }
+
+        forecastExecutor.execute {
+            try {
+                storage.writeLayoutPreference(layout)
+            } catch (_: Exception) {
+                synchronized(this) {
+                    if (operationId != layoutPreferenceWriteId) return@synchronized
+                    presentationState = presentationState.copy(
+                        layoutPreference = presentationState.layoutPreference.copy(
+                            pending = null,
+                            writeError = true,
+                        ),
+                    )
+                    publishState()
+                }
+                return@execute
+            }
+
+            synchronized(this) {
+                if (operationId != layoutPreferenceWriteId) return@synchronized
+                lastFailedLayoutSelection = null
+                presentationState = presentationState.copy(
+                    layout = layout,
+                    layoutPreference = LayoutPreferencePresentationState.loaded(layout),
+                )
+                publishState()
+            }
+        }
+    }
+
+    fun onLayoutPreferenceRetry() {
+        if (layoutPreferenceStorage == null) return
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != SettingsDestination.Appearance) return
+
+        val current = presentationState.layoutPreference
+        when {
+            current.writeError -> {
+                val retryLayout = lastFailedLayoutSelection ?: return
+                onLayoutSelected(retryLayout)
+            }
+            else -> {
+                synchronized(this) {
+                    presentationState = presentationState.copy(
+                        layoutPreference = LayoutPreferencePresentationState.loading(
+                            confirmed = current.confirmed,
+                        ),
+                        layout = current.confirmed ?: LayoutPreset.STANDARD,
+                    )
+                    publishState()
+                }
+                forecastExecutor.execute { loadStoredLayoutPreference() }
             }
         }
     }
@@ -821,6 +933,46 @@ class OxygenAppStateHolder(
         }
     }
 
+    private fun loadStoredLayoutPreference() {
+        val storage = layoutPreferenceStorage ?: return
+        val confirmedBeforeLoad = presentationState.layoutPreference.confirmed
+        synchronized(this) {
+            presentationState = presentationState.copy(
+                layoutPreference = LayoutPreferencePresentationState.loading(confirmed = confirmedBeforeLoad),
+                layout = confirmedBeforeLoad ?: LayoutPreset.STANDARD,
+            )
+            publishState()
+        }
+
+        val next = try {
+            when (val restored = storage.readLayoutPreference()) {
+                LayoutPreferenceReadResult.NoSupportedChoice -> LayoutPreferencePresentationState.loaded(LayoutPreset.STANDARD)
+                is LayoutPreferenceReadResult.Supported -> LayoutPreferencePresentationState.loaded(restored.layout)
+            }
+        } catch (_: Exception) {
+            LayoutPreferencePresentationState.failed(confirmedBeforeLoad)
+        }
+
+        synchronized(this) {
+            val nextLayout = when (next.readState) {
+                LayoutPreferenceReadState.Loaded -> next.confirmed ?: LayoutPreset.STANDARD
+                LayoutPreferenceReadState.Failed -> confirmedBeforeLoad ?: LayoutPreset.STANDARD
+                LayoutPreferenceReadState.Loading,
+                LayoutPreferenceReadState.NotConfigured -> presentationState.layout
+            }
+            presentationState = presentationState.copy(
+                layout = nextLayout,
+                layoutPreference = next.copy(
+                    confirmed = next.confirmed ?: confirmedBeforeLoad,
+                ),
+            )
+            if (next.readState == LayoutPreferenceReadState.Loaded) {
+                lastFailedLayoutSelection = null
+            }
+            publishState()
+        }
+    }
+
     @Synchronized
     private fun setHomeLoading(location: WeatherLocation) {
         presentationState = presentationState.copy(
@@ -971,12 +1123,57 @@ private fun OxygenAppPresentationState.retainVisibleCacheAfterRefreshFailure(
 data class OxygenAppPresentationState(
     val screen: OxygenAppScreen,
     val selectedLocation: WeatherLocation?,
+    val layout: LayoutPreset = LayoutPreset.STANDARD,
     val savedLocations: SavedLocationsPresentationState = SavedLocationsPresentationState.NotLoaded,
     val unitPreference: UnitPreference? = null,
+    val layoutPreference: LayoutPreferencePresentationState = LayoutPreferencePresentationState.notConfigured(),
     val effectsPreference: EffectsPreferencePresentationState = EffectsPreferencePresentationState.notConfigured(),
 ) {
     val isShowingHome: Boolean = screen is OxygenAppScreen.Home && selectedLocation != null
     val usesScaffoldWeather: Boolean = false
+}
+
+enum class LayoutPreferenceReadState {
+    NotConfigured,
+    Loading,
+    Loaded,
+    Failed,
+}
+
+data class LayoutPreferencePresentationState(
+    val readState: LayoutPreferenceReadState,
+    val confirmed: LayoutPreset? = null,
+    val pending: LayoutPreset? = null,
+    val writeError: Boolean = false,
+) {
+    val isManaged: Boolean
+        get() = readState != LayoutPreferenceReadState.NotConfigured
+
+    companion object {
+        fun notConfigured(initialLayout: LayoutPreset = LayoutPreset.STANDARD): LayoutPreferencePresentationState =
+            LayoutPreferencePresentationState(
+                readState = LayoutPreferenceReadState.NotConfigured,
+                confirmed = initialLayout,
+            )
+
+        fun loading(confirmed: LayoutPreset? = null): LayoutPreferencePresentationState =
+            LayoutPreferencePresentationState(
+                readState = LayoutPreferenceReadState.Loading,
+                confirmed = confirmed,
+            )
+
+        fun loaded(layout: LayoutPreset): LayoutPreferencePresentationState =
+            LayoutPreferencePresentationState(
+                readState = LayoutPreferenceReadState.Loaded,
+                confirmed = layout,
+            )
+
+        fun failed(confirmed: LayoutPreset? = null): LayoutPreferencePresentationState =
+            LayoutPreferencePresentationState(
+                readState = LayoutPreferenceReadState.Failed,
+                confirmed = confirmed,
+            )
+    }
 }
 
 enum class EffectsPreferenceReadState {

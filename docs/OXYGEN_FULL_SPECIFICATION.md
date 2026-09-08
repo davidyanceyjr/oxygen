@@ -1951,12 +1951,21 @@ disclosure, source-code license identification, and observable reachability of
 the direct Settings disclosure destinations. Slice 26, Effects Preference,
 implements and exercises persisted Off/Subtle selection, conservative
 restoration/failure behavior, Android disabled-motion override, and reduced-
-motion Home page navigation. Full effects, richer scene behavior, and
-persisted theme/layout/icon settings remain later work. Slice 27A, Simple
-Layout Definition, is the next bounded implementation candidate. The Slice 26
-installed real-path Home forecast exercise was incomplete in the current cycle
-because one bounded emulator search attempt did not reach a provider result;
-deterministic Android boundary tests and Settings persistence checks passed.
+motion Home page navigation.
+
+Slice 27A, Simple Layout Definition, is implemented, verified, and committed
+in `660e376`. The installed Settings / Appearance surface can select Simple
+for the current app session only; Standard remains the launch/restart default.
+Simple Home exposes `Now -> Forecast`, with Hourly and Daily choices inside
+Forecast, while retaining source/update/provenance, stale/cache failure
+context, and official-alert reachability where supplied. Switching layout or
+Hourly/Daily presentation does not refetch forecast, alert, location, or
+geocoding data. Persisted layout selection/restoration is the next Slice 27B
+candidate and remains unimplemented. Full effects, richer scene behavior, and
+persisted theme/icon settings also remain later work. The Slice 26 installed
+real-path Home forecast exercise was incomplete because one bounded emulator
+search attempt did not reach a provider result; deterministic Android boundary
+tests and Settings persistence checks passed.
 
 ---
 

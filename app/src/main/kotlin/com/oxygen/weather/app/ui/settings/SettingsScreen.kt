@@ -2,10 +2,13 @@ package com.oxygen.weather.app.ui.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -22,6 +25,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -29,12 +34,16 @@ import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.AboutSection
 import com.oxygen.weather.app.EffectsPreferencePresentationState
 import com.oxygen.weather.app.EffectsPreferenceReadState
+import com.oxygen.weather.app.LayoutPreferencePresentationState
+import com.oxygen.weather.app.LayoutPreferenceReadState
 import com.oxygen.weather.app.OxygenAppScreen
 import com.oxygen.weather.app.SettingsDestination
 import com.oxygen.weather.app.UnitPreferenceMessage
 import com.oxygen.weather.app.ui.theme.EffectsLevel
+import com.oxygen.weather.app.ui.theme.LayoutPreset
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenThemeId
+import com.oxygen.weather.app.ui.theme.displayName
 import com.oxygen.weather.app.ui.units.UnitPreferencesScreen
 import com.oxygen.weather.core.model.UnitPreference
 
@@ -48,10 +57,13 @@ fun SettingsScreen(
     selectedUnitPreference: UnitPreference? = null,
     unitPreferenceMessage: UnitPreferenceMessage? = null,
     onUnitPreferenceSelected: (UnitPreference?) -> Unit = {},
+    layoutPreference: LayoutPreferencePresentationState = LayoutPreferencePresentationState.notConfigured(),
     effectsPreference: EffectsPreferencePresentationState = EffectsPreferencePresentationState.notConfigured(),
     animationsEnabled: Boolean = true,
     onEffectsPreferenceSelected: (EffectsLevel) -> Unit = {},
     onEffectsPreferenceRetry: () -> Unit = {},
+    onLayoutSelected: (LayoutPreset) -> Unit = {},
+    onLayoutPreferenceRetry: () -> Unit = {},
 ) {
     Surface(Modifier.fillMaxSize()) {
         Column(
@@ -94,9 +106,13 @@ fun SettingsScreen(
                     )
                     SettingsDestination.Appearance -> AppearanceSummary(
                         themeId = themeId,
+                        layout = appearance.layout,
                         effects = appearance.effects,
+                        layoutPreference = layoutPreference,
                         preference = effectsPreference,
                         animationsEnabled = animationsEnabled,
+                        onLayoutSelected = onLayoutSelected,
+                        onLayoutRetry = onLayoutPreferenceRetry,
                         onEffectsSelected = onEffectsPreferenceSelected,
                         onRetry = onEffectsPreferenceRetry,
                     )
@@ -189,9 +205,13 @@ private fun SettingsGroup(
 @Composable
 private fun AppearanceSummary(
     themeId: OxygenThemeId,
+    layout: LayoutPreset,
     effects: EffectsLevel,
+    layoutPreference: LayoutPreferencePresentationState,
     preference: EffectsPreferencePresentationState,
     animationsEnabled: Boolean,
+    onLayoutSelected: (LayoutPreset) -> Unit,
+    onLayoutRetry: () -> Unit,
     onEffectsSelected: (EffectsLevel) -> Unit,
     onRetry: () -> Unit,
 ) {
@@ -207,8 +227,83 @@ private fun AppearanceSummary(
             fontWeight = FontWeight.SemiBold,
         )
         AppearanceValue("Theme", themeId.displayName)
-        AppearanceValue("Layout", "Standard")
+        AppearanceValue("Layout", "${layout.displayName()} layout")
         AppearanceValue("Effects", effects.displayName())
+        Text("Layout mode")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            LayoutChoice(
+                label = "Simple",
+                preset = LayoutPreset.SIMPLE,
+                selected = layout == LayoutPreset.SIMPLE,
+                enabled = layoutPreference.pending == null,
+                onClick = { onLayoutSelected(LayoutPreset.SIMPLE) },
+                modifier = Modifier.weight(1f),
+            )
+            LayoutChoice(
+                label = "Standard",
+                preset = LayoutPreset.STANDARD,
+                selected = layout == LayoutPreset.STANDARD,
+                enabled = layoutPreference.pending == null,
+                onClick = { onLayoutSelected(LayoutPreset.STANDARD) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        when {
+            layoutPreference.pending != null -> Text(
+                text = "Saving ${layoutPreference.pending.displayName()}...",
+                modifier = Modifier.testTag("layout_preference_loading"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+            )
+            layoutPreference.readState == LayoutPreferenceReadState.Loading -> Text(
+                text = "Loading layout preference",
+                modifier = Modifier.testTag("layout_preference_loading"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+            )
+            layoutPreference.writeError -> {
+                Text(
+                    text = "Layout save failed; retry",
+                    modifier = Modifier.testTag("layout_preference_error"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                )
+                OutlinedButton(
+                    onClick = onLayoutRetry,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("layout_preference_retry"),
+                ) {
+                    Text("Retry")
+                }
+            }
+            layoutPreference.readState == LayoutPreferenceReadState.Failed -> {
+                Text(
+                    text = "Layout load failed; using ${layout.displayName()}; retry",
+                    modifier = Modifier.testTag("layout_preference_error"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                )
+                OutlinedButton(
+                    onClick = onLayoutRetry,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("layout_preference_retry"),
+                ) {
+                    Text("Retry")
+                }
+            }
+            layoutPreference.readState == LayoutPreferenceReadState.NotConfigured -> Text(
+                text = "This choice lasts until Oxygen is closed. Standard remains the launch default.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+            )
+            else -> Text(
+                text = "Layout saved",
+                modifier = Modifier.testTag("layout_preference_saved"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+            )
+        }
         Text("Effects mode")
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -253,9 +348,9 @@ private fun AppearanceSummary(
 }
 
 @Composable
-private fun EffectsChoice(
+private fun LayoutChoice(
     label: String,
-    level: EffectsLevel,
+    preset: LayoutPreset,
     selected: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
@@ -267,9 +362,38 @@ private fun EffectsChoice(
         enabled = enabled,
         label = { Text(label) },
         modifier = modifier
-            .heightIn(min = 48.dp)
-            .testTag("settings-effects-${level.name.lowercase()}"),
+            .requiredHeight(48.dp)
+            .semantics {
+                this.selected = selected
+                if (!enabled) disabled()
+            }
+            .testTag("settings-layout-${preset.name.lowercase()}"),
     )
+}
+
+@Composable
+private fun EffectsChoice(
+    label: String,
+    level: EffectsLevel,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
+    Box(
+        modifier = modifier
+            .height(48.dp)
+            .semantics { this.selected = selected }
+            .testTag("settings-effects-${level.name.lowercase()}"),
+    ) {
+        FilterChip(
+            selected = selected,
+            onClick = onClick,
+            enabled = enabled,
+            label = { Text(label) },
+            modifier = Modifier.requiredHeight(48.dp),
+        )
+    }
 }
 
 @Composable

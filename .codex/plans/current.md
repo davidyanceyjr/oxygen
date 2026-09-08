@@ -1,51 +1,70 @@
-# Slice 27A — Simple Layout Definition
+# Slice 27B3 - Installed Layout Force-Stop Restoration Verification
 
 **Status:** planned
-**Cycle ID:** `2026-09-07-slice-27a-simple-layout-definition`
-**Planning basis:** local `main` at `98a26d3`; Slice 26 implementation at
-`c7b578a`; Gate 25 implementation at `23a9d49`.
+**Cycle ID:** `2026-09-08-slice-27b3-installed-layout-restoration`
+**Planning basis:** Slice 27B1/27B2 storage/state and Settings transaction UI
+were committed at `b68ca19`; post-commit authority sync is being committed
+separately.
+**Next action:** run one ADB-driven installed-app force-stop/relaunch journey
+that saves Simple through the production Settings / Appearance surface and
+observes restored Simple Home after relaunch without claiming provider, theme,
+icon, effects, or release behavior.
 
-## Selected behavior and stopping boundary
+## Selected Behavior
 
-Define the MVP Simple layout as a distinct layout contract before it becomes
-selectable. Simple must keep required weather meaning, source/stale/alert
-reachability, and logical page semantics. It must not be Standard with
-arbitrary content removed.
+Verify that a saved Simple/Standard layout choice survives a real installed app
+force-stop/relaunch through the production `MainActivity -> OxygenAppStateHolder
+-> OxygenApp -> Home` path.
 
-Stop after the Simple layout definition and its direct presentation tests are
-in place. Do not add persisted layout selection, theme work, effects work,
-high contrast, custom units, provider changes, or a broader Home redesign in
-this slice.
+## Acceptance Boundary
 
-## Authorities and dependency check
+- From the installed app, select Simple through Settings / Appearance.
+- Force-stop and relaunch `com.oxygen.weather/.MainActivity`.
+- Observe Home restored in Simple layout (`Now -> Forecast`) before any ready
+  Standard Home is claimed.
+- Return to Settings / Appearance and observe Simple selected with saved status.
+- Repeat or reset to Standard only if needed to leave the emulator in a clean
+  local state.
 
-Read/reconcile `AGENTS.md`, `README.md`,
-`docs/OXYGEN_FULL_SPECIFICATION.md`,
-`docs/data-sources/PROVIDER_TEMPLATE.md`,
-`.codex/plans/mvp-roadmap.md`,
-and the relevant `app`/`core` build files before implementation.
+## Evidence and Verification
 
-Current dependency facts:
+Use:
 
-- Slice 26 is committed at `c7b578a`; the effects baseline is not the next
-  active slice.
-- Slice 27A is the roadmap candidate for layout definition.
-- Simple layout must remain independent from effects, theme, and layout
-  persistence.
+```text
+.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/
+```
 
-## Planned evidence
+The prior committed evidence for `b68ca19` is recorded at:
 
-- Focused app or Compose tests that encode the Simple layout contract.
-- One connected UI check only if the layout boundary requires it.
-- Broad compile/test checks limited to the changed code path after
-  implementation.
+```text
+.codex/test-artifacts/2026-09-08-slice-27b-persisted-layout-selection/ledger.md
+```
 
-## Out of scope
+Required command/evidence set for this verification-only slice:
 
-- Persisted layout selection.
-- Theme translation/selection.
-- Effects changes.
-- High contrast.
-- Custom units.
-- Provider changes or data-source changes.
-- Home redesign beyond the Simple layout contract.
+```sh
+. scripts/android-env.sh && ./gradlew :app:assembleDebug
+scripts/install-debug.sh
+adb shell am force-stop com.oxygen.weather
+adb shell am start -n com.oxygen.weather/.MainActivity
+git diff --check
+```
+
+Use the minimum ADB/UIAutomator steps needed to make the saved layout choice
+observable. Stop after one bounded platform timeout or one repeated UI-driving
+failure and record the exact blocker.
+
+## Closeout and Authority Sync
+
+Slice 27B1/27B2 implementation is committed at `b68ca19`. Do not update README
+or specification to claim installed persisted layout restoration until this
+27B3 installed force-stop/relaunch evidence passes.
+
+## Out of Scope
+
+- Detailed or Meteorologist layout rendering, controls, aliases, migration, or
+  storage.
+- Theme, icon, effects, units, provider, alert semantics, location behavior,
+  geocoding behavior, Room/cache behavior, release readiness, and MVP claims.
+- Production or test code changes unless the installed verification uncovers a
+  real defect in the committed 27B path.

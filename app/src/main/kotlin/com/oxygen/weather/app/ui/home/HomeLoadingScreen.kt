@@ -33,7 +33,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
@@ -59,6 +64,7 @@ import com.oxygen.weather.app.HomeForecastPresentationState
 import com.oxygen.weather.app.HomeSourcePresentation
 import com.oxygen.weather.app.HomeSunPresentation
 import com.oxygen.weather.app.ui.theme.EffectsLevel
+import com.oxygen.weather.app.ui.theme.LayoutPreset
 import com.oxygen.weather.app.ui.theme.LocalOxygenHomeDesign
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
@@ -209,10 +215,23 @@ private fun ReadyContent(
 ) {
     val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
-    val pages = HomePage.entries
+    val pages = when (appearance.layout) {
+        LayoutPreset.SIMPLE -> listOf(HomePage.Now, HomePage.Forecast)
+        LayoutPreset.STANDARD,
+        LayoutPreset.DETAILED,
+        LayoutPreset.METEOROLOGIST,
+        -> listOf(HomePage.Now, HomePage.Hourly, HomePage.Daily, HomePage.Details)
+    }
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
-    val currentPage = pages[pagerState.currentPage]
+    var simpleForecast by remember(appearance.layout) { mutableStateOf(SimpleForecastChoice.Hourly) }
+    val currentPageIndex = pagerState.currentPage.coerceIn(0, pages.lastIndex)
+    val currentPage = pages[currentPageIndex]
+
+    LaunchedEffect(appearance.layout) {
+        simpleForecast = SimpleForecastChoice.Hourly
+        pagerState.scrollToPage(0)
+    }
 
     Box(Modifier.fillMaxSize()) {
         if (appearance.effects != EffectsLevel.OFF) {
@@ -231,7 +250,7 @@ private fun ReadyContent(
         ) {
             ReadyHeader(
                 currentPage = currentPage,
-                pageIndex = pagerState.currentPage,
+                pageIndex = currentPageIndex,
                 pageCount = pages.size,
             )
             HorizontalPager(
@@ -241,32 +260,32 @@ private fun ReadyContent(
                     .weight(1f)
                     .testTag("home-page-container")
                     .semantics {
-                        contentDescription = "${currentPage.title}, Page ${pagerState.currentPage + 1} of ${pages.size}"
+                        contentDescription = "${currentPage.title}, Page ${currentPageIndex + 1} of ${pages.size}"
                         customActions = buildList {
-                            if (pagerState.currentPage > 0) {
-                                val previousPage = pages[pagerState.currentPage - 1]
+                            if (currentPageIndex > 0) {
+                                val previousPage = pages[currentPageIndex - 1]
                                 add(
                                     CustomAccessibilityAction("Show previous page: ${previousPage.title}") {
                                         scope.launch {
                                             if (animationsEnabled) {
-                                                pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                                pagerState.animateScrollToPage(currentPageIndex - 1)
                                             } else {
-                                                pagerState.scrollToPage(pagerState.currentPage - 1)
+                                                pagerState.scrollToPage(currentPageIndex - 1)
                                             }
                                         }
                                         true
                                     },
                                 )
                             }
-                            if (pagerState.currentPage < pages.lastIndex) {
-                                val nextPage = pages[pagerState.currentPage + 1]
+                            if (currentPageIndex < pages.lastIndex) {
+                                val nextPage = pages[currentPageIndex + 1]
                                 add(
                                     CustomAccessibilityAction("Show next page: ${nextPage.title}") {
                                         scope.launch {
                                             if (animationsEnabled) {
-                                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                                pagerState.animateScrollToPage(currentPageIndex + 1)
                                             } else {
-                                                pagerState.scrollToPage(pagerState.currentPage + 1)
+                                                pagerState.scrollToPage(currentPageIndex + 1)
                                             }
                                         }
                                         true
@@ -278,9 +297,23 @@ private fun ReadyContent(
             ) { pageIndex ->
                 HomePageContainer(page = pages[pageIndex]) {
                     when (pages[pageIndex]) {
-                        HomePage.Now -> NowPage(
+                        HomePage.Now -> {
+                            if (appearance.layout == LayoutPreset.SIMPLE) {
+                                SimpleNowPage(
+                                    state = state,
+                                    onAlertDetailsRequested = onAlertDetailsRequested,
+                                )
+                            } else {
+                                NowPage(
+                                    state = state,
+                                    onAlertDetailsRequested = onAlertDetailsRequested,
+                                )
+                            }
+                        }
+                        HomePage.Forecast -> SimpleForecastPage(
                             state = state,
-                            onAlertDetailsRequested = onAlertDetailsRequested,
+                            selectedChoice = simpleForecast,
+                            onChoiceSelected = { simpleForecast = it },
                         )
                         HomePage.Hourly -> HourlyPage(state)
                         HomePage.Daily -> DailyPage(state)
@@ -290,7 +323,7 @@ private fun ReadyContent(
             }
             HomeFooterNavigation(
                 pages = pages,
-                selectedPageIndex = pagerState.currentPage,
+                selectedPageIndex = currentPageIndex,
                 isRefreshEnabled = state.canRefresh && !state.isRefreshInProgress,
                 refreshLabel = state.refreshLabel,
                 onPageSelected = { pageIndex ->
@@ -497,13 +530,23 @@ private fun NowPage(
                 style = MaterialTheme.typography.bodyLarge,
             )
         } else {
+            val compactLargeFont = LocalDensity.current.fontScale > 1.2f
+            val markSize = if (compactLargeFont) 96.dp else 132.dp
+            val temperatureStyle = if (compactLargeFont) {
+                roles.displayWeatherValue
+            } else {
+                roles.displayWeatherValue.copy(
+                    fontSize = roles.displayWeatherValue.fontSize * 1.22,
+                    lineHeight = roles.displayWeatherValue.lineHeight * 1.16,
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 Box(
                     modifier = Modifier
-                        .size(132.dp)
+                        .size(markSize)
                         .clip(RoundedCornerShape(8.dp))
                         .semantics {
                             contentDescription = dashboard.current.condition
@@ -511,7 +554,7 @@ private fun NowPage(
                 ) {
                     WeatherConditionMark(
                         condition = dashboard.current.conditionIdentity,
-                        modifier = Modifier.size(132.dp),
+                        modifier = Modifier.size(markSize),
                     )
                 }
                 Column(
@@ -525,10 +568,9 @@ private fun NowPage(
                     )
                     Text(
                         text = dashboard.current.temperature,
-                        style = roles.displayWeatherValue.copy(
-                            fontSize = roles.displayWeatherValue.fontSize * 1.22,
-                            lineHeight = roles.displayWeatherValue.lineHeight * 1.16,
-                        ),
+                        style = temperatureStyle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -589,6 +631,22 @@ private fun NowPage(
             Text(it, style = MaterialTheme.typography.bodyMedium)
         }
     }
+}
+
+@Composable
+private fun SimpleNowPage(
+    state: HomeForecastPresentationState.ForecastReady,
+    onAlertDetailsRequested: () -> Unit,
+) {
+    NowPage(
+        state = state,
+        onAlertDetailsRequested = onAlertDetailsRequested,
+    )
+    DetailsSourceBlock(state.dashboard.source)
+    ProviderDisclosure(
+        state = state,
+        modifier = Modifier.testTag("home-section-provenance-footer"),
+    )
 }
 
 @Composable
@@ -705,6 +763,60 @@ private fun HourlyPage(state: HomeForecastPresentationState.ForecastReady) {
     } else {
         UnavailablePageCard("Hourly forecast", dashboard.returnedDataUnavailableText)
     }
+}
+
+@Composable
+private fun SimpleForecastPage(
+    state: HomeForecastPresentationState.ForecastReady,
+    selectedChoice: SimpleForecastChoice,
+    onChoiceSelected: (SimpleForecastChoice) -> Unit,
+) {
+    val roles = LocalOxygenHomeDesign.current
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(roles.sectionGap),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("home-simple-forecast-choice"),
+            horizontalArrangement = Arrangement.spacedBy(roles.tileGap),
+        ) {
+            SimpleForecastChoiceChip(
+                choice = SimpleForecastChoice.Hourly,
+                selected = selectedChoice == SimpleForecastChoice.Hourly,
+                onClick = { onChoiceSelected(SimpleForecastChoice.Hourly) },
+                modifier = Modifier.weight(1f),
+            )
+            SimpleForecastChoiceChip(
+                choice = SimpleForecastChoice.Daily,
+                selected = selectedChoice == SimpleForecastChoice.Daily,
+                onClick = { onChoiceSelected(SimpleForecastChoice.Daily) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        when (selectedChoice) {
+            SimpleForecastChoice.Hourly -> HourlyPage(state)
+            SimpleForecastChoice.Daily -> DailyPage(state)
+        }
+    }
+}
+
+@Composable
+private fun SimpleForecastChoiceChip(
+    choice: SimpleForecastChoice,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(choice.title) },
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .testTag(choice.tag),
+    )
 }
 
 @Composable
@@ -1073,7 +1185,7 @@ private fun DailyEntry(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = day.precipitationProbability?.let { "Precip $it" } ?: "Precipitation unavailable",
+                    text = day.precipitationProbability?.let { "Precip $it" } ?: "Precip n/a",
                     style = roles.supportingLabel,
                     maxLines = 2,
                 )
@@ -1130,9 +1242,18 @@ private enum class HomePage(
     val pageTag: String,
 ) {
     Now("Now", "home-page-tab-now", "home-page-now"),
+    Forecast("Forecast", "home-page-tab-forecast", "home-page-forecast"),
     Hourly("Hourly", "home-page-tab-hourly", "home-page-hourly"),
     Daily("Daily", "home-page-tab-daily", "home-page-daily"),
     Details("Details", "home-page-tab-details", "home-page-details"),
+}
+
+private enum class SimpleForecastChoice(
+    val title: String,
+    val tag: String,
+) {
+    Hourly("Hourly", "home-simple-forecast-hourly"),
+    Daily("Daily", "home-simple-forecast-daily"),
 }
 
 @Composable
@@ -1290,7 +1411,7 @@ private fun HourlyTile(
                 maxLines = 1,
             )
             Text(
-                text = hour.precipitationProbability?.let { "Precip $it" } ?: "Precipitation unavailable",
+                text = hour.precipitationProbability?.let { "Precip $it" } ?: "Precip n/a",
                 style = roles.supportingLabel,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

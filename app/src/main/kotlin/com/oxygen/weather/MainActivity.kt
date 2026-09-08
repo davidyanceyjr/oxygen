@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
             val forecastCacheStorage = remember { RoomForecastCacheStorageFactory.create(this) }
             val savedLocationStorage = remember { RoomSavedLocationStorageFactory.create(this) }
             val selectedLocationStorage = remember { DataStoreSelectedLocationStorage(this) }
+            val layoutPreferenceStorage = remember { com.oxygen.weather.app.DataStoreLayoutPreferenceStorage(this) }
             val unitPreferenceStorage = remember { DataStoreUnitPreferenceStorage(this) }
             val effectsPreferenceStorage = remember { DataStoreEffectsPreferenceStorage(this) }
             val stateHolder = remember {
@@ -44,6 +45,7 @@ class MainActivity : ComponentActivity() {
                     deviceLocationSource = AndroidDeviceLocationSource(this),
                     selectedLocationStorage = selectedLocationStorage,
                     unitPreferenceStorage = unitPreferenceStorage,
+                    layoutPreferenceStorage = layoutPreferenceStorage,
                     effectsPreferenceStorage = effectsPreferenceStorage,
                     savedLocationStorage = savedLocationStorage,
                     forecastCacheStorage = forecastCacheStorage,
