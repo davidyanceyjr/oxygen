@@ -23,22 +23,20 @@ import com.oxygen.weather.app.ui.theme.OxygenTheme
 
 @Composable
 fun OxygenApp(
-    stateHolder: OxygenAppStateHolder = remember { OxygenAppStateHolder() },
+    stateHolder: OxygenAppStateHolder? = null,
     onRequestLocationPermission: (Long) -> Unit = {},
     appearance: OxygenAppearance = OxygenAppearance(),
     motionPreferenceSource: MotionPreferenceSource = EnabledMotionPreferenceSource,
 ) {
-    var appState by remember(stateHolder) { mutableStateOf(stateHolder.presentationState) }
+    val appStateHolder = stateHolder ?: remember(appearance.layout) {
+        OxygenAppStateHolder(initialLayout = appearance.layout)
+    }
+    var appState by remember(appStateHolder) { mutableStateOf(appStateHolder.presentationState) }
     var animationsEnabled by remember(motionPreferenceSource) {
         mutableStateOf(motionPreferenceSource.areAnimationsEnabled())
     }
-    var sessionLayout by remember { mutableStateOf(appearance.layout) }
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
     val lifecycleOwner = LocalContext.current as? androidx.lifecycle.LifecycleOwner
-
-    LaunchedEffect(appearance.layout) {
-        sessionLayout = appearance.layout
-    }
 
     DisposableEffect(lifecycleOwner, motionPreferenceSource) {
         val observer = LifecycleEventObserver { _, event ->
@@ -50,14 +48,14 @@ fun OxygenApp(
         onDispose { lifecycleOwner?.lifecycle?.removeObserver(observer) }
     }
 
-    DisposableEffect(stateHolder) {
-        stateHolder.setOnStateChanged { state ->
+    DisposableEffect(appStateHolder) {
+        appStateHolder.setOnStateChanged { state ->
             mainHandler.post { appState = state }
         }
-        appState = stateHolder.presentationState
+        appState = appStateHolder.presentationState
         onDispose {
-            stateHolder.setOnStateChanged { }
-            stateHolder.cancelDeviceLocation()
+            appStateHolder.setOnStateChanged { }
+            appStateHolder.cancelDeviceLocation()
             mainHandler.removeCallbacksAndMessages(null)
         }
     }
@@ -69,16 +67,16 @@ fun OxygenApp(
             appState.screen is OxygenAppScreen.AlertDetail,
     ) {
         when (appState.screen) {
-            is OxygenAppScreen.FirstRunLocationEntry -> stateHolder.onLocationEntryBack()
-            is OxygenAppScreen.Settings -> stateHolder.onSettingsBack()
-            is OxygenAppScreen.AlertDetail -> stateHolder.onAlertDetailBack()
+            is OxygenAppScreen.FirstRunLocationEntry -> appStateHolder.onLocationEntryBack()
+            is OxygenAppScreen.Settings -> appStateHolder.onSettingsBack()
+            is OxygenAppScreen.AlertDetail -> appStateHolder.onAlertDetailBack()
             is OxygenAppScreen.Home -> Unit
         }
-        appState = stateHolder.presentationState
+        appState = appStateHolder.presentationState
     }
 
     val themeId = appearance.theme
-    val sessionAppearance = appearance.copy(layout = sessionLayout)
+    val sessionAppearance = appearance.copy(layout = appState.layout)
     val requestedAppearance = if (appState.effectsPreference.isManaged) {
         sessionAppearance.copy(effects = appState.effectsPreference.effectiveRequested)
     } else {
@@ -94,60 +92,60 @@ fun OxygenApp(
                 state = screen,
                 selectedLocation = appState.selectedLocation,
                 savedLocations = appState.savedLocations,
-                canSaveSearchResults = stateHolder.canSaveSearchResults,
+                canSaveSearchResults = appStateHolder.canSaveSearchResults,
                 onQueryChanged = {
-                    stateHolder.onManualLocationQueryChanged(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onManualLocationQueryChanged(it)
+                    appState = appStateHolder.presentationState
                 },
                 onSearch = {
-                    stateHolder.onManualLocationSearchSubmitted()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onManualLocationSearchSubmitted()
+                    appState = appStateHolder.presentationState
                 },
                 onRetry = {
-                    stateHolder.onManualLocationSearchRetry()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onManualLocationSearchRetry()
+                    appState = appStateHolder.presentationState
                 },
                 onCandidateSelected = {
-                    stateHolder.onManualLocationCandidateSelected(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onManualLocationCandidateSelected(it)
+                    appState = appStateHolder.presentationState
                 },
                 onCandidateSaved = {
-                    stateHolder.onManualLocationCandidateSaved(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onManualLocationCandidateSaved(it)
+                    appState = appStateHolder.presentationState
                 },
                 onSavedLocationSelected = {
-                    stateHolder.onSavedLocationSelected(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onSavedLocationSelected(it)
+                    appState = appStateHolder.presentationState
                 },
                 onSavedLocationRemoveRequested = {
-                    stateHolder.onSavedLocationRemoveRequested(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onSavedLocationRemoveRequested(it)
+                    appState = appStateHolder.presentationState
                 },
                 onSavedLocationRemoveCanceled = {
-                    stateHolder.onSavedLocationRemoveCanceled(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onSavedLocationRemoveCanceled(it)
+                    appState = appStateHolder.presentationState
                 },
                 onSavedLocationRemoveConfirmed = {
-                    stateHolder.onSavedLocationRemoveConfirmed(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onSavedLocationRemoveConfirmed(it)
+                    appState = appStateHolder.presentationState
                 },
                 onUseMyLocation = {
-                    stateHolder.onUseMyLocation()
-                    stateHolder.consumeNextCommand()?.let { command ->
+                    appStateHolder.onUseMyLocation()
+                    appStateHolder.consumeNextCommand()?.let { command ->
                         when (command) {
                             is OxygenAppCommand.RequestLocationPermission -> onRequestLocationPermission(command.attempt)
                         }
                     }
-                    appState = stateHolder.presentationState
+                    appState = appStateHolder.presentationState
                 },
-                onCancelDeviceLocation = { stateHolder.cancelDeviceLocation() },
+                onCancelDeviceLocation = { appStateHolder.cancelDeviceLocation() },
                 onBack = {
-                    stateHolder.onLocationEntryBack()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onLocationEntryBack()
+                    appState = appStateHolder.presentationState
                 },
                 onOpenSettings = {
-                    stateHolder.onOpenSettings()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onOpenSettings()
+                    appState = appStateHolder.presentationState
                 },
                 showSettingsEntry = screen.returnScreen !is OxygenAppScreen.Settings,
             )
@@ -156,24 +154,24 @@ fun OxygenApp(
                 appearance = effectiveAppearance,
                 animationsEnabled = animationsEnabled,
                 onRetry = {
-                    stateHolder.onHomeForecastRetry()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onHomeForecastRetry()
+                    appState = appStateHolder.presentationState
                 },
                 onRefresh = {
-                    stateHolder.onHomeForecastRefresh()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onHomeForecastRefresh()
+                    appState = appStateHolder.presentationState
                 },
                 onChangeLocation = {
-                    stateHolder.onChangeLocation()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onChangeLocation()
+                    appState = appStateHolder.presentationState
                 },
                 onOpenSettings = {
-                    stateHolder.onOpenSettings()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onOpenSettings()
+                    appState = appStateHolder.presentationState
                 },
                 onAlertDetailsRequested = {
-                    stateHolder.onHomeAlertDetailsRequested()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onHomeAlertDetailsRequested()
+                    appState = appStateHolder.presentationState
                 },
             )
             is OxygenAppScreen.Settings -> SettingsScreen(
@@ -181,42 +179,48 @@ fun OxygenApp(
                 appearance = effectiveAppearance,
                 themeId = themeId,
                 effectsPreference = appState.effectsPreference,
+                layoutPreference = appState.layoutPreference,
                 animationsEnabled = animationsEnabled,
                 onDestinationSelected = {
-                    stateHolder.onSettingsDestinationSelected(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onSettingsDestinationSelected(it)
+                    appState = appStateHolder.presentationState
                 },
                 onBack = {
-                    stateHolder.onSettingsBack()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onSettingsBack()
+                    appState = appStateHolder.presentationState
                 },
                 selectedUnitPreference = appState.unitPreference,
                 unitPreferenceMessage = screen.unitPreferenceMessage,
                 onUnitPreferenceSelected = {
-                    stateHolder.onUnitPreferenceSelected(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onUnitPreferenceSelected(it)
+                    appState = appStateHolder.presentationState
                 },
                 onEffectsPreferenceSelected = {
-                    stateHolder.onEffectsPreferenceSelected(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onEffectsPreferenceSelected(it)
+                    appState = appStateHolder.presentationState
                 },
                 onEffectsPreferenceRetry = {
-                    stateHolder.onEffectsPreferenceRetry()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onEffectsPreferenceRetry()
+                    appState = appStateHolder.presentationState
                 },
                 onLayoutSelected = { layout: LayoutPreset ->
-                    sessionLayout = layout
+                    appStateHolder.onLayoutSelected(layout)
+                    appState = appStateHolder.presentationState
+                },
+                onLayoutPreferenceRetry = {
+                    appStateHolder.onLayoutPreferenceRetry()
+                    appState = appStateHolder.presentationState
                 },
             )
             is OxygenAppScreen.AlertDetail -> AlertDetailScreen(
                 state = screen,
                 onAlertSelected = {
-                    stateHolder.onAlertDetailSelected(it)
-                    appState = stateHolder.presentationState
+                    appStateHolder.onAlertDetailSelected(it)
+                    appState = appStateHolder.presentationState
                 },
                 onBack = {
-                    stateHolder.onAlertDetailBack()
-                    appState = stateHolder.presentationState
+                    appStateHolder.onAlertDetailBack()
+                    appState = appStateHolder.presentationState
                 },
             )
         }

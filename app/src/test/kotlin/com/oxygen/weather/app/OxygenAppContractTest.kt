@@ -13,16 +13,19 @@ class OxygenAppContractTest {
 
         assertFalse(source.contains("SampleWeather"))
         assertFalse(source.contains("SampleWeather.bundle"))
+        assertFalse(source.contains("sessionLayout"))
     }
 
     @Test
-    fun `main activity wires DataStore selected location Room saved locations and installed fallback repository`() {
+    fun `main activity wires DataStore selected location layout storage Room saved locations and installed fallback repository`() {
         val source = Files.readString(Path.of("src/main/kotlin/com/oxygen/weather/MainActivity.kt"))
 
         assertTrue(source.contains("DataStoreSelectedLocationStorage"))
+        assertTrue(source.contains("DataStoreLayoutPreferenceStorage"))
         assertTrue(source.contains("RoomForecastCacheStorageFactory"))
         assertTrue(source.contains("RoomSavedLocationStorageFactory"))
         assertTrue(source.contains("savedLocationStorage = savedLocationStorage"))
+        assertTrue(source.contains("layoutPreferenceStorage = layoutPreferenceStorage"))
         assertTrue(source.contains("InstalledForecastRepositoryFactory.create"))
         assertFalse(source.contains("FileForecastCacheStorage"))
         assertFalse(source.contains("SampleWeather"))
