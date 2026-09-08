@@ -104,6 +104,21 @@ When blocked, report the exact blocker. Do not replace failed implementation wit
 - Prefer one primary production path and one primary acceptance boundary.
 - Split a slice when it needs multiple independent state machines, new persistence layers, unrelated UI surfaces, or platform adapters.
 - Keep doc-sync work separate from product scope; use it to close a committed slice, not to widen it.
+- Target each active implementation slice to complete discovery, contract,
+  implementation, focused evidence, real-path exercise, review, and ready
+  status within roughly 40% of the available session context.
+- If a planned slice is likely to exceed that context target, split it before
+  coding even when the resulting work creates more roadmap entries.
+- Split by independently observable boundaries. A slice should usually include
+  no more than one of these high-context drivers: new persistence format,
+  state-machine transition set, user-facing UI surface, provider/network path,
+  platform adapter, connected/emulator real-path journey, or multi-authority
+  documentation sync.
+- Keep `.codex/plans/current.md` short enough to read with normal discovery:
+  selected behavior, acceptance boundary, intended files, focused evidence,
+  broad checks, and explicit out-of-scope limits. Put historical rationale and
+  future sequencing in the roadmap or cycle history instead of copying it into
+  the active plan.
 
 ## Status Vocabulary
 

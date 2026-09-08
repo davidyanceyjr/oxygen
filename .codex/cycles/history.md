@@ -39,9 +39,11 @@ ledger states.
   53, and this live summary are reconciled with Slice 27A's committed state.
 - Local caveat when written: the pre-existing uncommitted
   `.codex/review/findings.md` review-note edit was retained out of scope.
-- Current process state: Slice 27A is committed; Slice 27B, Persisted Layout
-  Selection, is the next roadmap candidate and must be separately planned
-  before adding layout storage or restart restoration.
+- Current process state: Slice 27A is committed; Slice 27B has been split for
+  the 40% context target. Slice 27B1, Layout Preference Storage and State, is
+  planned in `.codex/plans/current.md`; the next action is the verification
+  ledger and focused behavioral-red storage/state test before UI or installed
+  restoration work.
 
 ## Recent Cycles
 
