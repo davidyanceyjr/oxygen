@@ -32,16 +32,16 @@ ledger states.
 
 ## Recent State Summary
 
-- Last committed implementation gate: Slice 26, Persisted Effects Off/Subtle
-  Baseline, committed at `c7b578a`; completion evidence is recorded at
-  `.codex/test-artifacts/2026-09-06-slice-26-effects-preference/`.
-- Last committed documentation sync: AGENTS workflow and slice-size guidance,
-  committed at `98a26d3`.
-- Current changeset: no additional product changes; the uncommitted
-  `.codex/review/findings.md` edit is retained as a review-note change.
-- Current process correction: the active plan now points at Slice 27A, Simple
-  Layout Definition, and the live cycle history continues to keep only the
-  recent tail in the primary readable section.
+- Latest implementation state: Slice 27A, Simple Layout Definition,
+  committed at `660e376`; completion evidence is recorded at
+  `.codex/test-artifacts/2026-09-07-slice-27a-simple-layout-definition/`.
+- Documentation state: the active plan, roadmap, README, specification section
+  53, and this live summary are reconciled with Slice 27A's committed state.
+- Local caveat when written: the pre-existing uncommitted
+  `.codex/review/findings.md` review-note edit was retained out of scope.
+- Current process state: Slice 27A is committed; Slice 27B, Persisted Layout
+  Selection, is the next roadmap candidate and must be separately planned
+  before adding layout storage or restart restoration.
 
 ## Recent Cycles
 
@@ -1065,3 +1065,55 @@ Boundaries:
 - No Full effects, richer procedural scene behavior, persisted theme/layout/
   icon settings, provider behavior, location permission behavior, or release
   readiness was added.
+
+### 2026-09-07-slice-27a-simple-layout-definition
+
+Status: committed
+Mode: feature and documentation sync
+Slice: Slice 27A, Simple Layout Definition
+Commit: `660e376`
+Commit state: implementation committed; post-commit authority sync performed
+afterward; unrelated `.codex/review/findings.md` edit retained
+
+Result:
+- Added a session-only Simple/Standard layout control to the installed
+  Settings / Appearance surface. Standard remains the launch/restart default;
+  no layout persistence, migration, or restart restoration was added.
+- Simple Home renders `Now -> Forecast`; Forecast exposes Hourly and Daily
+  choices. Layout replacement resets to the first page, and Simple forecast
+  choice resets to Hourly.
+- Existing ready forecast, alert, stale/cache failure, source/update/
+  provenance, privacy disclosure, and callback behavior remain reachable where
+  supplied. Layout and Hourly/Daily changes do not refetch provider data.
+- Standard Home keeps `Now -> Hourly -> Daily -> Details` and its page
+  navigation/accessibility behavior.
+
+Evidence:
+- Baseline installed capture retained the truthful first-run/no-ready state;
+  no installed ready Standard or Simple live-provider journey is claimed.
+- Red connected attempt observed missing Simple Settings controls and Simple
+  page semantics after test scaffolding correction.
+- Final focused connected filter passed six cases on `oxygen_starter`:
+  Simple production reachability, layout replacement/reset/request-count
+  preservation, sparse/operational honesty, compact large-font effects-off
+  readability, and two Standard page/navigation regressions.
+- Artifact rerun passed one connected case after reinstalling the debug and
+  androidTest APKs so app-private screenshot/semantics files could be pulled.
+- Broad checks passed: compileDebugKotlin, app/core debug unit tests,
+  assembleDebug, and `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-07-slice-27a-simple-layout-definition/`.
+
+Blockers/skips:
+- TalkBack service-level traversal was not run because TalkBack was installed
+  but disabled on the emulator (`accessibility_enabled=0`,
+  `enabled_accessibility_services=null`). Gate 30 traversal remains
+  unverified; this slice verified semantics-tree order, labels, selected
+  state, custom actions, and target sizes.
+
+Boundaries:
+- No persisted layout selection/restoration, Detailed or Meteorologist layout,
+  theme/icon settings, Full effects, provider/repository/cache/location/unit
+  behavior, new weather values, release readiness, or MVP-complete claim was
+  added.

@@ -1523,13 +1523,22 @@ Planning note: split definition from persistence.
 
 ### Slice 27A: Simple Layout Definition
 
-Status: specified
+Status: committed at `660e376`
 
 Prerequisite:
 
 - Slice 18H.
 
-Release intent: Define Simple before making it selectable.
+Release intent: Define Simple before persisted selection.
+
+Implemented result:
+
+- The installed Settings / Appearance surface can select Simple for the current
+  app session only. Standard remains the launch/restart default.
+- Simple Home exposes `Now -> Forecast`; Forecast exposes Hourly and Daily
+  choices without provider refetch.
+- Source/stale/provenance and official alert reachability remain visible where
+  supplied; Standard Home remains unchanged.
 
 Must prove:
 
@@ -1544,7 +1553,7 @@ Status: specified
 
 Prerequisites:
 
-- Slice 27A.
+- Slice 27A, committed at `660e376`.
 - Slice 25A.
 - small-state persistence.
 
@@ -1933,8 +1942,8 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 27A: Simple Layout Definition. Gate 25 disclosure baseline is
-committed at `23a9d49` after Slice 25A Settings Information Architecture.
+Candidate: Slice 27B: Persisted Layout Selection. Slice 27A is committed at
+`660e376` after Gate 25 disclosure baseline and Slice 26 effects preference.
 
 Immediate planning boundary:
 
@@ -1964,10 +1973,12 @@ Immediate planning boundary:
 -> 24B alert detail UI committed at ceb6253
 -> Slice 25A Settings information architecture committed at `2484e90`
 -> Gate 25 disclosure baseline check committed at `23a9d49`
--> next candidate: Slice 27A Simple Layout Definition
+-> Slice 26 persisted effects preference committed at `c7b578a`
+-> Slice 27A Simple Layout Definition committed at `660e376`
+-> next candidate: Slice 27B Persisted Layout Selection
 ```
 
-Gate 25 is a committed disclosure prerequisite. Slice 27A may now be selected
+Gate 25 and Slice 27A are committed prerequisites. Slice 27B may now be planned
 as the next bounded implementation slice; release work and release-candidate
 claims remain outside this boundary.
 
@@ -1976,6 +1987,5 @@ Those implementation boundaries are historical and already committed. Slice
 18J-R was a provider-path recovery slice required by the blocked Slice 18J
 evidence boundary, not a new visual gate.
 
-After this authority sync, Gate 25 is complete and committed. Do not treat
-Slice 27B or later roadmap entries as active implementation work until a new
-bounded plan selects one.
+Do not treat Slice 27B or later roadmap entries as active implementation work
+until a new bounded plan selects one.
