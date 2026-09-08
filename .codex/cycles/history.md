@@ -32,18 +32,21 @@ ledger states.
 
 ## Recent State Summary
 
-- Latest implementation state: Slice 27A, Simple Layout Definition,
-  committed at `660e376`; completion evidence is recorded at
-  `.codex/test-artifacts/2026-09-07-slice-27a-simple-layout-definition/`.
-- Documentation state: the active plan, roadmap, README, specification section
-  53, and this live summary are reconciled with Slice 27A's committed state.
-- Local caveat when written: the pre-existing uncommitted
-  `.codex/review/findings.md` review-note edit was retained out of scope.
-- Current process state: Slice 27A is committed; Slice 27B has been split for
-  the 40% context target. Slice 27B1, Layout Preference Storage and State, is
-  planned in `.codex/plans/current.md`; the next action is the verification
-  ledger and focused behavioral-red storage/state test before UI or installed
-  restoration work.
+- Latest implementation state: Slice 27B1/27B2, persisted layout storage and
+  Settings transaction UI, committed at `b68ca19`; completion evidence is
+  recorded at
+  `.codex/test-artifacts/2026-09-08-slice-27b-persisted-layout-selection/`.
+- Documentation state: the active plan, roadmap, and this live summary are
+  reconciled with Slice 27B1/27B2's committed state. README and specification
+  layout-persistence claims remain at the prior session-only/restoration-
+  unfinished wording until Slice 27B3 installed force-stop/relaunch evidence
+  passes.
+- Local caveat: the unrelated uncommitted `.codex/review/findings.md`
+  review-note edit remains retained out of scope.
+- Current process state: Slice 27B3, Installed Layout Force-Stop Restoration
+  Verification, is planned in `.codex/plans/current.md`; the next action is one
+  ADB-driven installed force-stop/relaunch journey for the committed layout
+  persistence path.
 
 ## Recent Cycles
 
@@ -1119,3 +1122,51 @@ Boundaries:
   theme/icon settings, Full effects, provider/repository/cache/location/unit
   behavior, new weather values, release readiness, or MVP-complete claim was
   added.
+
+### 2026-09-08-slice-27b-persisted-layout-selection
+
+Status: committed for 27B1/27B2; 27B3 installed force-stop verification remains planned
+Mode: feature
+Slice: Slice 27B1/27B2, Layout Preference Storage and Settings Transaction UI
+Commit: `b68ca19`
+Commit state: implementation committed; post-commit authority sync performed
+afterward; unrelated `.codex/review/findings.md` edit retained
+
+Result:
+- Added versioned DataStore-backed Simple/Standard layout preference storage
+  with `oxygen_layout_preferences`, `layout_preference_version`, and
+  `layout_preference_value`.
+- Unsupported or malformed layout records resolve to `NoSupportedChoice`
+  without aliasing Detailed/Meteorologist or rewriting storage.
+- Wired managed layout state through `MainActivity`, `OxygenAppStateHolder`,
+  `OxygenApp`, and Settings / Appearance with loading, saved, pending, failed,
+  and retry states.
+- Preserved forecast, alert, selected-location, unit, effects, source,
+  provenance, and ready dashboard presentation across layout read/write
+  transitions. Layout selection does not refetch provider data.
+- Corrected compact Appearance layout controls so selected/disabled semantics
+  and 48dp targets are observable at 360x640/font-scale-1.3.
+
+Evidence:
+- The required pre-implementation red phase was missed because the candidate
+  implementation and tests already existed in the worktree; the ledger records
+  this rather than claiming a fabricated red result.
+- Focused unit filter passed for `LayoutPreferenceStorageTest`,
+  `LayoutPreferenceStateHolderTest`, and `OxygenAppContractTest`.
+- Targeted connected filter passed three cases on `oxygen_starter`: production
+  DataStore readback through recreated app state, Settings commit/no-refetch,
+  and read/write failure retry with compact target checks.
+- Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-08-slice-27b-persisted-layout-selection/`.
+
+Blockers/skips:
+- A separate ADB-driven installed-app force-stop/relaunch journey was not run
+  before this commit. Slice 27B3 remains planned for that evidence.
+
+Boundaries:
+- No Detailed or Meteorologist layout, theme/icon settings, Full effects,
+  provider/repository/cache/location/unit behavior, release readiness, or
+  MVP-complete claim was added.

@@ -1566,7 +1566,7 @@ Must prove:
 
 ### Slice 27B1: Layout Preference Storage and State
 
-Status: specified
+Status: committed at `b68ca19`
 
 Prerequisites:
 
@@ -1583,6 +1583,16 @@ Must prove:
 - layout state changes do not rebuild forecast, alert, location, unit, or
   effects data.
 
+Implemented result:
+
+- Added versioned DataStore codec/storage for Simple and Standard layout
+  preferences only.
+- Added state-holder startup, retry, pending write, failed write, and
+  successful write transitions that preserve the last confirmed effective
+  layout.
+- Added focused unit coverage for codec behavior, event ordering, failed retry,
+  and preservation of forecast/location/unit/effects boundaries.
+
 Out of scope:
 
 - Settings UI changes;
@@ -1591,7 +1601,7 @@ Out of scope:
 
 ### Slice 27B2: Layout Settings Transaction UI
 
-Status: specified
+Status: committed at `b68ca19`
 
 Prerequisites:
 
@@ -1609,6 +1619,16 @@ Must prove:
   touch height;
 - layout remains independent from effects/theme.
 
+Implemented result:
+
+- Wired production `MainActivity`, `OxygenAppStateHolder`, `OxygenApp`, and
+  Settings / Appearance layout preference state.
+- Settings / Appearance exposes loading, saved, pending, failure, and retry
+  states for Simple/Standard layout selection.
+- Targeted connected UI coverage passed for commit, read/write failure retry,
+  no forecast refetch, preference independence, selected semantics, and compact
+  48dp layout controls.
+
 Out of scope:
 
 - Activity recreation and installed force-stop/relaunch persistence evidence;
@@ -1616,7 +1636,7 @@ Out of scope:
 
 ### Slice 27B3: Installed Layout Restoration Verification
 
-Status: specified
+Status: planned
 
 Prerequisites:
 
@@ -2138,10 +2158,10 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 27B1: Layout Preference Storage and State. Slice 27A is
-committed at `660e376` after Gate 25 disclosure baseline and Slice 26 effects
-preference. Slice 27B was split into 27B1/27B2/27B3 to keep each active
-implementation cycle near the 40% context target.
+Candidate: Slice 27B3: Installed Layout Restoration Verification. Slice 27B1
+and Slice 27B2 are committed together at `b68ca19` after Slice 27A. Slice 27B3
+remains the next bounded verification slice because no separate ADB-driven
+installed force-stop/relaunch journey has been recorded yet.
 
 Immediate planning boundary:
 
@@ -2173,11 +2193,12 @@ Immediate planning boundary:
 -> Gate 25 disclosure baseline check committed at `23a9d49`
 -> Slice 26 persisted effects preference committed at `c7b578a`
 -> Slice 27A Simple Layout Definition committed at `660e376`
--> next candidate: Slice 27B1 Layout Preference Storage and State
+-> Slice 27B1/27B2 persisted layout storage and Settings UI committed at `b68ca19`
+-> next candidate: Slice 27B3 Installed Layout Restoration Verification
 ```
 
-Gate 25 and Slice 27A are committed prerequisites. Slice 27B1 may now be
-planned as the next bounded implementation slice; 27B2/27B3, release work, and
+Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 may
+now be planned as the next bounded verification slice; release work and
 release-candidate claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
@@ -2185,5 +2206,5 @@ Those implementation boundaries are historical and already committed. Slice
 18J-R was a provider-path recovery slice required by the blocked Slice 18J
 evidence boundary, not a new visual gate.
 
-Do not treat Slice 27B2, Slice 27B3, or later roadmap entries as active
-implementation work until a new bounded plan selects one.
+Do not treat later roadmap entries as active implementation work until a new
+bounded plan selects one.
