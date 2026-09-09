@@ -1,249 +1,214 @@
-# Slice 28B1 - Theme Preference Storage and State
+# Slice 28B2 — Persisted Theme Settings UI
 
-**Status:** planned
-**Cycle ID:** `2026-09-09-slice-28b1-theme-preference-storage-state`
-**Mode:** bounded persistence/state implementation
-**Basis:** Paper (`06c987b`) and Terminal (`80dd961`) are committed,
-connected rendering baselines. The roadmap next requires a conservative theme
-preference boundary before Settings selection and installed restoration.
-**Next action:** run the focused layout/effects preference regression baseline,
-then add the failing theme codec and state-holder tests.
+**Status:** committed at `2c88b9c`
+**Cycle ID:** `2026-09-09-slice-28b2-persisted-theme-settings-ui`
+**Mode:** bounded settings integration and installed restoration verification
 
-## Selected Behavior and Acceptance Boundary
+**Basis:** Slice 28B1's storage/state implementation is committed in
+`708172f` (merged by `82cf281`): it already accepts only `OXYGEN`, `PAPER`,
+and `TERMINAL`, preserves the confirmed theme during a failed/pending write,
+and exposes retryable read/write state. Paper and Terminal rendering baselines
+are committed in `06c987b` and `80dd961`. The remaining production gap is that
+`MainActivity` does not configure theme storage and Appearance exposes only a
+read-only theme summary. The roadmap/history summaries that still call 28B1
+planned are documentation drift to correct during this slice's post-commit sync.
 
-Persist and restore exactly the three verified `OxygenThemeId` values:
-`OXYGEN`, `PAPER`, and `TERMINAL`. A missing, malformed, unknown, or
-unsupported-version record resolves to Oxygen. A storage exception is distinct
-from an unsupported record: it remains observable and retryable while effective
-rendering stays on the last confirmed theme, or Oxygen if none was confirmed.
+**Next action:** select the next bounded candidate, Slice 29A, through the
+roadmap; do not treat it as planned until a new active plan selects it.
 
-The primary acceptance boundary is `OxygenAppStateHolder` configured with the
-new production storage interface: startup restoration, pending/confirmed write
-transactions, failures, retry, and theme/layout/effects independence are
-observable without changing forecast state or calling a provider. One focused
-connected case must exercise the production Preferences DataStore and
-`OxygenApp` consumption across storage/state-holder recreation. It is not an
-Activity, process-restart, or user-reachable Settings-selection claim.
+## Selected behavior and acceptance boundary
 
-## Storage Contract
+From Settings > Appearance, a user can select Oxygen, Paper, or Terminal. The
+saved choice becomes effective only after the existing DataStore write succeeds;
+the Appearance summary and the rendered app then use that confirmed theme.
+The choice survives Activity recreation and force-stop/relaunch. Selecting a
+theme does not initiate a forecast, alert, geocoding, cache, location, unit,
+layout, effects, or navigation change.
 
-- Add `ThemePreferenceStorage` and `DataStoreThemePreferenceStorage` in `:app`,
-  following the established small-preference boundary without refactoring the
-  layout, effects, or unit stores.
-- Store an integer schema version `1` and a stable lowercase value:
-  `oxygen`, `paper`, or `terminal`. Do not persist enum ordinals or derive the
-  disk contract from `enum.name`.
-- Decode only the supported version and exact canonical values. Missing keys,
-  blank or case/whitespace-aliased values, unknown values, and other versions
-  return `ThemePreferenceReadResult.NoSupportedChoice`; they do not throw and
-  do not alias a future theme to a current theme.
-- Encode every currently supported `OxygenThemeId` explicitly. A later enum
-  addition must require an intentional codec decision through exhaustive Kotlin
-  handling.
-- Use a dedicated `oxygen_theme_preferences` DataStore and one atomic edit per
-  write. DataStore read/write exceptions must propagate to the state holder so
-  failure cannot be reported as a valid Oxygen record.
-- Do not add a migration from layout/effects/unit storage: no prior persisted
-  theme format exists.
+The primary acceptance boundary is one installed `oxygen_starter` emulator at
+360x640, portrait, font scale 1.3, with Effects Off: select Paper and Terminal
+through the real Appearance UI, observe each rendered Home/Settings result,
+recreate the Activity, then force-stop/relaunch and observe the last confirmed
+theme before any user selection. Use an already-selected production location
+when available; do not seed sample weather, a provider result, or app-private
+theme data for this journey.
 
-## State and Rendering Contract
+## Implementation contract
 
-- Extend `OxygenAppStateHolder` with optional theme storage and an
-  `initialTheme` defaulted to Oxygen. Add new constructor parameters with
-  defaults without reordering existing parameters, and add new presentation
-  fields with defaults, to preserve current Kotlin call sites and fixtures.
-- Model `NotConfigured`, `Loading`, `Loaded`, and `Failed` reads plus
-  `confirmed`, `pending`, and `writeError`, consistent with the existing layout
-  transaction vocabulary. Keep the last failed selection only for a write
-  retry.
-- With managed storage, startup and an initial read failure render Oxygen until
-  a supported choice is confirmed. A later failed reread preserves the prior
-  confirmed/effective theme.
-- A selection made through the state-holder event is pending while storage is
-  writing. Continue rendering the confirmed theme until the durable write
-  succeeds; then atomically confirm and render the new theme. A failed write
-  clears pending state, exposes `writeError`, and leaves the confirmed/effective
-  theme unchanged. Retry replays that failed write; read-failure retry rereads.
-- Ignore duplicate selection while the same choice is confirmed or any theme
-  write is pending. Theme events must not mutate layout, effects, units,
-  location, visible/return screens, canonical/presented forecast, alerts, or
-  repository request counts.
-- When theme storage is not configured, preserve current behavior exactly:
-  `OxygenApp` continues to honor its injected `OxygenAppearance.theme` for
-  previews and tests, and the default remains Oxygen.
-- When theme storage is configured, `OxygenApp` uses the state holder's
-  effective theme consistently for `OxygenTheme`, the effective
-  `OxygenAppearance` passed to Home, and the existing read-only Appearance
-  summary. Do not add controls, copy, test tags, or callbacks to
-  `SettingsScreen` in this slice.
+- Keep `ThemePreferenceStorage`, its dedicated `oxygen_theme_preferences`
+  DataStore name, version `1`, canonical values, and 28B1 state transitions
+  unchanged. This slice adds no migration, preference abstraction, theme, or
+  rendering work.
+- In `MainActivity`, create one application-context
+  `DataStoreThemePreferenceStorage` in the existing Compose `remember` setup
+  and pass it to the existing `OxygenAppStateHolder` parameter. Do not alter
+  repository, cache, location, permissions, or executor construction.
+- In `OxygenApp`, pass `presentationState.themePreference`,
+  `onThemeSelected`, and `onThemePreferenceRetry` to Settings. Continue to use
+  the existing confirmed/effective `theme` for both `OxygenTheme` and
+  `OxygenAppearance`; preserve unmanaged `appearance.theme` injection for
+  previews and fixtures.
+- In `SettingsScreen`'s existing Appearance section, show a "Theme" control
+  only when the preference is managed. Use three full-width, vertically ordered
+  `FilterChip` choices—Oxygen, Paper, Terminal—each with a 48dp minimum target.
+  This avoids cramped three-column labels at the compact large-font boundary.
+  Use the confirmed effective `themeId` for selected semantics, not a pending
+  target, so the UI never presents an uncommitted theme as active.
+- While a managed read is loading, a write is pending, or a read/write failure
+  awaits retry, disable all theme choices. Show distinct, truthful loading,
+  "Saving <theme>…", read-failure, write-failure, retry, and saved states.
+  The retry control invokes the existing state-holder retry event; it must
+  replay the retained failed write target, not silently substitute Oxygen.
+  Keep the last confirmed theme selected and rendered after failure.
+- Add stable test tags `settings-theme-oxygen`, `settings-theme-paper`,
+  `settings-theme-terminal`, `theme_preference_loading`,
+  `theme_preference_error`, `theme_preference_retry`, and
+  `theme_preference_saved`. Preserve selected/disabled semantics and source
+  order. Do not add production-only test affordances or modify `OxygenTheme`.
 
-## Intended Production Files
+## Intended files
 
-- `app/src/main/kotlin/com/oxygen/weather/app/ThemePreferenceStorage.kt` — new
-  interface, read result, stable codec, and Preferences DataStore adapter.
-- `app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt` — managed
-  theme state, startup load, durable selection, and retry transitions.
-- `app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt` — choose the managed
-  effective theme while retaining unmanaged `OxygenAppearance` injection.
+- `app/src/main/kotlin/com/oxygen/weather/MainActivity.kt`
+- `app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt`
+- `app/src/main/kotlin/com/oxygen/weather/app/ui/settings/SettingsScreen.kt`
+- `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/settings/ThemePreferenceUiTest.kt`
+  — new compact Appearance transaction/no-refetch and failure/retry cases.
+- `app/src/androidTest/kotlin/com/oxygen/weather/app/ThemePreferenceDataStoreInstrumentedTest.kt`
+  — revise its direct state-holder selection to use the Appearance control and
+  retain production-DataStore recreation coverage.
 
-No change is planned for `MainActivity.kt`, `SettingsScreen.kt`,
-`OxygenTheme.kt`, Gradle files, resources, or provider/core code. If the
-implementation requires one of those files, stop and revise the boundary before
-editing it.
+Existing `ThemePreferenceStorageTest` and `ThemePreferenceStateHolderTest`
+remain the 28B1 codec/transaction regression boundary; no new JVM state model
+is warranted unless implementation exposes a real regression.
 
-## Test Plan
+## Focused tests and evidence
 
-Add:
+1. Add a red connected UI assertion for the missing theme controls. After the
+   implementation, `ThemePreferenceUiTest` must use a controlled executor and
+   recording repository to prove all three choices are reachable, selected
+   semantics and Appearance summary change only after successful commits, a
+   pending write disables every choice, and Paper → Terminal → Oxygen produces
+   no additional repository request or presentation-state change apart from
+   confirmed theme.
+2. Its failure/retry case must make the theme store fail a write, verify that
+   the confirmed theme and Home/Settings return state remain intact with the
+   retry control visible, then make the same retained target succeed exactly
+   once. It must also measure the three choice and retry targets at least 48dp
+   and verify their vertical ordering at 360x640/font-scale-1.3.
+3. Update
+   `ThemePreferenceDataStoreInstrumentedTest#appearanceSelectionSurvivesProductionDataStoreAndAppRecreation`
+   to select Paper through the real Appearance UI backed by the production
+   DataStore adapter, replace the holder/app composition, and verify Paper's
+   selected summary/control after recreation. Restore the test-owned record in
+   cleanup. This is storage/app recreation evidence, not an installed Activity
+   or force-stop claim.
+4. Preserve the existing focused JVM coverage for malformed/unsupported
+   storage records, loading, duplicate/pending selection, read/write retry, and
+   independence from layout/effects/forecast state. Do not duplicate those
+   state-machine cases in UI tests.
+5. Capture an installed baseline before the UI edit and final PNG plus UI
+   hierarchy evidence for Paper and Terminal selection, Activity recreation,
+   and force-stop/relaunch. Record commands, serial, AVD, size, font scale,
+   selected location provenance, and any bounded platform failure under
+   `.codex/test-artifacts/2026-09-09-slice-28b2-persisted-theme-settings-ui/`.
 
-- `app/src/test/kotlin/com/oxygen/weather/app/ThemePreferenceStorageTest.kt`;
-- `app/src/test/kotlin/com/oxygen/weather/app/ThemePreferenceStateHolderTest.kt`;
-- `app/src/androidTest/kotlin/com/oxygen/weather/app/ThemePreferenceDataStoreInstrumentedTest.kt`.
+## Verification budget and sequence
 
-Focused JVM cases must prove:
+Budget: one baseline capture, one focused JVM baseline, one red connected run,
+one focused green run of the three named connected cases, one installed journey,
+and one broad pass. Use one emulator session; do not rerun a passing command
+unless relevant code, test input, or environment changes.
 
-1. Oxygen, Paper, and Terminal encode to stable values and round-trip.
-2. Missing keys, partial records, wrong versions, blank/unknown values, and
-   non-canonical case/whitespace values yield `NoSupportedChoice` and therefore
-   the Oxygen state-holder default.
-3. Managed startup exposes Loading, then restores each supported theme; an
-   unmanaged holder retains its injected initial theme.
-4. A pending Paper/Terminal write keeps the confirmed theme effective; success
-   changes it only after storage commits, and duplicate/pending input does not
-   create extra writes.
-5. Read failure and retry are observable; an initial failure uses Oxygen, while
-   a failed reread retains the last confirmed theme.
-6. Write failure and retry retain the confirmed theme, preserve the failed
-   target, and commit it once exactly when retry succeeds.
-7. A theme transaction preserves layout/effects/unit/location and the complete
-   Home ready/Settings return state, with no additional weather refresh.
+1. Confirm a ready ADB device with `scripts/list-avds.sh`; start one
+   `oxygen_starter` session only if needed. Pin its serial, capture the current
+   Appearance baseline, and record `wm size` and `font_scale`.
+2. Run the existing theme JVM baseline. Add the red UI test and record its
+   actual missing-control result before production edits.
+3. Implement only the wiring and Appearance controls above. Run focused JVM
+   green, then the two focused connected classes (three relevant cases total).
+4. Assemble/install once for the changed APK. On the same emulator, set Effects
+   Off, select Paper and Terminal from Appearance, capture each Home/Settings
+   result, recreate by portrait rotation (`user_rotation` 1 then 0), and
+   force-stop/relaunch with `am force-stop` followed by explicit
+   `am start -n com.oxygen.weather/.MainActivity`. Restore device rotation
+   settings after capture. If a real provider path cannot become ready within a
+   bounded attempt, retain truthful Settings/restoration evidence and report
+   the exact gap; do not fabricate a ready Home.
+5. Run the broad checks once, inspect the diff for source compatibility,
+   unchanged DataStore contract, semantic/target behavior, and scope leakage.
 
-Use a controlled executor wherever Loading or pending state must be observed;
-do not rely on timing or sleeps.
-
-The single connected case,
-`ThemePreferenceDataStoreInstrumentedTest#supportedThemeSurvivesStorageAndStateHolderRecreation`,
-must use the production DataStore adapter with test-owned app storage, commit an
-alternate theme through the state holder, construct a new storage adapter and
-state holder, and observe the restored theme through the existing
-`OxygenApp -> Settings / Appearance` summary. Reset the test-owned record during
-cleanup. Do not launch `MainActivity`, alter the installed app's preferences,
-or describe state-holder recreation as Activity/process restart evidence.
-
-## Implementation Sequence
-
-1. Run the focused existing layout/effects preference tests as a regression
-   baseline; record the command and result once.
-2. Add the codec and state-holder tests first and retain the expected red result
-   for missing theme storage/state behavior.
-3. Implement the stable codec and dedicated DataStore adapter without changing
-   existing preference formats or dependencies.
-4. Add managed/unmanaged theme state and transaction handling to
-   `OxygenAppStateHolder`, reusing the existing background-executor and state
-   publication pattern. Keep effective state confirmed-only during writes.
-5. Update `OxygenApp` to consume managed theme state at all existing theme
-   rendering/summary boundaries while preserving unmanaged injected appearance.
-6. Run focused JVM green once, then the one named connected case on one pinned
-   emulator. Rerun only after a relevant code, test-input, or environment change
-   and record the reason.
-7. Run broad checks once, inspect the complete diff for source compatibility,
-   exact persisted values, truthful failure handling, and scope leakage, then
-   mark the slice verified only if every acceptance claim has evidence.
-
-## Evidence and Verification Budget
-
-Artifacts and a short command/result/rerun ledger belong under:
-
-```text
-.codex/test-artifacts/2026-09-09-slice-28b1-theme-preference-storage-state/
-```
-
-Focused baseline:
+Planned commands:
 
 ```sh
 . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest \
-  --tests '*LayoutPreferenceStorageTest' \
-  --tests '*LayoutPreferenceStateHolderTest' \
-  --tests '*EffectsPreferenceStorageTest' \
-  --tests '*EffectsPreferenceStateHolderTest'
-```
-
-Red/focused green:
-
-```sh
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest \
-  --tests '*ThemePreferenceStorageTest' \
-  --tests '*ThemePreferenceStateHolderTest'
-```
-
-Connected production-storage boundary (one case, within the eight-case limit):
-
-```sh
+  --tests 'com.oxygen.weather.app.ThemePreferenceStorageTest' \
+  --tests 'com.oxygen.weather.app.ThemePreferenceStateHolderTest'
 . scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest \
-  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ThemePreferenceDataStoreInstrumentedTest#supportedThemeSurvivesStorageAndStateHolderRecreation'
-```
-
-Use `scripts/list-avds.sh` and one `scripts/start-emulator.sh` session only if no
-ready device exists; pin and record the ADB serial before the connected run.
-This state/storage slice requires logs, not visual screenshots.
-
-Broad checks:
-
-```sh
+  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.settings.ThemePreferenceUiTest'
+. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest \
+  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ThemePreferenceDataStoreInstrumentedTest'
 . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
 . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
 . scripts/android-env.sh && ./gradlew :app:assembleDebug
 git diff --check
 ```
 
-Budget: one baseline unit run, one expected red run, one focused green run, one
-connected case, and one broad pass. Do not substitute compilation or source
-inspection for the connected storage/state observation.
+## Actual evidence
 
-## Required Completion and Document Sync
+- Baseline: `scripts/list-avds.sh`; one `oxygen_starter` emulator on
+  `emulator-5554`, physical 1080x2400, font scale 1.3. Baseline Appearance PNG
+  and hierarchy are under
+  `.codex/test-artifacts/2026-09-09-slice-28b2-persisted-theme-settings-ui/`.
+- Focused JVM baseline and green rerun passed the two named theme tests.
+- Focused connected green evidence passed `ThemePreferenceUiTest` (2 cases)
+  and `ThemePreferenceDataStoreInstrumentedTest` (1 case) on the same AVD.
+  Initial attempts exposed the missing storage import, off-screen saved-state
+  assertion, and an assertion made before the controlled write drained; each
+  rerun followed the relevant code/test-input change.
+- Installed evidence: Effects Off; Paper and Terminal rendered and were
+  selected in Appearance. Paper survived relaunch before another selection;
+  Terminal survived rotation (`user_rotation` 1 then 0) and force-stop/relaunch
+  in Settings. PNG and UI hierarchy evidence plus command logs are in the
+  cycle artifact directory. Rotation settings were restored to the baseline.
+- Broad checks passed: `:app:compileDebugKotlin`, full app/core debug unit
+  tests, `:app:assembleDebug`, and `git diff --check`.
+- Bounded gap: the installed Activity returned to first-run location entry
+  after rotation/relaunch, so no post-relaunch Home forecast screenshot is
+  claimed. No location, provider result, sample data, or app-private theme
+  data was seeded.
+- The planned red connected run was not separately recorded because the test
+  was added and compiled with the production wiring in the same edit; the
+  focused green boundary is retained instead.
 
-After verified implementation is committed, perform the required authoritative
-doc sync as a separate, factual closure step:
+## Required post-commit document sync
 
-- `.codex/plans/current.md`: record actual focused/connected/broad results,
-  artifact paths, blockers/skips, implementation commit, and next action.
-- `.codex/plans/mvp-roadmap.md`: mark 28B1 committed with its actual result and
-  evidence; select 28B2 only after 28B1 is committed.
-- `.codex/cycles/history.md`: update the recent summary and append one concise,
-  self-contained 28B1 entry. Ordinary append does not require an archive copy.
-- `README.md`: describe the versioned theme storage/state only under
-  "Implemented but not active" and keep installed theme choice/restoration in
-  "Not implemented yet."
-- `docs/OXYGEN_FULL_SPECIFICATION.md`: reconcile the current implementation
-  status in the theme/Immediate Tasks text: Paper and Terminal rendering plus
-  28B1 storage/state exist, while MainActivity wiring, user selection, and
-  installed restart restoration remain 28B2.
+After verified implementation is committed, update only factual authorities:
 
-No provider contract or data-source disclosure changes are required. Run and
-record `git diff --check` for the doc sync; do not claim `committed` until the
-implementation commit exists, and do not claim installed persistence from the
-connected state-holder recreation test.
+- `.codex/plans/mvp-roadmap.md`: mark 28B1 committed at `708172f`/`82cf281`,
+  mark 28B2 with its actual commit/evidence, update the Active Slice chain, and
+  leave Slice 29A merely the next candidate.
+- `.codex/cycles/history.md`: correct the recent-state summary and append one
+  concise 28B2 entry with production files, exact focused/broad/manual evidence,
+  artifact path, skips/blockers, and commit state.
+- `README.md`: move Paper/Terminal from "implemented but not active" to the
+  installed-app list only if this journey passes; state the actual selectable
+  set and restart restoration, and remove only the now-false "persisted theme"
+  item from Not implemented yet. Keep Full effects and icon packs unfinished.
+- `docs/OXYGEN_FULL_SPECIFICATION.md`: replace the current claim that Paper and
+  Terminal are not selectable/persisted with the verified 28B1 storage and
+  28B2 installed-selection/restoration facts. Do not change product
+  requirements, provider documentation, or release status.
+- This plan: record actual evidence while active; after the commit/doc sync,
+  select a later bounded slice only through the roadmap rather than claiming it
+  implemented.
 
-## Out of Scope
+## Out of scope
 
-- `MainActivity` theme-storage wiring, Settings theme controls, user-facing
-  transaction copy, Activity recreation, force-stop/relaunch, and an installed
-  selection journey (Slice 28B2).
-- New themes, high contrast, icon packs, Full effects, or visual changes to
-  Oxygen, Paper, Terminal, Home, Settings, weather marks, typography, or roles.
-- Generic preference abstraction/consolidation, DataStore migrations for other
-  settings, new dependencies, or module changes.
-- Provider/repository/cache/location/unit/layout/effects/alert semantics,
-  canonical or presented forecast values, network behavior, release status, or
-  MVP-readiness claims.
-
-## Ready Criteria
-
-- `specified`: specification/roadmap contracts remain authoritative.
-- `planned`: this file selects only theme preference storage/state.
-- `covered`: the named JVM and connected tests encode the stated boundaries.
-- `implemented`: production codec, DataStore, state transaction, and
-  `OxygenApp` consumption exist without 28B2 reachability.
-- `verified`: focused tests, the one connected case, broad checks, and diff
-  review pass with retained logs.
-- `committed`: verified implementation exists in Git. Do not close the cycle
-  until the required post-commit authority sync is also complete.
+- Theme storage/state-machine redesign, DataStore migration, new dependencies,
+  new themes, automatic/system theme, high contrast, icon packs, Full effects,
+  or Paper/Terminal/Oxygen visual redesign.
+- Changes to forecast values, providers, cache, alerts, locations, permission,
+  units, layout/effects behavior, navigation, accessibility meaning, or
+  canonical data.
+- Release readiness, MVP-complete claims, and any provider/data-source document
+  update.

@@ -770,6 +770,15 @@ Future candidates:
 
 Themes should be genuinely different, not twenty blue variants.
 
+The installed Settings / Appearance surface currently exposes Oxygen, Paper,
+and Terminal as persisted choices. The versioned local theme record accepts
+only those canonical values; a theme becomes effective after its write
+succeeds, and the confirmed choice is restored through Activity recreation and
+force-stop/relaunch. Failed reads and writes retain conservative, confirmed
+presentation and expose retry. Theme selection does not require a forecast
+refetch or change weather semantics. Full effects behavior and icon-pack
+settings remain unfinished.
+
 ---
 
 ## 24. Layout Presets
@@ -1963,10 +1972,15 @@ The installed 360x640, font-scale-1.3 journey also verified Effects
 Off, saved-state feedback, and usable forecast/page controls. Switching layout
 or Hourly/Daily presentation does not refetch forecast, alert, location, or
 geocoding data. Slice 28A1 and Slice 28A2 added committed Paper and Terminal
-Home rendering baselines without making either theme selectable or persisted.
-Full effects, richer scene behavior, and persisted theme/icon settings remain
-later work. The complete Slice 27B3 evidence package is retained under
-`.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
+Home rendering baselines. Slice 28B1 added the versioned theme preference
+boundary, and Slice 28B2 made Oxygen, Paper, and Terminal selectable through
+the installed Settings / Appearance surface with confirmed-write semantics and
+restoration evidence. Full effects, richer scene behavior, and icon-pack
+settings remain later work. The complete Slice 27B3 evidence package is
+retained under
+`.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`;
+the Slice 28B2 evidence package is retained under
+`.codex/test-artifacts/2026-09-09-slice-28b2-persisted-theme-settings-ui/`.
 
 ---
 

@@ -1733,12 +1733,14 @@ Theme quality rule:
 Terminal may be deferred rather than shipped weakly.
 
 Completion evidence: focused six-case connected rendering and broad local
-Gradle checks passed on 2026-09-09. Terminal remains non-persisted; Slice 28B1
-is the next candidate.
+Gradle checks passed on 2026-09-09. Slice 28B1 is committed at `708172f` and
+merged by `82cf281`; Slice 28B2 is committed at `2c88b9c` with retained
+Settings selection/restoration evidence under
+`.codex/test-artifacts/2026-09-09-slice-28b2-persisted-theme-settings-ui/`.
 
 ### Slice 28B1: Theme Preference Storage and State
 
-Status: specified
+Status: committed at `708172f` (merged by `82cf281`)
 
 Prerequisites:
 
@@ -1754,7 +1756,7 @@ Must prove:
 
 ### Slice 28B2: Persisted Theme Settings UI
 
-Status: specified
+Status: committed at `2c88b9c`
 
 Prerequisites:
 
@@ -2176,10 +2178,10 @@ Sequencing rationale:
 
 ## Active Slice
 
-Slice 28B1: Theme Preference Storage and State is planned in
-`.codex/plans/current.md`. Slice 28A1 is committed at `06c987b`, and Slice 28A2
-is committed at `80dd961`, with retained connected rendering evidence under
-their cycle artifact directories.
+Slice 28B2: Persisted Theme Settings UI is committed at `2c88b9c` in
+`.codex/plans/current.md`. Slice 28A1 is committed at `06c987b`, Slice 28A2 is
+committed at `80dd961`, and Slice 28B1 is committed at `708172f` (merged by
+`82cf281`), with retained evidence under their cycle artifact directories.
 Slice 27B1/27B2 are committed together at `b68ca19`, and Slice 27B3 is
 verified with retained installed evidence at `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
 
@@ -2217,11 +2219,13 @@ Immediate planning boundary:
 -> Slice 27B3 installed layout restoration verification verified on 2026-09-08
 -> Slice 28A1 Paper theme rendering baseline committed at `06c987b`
 -> Slice 28A2 Terminal theme rendering baseline committed at `80dd961`
+-> Slice 28B1 theme preference storage/state committed at `708172f`, merged by `82cf281`
+-> Slice 28B2 persisted theme Settings UI committed at `2c88b9c`
 ```
 
-Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 is
-verified; Slice 28A1 and Slice 28A2 are committed; Slice 28B1 is the active
-bounded slice. Release work and release-candidate claims remain outside this
+Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, and Slice 28B2 are
+complete. Slice 29A remains the next specified candidate; it is not planned by
+this sync. Release work and release-candidate claims remain outside this
 boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.

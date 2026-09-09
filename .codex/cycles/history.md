@@ -32,16 +32,15 @@ ledger states.
 
 ## Recent State Summary
 
-- Latest implementation and verification state: Slice 28A2, Terminal Theme
-  Rendering Baseline, is committed at `80dd961`; its connected rendering and
-  broad-check evidence is retained at
-  `.codex/test-artifacts/2026-09-08-slice-28a2-terminal-theme-rendering-baseline/`.
-- Documentation state: Paper's post-commit authority sync is recorded at
-  `ff7c47a`; the roadmap and specification now also reflect committed Terminal
-  rendering without claiming theme persistence or installed selection.
-- Current process state: Slice 28B1, Theme Preference Storage and State, is
-  planned in `.codex/plans/current.md`; its next action is the focused
-  preference regression baseline.
+- Latest implementation and verification state: Slice 28B2, Persisted Theme
+  Settings UI, is committed at `2c88b9c`; focused, broad, and installed
+  evidence is retained at
+  `.codex/test-artifacts/2026-09-09-slice-28b2-persisted-theme-settings-ui/`.
+- Slice 28B1 is committed at `708172f` and merged by `82cf281`; the current
+  Settings path now wires its production DataStore and exposes Oxygen, Paper,
+  and Terminal selection with confirmed-write semantics.
+- Current process state: Slice 29A remains the next specified candidate; no
+  later slice is planned in this sync.
 
 ## Recent Cycles
 
@@ -1264,3 +1263,45 @@ Blockers/skips:
 Boundaries:
 - No theme persistence, Settings selection, MainActivity reachability, provider,
   layout, effects, accessibility semantics, release, or MVP behavior changed.
+
+### 2026-09-09-slice-28b2-persisted-theme-settings-ui
+
+Status: committed
+Mode: bounded settings integration and installed restoration verification
+Slice: Slice 28B2, Persisted Theme Settings UI
+Commit: `2c88b9c`
+
+Result:
+- Wired the existing `DataStoreThemePreferenceStorage` into `MainActivity` and
+  passed confirmed theme state and retry/selection events through `OxygenApp`.
+- Added managed Appearance controls for Oxygen, Paper, and Terminal with
+  confirmed-only selected semantics, 48dp vertical targets, disabled pending/
+  failure states, truthful save/load/error copy, and retained-target retry.
+- Updated the production-DataStore state-holder recreation test to select Paper
+  through the Appearance control.
+
+Evidence:
+- Focused JVM theme storage/state tests passed before and after implementation.
+- Connected `ThemePreferenceUiTest` passed 2 cases and
+  `ThemePreferenceDataStoreInstrumentedTest` passed 1 case on
+  `oxygen_starter` / `emulator-5554`.
+- Installed 1080x2400, font-scale-1.3 evidence with Effects Off rendered and
+  selected Paper and Terminal in Appearance. Paper survived relaunch before a
+  new selection; Terminal survived rotation and force-stop/relaunch in
+  Settings. Rotation settings were restored.
+- Broad `:app:compileDebugKotlin`, app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check` passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-09-slice-28b2-persisted-theme-settings-ui/`.
+
+Blockers/skips:
+- The installed Activity returned to first-run location entry after rotation
+  and relaunch, so no post-relaunch Home forecast screenshot is claimed. No
+  location, provider result, sample data, or app-private theme data was seeded.
+- A separate pre-production red connected run was not recorded; the new UI
+  test was compiled with the production wiring in the same edit.
+
+Boundaries:
+- No DataStore contract/state-machine redesign, provider/cache/location/unit/
+  alert behavior, new theme, effects/layout behavior, or release claim changed.
