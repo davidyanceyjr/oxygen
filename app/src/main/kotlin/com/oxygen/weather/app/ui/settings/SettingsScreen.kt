@@ -38,6 +38,8 @@ import com.oxygen.weather.app.LayoutPreferencePresentationState
 import com.oxygen.weather.app.LayoutPreferenceReadState
 import com.oxygen.weather.app.OxygenAppScreen
 import com.oxygen.weather.app.SettingsDestination
+import com.oxygen.weather.app.ThemePreferencePresentationState
+import com.oxygen.weather.app.ThemePreferenceReadState
 import com.oxygen.weather.app.UnitPreferenceMessage
 import com.oxygen.weather.app.ui.theme.EffectsLevel
 import com.oxygen.weather.app.ui.theme.LayoutPreset
@@ -59,9 +61,12 @@ fun SettingsScreen(
     onUnitPreferenceSelected: (UnitPreference?) -> Unit = {},
     layoutPreference: LayoutPreferencePresentationState = LayoutPreferencePresentationState.notConfigured(),
     effectsPreference: EffectsPreferencePresentationState = EffectsPreferencePresentationState.notConfigured(),
+    themePreference: ThemePreferencePresentationState = ThemePreferencePresentationState.notConfigured(),
     animationsEnabled: Boolean = true,
     onEffectsPreferenceSelected: (EffectsLevel) -> Unit = {},
     onEffectsPreferenceRetry: () -> Unit = {},
+    onThemeSelected: (OxygenThemeId) -> Unit = {},
+    onThemePreferenceRetry: () -> Unit = {},
     onLayoutSelected: (LayoutPreset) -> Unit = {},
     onLayoutPreferenceRetry: () -> Unit = {},
 ) {
@@ -108,6 +113,7 @@ fun SettingsScreen(
                         themeId = themeId,
                         layout = appearance.layout,
                         effects = appearance.effects,
+                        themePreference = themePreference,
                         layoutPreference = layoutPreference,
                         preference = effectsPreference,
                         animationsEnabled = animationsEnabled,
@@ -115,6 +121,8 @@ fun SettingsScreen(
                         onLayoutRetry = onLayoutPreferenceRetry,
                         onEffectsSelected = onEffectsPreferenceSelected,
                         onRetry = onEffectsPreferenceRetry,
+                        onThemeSelected = onThemeSelected,
+                        onThemeRetry = onThemePreferenceRetry,
                     )
                     SettingsDestination.Units -> UnitPreferencesScreen(
                         selectedPreference = selectedUnitPreference,
@@ -209,11 +217,14 @@ private fun AppearanceSummary(
     effects: EffectsLevel,
     layoutPreference: LayoutPreferencePresentationState,
     preference: EffectsPreferencePresentationState,
+    themePreference: ThemePreferencePresentationState,
     animationsEnabled: Boolean,
     onLayoutSelected: (LayoutPreset) -> Unit,
     onLayoutRetry: () -> Unit,
     onEffectsSelected: (EffectsLevel) -> Unit,
     onRetry: () -> Unit,
+    onThemeSelected: (OxygenThemeId) -> Unit,
+    onThemeRetry: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -227,6 +238,86 @@ private fun AppearanceSummary(
             fontWeight = FontWeight.SemiBold,
         )
         AppearanceValue("Theme", themeId.displayName)
+        if (themePreference.isManaged) {
+            Text("Theme")
+            val themeChoicesEnabled = themePreference.readState == ThemePreferenceReadState.Loaded &&
+                themePreference.pending == null &&
+                !themePreference.writeError
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                ThemeChoice(
+                    label = "Oxygen",
+                    theme = OxygenThemeId.OXYGEN,
+                    selected = themeId == OxygenThemeId.OXYGEN,
+                    enabled = themeChoicesEnabled,
+                    onClick = { onThemeSelected(OxygenThemeId.OXYGEN) },
+                )
+                ThemeChoice(
+                    label = "Paper",
+                    theme = OxygenThemeId.PAPER,
+                    selected = themeId == OxygenThemeId.PAPER,
+                    enabled = themeChoicesEnabled,
+                    onClick = { onThemeSelected(OxygenThemeId.PAPER) },
+                )
+                ThemeChoice(
+                    label = "Terminal",
+                    theme = OxygenThemeId.TERMINAL,
+                    selected = themeId == OxygenThemeId.TERMINAL,
+                    enabled = themeChoicesEnabled,
+                    onClick = { onThemeSelected(OxygenThemeId.TERMINAL) },
+                )
+            }
+            when {
+                themePreference.pending != null -> Text(
+                    text = "Saving ${themePreference.pending.displayName}...",
+                    modifier = Modifier.testTag("theme_preference_loading"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                )
+                themePreference.readState == ThemePreferenceReadState.Loading -> Text(
+                    text = "Loading theme preference",
+                    modifier = Modifier.testTag("theme_preference_loading"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                )
+                themePreference.writeError -> {
+                    Text(
+                        text = "Theme save failed; retry",
+                        modifier = Modifier.testTag("theme_preference_error"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                    )
+                    OutlinedButton(
+                        onClick = onThemeRetry,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("theme_preference_retry"),
+                    ) {
+                        Text("Retry")
+                    }
+                }
+                themePreference.readState == ThemePreferenceReadState.Failed -> {
+                    Text(
+                        text = "Theme load failed; using ${themeId.displayName}; retry",
+                        modifier = Modifier.testTag("theme_preference_error"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                    )
+                    OutlinedButton(
+                        onClick = onThemeRetry,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("theme_preference_retry"),
+                    ) {
+                        Text("Retry")
+                    }
+                }
+                else -> Text(
+                    text = "Theme saved",
+                    modifier = Modifier.testTag("theme_preference_saved"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                )
+            }
+        }
         AppearanceValue("Layout", "${layout.displayName()} layout")
         AppearanceValue("Effects", effects.displayName())
         Text("Layout mode")
@@ -345,6 +436,30 @@ private fun AppearanceSummary(
             else -> Text("Your effects choice is saved on this device.")
         }
     }
+}
+
+@Composable
+private fun ThemeChoice(
+    label: String,
+    theme: OxygenThemeId,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        enabled = enabled,
+        label = { Text(label) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .requiredHeight(48.dp)
+            .semantics {
+                this.selected = selected
+                if (!enabled) disabled()
+            }
+            .testTag("settings-theme-${theme.name.lowercase()}"),
+    )
 }
 
 @Composable

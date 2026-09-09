@@ -20,6 +20,7 @@ import com.oxygen.weather.app.ui.settings.SettingsScreen
 import com.oxygen.weather.app.ui.theme.LayoutPreset
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenTheme
+import com.oxygen.weather.app.ui.theme.OxygenThemeId
 
 @Composable
 fun OxygenApp(
@@ -189,6 +190,7 @@ fun OxygenApp(
                 appearance = effectiveAppearance,
                 themeId = themeId,
                 effectsPreference = appState.effectsPreference,
+                themePreference = appState.themePreference,
                 layoutPreference = appState.layoutPreference,
                 animationsEnabled = animationsEnabled,
                 onDestinationSelected = {
@@ -211,6 +213,14 @@ fun OxygenApp(
                 },
                 onEffectsPreferenceRetry = {
                     appStateHolder.onEffectsPreferenceRetry()
+                    appState = appStateHolder.presentationState
+                },
+                onThemeSelected = { theme: OxygenThemeId ->
+                    appStateHolder.onThemeSelected(theme)
+                    appState = appStateHolder.presentationState
+                },
+                onThemePreferenceRetry = {
+                    appStateHolder.onThemePreferenceRetry()
                     appState = appStateHolder.presentationState
                 },
                 onLayoutSelected = { layout: LayoutPreset ->

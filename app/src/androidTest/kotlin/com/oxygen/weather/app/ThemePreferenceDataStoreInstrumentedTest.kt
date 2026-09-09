@@ -8,9 +8,10 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -80,8 +81,9 @@ class ThemePreferenceDataStoreInstrumentedTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("settings-appearance-summary").assertIsDisplayed()
 
-        holder.onThemeSelected(OxygenThemeId.PAPER)
+        composeRule.onNodeWithTag("settings-theme-paper").performClick()
         drainUi(executor)
+        composeRule.onNodeWithTag("settings-theme-paper").assertIsSelected()
         assertEquals(
             ThemePreferenceReadResult.Supported(OxygenThemeId.PAPER),
             storage.readThemePreference(),
@@ -102,7 +104,7 @@ class ThemePreferenceDataStoreInstrumentedTest {
         restartedHolder.onSettingsDestinationSelected(SettingsDestination.Appearance)
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("settings-appearance-summary").assertIsDisplayed()
-        composeRule.onNodeWithText("Paper").assertIsDisplayed()
+        composeRule.onNodeWithTag("settings-theme-paper").assertIsSelected()
     }
 
     private fun setContent(holder: OxygenAppStateHolder): MutableState<OxygenAppStateHolder> {
