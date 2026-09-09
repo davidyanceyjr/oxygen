@@ -1962,9 +1962,11 @@ restore through Activity recreation and force-stop/relaunch. Simple restores as
 The installed 360x640, font-scale-1.3 journey also verified Effects
 Off, saved-state feedback, and usable forecast/page controls. Switching layout
 or Hourly/Daily presentation does not refetch forecast, alert, location, or
-geocoding data. Full effects, richer scene behavior, and persisted theme/icon
-settings remain later work. The complete Slice 27B3 evidence package is
-retained under `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
+geocoding data. Slice 28A1 and Slice 28A2 added committed Paper and Terminal
+Home rendering baselines without making either theme selectable or persisted.
+Full effects, richer scene behavior, and persisted theme/icon settings remain
+later work. The complete Slice 27B3 evidence package is retained under
+`.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
 
 ---
 

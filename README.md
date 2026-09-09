@@ -70,6 +70,8 @@ and `docs/data-sources/`.
   implementation, while the installed app uses Room storage.
 - Provider-neutral custom-unit model and alternate-unit Home presentation
   outputs retained for a future custom-unit editor.
+- Paper and Terminal Home theme translations with connected rendering
+  baselines, retained for later persisted theme selection.
 
 ## Not implemented yet
 

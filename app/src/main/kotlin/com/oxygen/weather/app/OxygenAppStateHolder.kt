@@ -22,6 +22,7 @@ import com.oxygen.weather.core.provider.openmeteo.OpenMeteoGeocodingRepository
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoWeatherRepository
 import com.oxygen.weather.app.ui.theme.EffectsLevel
 import com.oxygen.weather.app.ui.theme.LayoutPreset
+import com.oxygen.weather.app.ui.theme.OxygenThemeId
 import java.time.Clock
 import java.time.Duration
 import java.util.Locale
@@ -51,6 +52,8 @@ class OxygenAppStateHolder(
         Thread(runnable, "oxygen-forecast-refresh").apply { isDaemon = true }
     },
     private val effectsPreferenceStorage: EffectsPreferenceStorage? = null,
+    private val themePreferenceStorage: ThemePreferenceStorage? = null,
+    private val initialTheme: OxygenThemeId = OxygenThemeId.OXYGEN,
 ) {
     private var startupLocationReadFailed = false
     private val initialSelectedLocation: WeatherLocation? = selectedLocation
@@ -58,6 +61,11 @@ class OxygenAppStateHolder(
     private val initialEffectiveLayout = if (managedLayoutStorage) LayoutPreset.STANDARD else initialLayout
     private val initialEffectsPreference = EffectsPreferencePresentationState.initial(
         isManaged = effectsPreferenceStorage != null,
+    )
+    private val managedThemeStorage = themePreferenceStorage != null
+    private val initialThemePreference = ThemePreferencePresentationState.initial(
+        isManaged = managedThemeStorage,
+        initialTheme = initialTheme,
     )
     val canSaveSearchResults: Boolean = savedLocationStorage != null
 
@@ -74,6 +82,8 @@ class OxygenAppStateHolder(
                 LayoutPreferencePresentationState.notConfigured(initialLayout)
             },
             effectsPreference = initialEffectsPreference,
+            theme = initialThemePreference.effective,
+            themePreference = initialThemePreference,
         )
     } else {
         OxygenAppPresentationState(
@@ -89,6 +99,8 @@ class OxygenAppStateHolder(
                 LayoutPreferencePresentationState.notConfigured(initialLayout)
             },
             effectsPreference = initialEffectsPreference,
+            theme = initialThemePreference.effective,
+            themePreference = initialThemePreference,
         )
     }
         private set
@@ -100,7 +112,9 @@ class OxygenAppStateHolder(
     private var activeCanonicalForecast: ActiveCanonicalForecast? = null
     private var effectsPreferenceWriteId = 0L
     private var layoutPreferenceWriteId = 0L
+    private var themePreferenceWriteId = 0L
     private var lastFailedLayoutSelection: LayoutPreset? = null
+    private var lastFailedThemeSelection: OxygenThemeId? = null
     private var deviceAttemptCounter = 0L
     private var activeDeviceAttempt: Long? = null
     private var deviceCancellation: LocationCancellation? = null
@@ -110,11 +124,13 @@ class OxygenAppStateHolder(
             if (selectedLocationStorage !== EmptySelectedLocationStorage ||
                 unitPreferenceStorage !== EmptyUnitPreferenceStorage ||
                 effectsPreferenceStorage != null ||
-                managedLayoutStorage
+                managedLayoutStorage ||
+                managedThemeStorage
             ) {
                 forecastExecutor.execute {
                     loadStoredLayoutPreference()
                     loadStoredEffectsPreference()
+                    loadStoredThemePreference()
                     loadStoredUnitPreference()
                     val restoredLocation = readStoredSelectedLocation()
                     when {
@@ -140,6 +156,7 @@ class OxygenAppStateHolder(
             forecastExecutor.execute {
                 if (managedLayoutStorage) loadStoredLayoutPreference()
                 loadStoredEffectsPreference()
+                loadStoredThemePreference()
                 loadStoredUnitPreference()
                 restoreCachedHomeForecast(initialSelectedLocation)
                 startHomeForecastLoad(initialSelectedLocation)
@@ -642,6 +659,94 @@ class OxygenAppStateHolder(
         forecastExecutor.execute { loadStoredEffectsPreference() }
     }
 
+    fun onThemeSelected(theme: OxygenThemeId) {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != SettingsDestination.Appearance) return
+        val storage = themePreferenceStorage ?: return
+        val current = presentationState.themePreference
+        if (current.readState == ThemePreferenceReadState.Loading ||
+            current.readState == ThemePreferenceReadState.Failed ||
+            current.pending != null ||
+            theme == current.confirmed
+        ) return
+
+        val operationId = synchronized(this) {
+            val latest = presentationState.themePreference
+            if (latest.readState == ThemePreferenceReadState.Loading ||
+                latest.readState == ThemePreferenceReadState.Failed ||
+                latest.pending != null ||
+                theme == latest.confirmed
+            ) return
+            themePreferenceWriteId += 1
+            lastFailedThemeSelection = theme
+            presentationState = presentationState.copy(
+                themePreference = latest.copy(
+                    pending = theme,
+                    writeError = false,
+                ),
+            )
+            publishState()
+            themePreferenceWriteId
+        }
+
+        forecastExecutor.execute {
+            try {
+                storage.writeThemePreference(theme)
+            } catch (_: Exception) {
+                synchronized(this) {
+                    if (operationId != themePreferenceWriteId) return@synchronized
+                    presentationState = presentationState.copy(
+                        themePreference = presentationState.themePreference.copy(
+                            pending = null,
+                            writeError = true,
+                        ),
+                    )
+                    publishState()
+                }
+                return@execute
+            }
+
+            synchronized(this) {
+                if (operationId != themePreferenceWriteId) return@synchronized
+                lastFailedThemeSelection = null
+                presentationState = presentationState.copy(
+                    theme = theme,
+                    themePreference = ThemePreferencePresentationState.loaded(theme),
+                )
+                publishState()
+            }
+        }
+    }
+
+    fun onThemePreferenceRetry() {
+        if (themePreferenceStorage == null) return
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != SettingsDestination.Appearance) return
+
+        val current = presentationState.themePreference
+        when {
+            current.pending != null -> return
+            current.writeError -> {
+                val retryTheme = lastFailedThemeSelection ?: return
+                onThemeSelected(retryTheme)
+            }
+            else -> {
+                synchronized(this) {
+                    val latest = presentationState.themePreference
+                    if (latest.pending != null) return@synchronized
+                    presentationState = presentationState.copy(
+                        theme = latest.confirmed ?: OxygenThemeId.OXYGEN,
+                        themePreference = ThemePreferencePresentationState.loading(
+                            confirmed = latest.confirmed,
+                        ),
+                    )
+                    publishState()
+                }
+                forecastExecutor.execute { loadStoredThemePreference() }
+            }
+        }
+    }
+
     fun onSettingsBack() {
         val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
         if (settings.selectedDestination != null) {
@@ -933,6 +1038,50 @@ class OxygenAppStateHolder(
         }
     }
 
+    private fun loadStoredThemePreference() {
+        val storage = themePreferenceStorage ?: return
+        val confirmedBeforeLoad = presentationState.themePreference.confirmed
+        synchronized(this) {
+            presentationState = presentationState.copy(
+                theme = confirmedBeforeLoad ?: OxygenThemeId.OXYGEN,
+                themePreference = ThemePreferencePresentationState.loading(
+                    confirmed = confirmedBeforeLoad,
+                ),
+            )
+            publishState()
+        }
+
+        val next = try {
+            when (val restored = storage.readThemePreference()) {
+                ThemePreferenceReadResult.NoSupportedChoice ->
+                    ThemePreferencePresentationState.loaded(OxygenThemeId.OXYGEN)
+                is ThemePreferenceReadResult.Supported ->
+                    ThemePreferencePresentationState.loaded(restored.theme)
+            }
+        } catch (_: Exception) {
+            ThemePreferencePresentationState.failed(confirmedBeforeLoad)
+        }
+
+        synchronized(this) {
+            val nextTheme = when (next.readState) {
+                ThemePreferenceReadState.Loaded -> next.confirmed ?: OxygenThemeId.OXYGEN
+                ThemePreferenceReadState.Failed -> confirmedBeforeLoad ?: OxygenThemeId.OXYGEN
+                ThemePreferenceReadState.Loading,
+                ThemePreferenceReadState.NotConfigured -> presentationState.theme
+            }
+            presentationState = presentationState.copy(
+                theme = nextTheme,
+                themePreference = next.copy(
+                    confirmed = next.confirmed ?: confirmedBeforeLoad,
+                ),
+            )
+            if (next.readState == ThemePreferenceReadState.Loaded) {
+                lastFailedThemeSelection = null
+            }
+            publishState()
+        }
+    }
+
     private fun loadStoredLayoutPreference() {
         val storage = layoutPreferenceStorage ?: return
         val confirmedBeforeLoad = presentationState.layoutPreference.confirmed
@@ -1128,6 +1277,8 @@ data class OxygenAppPresentationState(
     val unitPreference: UnitPreference? = null,
     val layoutPreference: LayoutPreferencePresentationState = LayoutPreferencePresentationState.notConfigured(),
     val effectsPreference: EffectsPreferencePresentationState = EffectsPreferencePresentationState.notConfigured(),
+    val theme: OxygenThemeId = OxygenThemeId.OXYGEN,
+    val themePreference: ThemePreferencePresentationState = ThemePreferencePresentationState.notConfigured(),
 ) {
     val isShowingHome: Boolean = screen is OxygenAppScreen.Home && selectedLocation != null
     val usesScaffoldWeather: Boolean = false
@@ -1172,6 +1323,61 @@ data class LayoutPreferencePresentationState(
             LayoutPreferencePresentationState(
                 readState = LayoutPreferenceReadState.Failed,
                 confirmed = confirmed,
+            )
+    }
+}
+
+enum class ThemePreferenceReadState {
+    NotConfigured,
+    Loading,
+    Loaded,
+    Failed,
+}
+
+data class ThemePreferencePresentationState(
+    val readState: ThemePreferenceReadState,
+    val confirmed: OxygenThemeId? = null,
+    val pending: OxygenThemeId? = null,
+    val writeError: Boolean = false,
+) {
+    val isManaged: Boolean
+        get() = readState != ThemePreferenceReadState.NotConfigured
+
+    val effective: OxygenThemeId
+        get() = confirmed ?: OxygenThemeId.OXYGEN
+
+    val selectedForUi: OxygenThemeId
+        get() = pending ?: effective
+
+    companion object {
+        fun initial(
+            isManaged: Boolean,
+            initialTheme: OxygenThemeId = OxygenThemeId.OXYGEN,
+        ): ThemePreferencePresentationState =
+            if (isManaged) loading() else notConfigured(initialTheme)
+
+        fun loading(confirmed: OxygenThemeId? = null): ThemePreferencePresentationState =
+            ThemePreferencePresentationState(
+                readState = ThemePreferenceReadState.Loading,
+                confirmed = confirmed,
+            )
+
+        fun loaded(theme: OxygenThemeId): ThemePreferencePresentationState =
+            ThemePreferencePresentationState(
+                readState = ThemePreferenceReadState.Loaded,
+                confirmed = theme,
+            )
+
+        fun failed(confirmed: OxygenThemeId? = null): ThemePreferencePresentationState =
+            ThemePreferencePresentationState(
+                readState = ThemePreferenceReadState.Failed,
+                confirmed = confirmed,
+            )
+
+        fun notConfigured(initialTheme: OxygenThemeId = OxygenThemeId.OXYGEN): ThemePreferencePresentationState =
+            ThemePreferencePresentationState(
+                readState = ThemePreferenceReadState.NotConfigured,
+                confirmed = initialTheme,
             )
     }
 }

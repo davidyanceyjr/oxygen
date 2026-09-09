@@ -28,8 +28,11 @@ fun OxygenApp(
     appearance: OxygenAppearance = OxygenAppearance(),
     motionPreferenceSource: MotionPreferenceSource = EnabledMotionPreferenceSource,
 ) {
-    val appStateHolder = stateHolder ?: remember(appearance.layout) {
-        OxygenAppStateHolder(initialLayout = appearance.layout)
+    val appStateHolder = stateHolder ?: remember(appearance.layout, appearance.theme) {
+        OxygenAppStateHolder(
+            initialLayout = appearance.layout,
+            initialTheme = appearance.theme,
+        )
     }
     var appState by remember(appStateHolder) { mutableStateOf(appStateHolder.presentationState) }
     var animationsEnabled by remember(motionPreferenceSource) {
@@ -75,8 +78,15 @@ fun OxygenApp(
         appState = appStateHolder.presentationState
     }
 
-    val themeId = appearance.theme
-    val sessionAppearance = appearance.copy(layout = appState.layout)
+    val themeId = if (appState.themePreference.isManaged) {
+        appState.theme
+    } else {
+        appearance.theme
+    }
+    val sessionAppearance = appearance.copy(
+        theme = themeId,
+        layout = appState.layout,
+    )
     val requestedAppearance = if (appState.effectsPreference.isManaged) {
         sessionAppearance.copy(effects = appState.effectsPreference.effectiveRequested)
     } else {

@@ -1,166 +1,192 @@
-# Slice 28A1 - Paper Theme Rendering Baseline
+# Slice 28B1 - Theme Preference Storage and State
 
-**Status:** committed
-**Cycle ID:** `2026-09-08-slice-28a1-paper-theme-rendering-baseline`
-**Mode:** bounded visual implementation
-**Basis:** Slice 18G design roles (`fae63b3`), Slice 18I compact behavior
-(`02f701`), and Slice 27B3 layout restoration (`9ce6de6`) are complete. The
-roadmap requires Paper rendering quality before persisted theme selection.
-**Next action:** plan Slice 28A2, Terminal Theme Rendering Baseline.
+**Status:** planned
+**Cycle ID:** `2026-09-09-slice-28b1-theme-preference-storage-state`
+**Mode:** bounded persistence/state implementation
+**Basis:** Paper (`06c987b`) and Terminal (`80dd961`) are committed,
+connected rendering baselines. The roadmap next requires a conservative theme
+preference boundary before Settings selection and installed restoration.
+**Next action:** run the focused layout/effects preference regression baseline,
+then add the failing theme codec and state-holder tests.
 
-**Outcome:** pass. Paper renders as a warm, opaque, typography-first Home
-translation with Effects Off; the final six-case connected suite and broad
-checks passed. Retained evidence is under the cycle artifact directory below.
+## Selected Behavior and Acceptance Boundary
 
-**Commit:** `06c987b` (`Implement Paper Home theme rendering`)
+Persist and restore exactly the three verified `OxygenThemeId` values:
+`OXYGEN`, `PAPER`, and `TERMINAL`. A missing, malformed, unknown, or
+unsupported-version record resolves to Oxygen. A storage exception is distinct
+from an unsupported record: it remains observable and retryable while effective
+rendering stays on the last confirmed theme, or Oxygen if none was confirmed.
 
-## Behavior and Boundary
+The primary acceptance boundary is `OxygenAppStateHolder` configured with the
+new production storage interface: startup restoration, pending/confirmed write
+transactions, failures, retry, and theme/layout/effects independence are
+observable without changing forecast state or calling a provider. One focused
+connected case must exercise the production Preferences DataStore and
+`OxygenApp` consumption across storage/state-holder recreation. It is not an
+Activity, process-restart, or user-reachable Settings-selection claim.
 
-Make `OxygenThemeId.PAPER` a deliberate, non-persisted Home translation:
-typography-first, low-decoration, warm neutral, readable in Simple and Standard,
-and complete with Effects Off. Current `PaperSpec` values are scaffold, not
-implementation evidence.
+## Storage Contract
 
-Functional invariants:
+- Add `ThemePreferenceStorage` and `DataStoreThemePreferenceStorage` in `:app`,
+  following the established small-preference boundary without refactoring the
+  layout, effects, or unit stores.
+- Store an integer schema version `1` and a stable lowercase value:
+  `oxygen`, `paper`, or `terminal`. Do not persist enum ordinals or derive the
+  disk contract from `enum.name`.
+- Decode only the supported version and exact canonical values. Missing keys,
+  blank or case/whitespace-aliased values, unknown values, and other versions
+  return `ThemePreferenceReadResult.NoSupportedChoice`; they do not throw and
+  do not alias a future theme to a current theme.
+- Encode every currently supported `OxygenThemeId` explicitly. A later enum
+  addition must require an intentional codec decision through exhaustive Kotlin
+  handling.
+- Use a dedicated `oxygen_theme_preferences` DataStore and one atomic edit per
+  write. DataStore read/write exceptions must propagate to the state holder so
+  failure cannot be reported as a valid Oxygen record.
+- Do not add a migration from layout/effects/unit storage: no prior persisted
+  theme format exists.
 
-- Identical presentation state yields identical weather values, condition,
-  stale/error and alert text, source/provenance, disclosure, page names/counts,
-  content descriptions, callbacks, and accessibility order/actions.
-- Standard stays `Now -> Hourly -> Daily -> Details`; Simple stays
-  `Now -> Forecast` with Hourly/Daily choices. Theme changes neither layout nor
-  effects state and causes no provider request/refetch.
-- Effects Off renders no `home-weather-scene` and leaves all meaning reachable
-  on opaque surfaces without gradients, transparency, glow, or animation.
-- Oxygen remains the installed default. Existing Oxygen and Terminal values and
-  behavior do not change.
+## State and Rendering Contract
 
-Paper rendering contract:
+- Extend `OxygenAppStateHolder` with optional theme storage and an
+  `initialTheme` defaulted to Oxygen. Add new constructor parameters with
+  defaults without reordering existing parameters, and add new presentation
+  fields with defaults, to preserve current Kotlin call sites and fixtures.
+- Model `NotConfigured`, `Loading`, `Loaded`, and `Failed` reads plus
+  `confirmed`, `pending`, and `writeError`, consistent with the existing layout
+  transaction vocabulary. Keep the last failed selection only for a write
+  retry.
+- With managed storage, startup and an initial read failure render Oxygen until
+  a supported choice is confirmed. A later failed reread preserves the prior
+  confirmed/effective theme.
+- A selection made through the state-holder event is pending while storage is
+  writing. Continue rendering the confirmed theme until the durable write
+  succeeds; then atomically confirm and render the new theme. A failed write
+  clears pending state, exposes `writeError`, and leaves the confirmed/effective
+  theme unchanged. Retry replays that failed write; read-failure retry rereads.
+- Ignore duplicate selection while the same choice is confirmed or any theme
+  write is pending. Theme events must not mutate layout, effects, units,
+  location, visible/return screens, canonical/presented forecast, alerts, or
+  repository request counts.
+- When theme storage is not configured, preserve current behavior exactly:
+  `OxygenApp` continues to honor its injected `OxygenAppearance.theme` for
+  previews and tests, and the default remains Oxygen.
+- When theme storage is configured, `OxygenApp` uses the state holder's
+  effective theme consistently for `OxygenTheme`, the effective
+  `OxygenAppearance` passed to Home, and the existing read-only Appearance
+  summary. Do not add controls, copy, test tags, or callbacks to
+  `SettingsScreen` in this slice.
 
-- Explicitly map background, strong/ambient surfaces, outlines, content,
-  accent, precipitation, weather-mark, and warning/error roles to warm Paper
-  colors. Cards are flat and opaque with restrained outlines and shallow
-  corners; dark glass/cyan Oxygen styling must not leak into Effects Off.
-- Use platform fonts only: serif display numerals/headings for editorial
-  hierarchy and clear body/supporting text at accessibility sizes.
-- Clear, rain, snow, storm, and unknown marks remain distinguishable against
-  Paper surfaces. Warning color reinforces visible alert/severity/error text;
-  color is never the only signal.
-- Normal and warning/error text on their rendered surfaces meet at least 4.5:1
-  contrast; weather-mark strokes have observable pixel contrast.
-- Typography, opaque surface treatment, shape, and color together make Paper
-  materially distinct from Oxygen, rather than a palette-only variant.
+## Intended Production Files
 
-Executable Paper oracles:
+- `app/src/main/kotlin/com/oxygen/weather/app/ThemePreferenceStorage.kt` — new
+  interface, read result, stable codec, and Preferences DataStore adapter.
+- `app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt` — managed
+  theme state, startup load, durable selection, and retry transitions.
+- `app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt` — choose the managed
+  effective theme while retaining unmanaged `OxygenAppearance` injection.
 
-- Define named opaque Paper foreground/background role pairs and calculate
-  WCAG relative luminance/contrast; normal and error text pairs must each be
-  at least 4.5:1 after compositing (never infer contrast from alpha alone).
-- A Paper condition-mark test samples the rendered mark bounds and Paper
-  surface from its bitmap, requiring non-background pixels with measurable
-  luminance/color distance; record sampled coordinates. Do not reuse Oxygen's
-  gold-pixel threshold.
+No change is planned for `MainActivity.kt`, `SettingsScreen.kt`,
+`OxygenTheme.kt`, Gradle files, resources, or provider/core code. If the
+implementation requires one of those files, stop and revise the boundary before
+editing it.
 
-Layout boundary: portrait `360x640`, font scale `1.3`, Effects Off, with a long
-location/source, all Standard pages, both Simple forecast choices, stale plus
-official-alert content, Loading, and no-cache error/retry. Content may use the
-existing localized scrolling but must not overlap, clip required meaning, or
-introduce horizontal scrolling; existing 48dp targets remain intact.
+## Test Plan
 
-## Intended Files
+Add:
 
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/theme/OxygenTheme.kt`: define
-  Paper typography and Material/Home role values within existing theme/design
-  boundaries; keep repeated values as tokens and preserve Oxygen/Terminal.
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`:
-  consume the existing semantic warning/supporting-content roles for Paper
-  alert severity and opaque Effects-Off text without changing weather meaning,
-  layout, or navigation.
-- `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`:
-  add a `themeId` parameter to the direct Home fixture, shared semantic-contract
-  helpers, Paper cases, and a compact `OxygenApp` fixture for no-refetch checks.
+- `app/src/test/kotlin/com/oxygen/weather/app/ThemePreferenceStorageTest.kt`;
+- `app/src/test/kotlin/com/oxygen/weather/app/ThemePreferenceStateHolderTest.kt`;
+- `app/src/androidTest/kotlin/com/oxygen/weather/app/ThemePreferenceDataStoreInstrumentedTest.kt`.
 
-No Home composable edit is planned because Home already consumes semantic
-roles. If baseline evidence proves a hard-coded Oxygen value blocks Paper,
-revise this plan before adding another production file.
+Focused JVM cases must prove:
 
-## Implementation Plan
+1. Oxygen, Paper, and Terminal encode to stable values and round-trip.
+2. Missing keys, partial records, wrong versions, blank/unknown values, and
+   non-canonical case/whitespace values yield `NoSupportedChoice` and therefore
+   the Oxygen state-holder default.
+3. Managed startup exposes Loading, then restores each supported theme; an
+   unmanaged holder retains its injected initial theme.
+4. A pending Paper/Terminal write keeps the confirmed theme effective; success
+   changes it only after storage commits, and duplicate/pending input does not
+   create extra writes.
+5. Read failure and retry are observable; an initial failure uses Oxygen, while
+   a failed reread retains the last confirmed theme.
+6. Write failure and retry retain the confirmed theme, preserve the failed
+   target, and commit it once exactly when retry succeeds.
+7. A theme transaction preserves layout/effects/unit/location and the complete
+   Home ready/Settings return state, with no additional weather refresh.
 
-1. First record a focused documentation-sync action to remove only README's
-   stale “persisted layout selection/restoration” wording; theme persistence
-   remains unimplemented.
-2. Add two explicit seams: direct `HomeLoadingScreen(themeId)` for visual and
-   semantic cases, and a separately named compact `OxygenApp` fixture with an
-   `OxygenAppStateHolder` counting repository for effective-appearance and
-   zero-refetch assertions. Neither proves MainActivity or Settings reachability.
-3. On one pinned `oxygen_starter` ADB serial, run named
-   `paperBaselineNowEffectsOff` (Standard, Paper, Effects Off, `360x640`, font
-   `1.3`) before styling; retain screenshot/semantics and record inherited or
-   low-contrast treatment without calling it a pass.
-4. Encode three connected acceptance cases:
-   - `paperStandardHomePreservesMeaningAcrossPagesEffectsOff`: deterministic
-     ready state with stale refresh failure and a severe official alert;
-     verify scene absence, named contrast/mark oracles, shared semantic
-     contract equality against the same Oxygen render, and usable
-     Now/Hourly/Daily/Details.
-   - `paperSimpleHomePreservesMeaningAndForecastChoicesEffectsOff`: verify
-     Simple Now/Forecast and Hourly/Daily, source/provenance, stale/alert meaning,
-     bounds/targets, and no refetch via the compact OxygenApp fixture. If this
-     cannot reuse the shared contract concisely, split it into the next planned
-     slice rather than silently omitting it.
-   - `paperOperationalHomeStatesRemainReadableEffectsOff`: verify Loading and
-     no-cache error/retry text, disclosure, actions, and bounds.
-5. Inventory exact Home role consumers and hard-coded clipping before adding
-   production roles. Baseline inventory found the existing semantic warning
-   role is not consumed by OfficialAlertSummary and that supporting text uses
-   alpha overlays; the bounded HomeLoadingScreen role-consumer update is now
-   included above. Keep existing 48dp targets and localized scrolling intact.
-6. Implement only Paper's warm opaque palette, typography, surface/shape,
-   outline, weather-mark/precipitation, and warning roles. Iterate using the
-   repository's edit/build/install/capture/inspect loop and Base Art Sheet v0.2.
-   Do not alter weather copy, values, semantics, layout, or navigation to make
-   a screenshot look better.
-7. Run the named baseline, three Paper cases, existing Oxygen Effects-Off and
-   weather-mark regressions, plus targeted
-   `terminalEffectsOffReadyMarkSmoke` (or an all-theme role-construction unit
-   test). Use shared semantic equality for invariance; visual comparison is
-   presentation evidence only.
-8. Run broad checks once after convergence and review the diff for unchanged
-   Oxygen/Terminal output, no dependency/assets, no component magic values, and
-   no persistence/Settings/provider/layout/effects scope leakage. If Paper does
-   not meet the boundary, retain evidence and report it unverified/deferred;
-   do not unlock Slice 28B.
+Use a controlled executor wherever Loading or pending state must be observed;
+do not rely on timing or sleeps.
 
-Connected instrumentation is the installed rendering boundary for this
-pre-persistence slice: it runs production app/Home composables on Android with
-Paper injected. It does not prove MainActivity or Settings theme reachability.
+The single connected case,
+`ThemePreferenceDataStoreInstrumentedTest#supportedThemeSurvivesStorageAndStateHolderRecreation`,
+must use the production DataStore adapter with test-owned app storage, commit an
+alternate theme through the state holder, construct a new storage adapter and
+state holder, and observe the restored theme through the existing
+`OxygenApp -> Settings / Appearance` summary. Reset the test-owned record during
+cleanup. Do not launch `MainActivity`, alter the installed app's preferences,
+or describe state-holder recreation as Activity/process restart evidence.
 
-## Evidence and Commands
+## Implementation Sequence
 
-Artifacts:
+1. Run the focused existing layout/effects preference tests as a regression
+   baseline; record the command and result once.
+2. Add the codec and state-holder tests first and retain the expected red result
+   for missing theme storage/state behavior.
+3. Implement the stable codec and dedicated DataStore adapter without changing
+   existing preference formats or dependencies.
+4. Add managed/unmanaged theme state and transaction handling to
+   `OxygenAppStateHolder`, reusing the existing background-executor and state
+   publication pattern. Keep effective state confirmed-only during writes.
+5. Update `OxygenApp` to consume managed theme state at all existing theme
+   rendering/summary boundaries while preserving unmanaged injected appearance.
+6. Run focused JVM green once, then the one named connected case on one pinned
+   emulator. Rerun only after a relevant code, test-input, or environment change
+   and record the reason.
+7. Run broad checks once, inspect the complete diff for source compatibility,
+   exact persisted values, truthful failure handling, and scope leakage, then
+   mark the slice verified only if every acceptance claim has evidence.
+
+## Evidence and Verification Budget
+
+Artifacts and a short command/result/rerun ledger belong under:
 
 ```text
-.codex/test-artifacts/2026-09-08-slice-28a1-paper-theme-rendering-baseline/
+.codex/test-artifacts/2026-09-09-slice-28b1-theme-preference-storage-state/
 ```
 
-Keep `ledger.md`, `manifest.tsv`, baseline/final screenshots, and matching
-concise semantics. Pin and record one ADB serial. Each manifest row maps
-`state,page,dimensions,fontScale,theme,effects,testMethod,screenshot,semantics`;
-mark rows also record sampled coordinates and contrast result. Since helpers
-write private `context.filesDir`, after each run copy artifacts from the
-debuggable package with `adb -s <serial> shell run-as com.oxygen.weather ...`
-(`adb pull` where applicable), then verify filenames/checksums in the ledger.
-Baseline is `paperBaselineNowEffectsOff`; final focused evidence is six named
-case executions total (within the eight-case limit). Do not run the full
-historical Home test class.
+Focused baseline:
 
-Focused final command:
+```sh
+. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest \
+  --tests '*LayoutPreferenceStorageTest' \
+  --tests '*LayoutPreferenceStateHolderTest' \
+  --tests '*EffectsPreferenceStorageTest' \
+  --tests '*EffectsPreferenceStateHolderTest'
+```
+
+Red/focused green:
+
+```sh
+. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest \
+  --tests '*ThemePreferenceStorageTest' \
+  --tests '*ThemePreferenceStateHolderTest'
+```
+
+Connected production-storage boundary (one case, within the eight-case limit):
 
 ```sh
 . scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest \
-  "-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest#paperBaselineNowEffectsOff,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#paperStandardHomePreservesMeaningAcrossPagesEffectsOff,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#paperSimpleHomePreservesMeaningAndForecastChoicesEffectsOff,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#paperOperationalHomeStatesRemainReadableEffectsOff,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#effectsDisabledHomePathKeepsCompleteWeatherMeaningReachable,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#terminalEffectsOffReadyMarkSmoke"
+  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ThemePreferenceDataStoreInstrumentedTest#supportedThemeSurvivesStorageAndStateHolderRecreation'
 ```
 
-Broad commands:
+Use `scripts/list-avds.sh` and one `scripts/start-emulator.sh` session only if no
+ready device exists; pin and record the ADB serial before the connected run.
+This state/storage slice requires logs, not visual screenshots.
+
+Broad checks:
 
 ```sh
 . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
@@ -169,27 +195,55 @@ Broad commands:
 git diff --check
 ```
 
-Use `scripts/list-avds.sh` and one `scripts/start-emulator.sh` session as needed.
-Do not rerun a pass unless production code, test input, or environment changed.
+Budget: one baseline unit run, one expected red run, one focused green run, one
+connected case, and one broad pass. Do not substitute compilation or source
+inspection for the connected storage/state observation.
+
+## Required Completion and Document Sync
+
+After verified implementation is committed, perform the required authoritative
+doc sync as a separate, factual closure step:
+
+- `.codex/plans/current.md`: record actual focused/connected/broad results,
+  artifact paths, blockers/skips, implementation commit, and next action.
+- `.codex/plans/mvp-roadmap.md`: mark 28B1 committed with its actual result and
+  evidence; select 28B2 only after 28B1 is committed.
+- `.codex/cycles/history.md`: update the recent summary and append one concise,
+  self-contained 28B1 entry. Ordinary append does not require an archive copy.
+- `README.md`: describe the versioned theme storage/state only under
+  "Implemented but not active" and keep installed theme choice/restoration in
+  "Not implemented yet."
+- `docs/OXYGEN_FULL_SPECIFICATION.md`: reconcile the current implementation
+  status in the theme/Immediate Tasks text: Paper and Terminal rendering plus
+  28B1 storage/state exist, while MainActivity wiring, user selection, and
+  installed restart restoration remain 28B2.
+
+No provider contract or data-source disclosure changes are required. Run and
+record `git diff --check` for the doc sync; do not claim `committed` until the
+implementation commit exists, and do not claim installed persistence from the
+connected state-holder recreation test.
 
 ## Out of Scope
 
-- Theme storage/state, Settings selection, migration/restoration, and
-  MainActivity reachability (28B1/28B2).
-- Terminal quality (28A2), high contrast (29), icon packs, Full effects, new
-  layouts, or layout/effects persistence.
-- Provider/repository/cache/location/unit/alert semantics; weather copy/values;
-  navigation; packaged fonts/assets; dependency/Gradle changes.
-- Whole-app Paper polish outside Home, release, or MVP claims.
+- `MainActivity` theme-storage wiring, Settings theme controls, user-facing
+  transaction copy, Activity recreation, force-stop/relaunch, and an installed
+  selection journey (Slice 28B2).
+- New themes, high contrast, icon packs, Full effects, or visual changes to
+  Oxygen, Paper, Terminal, Home, Settings, weather marks, typography, or roles.
+- Generic preference abstraction/consolidation, DataStore migrations for other
+  settings, new dependencies, or module changes.
+- Provider/repository/cache/location/unit/layout/effects/alert semantics,
+  canonical or presented forecast values, network behavior, release status, or
+  MVP-readiness claims.
 
-## Phase State
+## Ready Criteria
 
-- `specified`: roadmap/specification define Paper's direction and constraints.
-- `planned`: this file selected only the Paper Home rendering baseline.
-- `covered`: named connected cases encode semantic, contrast, mark, layout,
-  operational, and no-refetch behavior.
-- `implemented`: Paper theme roles and bounded Home consumers exist in the
-  production rendering path.
-- `verified`: final connected and broad checks passed on `emulator-5554`.
-- `committed`: verified implementation committed at `06c987b`; authority sync
-  follows in the documentation-sync commit.
+- `specified`: specification/roadmap contracts remain authoritative.
+- `planned`: this file selects only theme preference storage/state.
+- `covered`: the named JVM and connected tests encode the stated boundaries.
+- `implemented`: production codec, DataStore, state transaction, and
+  `OxygenApp` consumption exist without 28B2 reachability.
+- `verified`: focused tests, the one connected case, broad checks, and diff
+  review pass with retained logs.
+- `committed`: verified implementation exists in Git. Do not close the cycle
+  until the required post-commit authority sync is also complete.

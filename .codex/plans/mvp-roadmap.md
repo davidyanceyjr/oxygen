@@ -1708,7 +1708,7 @@ rather than shipped weakly.
 
 ### Slice 28A2: Terminal Theme Rendering Baseline
 
-Status: specified
+Status: committed at `80dd961`
 
 Prerequisites:
 
@@ -1731,6 +1731,10 @@ Must prove for Terminal:
 Theme quality rule:
 
 Terminal may be deferred rather than shipped weakly.
+
+Completion evidence: focused six-case connected rendering and broad local
+Gradle checks passed on 2026-09-09. Terminal remains non-persisted; Slice 28B1
+is the next candidate.
 
 ### Slice 28B1: Theme Preference Storage and State
 
@@ -2170,11 +2174,12 @@ Sequencing rationale:
 
 ---
 
-## Next Candidate Slice
+## Active Slice
 
-Candidate: Slice 28A2: Terminal Theme Rendering Baseline. Slice 28A1 is
-verified with retained installed evidence at
-`.codex/test-artifacts/2026-09-08-slice-28a1-paper-theme-rendering-baseline/`.
+Slice 28B1: Theme Preference Storage and State is planned in
+`.codex/plans/current.md`. Slice 28A1 is committed at `06c987b`, and Slice 28A2
+is committed at `80dd961`, with retained connected rendering evidence under
+their cycle artifact directories.
 Slice 27B1/27B2 are committed together at `b68ca19`, and Slice 27B3 is
 verified with retained installed evidence at `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
 
@@ -2210,12 +2215,14 @@ Immediate planning boundary:
 -> Slice 27A Simple Layout Definition committed at `660e376`
 -> Slice 27B1/27B2 persisted layout storage and Settings UI committed at `b68ca19`
 -> Slice 27B3 installed layout restoration verification verified on 2026-09-08
--> Slice 28A1 Paper theme rendering baseline verified on 2026-09-08
+-> Slice 28A1 Paper theme rendering baseline committed at `06c987b`
+-> Slice 28A2 Terminal theme rendering baseline committed at `80dd961`
 ```
 
 Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 is
-verified; Slice 28A1 is committed; Slice 28A2 is the next bounded candidate. Release work and
-release-candidate claims remain outside this boundary.
+verified; Slice 28A1 and Slice 28A2 are committed; Slice 28B1 is the active
+bounded slice. Release work and release-candidate claims remain outside this
+boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice
