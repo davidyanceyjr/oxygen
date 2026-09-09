@@ -67,6 +67,16 @@ class ContrastPreferenceStateHolderTest {
         executor.drainAll()
         assertEquals(ContrastLevel.HIGH, holder.presentationState.contrast)
 
+        storage.readFails = true
+        holder.onContrastPreferenceRetry()
+        executor.drainAll()
+        assertEquals(ContrastPreferenceReadState.Failed, holder.presentationState.contrastPreference.readState)
+        assertEquals(ContrastLevel.HIGH, holder.presentationState.contrast)
+        assertEquals(ContrastLevel.HIGH, holder.presentationState.contrastPreference.confirmed)
+
+        storage.readFails = false
+        holder.onContrastPreferenceRetry()
+        executor.drainAll()
         storage.writeFails = true
         holder.onContrastPreferenceSelected(ContrastLevel.STANDARD)
         executor.drainAll()
