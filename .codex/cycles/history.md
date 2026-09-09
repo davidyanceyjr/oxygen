@@ -1370,9 +1370,11 @@ Evidence:
   committed installed APK before UI edits. The JVM red phase failed on the
   expected missing contrast symbols; focused JVM storage/state tests then
   passed.
-- The final combined focused connected evidence passed the two new Compose
-  cases, the production DataStore/state-holder recreation case, and the 29A
-  recomposition/no-refetch regression on `oxygen_starter` / `emulator-5554`.
+- The corrected four-case connected filter passed the selection Compose case,
+  production DataStore/state-holder recreation case, and 29A
+  recomposition/no-refetch regression on `oxygen_starter` / `emulator-5554`;
+  the corrected failure/retry Compose case passed in a subsequent named
+  single-method rerun.
 - Installed 1080x2400, font-scale-1.3 evidence selected Paper, Simple, Effects
   Off, and High through the real Appearance surface and restored all four
   choices after Activity recreation and force-stop/relaunch. The final screen

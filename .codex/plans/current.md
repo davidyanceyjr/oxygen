@@ -211,12 +211,13 @@ After focused, installed, broad, and review evidence passes:
 - Focused green JVM phase: `:app:testDebugUnitTest --tests
   'com.oxygen.weather.app.ContrastPreferenceStorageTest' --tests
   'com.oxygen.weather.app.ContrastPreferenceStateHolderTest'` passed.
-- Focused connected evidence: the final combined filter passed the two named
-  `ContrastPreferenceUiTest` cases, the named
+- Focused connected evidence: the corrected four-case filter passed the
+  selection `ContrastPreferenceUiTest` case, the named
   `ContrastPreferenceDataStoreInstrumentedTest` case, and
   `HomeDashboardUiTest#highContrastRecompositionPreservesAppearanceAndRequestCount`
-  on `oxygen_starter` / `emulator-5554`. A preceding run exposed scroll-clipped
-  assertions; the corrected failure/retry case was rerun separately and passed.
+  on `oxygen_starter` / `emulator-5554`; the corrected failure/retry
+  `ContrastPreferenceUiTest` case passed in a subsequent named single-method
+  rerun. A preceding run exposed scroll-clipped assertions.
 - Broad evidence passed: `:app:compileDebugKotlin`, `:app:testDebugUnitTest
   :core:testDebugUnitTest`, `:app:assembleDebug`, and `git diff --check`.
 - Installed evidence: changed APK installed once after broad checks. At font
