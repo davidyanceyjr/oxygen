@@ -14,6 +14,7 @@ import com.oxygen.weather.app.OxygenAppStateHolder
 import com.oxygen.weather.app.DataStoreUnitPreferenceStorage
 import com.oxygen.weather.app.DataStoreEffectsPreferenceStorage
 import com.oxygen.weather.app.DataStoreThemePreferenceStorage
+import com.oxygen.weather.app.DataStoreContrastPreferenceStorage
 import com.oxygen.weather.app.AndroidMotionPreferenceSource
 import com.oxygen.weather.app.AndroidDeviceLocationSource
 import com.oxygen.weather.app.LocationPermissionResult
@@ -42,6 +43,7 @@ class MainActivity : ComponentActivity() {
             val unitPreferenceStorage = remember { DataStoreUnitPreferenceStorage(this) }
             val effectsPreferenceStorage = remember { DataStoreEffectsPreferenceStorage(this) }
             val themePreferenceStorage = remember { DataStoreThemePreferenceStorage(applicationContext) }
+            val contrastPreferenceStorage = remember { DataStoreContrastPreferenceStorage(applicationContext) }
             val stateHolder = remember {
                 OxygenAppStateHolder(
                     deviceLocationSource = AndroidDeviceLocationSource(this),
@@ -50,6 +52,7 @@ class MainActivity : ComponentActivity() {
                     layoutPreferenceStorage = layoutPreferenceStorage,
                     effectsPreferenceStorage = effectsPreferenceStorage,
                     themePreferenceStorage = themePreferenceStorage,
+                    contrastPreferenceStorage = contrastPreferenceStorage,
                     savedLocationStorage = savedLocationStorage,
                     forecastCacheStorage = forecastCacheStorage,
                     weatherRepository = InstalledForecastRepositoryFactory.create(

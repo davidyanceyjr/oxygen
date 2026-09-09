@@ -32,6 +32,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.AboutSection
+import com.oxygen.weather.app.ContrastPreferencePresentationState
+import com.oxygen.weather.app.ContrastPreferenceReadState
 import com.oxygen.weather.app.EffectsPreferencePresentationState
 import com.oxygen.weather.app.EffectsPreferenceReadState
 import com.oxygen.weather.app.LayoutPreferencePresentationState
@@ -42,6 +44,7 @@ import com.oxygen.weather.app.ThemePreferencePresentationState
 import com.oxygen.weather.app.ThemePreferenceReadState
 import com.oxygen.weather.app.UnitPreferenceMessage
 import com.oxygen.weather.app.ui.theme.EffectsLevel
+import com.oxygen.weather.app.ui.theme.ContrastLevel
 import com.oxygen.weather.app.ui.theme.LayoutPreset
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenThemeId
@@ -69,6 +72,9 @@ fun SettingsScreen(
     onThemePreferenceRetry: () -> Unit = {},
     onLayoutSelected: (LayoutPreset) -> Unit = {},
     onLayoutPreferenceRetry: () -> Unit = {},
+    contrastPreference: ContrastPreferencePresentationState = ContrastPreferencePresentationState.notConfigured(),
+    onContrastPreferenceSelected: (ContrastLevel) -> Unit = {},
+    onContrastPreferenceRetry: () -> Unit = {},
 ) {
     Surface(Modifier.fillMaxSize()) {
         Column(
@@ -123,6 +129,10 @@ fun SettingsScreen(
                         onRetry = onEffectsPreferenceRetry,
                         onThemeSelected = onThemeSelected,
                         onThemeRetry = onThemePreferenceRetry,
+                        contrast = appearance.contrast,
+                        contrastPreference = contrastPreference,
+                        onContrastSelected = onContrastPreferenceSelected,
+                        onContrastRetry = onContrastPreferenceRetry,
                     )
                     SettingsDestination.Units -> UnitPreferencesScreen(
                         selectedPreference = selectedUnitPreference,
@@ -225,6 +235,10 @@ private fun AppearanceSummary(
     onRetry: () -> Unit,
     onThemeSelected: (OxygenThemeId) -> Unit,
     onThemeRetry: () -> Unit,
+    contrast: ContrastLevel,
+    contrastPreference: ContrastPreferencePresentationState,
+    onContrastSelected: (ContrastLevel) -> Unit,
+    onContrastRetry: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -313,6 +327,80 @@ private fun AppearanceSummary(
                 else -> Text(
                     text = "Theme saved",
                     modifier = Modifier.testTag("theme_preference_saved"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                )
+            }
+        }
+        AppearanceValue("Contrast", contrast.displayName())
+        if (contrastPreference.isManaged) {
+            Text("Contrast")
+            val contrastChoicesEnabled = contrastPreference.readState == ContrastPreferenceReadState.Loaded &&
+                contrastPreference.pending == null &&
+                !contrastPreference.writeError
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                ContrastChoice(
+                    label = "Standard",
+                    level = ContrastLevel.STANDARD,
+                    selected = contrast == ContrastLevel.STANDARD,
+                    enabled = contrastChoicesEnabled,
+                    onClick = { onContrastSelected(ContrastLevel.STANDARD) },
+                )
+                ContrastChoice(
+                    label = "High",
+                    level = ContrastLevel.HIGH,
+                    selected = contrast == ContrastLevel.HIGH,
+                    enabled = contrastChoicesEnabled,
+                    onClick = { onContrastSelected(ContrastLevel.HIGH) },
+                )
+            }
+            when {
+                contrastPreference.pending != null -> Text(
+                    text = "Saving ${contrastPreference.pending.displayName()}...",
+                    modifier = Modifier.testTag("contrast_preference_loading"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                )
+                contrastPreference.readState == ContrastPreferenceReadState.Loading -> Text(
+                    text = "Loading contrast preference",
+                    modifier = Modifier.testTag("contrast_preference_loading"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                )
+                contrastPreference.writeError -> {
+                    Text(
+                        text = "Contrast save failed; retry",
+                        modifier = Modifier.testTag("contrast_preference_error"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                    )
+                    OutlinedButton(
+                        onClick = onContrastRetry,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("contrast_preference_retry"),
+                    ) {
+                        Text("Retry")
+                    }
+                }
+                contrastPreference.readState == ContrastPreferenceReadState.Failed -> {
+                    Text(
+                        text = "Contrast load failed; using ${contrast.displayName()}; retry",
+                        modifier = Modifier.testTag("contrast_preference_error"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                    )
+                    OutlinedButton(
+                        onClick = onContrastRetry,
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("contrast_preference_retry"),
+                    ) {
+                        Text("Retry")
+                    }
+                }
+                else -> Text(
+                    text = "Contrast saved",
+                    modifier = Modifier.testTag("contrast_preference_saved"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                 )
@@ -463,6 +551,30 @@ private fun ThemeChoice(
 }
 
 @Composable
+private fun ContrastChoice(
+    label: String,
+    level: ContrastLevel,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        enabled = enabled,
+        label = { Text(label) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .requiredHeight(48.dp)
+            .semantics {
+                this.selected = selected
+                if (!enabled) disabled()
+            }
+            .testTag("settings-contrast-${level.name.lowercase()}"),
+    )
+}
+
+@Composable
 private fun LayoutChoice(
     label: String,
     preset: LayoutPreset,
@@ -526,6 +638,11 @@ private fun EffectsLevel.displayName(): String = when (this) {
     EffectsLevel.OFF -> "Off"
     EffectsLevel.SUBTLE -> "Subtle"
     EffectsLevel.FULL -> "Full"
+}
+
+private fun ContrastLevel.displayName(): String = when (this) {
+    ContrastLevel.STANDARD -> "Standard"
+    ContrastLevel.HIGH -> "High"
 }
 
 @Composable

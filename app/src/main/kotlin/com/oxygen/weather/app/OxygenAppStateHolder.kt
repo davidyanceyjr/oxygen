@@ -21,6 +21,7 @@ import com.oxygen.weather.core.provider.cache.ForecastCacheStorage
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoGeocodingRepository
 import com.oxygen.weather.core.provider.openmeteo.OpenMeteoWeatherRepository
 import com.oxygen.weather.app.ui.theme.EffectsLevel
+import com.oxygen.weather.app.ui.theme.ContrastLevel
 import com.oxygen.weather.app.ui.theme.LayoutPreset
 import com.oxygen.weather.app.ui.theme.OxygenThemeId
 import java.time.Clock
@@ -54,6 +55,8 @@ class OxygenAppStateHolder(
     private val effectsPreferenceStorage: EffectsPreferenceStorage? = null,
     private val themePreferenceStorage: ThemePreferenceStorage? = null,
     private val initialTheme: OxygenThemeId = OxygenThemeId.OXYGEN,
+    private val contrastPreferenceStorage: ContrastPreferenceStorage? = null,
+    private val initialContrast: ContrastLevel = ContrastLevel.STANDARD,
 ) {
     private var startupLocationReadFailed = false
     private val initialSelectedLocation: WeatherLocation? = selectedLocation
@@ -66,6 +69,11 @@ class OxygenAppStateHolder(
     private val initialThemePreference = ThemePreferencePresentationState.initial(
         isManaged = managedThemeStorage,
         initialTheme = initialTheme,
+    )
+    private val managedContrastStorage = contrastPreferenceStorage != null
+    private val initialContrastPreference = ContrastPreferencePresentationState.initial(
+        isManaged = managedContrastStorage,
+        initialContrast = initialContrast,
     )
     val canSaveSearchResults: Boolean = savedLocationStorage != null
 
@@ -84,6 +92,8 @@ class OxygenAppStateHolder(
             effectsPreference = initialEffectsPreference,
             theme = initialThemePreference.effective,
             themePreference = initialThemePreference,
+            contrast = initialContrastPreference.effective,
+            contrastPreference = initialContrastPreference,
         )
     } else {
         OxygenAppPresentationState(
@@ -101,6 +111,8 @@ class OxygenAppStateHolder(
             effectsPreference = initialEffectsPreference,
             theme = initialThemePreference.effective,
             themePreference = initialThemePreference,
+            contrast = initialContrastPreference.effective,
+            contrastPreference = initialContrastPreference,
         )
     }
         private set
@@ -113,8 +125,10 @@ class OxygenAppStateHolder(
     private var effectsPreferenceWriteId = 0L
     private var layoutPreferenceWriteId = 0L
     private var themePreferenceWriteId = 0L
+    private var contrastPreferenceWriteId = 0L
     private var lastFailedLayoutSelection: LayoutPreset? = null
     private var lastFailedThemeSelection: OxygenThemeId? = null
+    private var lastFailedContrastSelection: ContrastLevel? = null
     private var deviceAttemptCounter = 0L
     private var activeDeviceAttempt: Long? = null
     private var deviceCancellation: LocationCancellation? = null
@@ -125,12 +139,14 @@ class OxygenAppStateHolder(
                 unitPreferenceStorage !== EmptyUnitPreferenceStorage ||
                 effectsPreferenceStorage != null ||
                 managedLayoutStorage ||
-                managedThemeStorage
+                managedThemeStorage ||
+                managedContrastStorage
             ) {
                 forecastExecutor.execute {
                     loadStoredLayoutPreference()
                     loadStoredEffectsPreference()
                     loadStoredThemePreference()
+                    loadStoredContrastPreference()
                     loadStoredUnitPreference()
                     val restoredLocation = readStoredSelectedLocation()
                     when {
@@ -157,6 +173,7 @@ class OxygenAppStateHolder(
                 if (managedLayoutStorage) loadStoredLayoutPreference()
                 loadStoredEffectsPreference()
                 loadStoredThemePreference()
+                loadStoredContrastPreference()
                 loadStoredUnitPreference()
                 restoreCachedHomeForecast(initialSelectedLocation)
                 startHomeForecastLoad(initialSelectedLocation)
@@ -747,6 +764,94 @@ class OxygenAppStateHolder(
         }
     }
 
+    fun onContrastPreferenceSelected(contrast: ContrastLevel) {
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != SettingsDestination.Appearance) return
+        val storage = contrastPreferenceStorage ?: return
+        val current = presentationState.contrastPreference
+        if (current.readState == ContrastPreferenceReadState.Loading ||
+            current.readState == ContrastPreferenceReadState.Failed ||
+            current.pending != null ||
+            contrast == current.confirmed
+        ) return
+
+        val operationId = synchronized(this) {
+            val latest = presentationState.contrastPreference
+            if (latest.readState == ContrastPreferenceReadState.Loading ||
+                latest.readState == ContrastPreferenceReadState.Failed ||
+                latest.pending != null ||
+                contrast == latest.confirmed
+            ) return
+            contrastPreferenceWriteId += 1
+            lastFailedContrastSelection = contrast
+            presentationState = presentationState.copy(
+                contrastPreference = latest.copy(
+                    pending = contrast,
+                    writeError = false,
+                ),
+            )
+            publishState()
+            contrastPreferenceWriteId
+        }
+
+        forecastExecutor.execute {
+            try {
+                storage.writeContrastPreference(contrast)
+            } catch (_: Exception) {
+                synchronized(this) {
+                    if (operationId != contrastPreferenceWriteId) return@synchronized
+                    presentationState = presentationState.copy(
+                        contrastPreference = presentationState.contrastPreference.copy(
+                            pending = null,
+                            writeError = true,
+                        ),
+                    )
+                    publishState()
+                }
+                return@execute
+            }
+
+            synchronized(this) {
+                if (operationId != contrastPreferenceWriteId) return@synchronized
+                lastFailedContrastSelection = null
+                presentationState = presentationState.copy(
+                    contrast = contrast,
+                    contrastPreference = ContrastPreferencePresentationState.loaded(contrast),
+                )
+                publishState()
+            }
+        }
+    }
+
+    fun onContrastPreferenceRetry() {
+        if (contrastPreferenceStorage == null) return
+        val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
+        if (settings.selectedDestination != SettingsDestination.Appearance) return
+
+        val current = presentationState.contrastPreference
+        when {
+            current.pending != null -> return
+            current.writeError -> {
+                val retryContrast = lastFailedContrastSelection ?: return
+                onContrastPreferenceSelected(retryContrast)
+            }
+            else -> {
+                synchronized(this) {
+                    val latest = presentationState.contrastPreference
+                    if (latest.pending != null) return@synchronized
+                    presentationState = presentationState.copy(
+                        contrast = latest.confirmed ?: ContrastLevel.STANDARD,
+                        contrastPreference = ContrastPreferencePresentationState.loading(
+                            confirmed = latest.confirmed,
+                        ),
+                    )
+                    publishState()
+                }
+                forecastExecutor.execute { loadStoredContrastPreference() }
+            }
+        }
+    }
+
     fun onSettingsBack() {
         val settings = presentationState.screen as? OxygenAppScreen.Settings ?: return
         if (settings.selectedDestination != null) {
@@ -1082,6 +1187,50 @@ class OxygenAppStateHolder(
         }
     }
 
+    private fun loadStoredContrastPreference() {
+        val storage = contrastPreferenceStorage ?: return
+        val confirmedBeforeLoad = presentationState.contrastPreference.confirmed
+        synchronized(this) {
+            presentationState = presentationState.copy(
+                contrast = confirmedBeforeLoad ?: ContrastLevel.STANDARD,
+                contrastPreference = ContrastPreferencePresentationState.loading(
+                    confirmed = confirmedBeforeLoad,
+                ),
+            )
+            publishState()
+        }
+
+        val next = try {
+            when (val restored = storage.readContrastPreference()) {
+                ContrastPreferenceReadResult.NoSupportedChoice ->
+                    ContrastPreferencePresentationState.loaded(ContrastLevel.STANDARD)
+                is ContrastPreferenceReadResult.Supported ->
+                    ContrastPreferencePresentationState.loaded(restored.contrast)
+            }
+        } catch (_: Exception) {
+            ContrastPreferencePresentationState.failed(confirmedBeforeLoad)
+        }
+
+        synchronized(this) {
+            val nextContrast = when (next.readState) {
+                ContrastPreferenceReadState.Loaded -> next.confirmed ?: ContrastLevel.STANDARD
+                ContrastPreferenceReadState.Failed -> confirmedBeforeLoad ?: ContrastLevel.STANDARD
+                ContrastPreferenceReadState.Loading,
+                ContrastPreferenceReadState.NotConfigured -> presentationState.contrast
+            }
+            presentationState = presentationState.copy(
+                contrast = nextContrast,
+                contrastPreference = next.copy(
+                    confirmed = next.confirmed ?: confirmedBeforeLoad,
+                ),
+            )
+            if (next.readState == ContrastPreferenceReadState.Loaded) {
+                lastFailedContrastSelection = null
+            }
+            publishState()
+        }
+    }
+
     private fun loadStoredLayoutPreference() {
         val storage = layoutPreferenceStorage ?: return
         val confirmedBeforeLoad = presentationState.layoutPreference.confirmed
@@ -1279,6 +1428,8 @@ data class OxygenAppPresentationState(
     val effectsPreference: EffectsPreferencePresentationState = EffectsPreferencePresentationState.notConfigured(),
     val theme: OxygenThemeId = OxygenThemeId.OXYGEN,
     val themePreference: ThemePreferencePresentationState = ThemePreferencePresentationState.notConfigured(),
+    val contrast: ContrastLevel = ContrastLevel.STANDARD,
+    val contrastPreference: ContrastPreferencePresentationState = ContrastPreferencePresentationState.notConfigured(),
 ) {
     val isShowingHome: Boolean = screen is OxygenAppScreen.Home && selectedLocation != null
     val usesScaffoldWeather: Boolean = false
@@ -1378,6 +1529,58 @@ data class ThemePreferencePresentationState(
             ThemePreferencePresentationState(
                 readState = ThemePreferenceReadState.NotConfigured,
                 confirmed = initialTheme,
+            )
+    }
+}
+
+enum class ContrastPreferenceReadState {
+    NotConfigured,
+    Loading,
+    Loaded,
+    Failed,
+}
+
+data class ContrastPreferencePresentationState(
+    val readState: ContrastPreferenceReadState,
+    val confirmed: ContrastLevel? = null,
+    val pending: ContrastLevel? = null,
+    val writeError: Boolean = false,
+) {
+    val isManaged: Boolean
+        get() = readState != ContrastPreferenceReadState.NotConfigured
+
+    val effective: ContrastLevel
+        get() = confirmed ?: ContrastLevel.STANDARD
+
+    companion object {
+        fun initial(
+            isManaged: Boolean,
+            initialContrast: ContrastLevel = ContrastLevel.STANDARD,
+        ): ContrastPreferencePresentationState =
+            if (isManaged) loading() else notConfigured(initialContrast)
+
+        fun loading(confirmed: ContrastLevel? = null): ContrastPreferencePresentationState =
+            ContrastPreferencePresentationState(
+                readState = ContrastPreferenceReadState.Loading,
+                confirmed = confirmed,
+            )
+
+        fun loaded(contrast: ContrastLevel): ContrastPreferencePresentationState =
+            ContrastPreferencePresentationState(
+                readState = ContrastPreferenceReadState.Loaded,
+                confirmed = contrast,
+            )
+
+        fun failed(confirmed: ContrastLevel? = null): ContrastPreferencePresentationState =
+            ContrastPreferencePresentationState(
+                readState = ContrastPreferenceReadState.Failed,
+                confirmed = confirmed,
+            )
+
+        fun notConfigured(initialContrast: ContrastLevel = ContrastLevel.STANDARD): ContrastPreferencePresentationState =
+            ContrastPreferencePresentationState(
+                readState = ContrastPreferenceReadState.NotConfigured,
+                confirmed = initialContrast,
             )
     }
 }
