@@ -1774,7 +1774,7 @@ Must prove:
 
 ## Slice 29A: High-Contrast Rendering Contract
 
-Status: specified
+Status: committed at `0dccc94`
 
 Prerequisites:
 
@@ -1791,6 +1791,13 @@ Must prove:
 Out of scope:
 
 - persisted setting or Settings UI.
+
+Completion evidence: high-contrast role contract tests passed; the focused
+four-case and final seven-case connected Home/alert rendering filters passed
+on `oxygen_starter` / `emulator-5554` at 360x640 and font scale 1.3 with
+Effects Off; broad local Gradle checks and `git diff --check` passed. Artifacts
+are retained under
+`.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`.
 
 ## Slice 29B: High-Contrast Preference UI
 
@@ -2178,7 +2185,7 @@ Sequencing rationale:
 
 ## Active Slice
 
-Slice 28B2: Persisted Theme Settings UI is committed at `2c88b9c` in
+Slice 29A: High-Contrast Rendering Contract is committed at `0dccc94` in
 `.codex/plans/current.md`. Slice 28A1 is committed at `06c987b`, Slice 28A2 is
 committed at `80dd961`, and Slice 28B1 is committed at `708172f` (merged by
 `82cf281`), with retained evidence under their cycle artifact directories.
@@ -2221,12 +2228,13 @@ Immediate planning boundary:
 -> Slice 28A2 Terminal theme rendering baseline committed at `80dd961`
 -> Slice 28B1 theme preference storage/state committed at `708172f`, merged by `82cf281`
 -> Slice 28B2 persisted theme Settings UI committed at `2c88b9c`
+-> Slice 29A high-contrast rendering contract committed at `0dccc94`
 ```
 
-Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, and Slice 28B2 are
-complete. Slice 29A remains the next specified candidate; it is not planned by
-this sync. Release work and release-candidate claims remain outside this
-boundary.
+Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, and Slice
+29A are complete. Slice 29B remains the next specified candidate; it is not
+planned by this sync. Release work and release-candidate claims remain outside
+this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

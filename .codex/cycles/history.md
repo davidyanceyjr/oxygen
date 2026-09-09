@@ -32,14 +32,14 @@ ledger states.
 
 ## Recent State Summary
 
-- Latest implementation and verification state: Slice 28B2, Persisted Theme
-  Settings UI, is committed at `2c88b9c`; focused, broad, and installed
+- Latest implementation and verification state: Slice 29A, High-Contrast
+  Rendering Contract, is committed at `0dccc94`; focused, broad, and rendered
   evidence is retained at
-  `.codex/test-artifacts/2026-09-09-slice-28b2-persisted-theme-settings-ui/`.
+  `.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`.
 - Slice 28B1 is committed at `708172f` and merged by `82cf281`; the current
   Settings path now wires its production DataStore and exposes Oxygen, Paper,
   and Terminal selection with confirmed-write semantics.
-- Current process state: Slice 29A remains the next specified candidate; no
+- Current process state: Slice 29B remains the next specified candidate; no
   later slice is planned in this sync.
 
 ## Recent Cycles
@@ -1305,3 +1305,45 @@ Blockers/skips:
 Boundaries:
 - No DataStore contract/state-machine redesign, provider/cache/location/unit/
   alert behavior, new theme, effects/layout behavior, or release claim changed.
+
+### 2026-09-09-slice-29a-high-contrast-rendering-contract
+
+Status: committed
+Mode: bounded accessibility presentation and rendering implementation
+Slice: Slice 29A, High-Contrast Rendering Contract
+Commit: `0dccc94`
+
+Result:
+- Added `ContrastLevel.STANDARD/HIGH` as a non-persisted presentation axis on
+  `OxygenAppearance`; high contrast overlays Oxygen, Paper, or Terminal while
+  retaining theme identity, typography, shapes, layout, weather semantics,
+  state labels, and alert meaning.
+- Resolved opaque high-contrast Home roles, strong/quiet boundaries and
+  weather marks; wired Home, shared glass panels, alert selectors/details, and
+  `OxygenApp` without changing holder construction, persistence, Settings, or
+  provider paths. Alert detail now labels severity explicitly.
+- Corrected specification sections 20, 23, 37, and 51 before implementation.
+
+Evidence:
+- Required pre-edit Oxygen/Standard/Effects-Off alert-summary baseline passed
+  1/1 on `oxygen_starter` / `emulator-5554`; baseline PNG/semantics and final
+  high-contrast PNG/semantics artifacts are under
+  `.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`.
+- Red JVM contract test recorded the expected missing resolver API. Green
+  `HighContrastThemeContractTest` passed; focused connected rendering passed
+  4/4; final connected regression passed 7/7 at 360x640/font-scale-1.3 with
+  Effects Off. Visual review found opaque black/white roles, readable sparse,
+  stale, operational, and severe-alert states, and visible selected outlines.
+- Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check`.
+
+Blockers/skips:
+- No Settings reachability, DataStore persistence, automatic system contrast,
+  installed-user high-contrast claim, or TalkBack service traversal was run;
+  these remain outside 29A.
+
+Boundaries:
+- No provider/domain, repository/cache/location/unit, layout/effects behavior,
+  new theme, dependency, bitmap asset, release, or MVP-complete behavior
+  changed. Post-commit README, specification, roadmap, and active-plan sync
+  was completed in the following documentation update.

@@ -1997,6 +1997,16 @@ retained under
 the Slice 28B2 evidence package is retained under
 `.codex/test-artifacts/2026-09-09-slice-28b2-persisted-theme-settings-ui/`.
 
+Slice 29A, High-Contrast Rendering Contract, is implemented and verified at
+the deterministic Compose boundary. `OxygenAppearance` now carries a separate
+standard/high contrast input layered over Oxygen, Paper, or Terminal; the
+resolved high-contrast roles are opaque and preserve theme identity,
+typography, layout, weather meaning, operational state labels, and official
+alert semantics under compact large-font Effects Off rendering. This slice
+does not add a Settings control, DataStore record, automatic detection, or
+installed-user reachability; those remain Slice 29B work. Evidence is retained
+under `.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`.
+
 ---
 
 ## 54. Source Documentation Starting Points

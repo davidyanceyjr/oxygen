@@ -74,6 +74,9 @@ and `docs/data-sources/`.
   implementation, while the installed app uses Room storage.
 - Provider-neutral custom-unit model and alternate-unit Home presentation
   outputs retained for a future custom-unit editor.
+- High-contrast Home and official-alert rendering through an explicit,
+  non-persisted presentation input; Settings reachability and persistence are
+  reserved for Slice 29B.
 
 ## Not implemented yet
 
