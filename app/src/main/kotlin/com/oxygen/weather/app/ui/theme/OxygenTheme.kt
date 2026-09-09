@@ -25,6 +25,7 @@ data class OxygenPalette(
     val chartAccent: Color,
     val precipitation: Color,
     val warning: Color,
+    val supportingContent: Color,
 )
 
 @Immutable
@@ -42,6 +43,8 @@ data class OxygenHomeDesignRoles(
     val ambientGlassSurface: Color,
     val strongGlassSurface: Color,
     val outlineAccent: Color,
+    val warningContent: Color,
+    val supportingContent: Color,
     val displayWeatherValue: TextStyle,
     val sectionHeading: TextStyle,
     val supportingLabel: TextStyle,
@@ -72,6 +75,7 @@ val LocalOxygenPalette = staticCompositionLocalOf {
         chartAccent = Color.White,
         precipitation = Color.White,
         warning = Color.Red,
+        supportingContent = Color.Unspecified,
     )
 }
 
@@ -90,6 +94,8 @@ val LocalOxygenHomeDesign = staticCompositionLocalOf {
         ambientGlassSurface = Color(0x5523414D),
         strongGlassSurface = Color(0xAA17313C),
         outlineAccent = Color(0x667FC1CE),
+        warningContent = Color.Unspecified,
+        supportingContent = Color.Unspecified,
         displayWeatherValue = Typography().displayMedium.copy(fontWeight = FontWeight.Light),
         sectionHeading = Typography().titleMedium.copy(fontWeight = FontWeight.SemiBold),
         supportingLabel = Typography().labelSmall.copy(fontWeight = FontWeight.SemiBold),
@@ -110,6 +116,7 @@ private val OxygenSpec = OxygenThemeSpec(
         chartAccent = Color(0xFF8DE7F1),
         precipitation = Color(0xFF79BFFF),
         warning = Color(0xFFFFB4AB),
+        supportingContent = Color.Unspecified,
     ),
     typography = Typography(),
 )
@@ -121,14 +128,33 @@ private val PaperSpec = OxygenThemeSpec(
         skyTop = Color(0xFFF4F0E7),
         skyBottom = Color(0xFFE7E0D2),
         atmosphericGlow = Color(0xFFFFD28A),
-        glass = Color(0xCCFAF7F0),
+        glass = Color(0xFFF7F2E9),
         glassStrong = Color(0xFFF5F0E7),
-        outline = Color(0x55817161),
+        outline = Color(0xFF8A7B69),
         chartAccent = Color(0xFF345A67),
         precipitation = Color(0xFF356C91),
         warning = Color(0xFF9C3A32),
+        supportingContent = Color(0xFF625B52),
     ),
-    typography = Typography(),
+    typography = Typography().let { base ->
+        base.copy(
+            displayLarge = base.displayLarge.copy(fontFamily = FontFamily.Serif),
+            displayMedium = base.displayMedium.copy(fontFamily = FontFamily.Serif),
+            displaySmall = base.displaySmall.copy(fontFamily = FontFamily.Serif),
+            headlineLarge = base.headlineLarge.copy(fontFamily = FontFamily.Serif),
+            headlineMedium = base.headlineMedium.copy(fontFamily = FontFamily.Serif),
+            headlineSmall = base.headlineSmall.copy(fontFamily = FontFamily.Serif),
+            titleLarge = base.titleLarge.copy(fontFamily = FontFamily.Serif),
+            titleMedium = base.titleMedium.copy(fontFamily = FontFamily.Serif),
+            titleSmall = base.titleSmall.copy(fontFamily = FontFamily.Serif),
+            bodyLarge = base.bodyLarge.copy(fontFamily = FontFamily.SansSerif),
+            bodyMedium = base.bodyMedium.copy(fontFamily = FontFamily.SansSerif),
+            bodySmall = base.bodySmall.copy(fontFamily = FontFamily.SansSerif),
+            labelLarge = base.labelLarge.copy(fontFamily = FontFamily.SansSerif),
+            labelMedium = base.labelMedium.copy(fontFamily = FontFamily.SansSerif),
+            labelSmall = base.labelSmall.copy(fontFamily = FontFamily.SansSerif),
+        )
+    },
 )
 
 private val TerminalSpec = OxygenThemeSpec(
@@ -144,6 +170,7 @@ private val TerminalSpec = OxygenThemeSpec(
         chartAccent = Color(0xFF77FF9D),
         precipitation = Color(0xFF78D6FF),
         warning = Color(0xFFFF847C),
+        supportingContent = Color.Unspecified,
     ),
     typography = Typography(
         bodyLarge = Typography().bodyLarge.copy(fontFamily = FontFamily.Monospace),
@@ -184,6 +211,8 @@ fun OxygenTheme(
         ambientGlassSurface = palette.glass,
         strongGlassSurface = palette.glassStrong,
         outlineAccent = palette.outline,
+        warningContent = if (themeId == OxygenThemeId.PAPER) palette.warning else Color.Unspecified,
+        supportingContent = palette.supportingContent,
         displayWeatherValue = typography.displayMedium.copy(fontWeight = FontWeight.Light),
         sectionHeading = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
         supportingLabel = typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),

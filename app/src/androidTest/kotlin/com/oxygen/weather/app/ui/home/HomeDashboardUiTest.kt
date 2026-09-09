@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -72,6 +73,7 @@ import com.oxygen.weather.app.ui.theme.EffectsLevel
 import com.oxygen.weather.app.ui.theme.LayoutPreset
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenTheme
+import com.oxygen.weather.app.ui.theme.OxygenThemeId
 import com.oxygen.weather.core.location.SavedLocationStorage
 import com.oxygen.weather.core.model.AlertSeverity
 import com.oxygen.weather.core.model.CurrentConditions
@@ -100,6 +102,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.Executor
+import kotlin.math.pow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -108,6 +111,202 @@ import org.junit.Test
 class HomeDashboardUiTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun paperBaselineNowEffectsOff() {
+        val location = weatherLocation(name = "Baseline Paper Rendering City")
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 640,
+            fontScale = 1.3f,
+            appearance = OxygenAppearance(
+                theme = OxygenThemeId.PAPER,
+                effects = EffectsLevel.OFF,
+            ),
+            themeId = OxygenThemeId.PAPER,
+        )
+
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.onNodeWithText("Baseline Paper Rendering City").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("65 deg F").performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
+        composeRule.writeSemanticsArtifact("paper-baseline-now-effects-off-semantics.txt")
+        composeRule.writeScreenshotArtifact("paper-baseline-now-effects-off.png")
+    }
+
+    @Test
+    fun paperStandardHomePreservesMeaningAcrossPagesEffectsOff() {
+        val location = weatherLocation(
+            name = "A Very Long Paper Location Name Near The Lakefront, Wisconsin, United States",
+        )
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(
+                alerts = listOf(fullWeatherBundle(location).alerts.single().copy(severity = AlertSeverity.SEVERE)),
+            ),
+            freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                staleAge = Duration.ofMinutes(45),
+                refreshFailure = ForecastError.NetworkUnavailable,
+            ),
+        )
+        val appearance = OxygenAppearance(
+            theme = OxygenThemeId.PAPER,
+            effects = EffectsLevel.OFF,
+        )
+
+        val themeState = mutableStateOf(OxygenThemeId.OXYGEN)
+        composeRule.setThemedHomeContent(
+            state = state,
+            appearance = appearance.copy(theme = OxygenThemeId.OXYGEN),
+            themeState = themeState,
+        )
+        composeRule.waitForIdle()
+        val oxygenContract = composeRule.homeSemanticContract()
+        composeRule.runOnIdle { themeState.value = OxygenThemeId.PAPER }
+        composeRule.waitForIdle()
+        val paperContract = composeRule.homeSemanticContract()
+        assertEquals(oxygenContract, paperContract)
+        composeRule.assertPaperContrastRoles()
+
+        composeRule.onNodeWithTag("home-section-location").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("65 deg F").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-current-mark").assertIsDisplayed()
+        composeRule.assertPaperMarkHasMeasuredContrast()
+        composeRule.onNodeWithText("Severity: Severe").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
+        composeRule.assertMinimumTouchTarget(
+            "home-page-tab-now",
+            "home-page-tab-hourly",
+            "home-page-tab-daily",
+            "home-page-tab-details",
+            "home-refresh",
+            "home-change-location",
+            "home-about-entry",
+        )
+
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("paper-standard-effects-off-semantics.txt")
+        composeRule.writeScreenshotArtifact("paper-standard-effects-off.png")
+    }
+
+    @Test
+    fun paperSimpleHomePreservesMeaningAndForecastChoicesEffectsOff() {
+        val location = weatherLocation(name = "Paper Simple Forecast City")
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location).copy(
+                        alerts = listOf(fullWeatherBundle(location).alerts.single().copy(severity = AlertSeverity.SEVERE)),
+                    ),
+                    freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                        staleAge = Duration.ofMinutes(45),
+                        refreshFailure = ForecastError.NetworkUnavailable,
+                    ),
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(
+                            requestPoint = location.point,
+                            providerId = "nws",
+                            fetchedAt = Instant.parse("2026-08-22T15:05:00Z"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            initialLayout = LayoutPreset.SIMPLE,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactOxygenAppContent(
+            stateHolder = holder,
+            appearance = OxygenAppearance(
+                theme = OxygenThemeId.PAPER,
+                layout = LayoutPreset.SIMPLE,
+                effects = EffectsLevel.OFF,
+            ),
+        )
+        composeRule.waitForIdle()
+        val requestCountAfterReady = repository.locations.size
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.onNodeWithText("Paper Simple Forecast City").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Severity: Severe").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
+        composeRule.onNodeWithContentDescription("6 AM, Rain, 64 deg F, 60%").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-simple-forecast-daily").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-simple-forecast-daily").assertIsSelected()
+        composeRule.onNodeWithContentDescription("Sat, Aug 22, Rain showers, High 73 deg F, Low 54 deg F, 40%")
+            .assertIsDisplayed()
+        composeRule.assertMinimumTouchTarget(
+            "home-page-tab-now",
+            "home-page-tab-forecast",
+            "home-simple-forecast-hourly",
+            "home-simple-forecast-daily",
+        )
+        assertEquals(requestCountAfterReady, repository.locations.size)
+        composeRule.onNodeWithTag("home-page-tab-now").performClick()
+        composeRule.waitForIdle()
+        composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
+        composeRule.writeSemanticsArtifact("paper-simple-effects-off-semantics.txt")
+        composeRule.writeScreenshotArtifact("paper-simple-effects-off.png")
+    }
+
+    @Test
+    fun paperOperationalHomeStatesRemainReadableEffectsOff() {
+        val location = weatherLocation(name = "Paper Operational City")
+        var retryCount = 0
+        val operationalState = mutableStateOf<HomeForecastPresentationState>(HomeForecastPresentationState.Loading.from(location))
+        composeRule.setDynamicHomeContent(
+            state = operationalState,
+            appearance = OxygenAppearance(theme = OxygenThemeId.PAPER, effects = EffectsLevel.OFF),
+            onRetry = { retryCount++ },
+        )
+        composeRule.onNodeWithText("Loading weather for Paper Operational City").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Weather data by Open-Meteo.").performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
+
+        composeRule.runOnIdle {
+            operationalState.value = HomeForecastPresentationState.NoCacheError.from(
+                location = location,
+                message = HomeForecastMessage.NetworkUnavailable,
+            )
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(HomeForecastMessage.NetworkUnavailable.text).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Retry").performScrollTo().performClick()
+        composeRule.onNodeWithText("Settings").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Change location").performScrollTo().assertIsDisplayed()
+        composeRule.assertMinimumTouchTarget("home-change-location")
+        assertEquals(1, retryCount)
+        composeRule.writeSemanticsArtifact("paper-operational-effects-off-semantics.txt")
+        composeRule.writeScreenshotArtifact("paper-operational-effects-off.png")
+    }
 
     @Test
     fun deviceLookupShowsProgressDisablesDuplicatesAndCancelLeavesManualSearchUsable() {
@@ -820,6 +1019,25 @@ class HomeDashboardUiTest {
         ).forEach { tag ->
             composeRule.onNodeWithTag(tag).assertHasGoldLinePixels(tag)
         }
+    }
+
+    @Test
+    fun terminalEffectsOffReadyMarkSmoke() {
+        val location = weatherLocation(name = "Terminal Mark City")
+        composeRule.setHomeContent(
+            state = HomeForecastPresentationState.ForecastReady.from(
+                location = location,
+                weather = fullWeatherBundle(location),
+            ),
+            widthDp = 360,
+            heightDp = 640,
+            appearance = OxygenAppearance(
+                theme = OxygenThemeId.TERMINAL,
+                effects = EffectsLevel.OFF,
+            ),
+        )
+        composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
+        composeRule.onNodeWithTag("home-current-mark").assertIsDisplayed().assertHasGoldLinePixels("terminal")
     }
 
     @Test
@@ -2157,24 +2375,168 @@ private fun ComposeContentTestRule.setHomeContent(
     heightDp: Int = 3200,
     fontScale: Float = 1f,
     appearance: OxygenAppearance = OxygenAppearance(),
+    themeId: OxygenThemeId = appearance.theme,
+    onRetry: () -> Unit = {},
 ) {
     setContent {
         CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = fontScale)) {
-            OxygenTheme {
+            OxygenTheme(themeId = themeId) {
                 if (widthDp == null) {
-                    HomeLoadingScreen(state = state, appearance = appearance)
+                    HomeLoadingScreen(state = state, appearance = appearance, onRetry = onRetry)
                 } else {
                     Box(
                         Modifier
                             .width(widthDp.dp)
                             .height(heightDp.dp),
                     ) {
-                        HomeLoadingScreen(state = state, appearance = appearance)
+                        HomeLoadingScreen(state = state, appearance = appearance, onRetry = onRetry)
                     }
                 }
             }
         }
     }
+}
+
+private fun ComposeContentTestRule.setCompactOxygenAppContent(
+    stateHolder: OxygenAppStateHolder,
+    appearance: OxygenAppearance,
+    widthDp: Int = 360,
+    heightDp: Int = 640,
+    fontScale: Float = 1.3f,
+) {
+    setContent {
+        CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = fontScale)) {
+            androidx.compose.foundation.layout.Box(
+                Modifier
+                    .width(widthDp.dp)
+                    .height(heightDp.dp),
+            ) {
+                OxygenApp(stateHolder = stateHolder, appearance = appearance)
+            }
+        }
+    }
+}
+
+private fun ComposeContentTestRule.setThemedHomeContent(
+    state: HomeForecastPresentationState,
+    appearance: OxygenAppearance,
+    themeState: androidx.compose.runtime.MutableState<OxygenThemeId>,
+) {
+    setContent {
+        CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 1.3f)) {
+            OxygenTheme(themeId = themeState.value) {
+                Box(Modifier.width(360.dp).height(640.dp)) {
+                    HomeLoadingScreen(state = state, appearance = appearance)
+                }
+            }
+        }
+    }
+}
+
+private fun ComposeContentTestRule.setDynamicHomeContent(
+    state: androidx.compose.runtime.MutableState<HomeForecastPresentationState>,
+    appearance: OxygenAppearance,
+    onRetry: () -> Unit,
+) {
+    setContent {
+        CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 1.3f)) {
+            OxygenTheme(themeId = appearance.theme) {
+                Box(Modifier.width(360.dp).height(640.dp)) {
+                    HomeLoadingScreen(state = state.value, appearance = appearance, onRetry = onRetry)
+                }
+            }
+        }
+    }
+}
+
+private fun ComposeTestRule.homeSemanticContract(): String = onRoot(useUnmergedTree = true)
+    .printToString(maxDepth = 120)
+    .lineSequence()
+    .filter { line ->
+        line.contains("Tag:") ||
+            line.contains("Text =") ||
+            line.contains("ContentDescription =") ||
+            line.contains("CollectionInfo =") ||
+            line.contains("CustomActions =")
+    }
+    .map { line ->
+        line
+            .replace(Regex("Node #\\d+ at \\([^\\n]*?\\)px"), "Node")
+            .replace(Regex("action=[^)]*"), "action")
+    }
+    .joinToString("\n")
+
+private data class NamedContrastPair(
+    val name: String,
+    val foreground: Color,
+    val background: Color,
+)
+
+private fun ComposeTestRule.assertPaperContrastRoles() {
+    val palette = com.oxygen.weather.app.ui.theme.oxygenThemeSpec(OxygenThemeId.PAPER).palette
+    val pairs = listOf(
+        NamedContrastPair("normal-on-background", Color(0xFF2A2722), palette.skyTop),
+        NamedContrastPair("normal-on-strong-surface", Color(0xFF2A2722), palette.glassStrong),
+        NamedContrastPair("supporting-on-background", palette.supportingContent, palette.skyTop),
+        NamedContrastPair("supporting-on-strong-surface", palette.supportingContent, palette.glassStrong),
+        NamedContrastPair("warning-on-strong-surface", palette.warning, palette.glassStrong),
+    )
+    pairs.forEach { pair ->
+        assertTrue("${pair.name} must use opaque role colors", pair.foreground.alpha == 1f && pair.background.alpha == 1f)
+        assertTrue(
+            "${pair.name} contrast ${"%.2f".format(contrastRatio(pair.foreground, pair.background))} < 4.5",
+            contrastRatio(pair.foreground, pair.background) >= 4.5,
+        )
+    }
+}
+
+private fun contrastRatio(first: Color, second: Color): Double {
+    val firstLuminance = relativeLuminance(first)
+    val secondLuminance = relativeLuminance(second)
+    val lighter = maxOf(firstLuminance, secondLuminance)
+    val darker = minOf(firstLuminance, secondLuminance)
+    return (lighter + 0.05) / (darker + 0.05)
+}
+
+private fun relativeLuminance(color: Color): Double {
+    fun linear(channel: Float): Double {
+        val value = channel.toDouble()
+        return if (value <= 0.04045) value / 12.92 else ((value + 0.055) / 1.055).pow(2.4)
+    }
+    return 0.2126 * linear(color.red) + 0.7152 * linear(color.green) + 0.0722 * linear(color.blue)
+}
+
+private fun ComposeTestRule.assertPaperMarkHasMeasuredContrast() {
+    val surfacePixels = onRoot().captureToImage().toPixelMap()
+    val surface = surfacePixels[0, 0]
+    val markPixels = onNodeWithTag("home-current-mark").captureToImage().toPixelMap()
+    val samples = mutableListOf<String>()
+    var measuredPixelCount = 0
+    for (y in 0 until markPixels.height) {
+        for (x in 0 until markPixels.width) {
+            val pixel = markPixels[x, y]
+            if (pixel.alpha <= 0.05f) continue
+            val composite = Color(
+                red = pixel.red * pixel.alpha + surface.red * (1f - pixel.alpha),
+                green = pixel.green * pixel.alpha + surface.green * (1f - pixel.alpha),
+                blue = pixel.blue * pixel.alpha + surface.blue * (1f - pixel.alpha),
+                alpha = 1f,
+            )
+            val distance = kotlin.math.abs(composite.red - surface.red) +
+                kotlin.math.abs(composite.green - surface.green) +
+                kotlin.math.abs(composite.blue - surface.blue)
+            if (distance > 0.08f && kotlin.math.abs(relativeLuminance(composite) - relativeLuminance(surface)) > 0.02) {
+                measuredPixelCount++
+                if (samples.size < 8) samples += "($x,$y)"
+            }
+        }
+    }
+    assertTrue("Paper condition mark must contrast its sampled surface", measuredPixelCount > 0)
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    context.filesDir.resolve("paper-mark-sampling.txt").writeText(
+        "surface=${surface.red},${surface.green},${surface.blue}; " +
+            "sampledCoordinates=${samples.joinToString()}; measuredPixels=$measuredPixelCount",
+    )
 }
 
 private fun ComposeContentTestRule.setCompactContent(

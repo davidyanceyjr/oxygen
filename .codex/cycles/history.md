@@ -1201,3 +1201,40 @@ Boundaries:
   APK was reinstalled and the production first-run path was repeated only to
   leave the emulator on Standard Home. The acceptance captures precede that
   cleanup and remain the source of restoration evidence.
+
+### 2026-09-08-slice-28a1-paper-theme-rendering-baseline
+
+Status: verified
+Mode: bounded visual implementation
+Slice: Slice 28A1, Paper Theme Rendering Baseline
+
+Result:
+- Made Paper a deliberate warm, opaque Home translation with serif display and
+  heading typography, restrained outlines, readable supporting-content roles,
+  and Paper warning emphasis for official-alert severity.
+- Added direct Home theme injection and a named compact OxygenApp fixture for
+  Paper rendering, semantic invariance, and no-refetch checks.
+- Preserved Oxygen/Terminal theme paths, layout/page semantics, weather values,
+  source/provenance, callbacks, and Effects-Off scene absence. Added 48dp
+  loading/error Home actions where the compact boundary exposed a gap.
+- Corrected README's stale claim that layout selection/restoration remained
+  unimplemented; theme persistence remains out of scope.
+
+Evidence:
+- Final six-case connected filter passed on `oxygen_starter` / `emulator-5554`:
+  Paper baseline, Standard, Simple, operational states, Oxygen Effects Off,
+  and Terminal mark smoke. The final Standard oracle rerun also passed after
+  the actual Paper warning-surface pair was finalized.
+- Named opaque Paper normal/supporting/warning role pairs passed WCAG 4.5:1;
+  bitmap mark sampling passed with 791 measured pixels and sampled coordinates
+  recorded in `paper-mark-sampling.txt`.
+- Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-08-slice-28a1-paper-theme-rendering-baseline/`.
+
+Boundaries:
+- No theme storage, Settings selection, MainActivity theme reachability,
+  provider/cache/location/unit/alert semantics, new assets/dependencies,
+  layout/effects persistence, or release/MVP claim was added.

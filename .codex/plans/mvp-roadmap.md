@@ -1677,7 +1677,11 @@ only themes that pass the rendering boundary.
 
 ### Slice 28A1: Paper Theme Rendering Baseline
 
-Status: specified
+Status: verified
+
+Verified in cycle `2026-09-08-slice-28a1-paper-theme-rendering-baseline`; the
+installed rendering evidence is retained under
+`.codex/test-artifacts/2026-09-08-slice-28a1-paper-theme-rendering-baseline/`.
 
 Prerequisites:
 
@@ -2167,9 +2171,11 @@ Sequencing rationale:
 
 ## Next Candidate Slice
 
-Candidate: Slice 28A1: Paper Theme Rendering Baseline. Slice 27B1/27B2 are
-committed together at `b68ca19`, and Slice 27B3 is verified with retained
-installed evidence at `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
+Candidate: Slice 28A2: Terminal Theme Rendering Baseline. Slice 28A1 is
+verified with retained installed evidence at
+`.codex/test-artifacts/2026-09-08-slice-28a1-paper-theme-rendering-baseline/`.
+Slice 27B1/27B2 are committed together at `b68ca19`, and Slice 27B3 is
+verified with retained installed evidence at `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
 
 Immediate planning boundary:
 
@@ -2203,10 +2209,11 @@ Immediate planning boundary:
 -> Slice 27A Simple Layout Definition committed at `660e376`
 -> Slice 27B1/27B2 persisted layout storage and Settings UI committed at `b68ca19`
 -> Slice 27B3 installed layout restoration verification verified on 2026-09-08
+-> Slice 28A1 Paper theme rendering baseline verified on 2026-09-08
 ```
 
 Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 is
-verified; Slice 28A1 is the next bounded candidate. Release work and
+verified; Slice 28A1 is verified; Slice 28A2 is the next bounded candidate. Release work and
 release-candidate claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.

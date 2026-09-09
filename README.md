@@ -75,8 +75,7 @@ and `docs/data-sources/`.
 
 - Custom unit editing UI.
 - Alert persistence/cache, background polling, and notifications.
-- Full effects behavior and persisted theme, layout selection/restoration, and
-  icon-pack settings.
+- Full effects behavior, persisted theme, and icon-pack settings.
 - Release-candidate verification.
 
 ## Repository structure
