@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Immutable
 data class OxygenPalette(
@@ -161,26 +162,81 @@ private val TerminalSpec = OxygenThemeSpec(
     id = OxygenThemeId.TERMINAL,
     dark = true,
     palette = OxygenPalette(
-        skyTop = Color(0xFF020806),
-        skyBottom = Color(0xFF06110B),
-        atmosphericGlow = Color(0xFF77FF9D),
-        glass = Color(0xAA06130C),
-        glassStrong = Color(0xEE06130C),
-        outline = Color(0x6677FF9D),
-        chartAccent = Color(0xFF77FF9D),
-        precipitation = Color(0xFF78D6FF),
-        warning = Color(0xFFFF847C),
-        supportingContent = Color.Unspecified,
+        skyTop = Color(0xFF050A07),
+        skyBottom = Color(0xFF09150D),
+        atmosphericGlow = Color(0xFF6FEA8C),
+        glass = Color(0xFF0D1B12),
+        glassStrong = Color(0xFF12251A),
+        outline = Color(0xFF568A67),
+        chartAccent = Color(0xFF7CFFA0),
+        precipitation = Color(0xFF83D9FF),
+        warning = Color(0xFFFF9A8F),
+        supportingContent = Color(0xFFB7C8BC),
     ),
-    typography = Typography(
-        bodyLarge = Typography().bodyLarge.copy(fontFamily = FontFamily.Monospace),
-        bodyMedium = Typography().bodyMedium.copy(fontFamily = FontFamily.Monospace),
-        bodySmall = Typography().bodySmall.copy(fontFamily = FontFamily.Monospace),
-        titleLarge = Typography().titleLarge.copy(fontFamily = FontFamily.Monospace),
-        titleMedium = Typography().titleMedium.copy(fontFamily = FontFamily.Monospace),
-        headlineLarge = Typography().headlineLarge.copy(fontFamily = FontFamily.Monospace),
-        displayLarge = Typography().displayLarge.copy(fontFamily = FontFamily.Monospace),
-    ),
+    typography = Typography().let { base ->
+        base.copy(
+            displayLarge = base.displayLarge.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            displayMedium = base.displayMedium.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            displaySmall = base.displaySmall.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            headlineLarge = base.headlineLarge.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            headlineMedium = base.headlineMedium.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            headlineSmall = base.headlineSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            titleLarge = base.titleLarge.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            titleMedium = base.titleMedium.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            titleSmall = base.titleSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            bodyLarge = base.bodyLarge.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            bodyMedium = base.bodyMedium.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            bodySmall = base.bodySmall.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            labelLarge = base.labelLarge.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            labelMedium = base.labelMedium.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+            labelSmall = base.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.sp,
+            ),
+        )
+    },
 )
 
 fun oxygenThemeSpec(id: OxygenThemeId): OxygenThemeSpec = when (id) {
@@ -205,13 +261,21 @@ fun OxygenTheme(
         tileGap = 10.dp,
         cardPadding = 16.dp,
         compactCardPadding = 10.dp,
-        homeCardCorner = 8.dp,
-        weatherMarkGold = if (spec.dark) Color(0xFFFFD28A) else Color(0xFF8A5D18),
-        weatherMarkQuiet = if (spec.dark) Color(0xFFE8F8FB) else Color(0xFF244954),
+        homeCardCorner = if (themeId == OxygenThemeId.TERMINAL) 4.dp else 8.dp,
+        weatherMarkGold = when (themeId) {
+            OxygenThemeId.OXYGEN -> Color(0xFFFFD28A)
+            OxygenThemeId.PAPER -> Color(0xFF8A5D18)
+            OxygenThemeId.TERMINAL -> palette.chartAccent
+        },
+        weatherMarkQuiet = when (themeId) {
+            OxygenThemeId.OXYGEN -> Color(0xFFE8F8FB)
+            OxygenThemeId.PAPER -> Color(0xFF244954)
+            OxygenThemeId.TERMINAL -> Color(0xFFC4E8CB)
+        },
         ambientGlassSurface = palette.glass,
         strongGlassSurface = palette.glassStrong,
         outlineAccent = palette.outline,
-        warningContent = if (themeId == OxygenThemeId.PAPER) palette.warning else Color.Unspecified,
+        warningContent = if (themeId == OxygenThemeId.OXYGEN) Color.Unspecified else palette.warning,
         supportingContent = palette.supportingContent,
         displayWeatherValue = typography.displayMedium.copy(fontWeight = FontWeight.Light),
         sectionHeading = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -226,10 +290,10 @@ fun OxygenTheme(
             surface = palette.glassStrong,
             surfaceVariant = palette.glass,
             outline = palette.outline,
-            onPrimary = Color(0xFF062126),
-            onSecondary = Color(0xFF072033),
-            onBackground = Color(0xFFF2FAFC),
-            onSurface = Color(0xFFF2FAFC),
+            onPrimary = if (themeId == OxygenThemeId.TERMINAL) Color(0xFF06210E) else Color(0xFF062126),
+            onSecondary = if (themeId == OxygenThemeId.TERMINAL) Color(0xFF062033) else Color(0xFF072033),
+            onBackground = if (themeId == OxygenThemeId.TERMINAL) Color(0xFFEAF8EE) else Color(0xFFF2FAFC),
+            onSurface = if (themeId == OxygenThemeId.TERMINAL) Color(0xFFEAF8EE) else Color(0xFFF2FAFC),
             error = palette.warning,
         )
     } else {

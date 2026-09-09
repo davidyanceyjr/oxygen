@@ -1022,22 +1022,129 @@ class HomeDashboardUiTest {
     }
 
     @Test
-    fun terminalEffectsOffReadyMarkSmoke() {
-        val location = weatherLocation(name = "Terminal Mark City")
-        composeRule.setHomeContent(
-            state = HomeForecastPresentationState.ForecastReady.from(
-                location = location,
-                weather = fullWeatherBundle(location),
+    fun terminalStandardHomePreservesMeaningAcrossPagesEffectsOff() {
+        val location = weatherLocation(
+            name = "A Very Long Terminal Location Name Near The Lakefront, Wisconsin, United States",
+        )
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(
+                alerts = listOf(fullWeatherBundle(location).alerts.single().copy(severity = AlertSeverity.SEVERE)),
             ),
-            widthDp = 360,
-            heightDp = 640,
-            appearance = OxygenAppearance(
-                theme = OxygenThemeId.TERMINAL,
-                effects = EffectsLevel.OFF,
+            freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                staleAge = Duration.ofMinutes(45),
+                refreshFailure = ForecastError.NetworkUnavailable,
             ),
         )
+        val themeState = mutableStateOf(OxygenThemeId.OXYGEN)
+        composeRule.setThemedHomeContent(
+            state = state,
+            appearance = OxygenAppearance(theme = OxygenThemeId.OXYGEN, effects = EffectsLevel.OFF),
+            themeState = themeState,
+        )
+        composeRule.waitForIdle()
+        val oxygenContract = composeRule.homeSemanticContract()
+        composeRule.runOnIdle { themeState.value = OxygenThemeId.TERMINAL }
+        composeRule.waitForIdle()
+        assertEquals(oxygenContract, composeRule.homeSemanticContract())
+        composeRule.assertTerminalContrastRoles()
+        composeRule.onNodeWithText("A Very Long Terminal Location Name Near The Lakefront, Wisconsin, United States")
+            .performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Severity: Severe").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.")
+            .performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-current-mark").performScrollTo().assertIsDisplayed()
         composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
-        composeRule.onNodeWithTag("home-current-mark").assertIsDisplayed().assertHasGoldLinePixels("terminal")
+        composeRule.assertMinimumTouchTarget(
+            "home-page-tab-now", "home-page-tab-hourly", "home-page-tab-daily",
+            "home-page-tab-details", "home-refresh", "home-change-location", "home-about-entry",
+        )
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("terminal-standard-effects-off-semantics.txt")
+        composeRule.writeScreenshotArtifact("terminal-standard-effects-off.png")
+    }
+
+    @Test
+    fun terminalSimpleHomePreservesMeaningAndForecastChoicesEffectsOff() {
+        val location = weatherLocation(name = "Terminal Simple Forecast City")
+        val repository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(
+            weather = fullWeatherBundle(location),
+            freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                staleAge = Duration.ofMinutes(45), refreshFailure = ForecastError.NetworkUnavailable,
+            ),
+        )))
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location, weatherRepository = repository,
+            initialLayout = LayoutPreset.SIMPLE, forecastExecutor = DirectExecutor,
+        )
+        composeRule.setCompactOxygenAppContent(
+            stateHolder = holder,
+            appearance = OxygenAppearance(theme = OxygenThemeId.TERMINAL, layout = LayoutPreset.SIMPLE, effects = EffectsLevel.OFF),
+        )
+        composeRule.waitForIdle()
+        val requestCount = repository.locations.size
+        composeRule.onNodeWithText("Terminal Simple Forecast City").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
+        composeRule.onNodeWithTag("home-simple-forecast-daily").performScrollTo().performClick()
+        composeRule.onNodeWithTag("home-simple-forecast-daily").assertIsSelected()
+        composeRule.onNodeWithTag("home-page-tab-now").performClick()
+        composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
+        assertEquals(requestCount, repository.locations.size)
+        composeRule.writeScreenshotArtifact("terminal-simple-effects-off.png")
+    }
+
+    @Test
+    fun terminalOperationalHomeStatesRemainReadableEffectsOff() {
+        val location = weatherLocation(name = "Terminal Operational City")
+        var retryCount = 0
+        val state = mutableStateOf<HomeForecastPresentationState>(HomeForecastPresentationState.Loading.from(location))
+        composeRule.setDynamicHomeContent(
+            state = state,
+            appearance = OxygenAppearance(theme = OxygenThemeId.TERMINAL, effects = EffectsLevel.OFF),
+            onRetry = { retryCount++ },
+        )
+        composeRule.onNodeWithText("Loading weather for Terminal Operational City").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Weather data by Open-Meteo.").performScrollTo().assertIsDisplayed()
+        composeRule.runOnIdle {
+            state.value = HomeForecastPresentationState.NoCacheError.from(
+                location = location, message = HomeForecastMessage.NetworkUnavailable,
+            )
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(HomeForecastMessage.NetworkUnavailable.text).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Retry").performScrollTo().performClick()
+        composeRule.onNodeWithText("Settings").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Change location").performScrollTo().assertIsDisplayed()
+        composeRule.assertMinimumTouchTarget("home-change-location")
+        assertEquals(1, retryCount)
+        composeRule.writeSemanticsArtifact("terminal-operational-effects-off-semantics.txt")
+        composeRule.writeScreenshotArtifact("terminal-operational-effects-off.png")
+    }
+
+    @Test
+    fun terminalRepresentativeWeatherMarksRemainReadableEffectsOff() {
+        composeRule.setContent {
+            OxygenTheme(themeId = OxygenThemeId.TERMINAL) {
+                Row(Modifier.background(Color.Black).testTag("weather-mark-strip")) {
+                    listOf(
+                        "weather-mark-clear" to WeatherCondition.CLEAR,
+                        "weather-mark-rain" to WeatherCondition.RAIN_SHOWERS,
+                        "weather-mark-snow" to WeatherCondition.SNOW,
+                        "weather-mark-storm" to WeatherCondition.THUNDERSTORM_HAIL,
+                        "weather-mark-unknown" to WeatherCondition.UNKNOWN,
+                    ).forEach { (tag, condition) ->
+                        WeatherConditionMark(condition, Modifier.size(64.dp).testTag(tag))
+                    }
+                }
+            }
+        }
+        listOf("weather-mark-clear", "weather-mark-rain", "weather-mark-snow", "weather-mark-storm", "weather-mark-unknown")
+            .forEach { composeRule.onNodeWithTag(it).assertHasMeasuredTerminalPixels(it) }
     }
 
     @Test
@@ -2490,6 +2597,24 @@ private fun ComposeTestRule.assertPaperContrastRoles() {
     }
 }
 
+private fun ComposeTestRule.assertTerminalContrastRoles() {
+    val palette = com.oxygen.weather.app.ui.theme.oxygenThemeSpec(OxygenThemeId.TERMINAL).palette
+    val pairs = listOf(
+        NamedContrastPair("normal-on-background", Color(0xFFEAF8EE), palette.skyTop),
+        NamedContrastPair("normal-on-strong-surface", Color(0xFFEAF8EE), palette.glassStrong),
+        NamedContrastPair("supporting-on-background", palette.supportingContent, palette.skyTop),
+        NamedContrastPair("supporting-on-strong-surface", palette.supportingContent, palette.glassStrong),
+        NamedContrastPair("warning-on-strong-surface", palette.warning, palette.glassStrong),
+    )
+    pairs.forEach { pair ->
+        assertTrue("${pair.name} must use opaque role colors", pair.foreground.alpha == 1f && pair.background.alpha == 1f)
+        assertTrue(
+            "${pair.name} contrast ${"%.2f".format(contrastRatio(pair.foreground, pair.background))} < 4.5",
+            contrastRatio(pair.foreground, pair.background) >= 4.5,
+        )
+    }
+}
+
 private fun contrastRatio(first: Color, second: Color): Double {
     val firstLuminance = relativeLuminance(first)
     val secondLuminance = relativeLuminance(second)
@@ -2537,6 +2662,27 @@ private fun ComposeTestRule.assertPaperMarkHasMeasuredContrast() {
         "surface=${surface.red},${surface.green},${surface.blue}; " +
             "sampledCoordinates=${samples.joinToString()}; measuredPixels=$measuredPixelCount",
     )
+}
+
+private fun SemanticsNodeInteraction.assertHasMeasuredTerminalPixels(tag: String) {
+    val pixels = captureToImage().toPixelMap()
+    val samples = mutableListOf<String>()
+    var measuredPixelCount = 0
+    for (y in 0 until pixels.height) {
+        for (x in 0 until pixels.width) {
+            val pixel = pixels[x, y]
+            if (pixel.alpha <= 0.05f) continue
+            val distance = pixel.red + pixel.green + pixel.blue
+            if (distance > 0.14f && relativeLuminance(pixel) > 0.02) {
+                measuredPixelCount++
+                if (samples.size < 8) samples += "($x,$y)"
+            }
+        }
+    }
+    assertTrue("$tag should render measurable Terminal mark pixels", measuredPixelCount > 4)
+    InstrumentationRegistry.getInstrumentation().targetContext.filesDir
+        .resolve("terminal-$tag-mark-sampling.txt")
+        .writeText("sampledCoordinates=${samples.joinToString()}; measuredPixels=$measuredPixelCount")
 }
 
 private fun ComposeContentTestRule.setCompactContent(
