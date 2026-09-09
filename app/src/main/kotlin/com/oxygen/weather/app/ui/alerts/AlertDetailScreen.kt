@@ -122,6 +122,10 @@ private fun AlertSelectorRow(
             },
         color = if (selected) roles.strongGlassSurface else roles.ambientGlassSurface,
         shape = MaterialTheme.shapes.medium,
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (selected) roles.selectedBorderWidth else roles.normalBorderWidth,
+            color = if (selected) roles.outlineStrong else roles.outlineQuiet,
+        ),
     ) {
         Row(
             modifier = Modifier
@@ -154,7 +158,7 @@ private fun AlertDetailBody(detail: HomeAlertDetailPresentation) {
             .testTag("alert-detail-content"),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(detail.severity, style = roles.sectionHeading, color = MaterialTheme.colorScheme.error)
+            Text("Severity: ${detail.severity}", style = roles.sectionHeading, color = roles.warningContent)
             Text(detail.event, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
             detail.headline?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
             AlertDetailField("Issuer", detail.issuer)

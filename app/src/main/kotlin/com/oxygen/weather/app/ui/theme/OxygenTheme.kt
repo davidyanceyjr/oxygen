@@ -31,6 +31,7 @@ data class OxygenPalette(
 
 @Immutable
 data class OxygenHomeDesignRoles(
+    val contrast: ContrastLevel,
     val pageMarginHorizontal: Dp,
     val pageMarginVertical: Dp,
     val pageGap: Dp,
@@ -44,8 +45,13 @@ data class OxygenHomeDesignRoles(
     val ambientGlassSurface: Color,
     val strongGlassSurface: Color,
     val outlineAccent: Color,
+    val outlineStrong: Color,
+    val outlineQuiet: Color,
+    val normalContent: Color,
     val warningContent: Color,
     val supportingContent: Color,
+    val normalBorderWidth: Dp,
+    val selectedBorderWidth: Dp,
     val displayWeatherValue: TextStyle,
     val sectionHeading: TextStyle,
     val supportingLabel: TextStyle,
@@ -82,6 +88,7 @@ val LocalOxygenPalette = staticCompositionLocalOf {
 
 val LocalOxygenHomeDesign = staticCompositionLocalOf {
     OxygenHomeDesignRoles(
+        contrast = ContrastLevel.STANDARD,
         pageMarginHorizontal = 18.dp,
         pageMarginVertical = 18.dp,
         pageGap = 10.dp,
@@ -95,8 +102,13 @@ val LocalOxygenHomeDesign = staticCompositionLocalOf {
         ambientGlassSurface = Color(0x5523414D),
         strongGlassSurface = Color(0xAA17313C),
         outlineAccent = Color(0x667FC1CE),
+        outlineStrong = Color(0x667FC1CE),
+        outlineQuiet = Color(0x667FC1CE),
+        normalContent = Color(0xFFF2FAFC),
         warningContent = Color.Unspecified,
         supportingContent = Color.Unspecified,
+        normalBorderWidth = 1.dp,
+        selectedBorderWidth = 2.dp,
         displayWeatherValue = Typography().displayMedium.copy(fontWeight = FontWeight.Light),
         sectionHeading = Typography().titleMedium.copy(fontWeight = FontWeight.SemiBold),
         supportingLabel = Typography().labelSmall.copy(fontWeight = FontWeight.SemiBold),
@@ -245,15 +257,75 @@ fun oxygenThemeSpec(id: OxygenThemeId): OxygenThemeSpec = when (id) {
     OxygenThemeId.TERMINAL -> TerminalSpec
 }
 
-@Composable
-fun OxygenTheme(
-    themeId: OxygenThemeId = OxygenThemeId.OXYGEN,
-    content: @Composable () -> Unit,
-) {
-    val spec = oxygenThemeSpec(themeId)
-    val palette = spec.palette
-    val typography = spec.typography
+data class OxygenResolvedTheme(
+    val spec: OxygenThemeSpec,
+    val palette: OxygenPalette,
+    val homeDesign: OxygenHomeDesignRoles,
+    val normalContent: Color,
+)
+
+private fun highContrastPalette(spec: OxygenThemeSpec): OxygenPalette {
+    return if (spec.dark) {
+        OxygenPalette(
+            skyTop = Color.Black,
+            skyBottom = Color.Black,
+            atmosphericGlow = Color.White,
+            glass = Color.Black,
+            glassStrong = Color.Black,
+            outline = Color.White,
+            chartAccent = Color.White,
+            precipitation = Color.White,
+            warning = Color(0xFFFFB4AB),
+            supportingContent = Color.White,
+        )
+    } else {
+        OxygenPalette(
+            skyTop = Color.White,
+            skyBottom = Color.White,
+            atmosphericGlow = Color.Black,
+            glass = Color.White,
+            glassStrong = Color.White,
+            outline = Color.Black,
+            chartAccent = Color.Black,
+            precipitation = Color.Black,
+            warning = Color(0xFF7A0000),
+            supportingContent = Color.Black,
+        )
+    }
+}
+
+private fun standardNormalContent(themeId: OxygenThemeId): Color = when (themeId) {
+    OxygenThemeId.OXYGEN -> Color(0xFFF2FAFC)
+    OxygenThemeId.PAPER -> Color(0xFF2A2722)
+    OxygenThemeId.TERMINAL -> Color(0xFFEAF8EE)
+}
+
+fun resolveOxygenTheme(
+    themeId: OxygenThemeId,
+    contrast: ContrastLevel = ContrastLevel.STANDARD,
+): OxygenResolvedTheme {
+    val baseSpec = oxygenThemeSpec(themeId)
+    val palette = if (contrast == ContrastLevel.HIGH) highContrastPalette(baseSpec) else baseSpec.palette
+    val spec = baseSpec.copy(palette = palette)
+    val normalContent = if (contrast == ContrastLevel.HIGH) {
+        if (baseSpec.dark) Color.White else Color.Black
+    } else {
+        standardNormalContent(themeId)
+    }
+    val supportingContent = if (contrast == ContrastLevel.HIGH) {
+        palette.supportingContent
+    } else {
+        baseSpec.palette.supportingContent
+    }
+    val warningContent = if (contrast == ContrastLevel.HIGH) {
+        palette.warning
+    } else if (themeId == OxygenThemeId.OXYGEN) {
+        Color.Unspecified
+    } else {
+        palette.warning
+    }
     val homeDesign = OxygenHomeDesignRoles(
+        contrast = contrast,
         pageMarginHorizontal = 18.dp,
         pageMarginVertical = 18.dp,
         pageGap = 10.dp,
@@ -262,26 +334,51 @@ fun OxygenTheme(
         cardPadding = 16.dp,
         compactCardPadding = 10.dp,
         homeCardCorner = if (themeId == OxygenThemeId.TERMINAL) 4.dp else 8.dp,
-        weatherMarkGold = when (themeId) {
-            OxygenThemeId.OXYGEN -> Color(0xFFFFD28A)
-            OxygenThemeId.PAPER -> Color(0xFF8A5D18)
-            OxygenThemeId.TERMINAL -> palette.chartAccent
+        weatherMarkGold = when {
+            contrast == ContrastLevel.HIGH -> palette.chartAccent
+            themeId == OxygenThemeId.OXYGEN -> Color(0xFFFFD28A)
+            themeId == OxygenThemeId.PAPER -> Color(0xFF8A5D18)
+            else -> palette.chartAccent
         },
-        weatherMarkQuiet = when (themeId) {
-            OxygenThemeId.OXYGEN -> Color(0xFFE8F8FB)
-            OxygenThemeId.PAPER -> Color(0xFF244954)
-            OxygenThemeId.TERMINAL -> Color(0xFFC4E8CB)
+        weatherMarkQuiet = when {
+            contrast == ContrastLevel.HIGH -> palette.chartAccent
+            themeId == OxygenThemeId.OXYGEN -> Color(0xFFE8F8FB)
+            themeId == OxygenThemeId.PAPER -> Color(0xFF244954)
+            else -> Color(0xFFC4E8CB)
         },
         ambientGlassSurface = palette.glass,
         strongGlassSurface = palette.glassStrong,
-        outlineAccent = palette.outline,
-        warningContent = if (themeId == OxygenThemeId.OXYGEN) Color.Unspecified else palette.warning,
-        supportingContent = palette.supportingContent,
-        displayWeatherValue = typography.displayMedium.copy(fontWeight = FontWeight.Light),
-        sectionHeading = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-        supportingLabel = typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-        compactWeatherValue = typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+        outlineAccent = baseSpec.palette.outline,
+        outlineStrong = if (contrast == ContrastLevel.HIGH) palette.outline else baseSpec.palette.outline,
+        outlineQuiet = if (contrast == ContrastLevel.HIGH) palette.outline else baseSpec.palette.outline.copy(alpha = 0.46f),
+        normalContent = normalContent,
+        warningContent = warningContent,
+        supportingContent = supportingContent,
+        normalBorderWidth = 1.dp,
+        selectedBorderWidth = 2.dp,
+        displayWeatherValue = spec.typography.displayMedium.copy(fontWeight = FontWeight.Light),
+        sectionHeading = spec.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+        supportingLabel = spec.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+        compactWeatherValue = spec.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
     )
+    return OxygenResolvedTheme(
+        spec = spec,
+        palette = palette,
+        homeDesign = homeDesign,
+        normalContent = normalContent,
+    )
+}
+
+@Composable
+fun OxygenTheme(
+    themeId: OxygenThemeId = OxygenThemeId.OXYGEN,
+    contrast: ContrastLevel = ContrastLevel.STANDARD,
+    content: @Composable () -> Unit,
+) {
+    val resolved = resolveOxygenTheme(themeId, contrast)
+    val spec = resolved.spec
+    val palette = resolved.palette
+    val homeDesign = resolved.homeDesign
     val scheme = if (spec.dark) {
         darkColorScheme(
             primary = palette.chartAccent,
@@ -292,8 +389,8 @@ fun OxygenTheme(
             outline = palette.outline,
             onPrimary = if (themeId == OxygenThemeId.TERMINAL) Color(0xFF06210E) else Color(0xFF062126),
             onSecondary = if (themeId == OxygenThemeId.TERMINAL) Color(0xFF062033) else Color(0xFF072033),
-            onBackground = if (themeId == OxygenThemeId.TERMINAL) Color(0xFFEAF8EE) else Color(0xFFF2FAFC),
-            onSurface = if (themeId == OxygenThemeId.TERMINAL) Color(0xFFEAF8EE) else Color(0xFFF2FAFC),
+            onBackground = resolved.normalContent,
+            onSurface = resolved.normalContent,
             error = palette.warning,
         )
     } else {
@@ -306,8 +403,8 @@ fun OxygenTheme(
             outline = palette.outline,
             onPrimary = Color.White,
             onSecondary = Color.White,
-            onBackground = Color(0xFF2A2722),
-            onSurface = Color(0xFF2A2722),
+            onBackground = resolved.normalContent,
+            onSurface = resolved.normalContent,
             error = palette.warning,
         )
     }

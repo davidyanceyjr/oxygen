@@ -97,7 +97,10 @@ fun OxygenApp(
         effects = if (animationsEnabled) requestedAppearance.effects else com.oxygen.weather.app.ui.theme.EffectsLevel.OFF,
     )
 
-    OxygenTheme(themeId = themeId) {
+    OxygenTheme(
+        themeId = themeId,
+        contrast = effectiveAppearance.contrast,
+    ) {
         when (val screen = appState.screen) {
             is OxygenAppScreen.FirstRunLocationEntry -> FirstRunLocationEntryScreen(
                 state = screen,

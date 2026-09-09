@@ -74,6 +74,7 @@ import com.oxygen.weather.app.ui.theme.LayoutPreset
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenTheme
 import com.oxygen.weather.app.ui.theme.OxygenThemeId
+import com.oxygen.weather.app.ui.theme.ContrastLevel
 import com.oxygen.weather.core.location.SavedLocationStorage
 import com.oxygen.weather.core.model.AlertSeverity
 import com.oxygen.weather.core.model.CurrentConditions
@@ -876,6 +877,209 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-alert-source-link").performScrollTo().performClick()
         assertEquals("https://www.weather.gov/", openedUris.last())
+    }
+
+    @Test
+    fun highContrastStandardHomePreservesMeaningAcrossPagesEffectsOff() {
+        val location = weatherLocation(name = "High Contrast Home City")
+        val baseAlert = fullWeatherBundle(location).alerts.single()
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(
+                alerts = listOf(baseAlert.copy(event = "Flash Flood Warning", severity = AlertSeverity.SEVERE)),
+            ),
+            freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                staleAge = Duration.ofMinutes(45),
+                refreshFailure = ForecastError.NetworkUnavailable,
+            ),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+        val appearance = OxygenAppearance(effects = EffectsLevel.OFF, contrast = ContrastLevel.HIGH)
+        val renderedAppearance = mutableStateOf(appearance)
+
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1.3f)) {
+                OxygenTheme(
+                    themeId = renderedAppearance.value.theme,
+                    contrast = renderedAppearance.value.contrast,
+                ) {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        HomeLoadingScreen(state = state, appearance = renderedAppearance.value)
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val highContract = composeRule.homeSemanticContract()
+        composeRule.assertHighContrastRenderedRoles()
+        composeRule.onNodeWithText("High Contrast Home City").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("65 deg F").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Severity: Severe").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.")
+            .performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
+        composeRule.assertMinimumTouchTarget(
+            "home-page-tab-now", "home-page-tab-hourly", "home-page-tab-daily", "home-page-tab-details",
+            "home-refresh", "home-change-location", "home-about-entry",
+        )
+        composeRule.runOnIdle { renderedAppearance.value = appearance.copy(contrast = ContrastLevel.STANDARD) }
+        composeRule.waitForIdle()
+        val standardContract = composeRule.homeSemanticContract()
+        assertEquals(standardContract, highContract)
+
+        composeRule.runOnIdle { renderedAppearance.value = appearance }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("high-contrast-standard-home-semantics.txt")
+        composeRule.writeScreenshotArtifact("high-contrast-standard-home.png")
+    }
+
+    @Test
+    fun highContrastOperationalAndSparseStatesRemainDistinct() {
+        val location = weatherLocation(name = "High Contrast Operational City")
+        val renderedState = mutableStateOf<HomeForecastPresentationState>(
+            HomeForecastPresentationState.Loading.from(location),
+        )
+        val appearance = OxygenAppearance(effects = EffectsLevel.OFF, contrast = ContrastLevel.HIGH)
+        composeRule.setDynamicHomeContent(renderedState, appearance, onRetry = {})
+        composeRule.onNodeWithText("Loading weather for High Contrast Operational City").assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("high-contrast-loading-semantics.txt")
+        composeRule.writeScreenshotArtifact("high-contrast-loading.png")
+
+        renderedState.value = HomeForecastPresentationState.NoCacheError.from(
+            location = location,
+            message = HomeForecastMessage.NetworkUnavailable,
+        )
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Weather is offline or the network is unavailable. No cached forecast is available yet.")
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Retry").assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("high-contrast-no-cache-error-semantics.txt")
+        composeRule.writeScreenshotArtifact("high-contrast-no-cache-error.png")
+
+        val sparse = fullWeatherBundle(location).copy(current = null, hourly = emptyList(), daily = emptyList(), alerts = emptyList())
+        renderedState.value = HomeForecastPresentationState.ForecastReady.fromRestoredCache(
+            location = location,
+            weather = sparse,
+            staleAge = Duration.ofMinutes(45),
+        )
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Current conditions").assertIsDisplayed()
+        composeRule.onNodeWithText("Provider returned no current, hourly, or daily weather data for this location.")
+            .assertIsDisplayed()
+        composeRule.onAllNodesWithText("0 deg F").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-section-precipitation").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-section-alert").assertCountEquals(0)
+        composeRule.onNodeWithText("Showing cached forecast from 45 minutes ago while Oxygen refreshes this location.")
+            .performScrollTo().assertIsDisplayed()
+        composeRule.writeSemanticsArtifact("high-contrast-sparse-semantics.txt")
+        composeRule.writeScreenshotArtifact("high-contrast-sparse.png")
+    }
+
+    @Test
+    fun highContrastAlertDetailKeepsHazardMeaningAndSelectionNonColorCues() {
+        val location = weatherLocation(name = "High Contrast Alert City")
+        val baseAlert = fullWeatherBundle(location).alerts.single()
+        val alerts = listOf(
+            baseAlert.copy(
+                id = "high-alert-1", event = "Flash Flood Warning", severity = AlertSeverity.SEVERE,
+                issuer = "Madison Warning Office", description = "Move to higher ground.",
+                instruction = "Do not drive.", web = "https://alerts.weather.gov/high-one",
+            ),
+            baseAlert.copy(
+                id = "high-alert-2", event = "Heat Advisory", issuer = "Central Forecast Office",
+                description = "Second alert description", instruction = "Drink water.",
+                web = "https://alerts.weather.gov/high-two",
+            ),
+        )
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location).copy(alerts = alerts),
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+                    ),
+                )),
+            ),
+            forecastExecutor = DirectExecutor,
+        )
+        val openedUris = mutableListOf<String>()
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(1f, 1.3f),
+                LocalUriHandler provides object : UriHandler {
+                    override fun openUri(uri: String) { openedUris += uri }
+                },
+            ) {
+                Box(Modifier.width(360.dp).height(640.dp)) {
+                    OxygenApp(stateHolder = holder, appearance = OxygenAppearance(effects = EffectsLevel.OFF, contrast = ContrastLevel.HIGH))
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().performClick()
+        composeRule.onNodeWithTag("alert-detail-selector-0").assertIsSelected()
+        composeRule.onNodeWithText("Severity: Severe").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Issuer: Madison Warning Office").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Move to higher ground.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Current alert").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("alert-detail-selector-1").performScrollTo().performClick()
+        composeRule.onNodeWithTag("alert-detail-selector-1").assertIsSelected()
+        composeRule.onNodeWithText("Select alert").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Second alert description").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("alert-detail-source-link").performScrollTo().performClick()
+        assertEquals(listOf("https://alerts.weather.gov/high-two"), openedUris)
+        InstrumentationRegistry.getInstrumentation().targetContext.filesDir
+            .resolve("high-contrast-alert-detail-semantics.txt")
+            .writeText(composeRule.onRoot(useUnmergedTree = true).printToString(maxDepth = 120))
+        composeRule.writeScreenshotArtifact("high-contrast-alert-detail.png")
+        composeRule.onNodeWithTag("alert-detail-back").performScrollTo().performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+    }
+
+    @Test
+    fun highContrastRecompositionPreservesAppearanceAndRequestCount() {
+        val location = weatherLocation(name = "High Contrast Recomposition City")
+        val repository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))))
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            initialLayout = LayoutPreset.SIMPLE,
+            forecastExecutor = DirectExecutor,
+        )
+        val appearance = mutableStateOf(OxygenAppearance(
+            theme = OxygenThemeId.PAPER,
+            layout = LayoutPreset.SIMPLE,
+            effects = EffectsLevel.OFF,
+            contrast = ContrastLevel.STANDARD,
+        ))
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1.3f)) {
+                Box(Modifier.width(360.dp).height(640.dp)) {
+                    OxygenApp(stateHolder = holder, appearance = appearance.value)
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val requestCount = repository.locations.size
+        composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
+        composeRule.onNodeWithTag("home-simple-forecast-daily").performClick()
+        composeRule.runOnIdle { appearance.value = appearance.value.copy(contrast = ContrastLevel.HIGH) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
+        composeRule.onNodeWithTag("home-simple-forecast-daily").assertIsSelected()
+        assertEquals(requestCount, repository.locations.size)
+        composeRule.writeSemanticsArtifact("high-contrast-recomposition-semantics.txt")
+        composeRule.writeScreenshotArtifact("high-contrast-recomposition.png")
     }
 
     @Test
@@ -2487,7 +2691,7 @@ private fun ComposeContentTestRule.setHomeContent(
 ) {
     setContent {
         CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = fontScale)) {
-            OxygenTheme(themeId = themeId) {
+            OxygenTheme(themeId = themeId, contrast = appearance.contrast) {
                 if (widthDp == null) {
                     HomeLoadingScreen(state = state, appearance = appearance, onRetry = onRetry)
                 } else {
@@ -2531,7 +2735,7 @@ private fun ComposeContentTestRule.setThemedHomeContent(
 ) {
     setContent {
         CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 1.3f)) {
-            OxygenTheme(themeId = themeState.value) {
+            OxygenTheme(themeId = themeState.value, contrast = appearance.contrast) {
                 Box(Modifier.width(360.dp).height(640.dp)) {
                     HomeLoadingScreen(state = state, appearance = appearance)
                 }
@@ -2547,7 +2751,7 @@ private fun ComposeContentTestRule.setDynamicHomeContent(
 ) {
     setContent {
         CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 1.3f)) {
-            OxygenTheme(themeId = appearance.theme) {
+            OxygenTheme(themeId = appearance.theme, contrast = appearance.contrast) {
                 Box(Modifier.width(360.dp).height(640.dp)) {
                     HomeLoadingScreen(state = state.value, appearance = appearance, onRetry = onRetry)
                 }
@@ -2613,6 +2817,27 @@ private fun ComposeTestRule.assertTerminalContrastRoles() {
             contrastRatio(pair.foreground, pair.background) >= 4.5,
         )
     }
+}
+
+private fun ComposeTestRule.assertHighContrastRenderedRoles() {
+    val roles = com.oxygen.weather.app.ui.theme.resolveOxygenTheme(
+        OxygenThemeId.OXYGEN,
+        ContrastLevel.HIGH,
+    ).homeDesign
+    val background = onRoot().captureToImage().toPixelMap()[0, 0]
+    val mark = onNodeWithTag("home-current-mark").captureToImage().toPixelMap()
+    var highContrastPixels = 0
+    for (y in 0 until mark.height) {
+        for (x in 0 until mark.width) {
+            val pixel = mark[x, y]
+            if (pixel.alpha > 0.95f && contrastRatio(pixel, background) >= 3.0) {
+                highContrastPixels++
+            }
+        }
+    }
+    assertTrue("High-contrast weather mark must render a 3:1 boundary", highContrastPixels > 4)
+    assertTrue(roles.outlineStrong.alpha == 1f)
+    assertTrue(roles.outlineQuiet.alpha == 1f)
 }
 
 private fun contrastRatio(first: Color, second: Color): Double {

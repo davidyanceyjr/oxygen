@@ -89,6 +89,13 @@ fun HomeLoadingScreen(
             ambientGlassSurface = MaterialTheme.colorScheme.surface,
             strongGlassSurface = MaterialTheme.colorScheme.surface,
             outlineAccent = MaterialTheme.colorScheme.outline,
+            outlineStrong = MaterialTheme.colorScheme.outline,
+            outlineQuiet = if (appearance.contrast == com.oxygen.weather.app.ui.theme.ContrastLevel.HIGH) {
+                MaterialTheme.colorScheme.outline
+            } else {
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.46f)
+            },
+            normalContent = MaterialTheme.colorScheme.onSurface,
         )
     } else {
         baseRoles
@@ -385,8 +392,8 @@ private fun HomeFooterNavigation(
                     shape = RoundedCornerShape(roles.homeCardCorner),
                     color = if (isSelected) roles.strongGlassSurface else roles.ambientGlassSurface,
                     border = BorderStroke(
-                        width = if (isSelected) 2.dp else 1.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else roles.outlineAccent.copy(alpha = 0.46f),
+                        width = if (isSelected) roles.selectedBorderWidth else roles.normalBorderWidth,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else roles.outlineQuiet,
                     ),
                     shadowElevation = 0.dp,
                 ) {
@@ -963,7 +970,7 @@ private fun DetailsMetricGroupCard(
                 contentDescription = group.contentDescription
             },
         shape = RoundedCornerShape(roles.homeCardCorner),
-        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.42f)),
+        border = BorderStroke(roles.normalBorderWidth, roles.outlineQuiet),
         colors = CardDefaults.cardColors(
             containerColor = roles.ambientGlassSurface,
         ),
@@ -1035,7 +1042,7 @@ private fun DetailsSourceBlock(source: HomeSourcePresentation) {
             .fillMaxWidth()
             .testTag("home-section-source"),
         shape = RoundedCornerShape(roles.homeCardCorner),
-        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.46f)),
+        border = BorderStroke(roles.normalBorderWidth, roles.outlineQuiet),
         colors = CardDefaults.cardColors(
             containerColor = roles.strongGlassSurface,
         ),
@@ -1162,7 +1169,7 @@ private fun DailyEntry(
                 ).joinToString(", ")
             },
         shape = RoundedCornerShape(roles.homeCardCorner),
-        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.34f)),
+        border = BorderStroke(roles.normalBorderWidth, roles.outlineQuiet),
         colors = CardDefaults.cardColors(
             containerColor = roles.ambientGlassSurface,
         ),
@@ -1300,7 +1307,7 @@ private fun DashboardCard(
             .fillMaxWidth()
             .testTag(tag),
         shape = RoundedCornerShape(roles.homeCardCorner),
-        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.46f)),
+        border = BorderStroke(roles.normalBorderWidth, roles.outlineQuiet),
         colors = CardDefaults.cardColors(
             containerColor = roles.strongGlassSurface,
         ),
@@ -1379,7 +1386,7 @@ private fun HourlyTile(
                 ).joinToString(", ")
             },
         shape = RoundedCornerShape(roles.homeCardCorner),
-        border = BorderStroke(1.dp, roles.outlineAccent.copy(alpha = 0.34f)),
+        border = BorderStroke(roles.normalBorderWidth, roles.outlineQuiet),
         colors = CardDefaults.cardColors(
             containerColor = roles.ambientGlassSurface,
         ),

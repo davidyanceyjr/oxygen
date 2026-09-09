@@ -657,7 +657,13 @@ Presentation model
                      Compose
 ```
 
-Content, layout, theme, and effects are independent concerns.
+Content, layout, theme, contrast, and effects are independent concerns.
+
+Contrast is a presentation axis layered over the selected theme. A high-
+contrast presentation may replace palette, surface, outline, and supporting
+content roles while retaining the selected theme's identity, typography,
+sizing, shapes, weather marks, and information layout. It is not a fourth
+theme, and it must not alter weather semantics or provider behavior.
 
 A theme never owns business logic.
 
@@ -764,9 +770,12 @@ Future candidates:
 - Minimal;
 - Aurora;
 - Observatory;
-- High Contrast;
 - E-Ink;
 - Retro Weather Station.
+
+High contrast is not a theme candidate. It is an independent accessibility
+presentation axis that may be layered over Oxygen, Paper, Terminal, or future
+themes without changing their identity or weather semantics.
 
 Themes should be genuinely different, not twenty blue variants.
 
@@ -1393,7 +1402,8 @@ All important UI must:
 - provide spoken weather descriptions;
 - expose text alternatives for charts;
 - avoid flashing effects;
-- support high contrast;
+- support a high-contrast presentation independent of the selected theme,
+  layout, and effects level;
 - preserve logical TalkBack order;
 - honor reduced motion.
 
@@ -1840,10 +1850,15 @@ Oxygen 1.0 is ready when a user can:
 10. No Google dependency is required by the core design.
 11. Attribution and licensing are product features.
 12. Free data and free infrastructure are distinct problems.
-13. Theme, layout, icon pack, and effects are independent.
+13. Theme, contrast, layout, icon pack, and effects are independent.
 14. Themes cannot alter weather or hazard semantics.
 15. Decoration-independent usability is mandatory.
 16. The default Oxygen presentation must be excellent without configuration.
+
+High contrast is resolved as a presentation overlay on the selected theme. It
+does not create a fourth theme, enter provider or state-holder construction,
+or imply a persisted/user-reachable preference until a later slice proves that
+behavior.
 
 ---
 
