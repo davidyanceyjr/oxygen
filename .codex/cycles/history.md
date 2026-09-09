@@ -32,21 +32,16 @@ ledger states.
 
 ## Recent State Summary
 
-- Latest implementation state: Slice 27B1/27B2, persisted layout storage and
-  Settings transaction UI, committed at `b68ca19`; completion evidence is
-  recorded at
-  `.codex/test-artifacts/2026-09-08-slice-27b-persisted-layout-selection/`.
-- Documentation state: the active plan, roadmap, and this live summary are
-  reconciled with Slice 27B1/27B2's committed state. README and specification
-  layout-persistence claims remain at the prior session-only/restoration-
-  unfinished wording until Slice 27B3 installed force-stop/relaunch evidence
-  passes.
-- Local caveat: the unrelated uncommitted `.codex/review/findings.md`
-  review-note edit remains retained out of scope.
-- Current process state: Slice 27B3, Installed Layout Force-Stop Restoration
-  Verification, is planned in `.codex/plans/current.md`; the next action is one
-  ADB-driven installed force-stop/relaunch journey for the committed layout
-  persistence path.
+- Latest implementation and verification state: Slice 28A2, Terminal Theme
+  Rendering Baseline, is committed at `80dd961`; its connected rendering and
+  broad-check evidence is retained at
+  `.codex/test-artifacts/2026-09-08-slice-28a2-terminal-theme-rendering-baseline/`.
+- Documentation state: Paper's post-commit authority sync is recorded at
+  `ff7c47a`; the roadmap and specification now also reflect committed Terminal
+  rendering without claiming theme persistence or installed selection.
+- Current process state: Slice 28B1, Theme Preference Storage and State, is
+  planned in `.codex/plans/current.md`; its next action is the focused
+  preference regression baseline.
 
 ## Recent Cycles
 
@@ -1170,3 +1165,102 @@ Boundaries:
 - No Detailed or Meteorologist layout, theme/icon settings, Full effects,
   provider/repository/cache/location/unit behavior, release readiness, or
   MVP-complete claim was added.
+### 2026-09-08-slice-27b3-installed-layout-restoration
+
+Status: verified
+Mode: installed verification and documentation sync
+Slice: Slice 27B3, Installed Layout Restoration Verification
+
+Result:
+- Established a ready Chicago Home through the production first-run search and
+  forecast path on one pinned `oxygen_starter` emulator at 360x640 and font
+  scale 1.3, with Effects Off selected through Settings / Appearance.
+- Simple restored as `Now, Page 1 of 2` after explicit Activity recreation and
+  as the first ready page after force-stop/relaunch; no earlier sampled ready
+  Standard page appeared before restored Simple.
+- Standard restored as `Now, Page 1 of 4` after Activity recreation and as the
+  first ready page after force-stop/relaunch. Hourly, Daily, and Details were
+  usable; both restored Settings states showed the saved layout and Effects
+  Off selected.
+
+Evidence:
+- `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
+- Focused `LayoutPreferenceDataStoreInstrumentedTest` connected check passed
+  1/1, 0 skipped, 0 failed on `oxygen_starter`.
+- `:app:assembleDebug` and `git diff --check` passed.
+
+Boundaries:
+- No production code, provider behavior, new layout type, theme/icon/effects
+  implementation, release-readiness, or MVP claim was added.
+- The connected-test harness removed the app during cleanup; the already-built
+  APK was reinstalled and the production first-run path was repeated only to
+  leave the emulator on Standard Home. The acceptance captures precede that
+  cleanup and remain the source of restoration evidence.
+
+### 2026-09-08-slice-28a1-paper-theme-rendering-baseline
+
+Status: committed
+Mode: bounded visual implementation
+Slice: Slice 28A1, Paper Theme Rendering Baseline
+Commit: `06c987b`
+
+Result:
+- Made Paper a deliberate warm, opaque Home translation with serif display and
+  heading typography, restrained outlines, readable supporting-content roles,
+  and Paper warning emphasis for official-alert severity.
+- Added direct Home theme injection and a named compact OxygenApp fixture for
+  Paper rendering, semantic invariance, and no-refetch checks.
+- Preserved Oxygen/Terminal theme paths, layout/page semantics, weather values,
+  source/provenance, callbacks, and Effects-Off scene absence. Added 48dp
+  loading/error Home actions where the compact boundary exposed a gap.
+- Corrected README's stale claim that layout selection/restoration remained
+  unimplemented; theme persistence remains out of scope.
+
+Evidence:
+- Final six-case connected filter passed on `oxygen_starter` / `emulator-5554`:
+  Paper baseline, Standard, Simple, operational states, Oxygen Effects Off,
+  and Terminal mark smoke. The final Standard oracle rerun also passed after
+  the actual Paper warning-surface pair was finalized.
+- Named opaque Paper normal/supporting/warning role pairs passed WCAG 4.5:1;
+  bitmap mark sampling passed with 791 measured pixels and sampled coordinates
+  recorded in `paper-mark-sampling.txt`.
+- Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-08-slice-28a1-paper-theme-rendering-baseline/`.
+
+Boundaries:
+- No theme storage, Settings selection, MainActivity theme reachability,
+  provider/cache/location/unit/alert semantics, new assets/dependencies,
+  layout/effects persistence, or release/MVP claim was added.
+
+### 2026-09-09-slice-28a2-terminal-theme-rendering-baseline
+
+Status: committed
+Mode: bounded visual implementation
+Slice: Slice 28A2, Terminal Theme Rendering Baseline
+Commit: `80dd961`
+
+Result:
+- Implemented Terminal as an explicit non-persisted dark translation with
+  opaque surfaces, readable warning/supporting roles, monospace typography,
+  green/cyan weather marks, and compact corners.
+- Replaced the Terminal gold-mark smoke with four connected acceptance cases
+  covering Standard semantic invariance, Simple forecast choices/no-refetch,
+  operational states, and representative weather marks.
+
+Evidence:
+- Focused connected suite passed 6/6 on `oxygen_starter` / `emulator-5554`.
+- Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check`.
+- Logs retained under `.codex/test-artifacts/2026-09-08-slice-28a2-terminal-theme-rendering-baseline/`.
+
+Blockers/skips:
+- Pre-change Terminal baseline was not captured before the initial production
+  edit; this gap is recorded rather than backfilled.
+- No repository CI workflow exists; local Gradle checks are the CI-equivalent.
+
+Boundaries:
+- No theme persistence, Settings selection, MainActivity reachability, provider,
+  layout, effects, accessibility semantics, release, or MVP behavior changed.

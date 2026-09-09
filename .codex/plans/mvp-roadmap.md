@@ -1636,7 +1636,16 @@ Out of scope:
 
 ### Slice 27B3: Installed Layout Restoration Verification
 
-Status: planned
+Status: verified on 2026-09-08
+
+Evidence:
+
+- `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`;
+- one pinned-emulator production journey covered Activity recreation and
+  force-stop/relaunch for Simple and Standard at 360x640/font-scale 1.3 with
+  Effects Off;
+- focused `LayoutPreferenceDataStoreInstrumentedTest` connected check passed
+  1/1; assemble and `git diff --check` passed.
 
 Prerequisites:
 
@@ -1668,7 +1677,12 @@ only themes that pass the rendering boundary.
 
 ### Slice 28A1: Paper Theme Rendering Baseline
 
-Status: specified
+Status: committed
+
+Committed in `06c987b` after cycle
+`2026-09-08-slice-28a1-paper-theme-rendering-baseline`; the
+installed rendering evidence is retained under
+`.codex/test-artifacts/2026-09-08-slice-28a1-paper-theme-rendering-baseline/`.
 
 Prerequisites:
 
@@ -1694,7 +1708,7 @@ rather than shipped weakly.
 
 ### Slice 28A2: Terminal Theme Rendering Baseline
 
-Status: specified
+Status: committed at `80dd961`
 
 Prerequisites:
 
@@ -1717,6 +1731,10 @@ Must prove for Terminal:
 Theme quality rule:
 
 Terminal may be deferred rather than shipped weakly.
+
+Completion evidence: focused six-case connected rendering and broad local
+Gradle checks passed on 2026-09-09. Terminal remains non-persisted; Slice 28B1
+is the next candidate.
 
 ### Slice 28B1: Theme Preference Storage and State
 
@@ -2156,12 +2174,14 @@ Sequencing rationale:
 
 ---
 
-## Next Candidate Slice
+## Active Slice
 
-Candidate: Slice 27B3: Installed Layout Restoration Verification. Slice 27B1
-and Slice 27B2 are committed together at `b68ca19` after Slice 27A. Slice 27B3
-remains the next bounded verification slice because no separate ADB-driven
-installed force-stop/relaunch journey has been recorded yet.
+Slice 28B1: Theme Preference Storage and State is planned in
+`.codex/plans/current.md`. Slice 28A1 is committed at `06c987b`, and Slice 28A2
+is committed at `80dd961`, with retained connected rendering evidence under
+their cycle artifact directories.
+Slice 27B1/27B2 are committed together at `b68ca19`, and Slice 27B3 is
+verified with retained installed evidence at `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
 
 Immediate planning boundary:
 
@@ -2194,12 +2214,15 @@ Immediate planning boundary:
 -> Slice 26 persisted effects preference committed at `c7b578a`
 -> Slice 27A Simple Layout Definition committed at `660e376`
 -> Slice 27B1/27B2 persisted layout storage and Settings UI committed at `b68ca19`
--> next candidate: Slice 27B3 Installed Layout Restoration Verification
+-> Slice 27B3 installed layout restoration verification verified on 2026-09-08
+-> Slice 28A1 Paper theme rendering baseline committed at `06c987b`
+-> Slice 28A2 Terminal theme rendering baseline committed at `80dd961`
 ```
 
-Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 may
-now be planned as the next bounded verification slice; release work and
-release-candidate claims remain outside this boundary.
+Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 is
+verified; Slice 28A1 and Slice 28A2 are committed; Slice 28B1 is the active
+bounded slice. Release work and release-candidate claims remain outside this
+boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

@@ -132,11 +132,13 @@ fun HomeLoadingScreen(
                         text = state.subtitle,
                         modifier = Modifier.fillMaxWidth(),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                        color = homeSupportingContent(0.72f),
                     )
                     OutlinedButton(
                         onClick = onOpenSettings,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp),
                     ) {
                         Text("Settings")
                     }
@@ -144,6 +146,7 @@ fun HomeLoadingScreen(
                         onClick = onChangeLocation,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .heightIn(min = 48.dp)
                             .testTag("home-change-location"),
                     ) {
                         Text("Change location")
@@ -174,7 +177,7 @@ private fun LoadingContent(state: HomeForecastPresentationState.Loading) {
             text = state.statusText,
             modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
+            color = homeSupportingContent(0.78f),
         )
     }
 }
@@ -192,7 +195,7 @@ private fun ErrorContent(
             text = state.message.text,
             modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.82f),
+            color = homeSupportingContent(0.82f),
         )
         if (state.canRetry) {
             Button(onClick = onRetry) {
@@ -391,7 +394,7 @@ private fun HomeFooterNavigation(
                         text = page.title,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 14.dp),
                         style = roles.supportingLabel,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else homeSupportingContent(0.78f),
                         textAlign = TextAlign.Center,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -493,7 +496,7 @@ private fun ReadyHeader(
                 .widthIn(min = 72.dp)
                 .testTag("home-page-position"),
             style = roles.supportingLabel,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+            color = homeSupportingContent(0.68f),
             textAlign = TextAlign.End,
         )
     }
@@ -518,7 +521,7 @@ private fun NowPage(
             text = dashboard.locationSubtitle,
             modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+            color = homeSupportingContent(0.68f),
         )
     }
 
@@ -548,6 +551,7 @@ private fun NowPage(
                     modifier = Modifier
                         .size(markSize)
                         .clip(RoundedCornerShape(8.dp))
+                        .testTag("home-current-mark")
                         .semantics {
                             contentDescription = dashboard.current.condition
                         },
@@ -658,7 +662,11 @@ private fun OfficialAlertSummary(
     val uriHandler = LocalUriHandler.current
     Text("Official alert", style = roles.sectionHeading)
     Text(summary.event, style = MaterialTheme.typography.titleMedium)
-    Text("Severity: ${summary.severity}", style = MaterialTheme.typography.bodyMedium)
+    Text(
+        text = "Severity: ${summary.severity}",
+        style = MaterialTheme.typography.bodyMedium,
+        color = roles.warningContent,
+    )
     Text("Issuer: ${summary.issuer}", style = MaterialTheme.typography.bodyMedium)
     Text(summary.expires, style = MaterialTheme.typography.bodyMedium)
     Text(summary.sourceCheckedAt, style = MaterialTheme.typography.bodySmall)
@@ -710,7 +718,7 @@ private fun NowContextGrid(items: List<Pair<String, String>>) {
                         Text(
                             text = item.first,
                             style = roles.supportingLabel,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+                            color = homeSupportingContent(0.68f),
                         )
                         Text(
                             text = item.second,
@@ -846,7 +854,7 @@ private fun DailyPage(state: HomeForecastPresentationState.ForecastReady) {
                     text = "Sun ${sunSummary.sunrise} / ${sunSummary.sunset}",
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f),
+                    color = homeSupportingContent(0.70f),
                 )
             }
         }
@@ -990,7 +998,7 @@ private fun DetailsMetricLine(metric: HomeMetricPresentation) {
         Text(
             text = metric.label,
             style = roles.supportingLabel,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+            color = homeSupportingContent(0.68f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -1072,13 +1080,23 @@ private fun DetailsValueColumn(
         Text(
             text = label,
             style = roles.supportingLabel,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+            color = homeSupportingContent(0.68f),
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
         )
+    }
+}
+
+@Composable
+private fun homeSupportingContent(alpha: Float): androidx.compose.ui.graphics.Color {
+    val roles = LocalOxygenHomeDesign.current
+    return if (roles.supportingContent != androidx.compose.ui.graphics.Color.Unspecified) {
+        roles.supportingContent
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
     }
 }
 
@@ -1213,7 +1231,7 @@ private fun DailyTemperatureColumn(
         Text(
             text = label,
             style = roles.supportingLabel,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+            color = homeSupportingContent(0.68f),
             maxLines = 1,
         )
         Text(
@@ -1329,7 +1347,7 @@ private fun ForecastRow(
             Text(
                 secondary,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f),
+                color = homeSupportingContent(0.70f),
             )
         }
         Text(
@@ -1438,7 +1456,7 @@ private fun MetricGrid(metrics: List<HomeMetricPresentation>) {
                         Text(
                             text = metric.label,
                             style = LocalOxygenHomeDesign.current.supportingLabel,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+                            color = homeSupportingContent(0.68f),
                         )
                         Text(metric.value, style = LocalOxygenHomeDesign.current.compactWeatherValue)
                     }
@@ -1464,13 +1482,13 @@ private fun ProviderDisclosure(
             text = state.forecastDisclosure,
             modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+            color = homeSupportingContent(0.72f),
         )
         Text(
             text = state.forecastPrivacyNote,
             modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.68f),
+            color = homeSupportingContent(0.68f),
         )
     }
 }

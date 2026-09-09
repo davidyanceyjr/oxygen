@@ -46,9 +46,11 @@ and `docs/data-sources/`.
 - Persisted Off and Subtle effects selection through the installed Settings /
   Appearance surface, with conservative Off startup/failure handling and an
   Android disabled-animation override that leaves the saved choice unchanged.
-- Session-only Simple layout selection through the installed Settings /
-  Appearance surface. Standard remains the launch/restart default; Simple uses
-  Now and Forecast pages with Hourly/Daily choices and no provider refetch.
+- Persisted Simple/Standard layout selection through the installed Settings /
+  Appearance surface, restored through Activity recreation and
+  force-stop/relaunch. Standard uses Now, Hourly, Daily, and Details pages;
+  Simple uses Now and Forecast pages with Hourly/Daily choices and no provider
+  refetch.
 - Home presentation conversion for provider-neutral unit preferences at the
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
@@ -68,13 +70,14 @@ and `docs/data-sources/`.
   implementation, while the installed app uses Room storage.
 - Provider-neutral custom-unit model and alternate-unit Home presentation
   outputs retained for a future custom-unit editor.
+- Paper and Terminal Home theme translations with connected rendering
+  baselines, retained for later persisted theme selection.
 
 ## Not implemented yet
 
 - Custom unit editing UI.
 - Alert persistence/cache, background polling, and notifications.
-- Full effects behavior and persisted theme, layout selection/restoration, and
-  icon-pack settings.
+- Full effects behavior, persisted theme, and icon-pack settings.
 - Release-candidate verification.
 
 ## Repository structure
