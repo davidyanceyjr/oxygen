@@ -6,7 +6,7 @@ Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
 Revised: 2026-09-09
 Reconciled against remote `main`: `be38405`
-Synchronized through Slice 29B implementation commit `441d05d`
+Synchronized through Slice 29B implementation commits `441d05d` and `86e696c`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -1801,7 +1801,7 @@ are retained under
 
 ## Slice 29B: High-Contrast Preference UI
 
-Status: committed at `441d05d`
+Status: committed at `441d05d` plus test coverage follow-up `86e696c`
 
 Prerequisites:
 
@@ -2201,7 +2201,8 @@ Sequencing rationale:
 
 ## Active Slice
 
-Slice 29B: High-Contrast Preference UI is committed at `441d05d` in
+Slice 29B: High-Contrast Preference UI is committed at `441d05d` with test
+coverage follow-up `86e696c` in
 `.codex/plans/current.md`. Slice 28A1 is committed at `06c987b`, Slice 28A2 is
 committed at `80dd961`, and Slice 28B1 is committed at `708172f` (merged by
 `82cf281`), with retained evidence under their cycle artifact directories.

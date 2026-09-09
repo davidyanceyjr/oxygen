@@ -33,7 +33,8 @@ ledger states.
 ## Recent State Summary
 
 - Latest implementation and verification state: Slice 29B, High-Contrast
-  Preference UI, is committed at `441d05d`; focused, broad, and installed
+  Preference UI, is committed at `441d05d` with test follow-up `86e696c`;
+  focused, broad, and installed
   evidence is retained at
   `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
 - Slice 28B1 is committed at `708172f` and merged by `82cf281`; the current
@@ -1354,7 +1355,8 @@ Status: committed
 Mode: bounded persisted accessibility preference, Settings integration, and
 installed restoration
 Slice: Slice 29B, High-Contrast Preference UI
-Implementation commit: `441d05d`
+Implementation commits: `441d05d`, with retained-read-failure coverage in
+`86e696c`
 
 Result:
 - Added an isolated versioned contrast DataStore with canonical Standard/High
@@ -1381,6 +1383,9 @@ Evidence:
   retained readable High selected state and “Contrast saved” copy.
 - Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
   `:app:assembleDebug`, and `git diff --check`.
+- The retained-confirmed read-failure assertion was added and the focused JVM
+  storage/state command passed again; this test-only follow-up is committed in
+  `86e696c`.
 
 Artifacts:
 - `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.

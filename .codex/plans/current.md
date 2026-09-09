@@ -224,8 +224,8 @@ After focused, installed, broad, and review evidence passes:
   scale 1.3, the real Appearance UI selected Paper, Simple, Effects Off, and
   High; screenshots/hierarchies are retained for initial, final, Activity
   recreation, and force-stop/relaunch states. All four choices restored.
-- Implementation commit: `441d05d` (`Implement persisted high contrast
-  preference`).
+- Implementation commits: `441d05d` (`Implement persisted high contrast
+  preference`) and `86e696c` (retained-confirmed read-failure coverage).
 - Remaining verification not run: TalkBack service traversal, RTL, automatic
   system contrast detection, and release/MVP gates are out of scope.
 
