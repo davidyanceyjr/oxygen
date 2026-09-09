@@ -4,9 +4,9 @@ Status: specified
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-07
+Revised: 2026-09-09
 Reconciled against remote `main`: `be38405`
-Synchronized through local context-budget split commit after `a7b8434`
+Synchronized through Slice 29B implementation commit `441d05d`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -1801,7 +1801,7 @@ are retained under
 
 ## Slice 29B: High-Contrast Preference UI
 
-Status: specified
+Status: committed at `441d05d`
 
 Prerequisites:
 
@@ -1815,6 +1815,22 @@ Must prove:
 - preference persists across restart;
 - provider refetch is not required;
 - contrast remains independent from theme/layout/effects.
+
+Completion evidence: the versioned Standard/High contrast DataStore codec and
+state-holder transaction passed focused JVM tests; the two Compose Settings
+cases, production DataStore/state-holder recreation case, and existing 29A
+recomposition/no-refetch regression passed on `oxygen_starter` /
+`emulator-5554`. The installed 1080x2400 journey at font scale 1.3 selected
+Paper, Simple, Effects Off, and High through Settings / Appearance, then
+restored them after Activity recreation and force-stop/relaunch. Broad local
+compile, app/core unit tests, assemble, and `git diff --check` passed. Artifacts
+are retained under
+`.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
+
+Out of scope:
+
+- automatic system contrast detection;
+- TalkBack service traversal, RTL, release readiness, or Gate 30 completion.
 
 ---
 
@@ -2185,7 +2201,7 @@ Sequencing rationale:
 
 ## Active Slice
 
-Slice 29A: High-Contrast Rendering Contract is committed at `0dccc94` in
+Slice 29B: High-Contrast Preference UI is committed at `441d05d` in
 `.codex/plans/current.md`. Slice 28A1 is committed at `06c987b`, Slice 28A2 is
 committed at `80dd961`, and Slice 28B1 is committed at `708172f` (merged by
 `82cf281`), with retained evidence under their cycle artifact directories.
@@ -2229,12 +2245,13 @@ Immediate planning boundary:
 -> Slice 28B1 theme preference storage/state committed at `708172f`, merged by `82cf281`
 -> Slice 28B2 persisted theme Settings UI committed at `2c88b9c`
 -> Slice 29A high-contrast rendering contract committed at `0dccc94`
+-> Slice 29B persisted high-contrast preference UI committed at `441d05d`
 ```
 
-Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, and Slice
-29A are complete. Slice 29B remains the next specified candidate; it is not
-planned by this sync. Release work and release-candidate claims remain outside
-this boundary.
+Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,
+and Slice 29B are complete. Gate 30 remains the next specified candidate; it is
+not planned by this sync. Release work and release-candidate claims remain
+outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

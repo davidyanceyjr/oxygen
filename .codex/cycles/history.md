@@ -32,14 +32,14 @@ ledger states.
 
 ## Recent State Summary
 
-- Latest implementation and verification state: Slice 29A, High-Contrast
-  Rendering Contract, is committed at `0dccc94`; focused, broad, and rendered
+- Latest implementation and verification state: Slice 29B, High-Contrast
+  Preference UI, is committed at `441d05d`; focused, broad, and installed
   evidence is retained at
-  `.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`.
+  `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
 - Slice 28B1 is committed at `708172f` and merged by `82cf281`; the current
   Settings path now wires its production DataStore and exposes Oxygen, Paper,
   and Terminal selection with confirmed-write semantics.
-- Current process state: Slice 29B remains the next specified candidate; no
+- Current process state: Gate 30 remains the next specified candidate; no
   later slice is planned in this sync.
 
 ## Recent Cycles
@@ -1347,3 +1347,50 @@ Boundaries:
   new theme, dependency, bitmap asset, release, or MVP-complete behavior
   changed. Post-commit README, specification, roadmap, and active-plan sync
   was completed in the following documentation update.
+
+### 2026-09-09-slice-29b-high-contrast-preference-ui
+
+Status: committed
+Mode: bounded persisted accessibility preference, Settings integration, and
+installed restoration
+Slice: Slice 29B, High-Contrast Preference UI
+Implementation commit: `441d05d`
+
+Result:
+- Added an isolated versioned contrast DataStore with canonical Standard/High
+  records and conservative malformed/unsupported-record handling.
+- Added confirmed/pending/read-failure/write-failure/retry state transitions to
+  `OxygenAppStateHolder`, wired MainActivity and OxygenApp, and exposed the
+  confirmed contrast choice in Settings / Appearance without forecast refetch.
+- Added compact large-font Settings and production DataStore/state-holder
+  acceptance coverage.
+
+Evidence:
+- Pre-edit Standard Appearance screenshot and hierarchy were captured from the
+  committed installed APK before UI edits. The JVM red phase failed on the
+  expected missing contrast symbols; focused JVM storage/state tests then
+  passed.
+- The final combined focused connected evidence passed the two new Compose
+  cases, the production DataStore/state-holder recreation case, and the 29A
+  recomposition/no-refetch regression on `oxygen_starter` / `emulator-5554`.
+- Installed 1080x2400, font-scale-1.3 evidence selected Paper, Simple, Effects
+  Off, and High through the real Appearance surface and restored all four
+  choices after Activity recreation and force-stop/relaunch. The final screen
+  retained readable High selected state and “Contrast saved” copy.
+- Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check`.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
+
+Blockers/skips:
+- The emulator showed a transient system UI ANR during setup; choosing Wait
+  allowed the installed path to continue. The first connected run exposed only
+  scroll-clipped test assertions; corrected reruns passed.
+- Automatic system contrast detection, TalkBack service traversal, RTL, and
+  release-readiness verification remain outside this slice.
+
+Boundaries:
+- No new high-contrast palette or rendering contract, provider/domain,
+  repository/cache/location/unit/alert behavior, dependency, preference
+  migration, or Gate 30 claim changed.

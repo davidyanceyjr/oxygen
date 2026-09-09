@@ -1,223 +1,243 @@
-# Slice 29A — High-Contrast Rendering Contract
+# Slice 29B — High-Contrast Preference UI
 
-**Status:** committed at `0dccc94`
-**Cycle ID:** `2026-09-09-slice-29a-high-contrast-rendering-contract`
-**Mode:** bounded accessibility presentation and rendering implementation
+**Status:** committed at `441d05d`
+**Cycle ID:** `2026-09-09-slice-29b-high-contrast-preference-ui`
+**Mode:** bounded persisted accessibility preference, Settings integration, and
+installed restoration
 
-**Basis:** Slices 18G/18I established the Standard Home visual and compact
-accessibility baselines; Slices 28A1/28A2 and 28B1/28B2 established the three
-rendered and persisted theme choices. Slice 29A now defines one non-persisted
-high-contrast presentation axis and proves it through the real Home and alert
-Composables before Slice 29B may expose or persist it.
+**Basis:** Slice 29A committed the non-persisted `ContrastLevel.STANDARD/HIGH`
+rendering contract for Oxygen, Paper, and Terminal. Slice 25A committed the
+installed Settings / Appearance destination, and the layout/theme preference
+paths establish the versioned DataStore and confirmed-write transaction
+pattern. This slice makes the existing contrast axis user-reachable and
+restorable; it does not redesign high-contrast rendering.
 
-**Authority correction completed before production edits:** specification
-sections 20, 23, 37, and 51 now define high contrast as an independent
-presentation axis layered over Oxygen, Paper, or Terminal.
-
-**Next action:** select Slice 29B through the roadmap; do not treat it as
-planned until a new active plan selects it.
+**Next action:** select Gate 30 as a new bounded plan before implementation;
+do not claim its broader accessibility matrix until exercised.
 
 ## Selected behavior and acceptance boundary
 
-When `HIGH` contrast is explicitly supplied through `OxygenAppearance`, the
-selected Oxygen, Paper, or Terminal theme retains its identity while required
-Home and official-alert information is rendered with opaque, luminance-distinct
-content, surfaces, marks, controls, and boundaries. Weather values and units,
-condition text, page identity, source/update/provenance, cache/refresh-failure
-status, alert event/severity/issuer, and alert detail remain available as text
-and semantics; color is only reinforcement.
+From installed Settings / Appearance, a user can choose Standard or High
+contrast. Standard is the conservative default. A choice becomes effective and
+selected only after its local write succeeds. Loading, saving, read failure,
+write failure, and retry are stated truthfully; a failed write retains the last
+confirmed contrast and the failed target for retry.
 
-`STANDARD` remains the default and must reproduce existing rendering and
-behavior. Slice 29A deliberately provides no production Settings entry,
-DataStore record, or `MainActivity` selection path. Its primary acceptance
-boundary is deterministic connected Compose rendering of production
-`OxygenApp`, Home, and alert-detail code at 360x640 portrait, font scale 1.3,
-and Effects Off. This proves rendering readiness, not installed-user
-reachability; Slice 29B owns reachability and restart persistence.
+A confirmed High choice immediately reaches the existing production
+`OxygenTheme` contrast input and survives Activity recreation and force-stop /
+relaunch. Missing, malformed, unknown, or unsupported-version records resolve
+to Standard. A read failure retains the last confirmed value when one exists,
+otherwise uses Standard, and remains retryable.
 
-The rendered high-contrast contract must prove:
+Contrast selection must not change or rewrite theme, layout, effects, units,
+location, forecast, alert, cache, or provider state. It must not construct a new
+`OxygenAppStateHolder` or issue another weather request. Unmanaged previews and
+tests continue to use `OxygenAppearance.contrast`, so existing call sites and
+29A rendering fixtures remain source-compatible.
 
-- normal, supporting, and warning text use opaque foreground/background role
-  pairs with a project minimum contrast ratio of 7:1;
-- meaningful component boundaries and weather-mark strokes reach at least 3:1
-  against their adjacent surface, including after luminance-only comparison;
-- selected alert/page state has a non-color cue (selected semantics plus
-  visible text and/or a stronger outline), and alert severity remains explicit
-  text;
-- Standard Now, Hourly, Daily, and Details content remains readable and
-  reachable without overlap at the compact large-font boundary;
-- loading, no-cache error/retry, sparse/unavailable forecast, stale cached
-  forecast, and official-alert states remain explicitly named and cannot be
-  confused solely by removing hue;
-- applying or removing high contrast does not recreate the app state holder,
-  request provider data, reset the selected Home page/layout, change Effects,
-  or change the persisted theme identity.
+Primary acceptance boundary: the real Settings / Appearance control commits
+through production preference/state wiring, renders the confirmed contrast,
+and restores it in the installed app after both recreation and process relaunch.
+The no-refetch and preference-independence obligations are proved with a
+counting repository and explicit state assertions rather than a live provider.
 
 ## Implementation contract
 
-1. In `OxygenAppearance.kt`, add a separate two-value contrast type with
-   `STANDARD` and `HIGH`, and append a defaulted `STANDARD` property to
-   `OxygenAppearance`. Keep `OxygenThemeId` exactly Oxygen/Paper/Terminal and
-   leave the existing theme preference codec and DataStore schema unchanged.
-   Existing Kotlin call sites must continue to compile through trailing
-   defaults.
-2. In `OxygenTheme.kt`, append a defaulted contrast parameter to `OxygenTheme`
-   and resolve the selected theme together with contrast through a pure,
-   unit-testable role resolver. `STANDARD` must retain the current theme
-   specifications. `HIGH` must retain the selected theme ID, typography family,
-   sizing, and shape direction while substituting a deliberate opaque
-   high-contrast palette and Home roles. Do not implement high contrast as a
-   fourth theme or as brighter alpha variants.
-3. Replace component-local outline alpha dilution with named resolved strong
-   and quiet outline colors and resolved normal/selected border widths in the
-   Home design roles. Standard values must reproduce the existing treatments;
-   high-contrast values must remain opaque and meet the measurable boundary
-   above. Supporting text and warning roles must likewise resolve explicitly,
-   not fall back to reduced `onSurface` alpha in `HIGH`.
-4. In `OxygenApp`, pass the effective contrast value into `OxygenTheme` while
-   retaining it in `sessionAppearance`/`effectiveAppearance`. Do not add
-   contrast to state-holder construction or `remember` keys: recomposing this
-   presentation-only input must not rebuild the holder or refetch data.
-5. Update Home cards, forecast rows/tiles, page selectors, weather marks, and
-   Effects-Off role replacement only where needed to consume the resolved
-   roles. Preserve existing visible condition/value/status text, semantics,
-   paging, scrolling fallback, callbacks, and scene suppression.
-6. Update the shared glass panel and alert selector/detail presentation to use
-   the same resolved surface, outline, and warning roles. Keep explicit alert
-   severity/event/issuer text, `Current alert`/`Select alert` text, selected
-   semantics, source link behavior, and Back behavior unchanged.
-7. Add no provider/domain models, bitmap assets, dependencies, test-only
-   production switches, automatic Android contrast detection, or Settings
-   controls.
+1. Add `ContrastPreferenceStorage.kt` in `:app`, following the established
+   small-state boundary: `ContrastPreferenceStorage`, an empty implementation,
+   `DataStoreContrastPreferenceStorage`, explicit read-result types, and a pure
+   versioned codec. Use a contrast-specific DataStore file and keys; encode only
+   canonical Standard/High values and do not migrate or alter the theme,
+   layout, effects, or unit records.
+2. Extend `OxygenAppStateHolder` with defaulted, trailing contrast inputs and a
+   managed contrast presentation state. Managed startup is Standard while the
+   record loads. Add confirmed, pending, failed-read, failed-write, and
+   retained-target retry transitions equivalent to the committed theme
+   transaction. Include contrast in both startup load branches and in the
+   condition that schedules preference restoration, without adding it to
+   forecast identity, cache keys, request keys, or repository construction.
+3. During a selection, keep the confirmed contrast effective and selected while
+   the target is pending. On success, publish the target as confirmed; on
+   failure, clear pending, keep the prior confirmed value, expose the failure,
+   and retry the same target. Ignore duplicate, loading, failed-read, and
+   concurrent-pending selections. A read retry must preserve a prior
+   confirmed choice.
+4. Construct `DataStoreContrastPreferenceStorage(applicationContext)` once in
+   `MainActivity` and pass it into the remembered holder. Do not add contrast to
+   the `remember` keys or otherwise recreate the holder when presentation
+   changes.
+5. In `OxygenApp`, use managed confirmed contrast when storage is configured;
+   otherwise retain `appearance.contrast`. Carry that value in the existing
+   effective `OxygenAppearance`, pass it to `OxygenTheme`, and pass the contrast
+   presentation state plus selection/retry callbacks to Settings. Do not change
+   the 29A theme-role resolver or Home/alert semantics.
+6. Extend Settings / Appearance with an effective Contrast value and Standard /
+   High controls. Use confirmed-only selected semantics, at least 48dp targets,
+   disabled controls while loading/saving or awaiting retry, and distinct
+   loading/saving/load-failure/save-failure/saved copy. The section must remain
+   scroll-reachable and non-overlapping at 360x640 dp and font scale 1.3 with
+   Effects Off.
+7. Append new defaulted parameters/properties rather than reordering existing
+   constructors or Composable parameters. Preserve existing Settings navigation
+   and Back behavior and all unmanaged preview/test behavior.
 
-## Intended files
+## Intended production and test files
 
-- `docs/OXYGEN_FULL_SPECIFICATION.md` — pre-code architecture correction and
-  post-verification implementation status.
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/theme/OxygenAppearance.kt`
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/theme/OxygenTheme.kt`
+- `app/src/main/kotlin/com/oxygen/weather/app/ContrastPreferenceStorage.kt`
+- `app/src/main/kotlin/com/oxygen/weather/MainActivity.kt`
+- `app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt`
 - `app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt`
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/alerts/AlertDetailScreen.kt`
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/components/GlassPanel.kt`
-- `app/src/test/kotlin/com/oxygen/weather/app/HighContrastThemeContractTest.kt`
-- `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
-- `README.md`, `.codex/plans/mvp-roadmap.md`, `.codex/cycles/history.md`, and
-  this plan for the post-commit authority sync.
+- `app/src/main/kotlin/com/oxygen/weather/app/ui/settings/SettingsScreen.kt`
+- `app/src/test/kotlin/com/oxygen/weather/app/ContrastPreferenceStorageTest.kt`
+- `app/src/test/kotlin/com/oxygen/weather/app/ContrastPreferenceStateHolderTest.kt`
+- `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/settings/ContrastPreferenceUiTest.kt`
+- `app/src/androidTest/kotlin/com/oxygen/weather/app/ContrastPreferenceDataStoreInstrumentedTest.kt`
+- existing `HomeDashboardUiTest.kt` only to rerun the committed 29A
+  recomposition/no-refetch regression; change it only if the managed production
+  path cannot be exercised meaningfully in the new focused UI test.
 
-Do not modify `MainActivity`, `OxygenAppStateHolder`, Settings controls,
-preference storage/codecs, provider clients, repositories, Room, location,
-units, or existing theme IDs. If implementation appears to require one of
-those changes, stop and split or re-plan rather than widening 29A.
+Do not change `:core`, provider clients, repositories, Room schemas, manifests,
+permissions, dependencies, theme IDs, `OxygenTheme.kt`, or the 29A Home/alert
+role resolution unless discovery proves a direct contract conflict. Stop and
+re-plan rather than widening 29B if such a conflict appears.
 
 ## Tests and focused evidence
 
-1. Before production edits, run the existing
-   `officialAlertSummaryIsReadableEffectsOffAndOpensValidatedSourceLinks`
-   connected case and retain its Oxygen/Standard/Effects-Off PNG and semantics
-   as the visual baseline. Record the serial, AVD, size, and font scale.
-2. Add JVM `HighContrastThemeContractTest` coverage that evaluates every
-   Oxygen/Paper/Terminal + `HIGH` combination for opaque roles, the named 7:1
-   text pairs, 3:1 outlines/marks, retained theme ID/typography family, and
-   unchanged default `STANDARD` resolution. These are contract calculations,
-   not a substitute for rendered evidence.
-3. Add four focused methods to the existing `HomeDashboardUiTest` so its real
-   production fixtures/helpers are reused instead of copied:
+1. Treat the committed 28B2 preference tests and 29A rendering tests as the
+   behavioral baseline; do not rerun them before edits because relevant code and
+   environment have not changed. Before the Settings UI edit, capture one
+   current installed Standard-contrast Appearance screenshot and UI hierarchy,
+   recording commit, AVD/serial, physical and test viewport size, font scale,
+   and Effects state.
+2. Add JVM codec tests for stable Standard/High encoding and rejection of
+   missing, partial, malformed, noncanonical, and unsupported-version records.
+   Add state-holder tests for managed startup/default/restore, confirmed-only
+   pending selection, duplicate/concurrent input rejection, read failure and
+   retry with/without a prior confirmation, write failure and same-target retry,
+   and preservation of theme/layout/effects plus forecast data and request
+   count. Record the genuine pre-production red failure, then the focused green
+   result.
+3. Add two compact, font-scale-1.3 Compose cases through `OxygenApp` and the real
+   `SettingsScreen`: one covers Standard/High selected semantics, 48dp targets,
+   pending confirmation, immediate post-write visual application, retained
+   Paper + Simple + Effects Off state, Back, and no refetch; the other covers
+   disabled loading/failure states, truthful copy, retained confirmed selection,
+   and read/write retry.
+4. Add one production-DataStore connected case that selects High through the
+   Appearance control, reads the stored record, creates a new storage and
+   `OxygenAppStateHolder`, and proves High restores. Name this evidence
+   state-holder/storage recreation, not Activity or process restart.
+5. Rerun the existing 29A
+   `highContrastRecompositionPreservesAppearanceAndRequestCount` case after the
+   production wiring changes. Retain the new Settings Standard/High screenshots
+   and semantics/hierarchy used for visual review under the cycle artifact
+   directory. Do not rerun the full Home or Settings connected classes.
+6. Install the changed APK once. Without seeding a location, provider result, or
+   sample weather, select Paper, Simple, Effects Off, and High through the real
+   Settings UI and verify the effective summary and High selection. Recreate the
+   Activity once, navigate back to Appearance, and confirm restoration; then
+   force-stop/relaunch once, navigate back again, and repeat the confirmation.
+   Confirm all four saved choices and the high-contrast rendering remain
+   effective, restore any emulator rotation setting changed by the exercise,
+   and retain screenshots plus UI hierarchy. This installed journey is the only
+   basis for Activity/process-restoration claims.
 
-   - `highContrastStandardHomePreservesMeaningAcrossPagesEffectsOff` verifies
-     Now/Hourly/Daily/Details, stale failure, severe alert, source/provenance,
-     compact readable bounds, no weather scene, a matching semantic-content
-     contract against Standard, rendered mark/boundary luminance, and final
-     PNG/semantics artifacts.
-   - `highContrastOperationalAndSparseStatesRemainDistinct` drives loading,
-     no-cache error/retry, and a ready sparse/unavailable forecast; verifies
-     truthful state labels, actions and 48dp targets, absence of fabricated
-     values, compact scrolling, and separate final artifacts.
-   - `highContrastAlertDetailKeepsHazardMeaningAndSelectionNonColorCues`
-     navigates through `OxygenApp` from a multi-alert Home summary to detail;
-     verifies explicit severity/event/issuer, verbatim description/instruction,
-     `Current alert`/`Select alert`, selected semantics/outline treatment,
-     source link, Back, readable bounds, and PNG/semantics artifacts.
-   - `highContrastRecompositionPreservesAppearanceAndRequestCount` toggles only
-     the non-persisted contrast input around a ready Paper + Simple + Effects-Off
-     app fixture; verifies the same holder, forecast state, selected page,
-     theme/layout/effects values, and repository request count.
+Artifacts and the short command/result/rerun ledger belong under:
 
-   Record the actual compile/assertion failure from the first new test before
-   implementing the contract; do not manufacture a red result if the worktree
-   already contains candidate code.
-4. In the final connected filter, run those four cases plus the existing Paper
-   and Terminal Standard rendering regressions and the existing Oxygen alert
-   summary baseline/regression: seven relevant connected cases total, within
-   the default eight-case budget. Do not run the full 50-plus-case
-   `HomeDashboardUiTest` class.
-5. Screenshot and semantics files written in app-private test storage must be
-   pulled into
-   `.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`.
-   Record exact fixture provenance. No live forecast, production preference,
-   or user-reachable installed high-contrast claim is permitted in this slice.
+`.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`
 
-## Verification budget and commands
+## Verification budget and planned commands
 
-Budget: one emulator session; one pre-change connected baseline case; one JVM
-red/green cycle; one four-case connected green run; one final seven-case
-connected regression filter after visual convergence; one broad pass. Do not
-rerun a passing command unless production code, test input, or the emulator
-environment changed in a relevant way. If a connected attempt reaches a
-bounded platform timeout, record it once and stop repeating that attempt.
-
-Planned commands (the connected runner argument must name individual methods,
-not the whole class):
+Budget: one emulator session, one pre-edit visual baseline, one JVM red/green
+cycle, four focused connected cases, one installed recreation/relaunch journey,
+and one broad pass. Do not rerun a pass unless production code, its test input,
+or the relevant environment changed. Stop after one bounded platform timeout
+and record the remaining gap.
 
 ```sh
 . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest \
-  --tests 'com.oxygen.weather.app.HighContrastThemeContractTest'
+  --tests 'com.oxygen.weather.app.ContrastPreferenceStorageTest' \
+  --tests 'com.oxygen.weather.app.ContrastPreferenceStateHolderTest'
 . scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest \
-  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest#highContrastStandardHomePreservesMeaningAcrossPagesEffectsOff,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#highContrastOperationalAndSparseStatesRemainDistinct,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#highContrastAlertDetailKeepsHazardMeaningAndSelectionNonColorCues,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#highContrastRecompositionPreservesAppearanceAndRequestCount'
-. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest \
-  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest#highContrastStandardHomePreservesMeaningAcrossPagesEffectsOff,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#highContrastOperationalAndSparseStatesRemainDistinct,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#highContrastAlertDetailKeepsHazardMeaningAndSelectionNonColorCues,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#highContrastRecompositionPreservesAppearanceAndRequestCount,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#paperStandardHomePreservesMeaningAcrossPagesEffectsOff,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#terminalStandardHomePreservesMeaningAcrossPagesEffectsOff,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#officialAlertSummaryIsReadableEffectsOffAndOpensValidatedSourceLinks'
+  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.settings.ContrastPreferenceUiTest#selectionCommitsConfirmedContrastAndPreservesAppearanceWithoutRefetch,com.oxygen.weather.app.ui.settings.ContrastPreferenceUiTest#readAndWriteFailuresRetainConfirmedContrastAndRetry,com.oxygen.weather.app.ContrastPreferenceDataStoreInstrumentedTest#highContrastSurvivesStorageAndStateHolderRecreation,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#highContrastRecompositionPreservesAppearanceAndRequestCount'
 . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
 . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
 . scripts/android-env.sh && ./gradlew :app:assembleDebug
+scripts/install-debug.sh
 git diff --check
 ```
 
+Exact new method names may change to match implemented fixtures, but the final
+connected command must name individual methods and stay within the four-case
+budget. `scripts/list-avds.sh` and one `scripts/start-emulator.sh` session are
+setup, not additional acceptance evidence.
+
+## Required commit and authoritative document sync
+
+After focused, installed, broad, and review evidence passes:
+
+1. Commit only the implementation and tests as the verified 29B behavior.
+2. Perform the required post-commit authority sync without changing app
+   behavior:
+   - `README.md`: move high contrast from “implemented but not active” into the
+     installed-app list and state only the restoration/independence actually
+     proved;
+   - `docs/OXYGEN_FULL_SPECIFICATION.md`: update sections 23, 51, and 53 from
+     non-persisted/later-work wording to the verified installed preference;
+     leave sections 20 and 37 unchanged unless implementation exposes a real
+     contract conflict;
+   - `.codex/plans/mvp-roadmap.md`: mark 29B committed with its implementation
+     commit/evidence and make Gate 30 the next specified candidate without
+     planning or claiming it complete;
+   - `.codex/cycles/history.md`: append one concise, self-contained 29B entry
+     with result, focused/broad/installed evidence, artifact path, blockers or
+     skips, boundaries, and implementation commit; do not rewrite/archive the
+     ledger for an ordinary append;
+   - this plan: change status only as evidence advances, record exact commands
+     actually run, the implementation commit, installed environment, artifacts,
+     skips/blockers, and the next action.
+3. Run `git diff --check`, review the documentation diff against the commit,
+   then commit the authority sync separately. Do not claim 29B committed until
+   the implementation commit exists or Gate 30 planned/verified until separately
+   selected and exercised.
+
 ## Actual evidence
 
-- Pre-edit baseline: `scripts/list-avds.sh`, one `oxygen_starter` emulator on
-  `emulator-5554`, physical 1080x2400, font scale 1.0; the required alert
-  summary passed 1/1 and its Oxygen/Standard/Effects-Off 360x640,
-  font-scale-1.3 PNG and semantics are retained in the 29A artifact directory.
-- Red JVM contract phase: `:app:testDebugUnitTest --tests
-  com.oxygen.weather.app.HighContrastThemeContractTest` failed with the
-  expected missing `ContrastLevel`/resolver API before production edits.
-- Green focused JVM contract and connected evidence passed. The focused
-  connected filter passed the four named 29A cases on
-  `oxygen_starter`/`emulator-5554`; the final seven-case filter passed those
-  four plus Paper, Terminal, and the existing alert-summary regression.
-- Direct instrumentation reran the four cases to retain app-private PNG and
-  semantics artifacts. Visual inspection confirmed opaque black/white roles,
-  readable stale/sparse/alert wording, and stronger selected boundaries at
-  360x640/font-scale-1.3 with Effects Off.
-- Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
-  `:app:assembleDebug`, and `git diff --check`.
-- Implementation commit: `0dccc94` (`Implement high contrast rendering
-  contract`).
-
-## Required document and commit sync
-
-Post-commit authority sync: specification sections 20, 23, 37, and 51 now
-define the independent contrast axis; README, roadmap, and this plan record
-the verified non-installed 29A boundary; the next action remains selecting
-29B through the roadmap. The cycle-history entry is appended with the exact
-evidence and artifact path.
+- Baseline: committed installed APK before UI edits, `oxygen_starter` /
+  `emulator-5554`, physical 1080x2400, rotation 0, font scale 1.0; Standard
+  Appearance screenshot and hierarchy are retained in the cycle artifact.
+- Red JVM phase: the planned contrast storage/state command failed before
+  production edits with unresolved contrast codec/state symbols.
+- Focused green JVM phase: `:app:testDebugUnitTest --tests
+  'com.oxygen.weather.app.ContrastPreferenceStorageTest' --tests
+  'com.oxygen.weather.app.ContrastPreferenceStateHolderTest'` passed.
+- Focused connected evidence: the final combined filter passed the two named
+  `ContrastPreferenceUiTest` cases, the named
+  `ContrastPreferenceDataStoreInstrumentedTest` case, and
+  `HomeDashboardUiTest#highContrastRecompositionPreservesAppearanceAndRequestCount`
+  on `oxygen_starter` / `emulator-5554`. A preceding run exposed scroll-clipped
+  assertions; the corrected failure/retry case was rerun separately and passed.
+- Broad evidence passed: `:app:compileDebugKotlin`, `:app:testDebugUnitTest
+  :core:testDebugUnitTest`, `:app:assembleDebug`, and `git diff --check`.
+- Installed evidence: changed APK installed once after broad checks. At font
+  scale 1.3, the real Appearance UI selected Paper, Simple, Effects Off, and
+  High; screenshots/hierarchies are retained for initial, final, Activity
+  recreation, and force-stop/relaunch states. All four choices restored.
+- Implementation commit: `441d05d` (`Implement persisted high contrast
+  preference`).
+- Remaining verification not run: TalkBack service traversal, RTL, automatic
+  system contrast detection, and release/MVP gates are out of scope.
 
 ## Out of scope
 
-- High-contrast DataStore/schema/state holder, Settings UI, automatic system
-  detection, Activity recreation, force-stop restoration, or installed-user
-  reachability.
-- A fourth theme, new icon pack, theme redesign, Full effects, new layout, RTL,
-  service-level TalkBack traversal, or Gate 30 completion.
-- Provider/repository/cache/location/unit/alert-domain changes, new values,
-  new assets/dependencies, release readiness, or MVP-complete claims.
+- Any new high-contrast palette, role, Home, alert, or theme rendering contract
+  already completed by Slice 29A.
+- Automatic Android high-contrast/accessibility detection or changing the
+  stored choice from system settings.
+- A fourth theme, Detailed/Meteorologist layouts, Full effects, icon-pack
+  settings, custom units, or unrelated Settings redesign.
+- Provider/domain/repository/cache/location/alert/notification behavior,
+  preference-schema consolidation, new dependencies, or migrations of existing
+  preference records.
+- TalkBack service traversal, RTL, the broad accessibility matrix, release
+  readiness, MVP completion, or any Gate 30 claim.

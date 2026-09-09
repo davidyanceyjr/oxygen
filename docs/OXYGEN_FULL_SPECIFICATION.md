@@ -788,6 +788,14 @@ presentation and expose retry. Theme selection does not require a forecast
 refetch or change weather semantics. Full effects behavior and icon-pack
 settings remain unfinished.
 
+The same installed Appearance surface exposes the independent Standard and
+High contrast choices. The versioned local contrast record accepts only those
+canonical values; a choice becomes effective after its write succeeds and the
+confirmed value restores through Activity recreation and force-stop/relaunch.
+Failed reads and writes retain conservative confirmed presentation and expose
+retry. Contrast selection does not change theme, layout, effects, forecast
+data, or provider requests.
+
 ---
 
 ## 24. Layout Presets
@@ -1856,9 +1864,11 @@ Oxygen 1.0 is ready when a user can:
 16. The default Oxygen presentation must be excellent without configuration.
 
 High contrast is resolved as a presentation overlay on the selected theme. It
-does not create a fourth theme, enter provider or state-holder construction,
-or imply a persisted/user-reachable preference until a later slice proves that
-behavior.
+does not create a fourth theme, alter provider behavior, or change weather
+semantics. The installed Settings / Appearance surface provides a persisted
+Standard/High choice with confirmed-write semantics and restoration through
+Activity recreation and force-stop/relaunch; the choice remains independent of
+theme, layout, effects, and forecast requests.
 
 ---
 
@@ -2002,10 +2012,19 @@ the deterministic Compose boundary. `OxygenAppearance` now carries a separate
 standard/high contrast input layered over Oxygen, Paper, or Terminal; the
 resolved high-contrast roles are opaque and preserve theme identity,
 typography, layout, weather meaning, operational state labels, and official
-alert semantics under compact large-font Effects Off rendering. This slice
-does not add a Settings control, DataStore record, automatic detection, or
-installed-user reachability; those remain Slice 29B work. Evidence is retained
-under `.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`.
+alert semantics under compact large-font Effects Off rendering. It was followed
+by Slice 29B, which adds the persisted Settings / Appearance choice and
+restores confirmed contrast through Activity recreation and force-stop/relaunch.
+Selection keeps confirmed contrast effective until local write success, reports
+read/write failures with retry, and does not refetch or alter forecast state.
+Automatic system detection and TalkBack service traversal remain unverified.
+Evidence is retained under
+`.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`
+and `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
+
+Gate 30, Accessibility Presentation Verification, is the next specified
+candidate. It remains unplanned and owns the broader TalkBack, RTL, and
+accessibility-condition matrix.
 
 ---
 

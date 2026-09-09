@@ -55,6 +55,11 @@ and `docs/data-sources/`.
   Settings / Appearance surface. Confirmed choices restore through Activity
   recreation and force-stop/relaunch; failed writes retain the confirmed theme
   and offer retry.
+- Persisted Standard and High contrast selection through the installed
+  Settings / Appearance surface. Confirmed contrast restores through Activity
+  recreation and force-stop/relaunch, remains independent of theme, layout,
+  effects, and forecast requests, and failed writes retain the confirmed choice
+  with retry.
 - Home presentation conversion for provider-neutral unit preferences at the
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
@@ -74,9 +79,6 @@ and `docs/data-sources/`.
   implementation, while the installed app uses Room storage.
 - Provider-neutral custom-unit model and alternate-unit Home presentation
   outputs retained for a future custom-unit editor.
-- High-contrast Home and official-alert rendering through an explicit,
-  non-persisted presentation input; Settings reachability and persistence are
-  reserved for Slice 29B.
 
 ## Not implemented yet
 
