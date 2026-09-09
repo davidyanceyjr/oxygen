@@ -1,17 +1,18 @@
 # Slice 28A1 - Paper Theme Rendering Baseline
 
-**Status:** verified
+**Status:** committed
 **Cycle ID:** `2026-09-08-slice-28a1-paper-theme-rendering-baseline`
 **Mode:** bounded visual implementation
 **Basis:** Slice 18G design roles (`fae63b3`), Slice 18I compact behavior
 (`02f701`), and Slice 27B3 layout restoration (`9ce6de6`) are complete. The
 roadmap requires Paper rendering quality before persisted theme selection.
-**Next action:** commit the verified Paper Home rendering slice, then perform
-the post-commit authority sync.
+**Next action:** plan Slice 28A2, Terminal Theme Rendering Baseline.
 
 **Outcome:** pass. Paper renders as a warm, opaque, typography-first Home
 translation with Effects Off; the final six-case connected suite and broad
 checks passed. Retained evidence is under the cycle artifact directory below.
+
+**Commit:** `06c987b` (`Implement Paper Home theme rendering`)
 
 ## Behavior and Boundary
 
@@ -190,3 +191,5 @@ Do not rerun a pass unless production code, test input, or environment changed.
 - `implemented`: Paper theme roles and bounded Home consumers exist in the
   production rendering path.
 - `verified`: final connected and broad checks passed on `emulator-5554`.
+- `committed`: verified implementation committed at `06c987b`; authority sync
+  follows in the documentation-sync commit.

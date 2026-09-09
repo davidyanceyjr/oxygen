@@ -1677,9 +1677,10 @@ only themes that pass the rendering boundary.
 
 ### Slice 28A1: Paper Theme Rendering Baseline
 
-Status: verified
+Status: committed
 
-Verified in cycle `2026-09-08-slice-28a1-paper-theme-rendering-baseline`; the
+Committed in `06c987b` after cycle
+`2026-09-08-slice-28a1-paper-theme-rendering-baseline`; the
 installed rendering evidence is retained under
 `.codex/test-artifacts/2026-09-08-slice-28a1-paper-theme-rendering-baseline/`.
 
@@ -2213,7 +2214,7 @@ Immediate planning boundary:
 ```
 
 Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 is
-verified; Slice 28A1 is verified; Slice 28A2 is the next bounded candidate. Release work and
+verified; Slice 28A1 is committed; Slice 28A2 is the next bounded candidate. Release work and
 release-candidate claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.

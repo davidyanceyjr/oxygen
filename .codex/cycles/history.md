@@ -1204,9 +1204,10 @@ Boundaries:
 
 ### 2026-09-08-slice-28a1-paper-theme-rendering-baseline
 
-Status: verified
+Status: committed
 Mode: bounded visual implementation
 Slice: Slice 28A1, Paper Theme Rendering Baseline
+Commit: `06c987b`
 
 Result:
 - Made Paper a deliberate warm, opaque Home translation with serif display and
