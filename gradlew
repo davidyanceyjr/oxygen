@@ -12,9 +12,8 @@ if [ -f "$WRAPPER_JAR" ]; then
         org.gradle.wrapper.GradleWrapperMain "$@"
 fi
 
-# Standalone fallback for this generated scaffold. The source project contains the
-# normal wrapper JAR; the connected GitHub API exposes that binary but cannot mount
-# it into the generated artifact. This fallback bootstraps the same Gradle version.
+# Standalone fallback for this repository. The normal wrapper JAR is preferred;
+# this fallback bootstraps the same Gradle version when it is unavailable.
 GRADLE_VERSION=9.7.0
 CACHE_ROOT="${GRADLE_USER_HOME:-$HOME/.gradle}/oxygen-bootstrap"
 DIST_DIR="$CACHE_ROOT/gradle-$GRADLE_VERSION"

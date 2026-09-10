@@ -47,7 +47,10 @@ Current modules:
 :core  Provider-neutral domain models and provider interfaces
 ```
 
-The screen currently uses `SampleWeather.bundle`. Treat it as scaffold data, not a real provider integration.
+The installed app uses the production selected-location, provider, Room-cache,
+and fallback paths. `SampleWeather.bundle` remains preview/scaffold data only;
+it is not a real provider integration and must not enter the production Home
+path.
 
 ## Tracking Workflow
 

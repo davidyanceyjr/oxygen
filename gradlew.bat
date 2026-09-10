@@ -7,5 +7,5 @@ if exist "%DIR%gradle\wrapper\gradle-wrapper.jar" (
   exit /b %ERRORLEVEL%
 )
 echo gradle-wrapper.jar is not bundled in this generated archive.
-echo On Windows, copy gradle\wrapper\gradle-wrapper.jar from the source scaffold or run Gradle 9.7.0 directly.
+echo On Windows, restore gradle\wrapper\gradle-wrapper.jar or run Gradle 9.7.0 directly.
 exit /b 1

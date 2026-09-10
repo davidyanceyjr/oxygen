@@ -8,6 +8,8 @@ chmod 700 "$XDG_RUNTIME_DIR"
 
 AVD_NAME="${OXYGEN_AVD_NAME:-oxygen_starter}"
 EMULATOR_WINDOW="${OXYGEN_EMULATOR_WINDOW:-${SPACE_GAME_EMULATOR_WINDOW:-0}}"
+# Keep the old variable as a temporary compatibility fallback for existing
+# local scripts; OXYGEN_EMULATOR_WINDOW is the supported name.
 EMULATOR_NETWORK="${OXYGEN_EMULATOR_NETWORK:-1}"
 EMULATOR_SERIAL=$(
     adb devices | awk '

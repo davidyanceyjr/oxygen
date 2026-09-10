@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
@@ -32,6 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.AboutSection
+import com.oxygen.weather.R
 import com.oxygen.weather.app.ContrastPreferencePresentationState
 import com.oxygen.weather.app.ContrastPreferenceReadState
 import com.oxygen.weather.app.EffectsPreferencePresentationState
@@ -92,7 +94,7 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = "OXYGEN",
+                    text = stringResource(R.string.app_name).uppercase(),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -140,7 +142,7 @@ fun SettingsScreen(
                         onPreferenceSelected = onUnitPreferenceSelected,
                     )
                     SettingsDestination.Locations -> Text(
-                        text = "Locations opens the saved-location surface.",
+                        text = stringResource(R.string.settings_locations_surface),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     else -> state.destinationState.sections.forEach { section -> AboutSectionView(section) }
@@ -159,11 +161,11 @@ private fun SettingsRoot(
     destinations: List<SettingsDestination>,
     onDestinationSelected: (SettingsDestination) -> Unit,
 ) {
-    SettingsGroup("Appearance", destinations, setOf(SettingsDestination.Appearance), onDestinationSelected)
-    SettingsGroup("Weather", destinations, setOf(SettingsDestination.Units), onDestinationSelected)
-    SettingsGroup("Places", destinations, setOf(SettingsDestination.Locations), onDestinationSelected)
+    SettingsGroup(stringResource(R.string.settings_group_appearance), destinations, setOf(SettingsDestination.Appearance), onDestinationSelected)
+    SettingsGroup(stringResource(R.string.settings_group_weather), destinations, setOf(SettingsDestination.Units), onDestinationSelected)
+    SettingsGroup(stringResource(R.string.settings_group_places), destinations, setOf(SettingsDestination.Locations), onDestinationSelected)
     SettingsGroup(
-        "Information",
+        stringResource(R.string.settings_group_information),
         destinations,
         setOf(
             SettingsDestination.DataSources,
@@ -247,13 +249,13 @@ private fun AppearanceSummary(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Effective appearance",
+            text = stringResource(R.string.settings_effective_appearance),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
-        AppearanceValue("Theme", themeId.displayName)
+        AppearanceValue(stringResource(R.string.settings_theme), themeId.displayName)
         if (themePreference.isManaged) {
-            Text("Theme")
+            Text(stringResource(R.string.settings_theme))
             val themeChoicesEnabled = themePreference.readState == ThemePreferenceReadState.Loaded &&
                 themePreference.pending == null &&
                 !themePreference.writeError
@@ -262,21 +264,21 @@ private fun AppearanceSummary(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 ThemeChoice(
-                    label = "Oxygen",
+                    label = stringResource(R.string.theme_oxygen),
                     theme = OxygenThemeId.OXYGEN,
                     selected = themeId == OxygenThemeId.OXYGEN,
                     enabled = themeChoicesEnabled,
                     onClick = { onThemeSelected(OxygenThemeId.OXYGEN) },
                 )
                 ThemeChoice(
-                    label = "Paper",
+                    label = stringResource(R.string.theme_paper),
                     theme = OxygenThemeId.PAPER,
                     selected = themeId == OxygenThemeId.PAPER,
                     enabled = themeChoicesEnabled,
                     onClick = { onThemeSelected(OxygenThemeId.PAPER) },
                 )
                 ThemeChoice(
-                    label = "Terminal",
+                    label = stringResource(R.string.theme_terminal),
                     theme = OxygenThemeId.TERMINAL,
                     selected = themeId == OxygenThemeId.TERMINAL,
                     enabled = themeChoicesEnabled,
@@ -285,20 +287,20 @@ private fun AppearanceSummary(
             }
             when {
                 themePreference.pending != null -> Text(
-                    text = "Saving ${themePreference.pending.displayName}...",
+                    text = stringResource(R.string.preference_saving, themePreference.pending.displayName),
                     modifier = Modifier.testTag("theme_preference_loading"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                 )
                 themePreference.readState == ThemePreferenceReadState.Loading -> Text(
-                    text = "Loading theme preference",
+                    text = stringResource(R.string.preference_loading, stringResource(R.string.settings_theme).lowercase()),
                     modifier = Modifier.testTag("theme_preference_loading"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                 )
                 themePreference.writeError -> {
                     Text(
-                        text = "Theme save failed; retry",
+                        text = stringResource(R.string.preference_save_failed, stringResource(R.string.settings_theme)),
                         modifier = Modifier.testTag("theme_preference_error"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
@@ -307,12 +309,12 @@ private fun AppearanceSummary(
                         onClick = onThemeRetry,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("theme_preference_retry"),
                     ) {
-                        Text("Retry")
+                        Text(stringResource(R.string.preference_retry))
                     }
                 }
                 themePreference.readState == ThemePreferenceReadState.Failed -> {
                     Text(
-                        text = "Theme load failed; using ${themeId.displayName}; retry",
+                        text = stringResource(R.string.preference_load_failed, stringResource(R.string.settings_theme), themeId.displayName),
                         modifier = Modifier.testTag("theme_preference_error"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
@@ -321,20 +323,20 @@ private fun AppearanceSummary(
                         onClick = onThemeRetry,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("theme_preference_retry"),
                     ) {
-                        Text("Retry")
+                        Text(stringResource(R.string.preference_retry))
                     }
                 }
                 else -> Text(
-                    text = "Theme saved",
+                    text = stringResource(R.string.preference_saved, stringResource(R.string.settings_theme)),
                     modifier = Modifier.testTag("theme_preference_saved"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                 )
             }
         }
-        AppearanceValue("Contrast", contrast.displayName())
+        AppearanceValue(stringResource(R.string.settings_contrast), contrast.displayName())
         if (contrastPreference.isManaged) {
-            Text("Contrast")
+            Text(stringResource(R.string.settings_contrast))
             val contrastChoicesEnabled = contrastPreference.readState == ContrastPreferenceReadState.Loaded &&
                 contrastPreference.pending == null &&
                 !contrastPreference.writeError
@@ -343,14 +345,14 @@ private fun AppearanceSummary(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 ContrastChoice(
-                    label = "Standard",
+                    label = stringResource(R.string.contrast_standard),
                     level = ContrastLevel.STANDARD,
                     selected = contrast == ContrastLevel.STANDARD,
                     enabled = contrastChoicesEnabled,
                     onClick = { onContrastSelected(ContrastLevel.STANDARD) },
                 )
                 ContrastChoice(
-                    label = "High",
+                    label = stringResource(R.string.contrast_high),
                     level = ContrastLevel.HIGH,
                     selected = contrast == ContrastLevel.HIGH,
                     enabled = contrastChoicesEnabled,
@@ -359,20 +361,20 @@ private fun AppearanceSummary(
             }
             when {
                 contrastPreference.pending != null -> Text(
-                    text = "Saving ${contrastPreference.pending.displayName()}...",
+                    text = stringResource(R.string.preference_saving, contrastPreference.pending.displayName()),
                     modifier = Modifier.testTag("contrast_preference_loading"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                 )
                 contrastPreference.readState == ContrastPreferenceReadState.Loading -> Text(
-                    text = "Loading contrast preference",
+                    text = stringResource(R.string.preference_loading, stringResource(R.string.settings_contrast).lowercase()),
                     modifier = Modifier.testTag("contrast_preference_loading"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                 )
                 contrastPreference.writeError -> {
                     Text(
-                        text = "Contrast save failed; retry",
+                        text = stringResource(R.string.preference_save_failed, stringResource(R.string.settings_contrast)),
                         modifier = Modifier.testTag("contrast_preference_error"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
@@ -381,12 +383,12 @@ private fun AppearanceSummary(
                         onClick = onContrastRetry,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("contrast_preference_retry"),
                     ) {
-                        Text("Retry")
+                        Text(stringResource(R.string.preference_retry))
                     }
                 }
                 contrastPreference.readState == ContrastPreferenceReadState.Failed -> {
                     Text(
-                        text = "Contrast load failed; using ${contrast.displayName()}; retry",
+                        text = stringResource(R.string.preference_load_failed, stringResource(R.string.settings_contrast), contrast.displayName()),
                         modifier = Modifier.testTag("contrast_preference_error"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
@@ -395,26 +397,26 @@ private fun AppearanceSummary(
                         onClick = onContrastRetry,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("contrast_preference_retry"),
                     ) {
-                        Text("Retry")
+                        Text(stringResource(R.string.preference_retry))
                     }
                 }
                 else -> Text(
-                    text = "Contrast saved",
+                    text = stringResource(R.string.preference_saved, stringResource(R.string.settings_contrast)),
                     modifier = Modifier.testTag("contrast_preference_saved"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                 )
             }
         }
-        AppearanceValue("Layout", "${layout.displayName()} layout")
-        AppearanceValue("Effects", effects.displayName())
-        Text("Layout mode")
+        AppearanceValue(stringResource(R.string.settings_layout), stringResource(R.string.settings_layout_summary, layout.displayName()))
+        AppearanceValue(stringResource(R.string.settings_effects), effects.displayName())
+        Text(stringResource(R.string.settings_layout_mode))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             LayoutChoice(
-                label = "Simple",
+                label = stringResource(R.string.layout_simple),
                 preset = LayoutPreset.SIMPLE,
                 selected = layout == LayoutPreset.SIMPLE,
                 enabled = layoutPreference.pending == null,
@@ -422,7 +424,7 @@ private fun AppearanceSummary(
                 modifier = Modifier.weight(1f),
             )
             LayoutChoice(
-                label = "Standard",
+                label = stringResource(R.string.layout_standard),
                 preset = LayoutPreset.STANDARD,
                 selected = layout == LayoutPreset.STANDARD,
                 enabled = layoutPreference.pending == null,
@@ -432,20 +434,20 @@ private fun AppearanceSummary(
         }
         when {
             layoutPreference.pending != null -> Text(
-                text = "Saving ${layoutPreference.pending.displayName()}...",
+                text = stringResource(R.string.preference_saving, layoutPreference.pending.displayName()),
                 modifier = Modifier.testTag("layout_preference_loading"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
             )
             layoutPreference.readState == LayoutPreferenceReadState.Loading -> Text(
-                text = "Loading layout preference",
+                text = stringResource(R.string.preference_loading, stringResource(R.string.settings_layout).lowercase()),
                 modifier = Modifier.testTag("layout_preference_loading"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
             )
             layoutPreference.writeError -> {
                 Text(
-                    text = "Layout save failed; retry",
+                    text = stringResource(R.string.preference_save_failed, stringResource(R.string.settings_layout)),
                     modifier = Modifier.testTag("layout_preference_error"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
@@ -454,12 +456,12 @@ private fun AppearanceSummary(
                     onClick = onLayoutRetry,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("layout_preference_retry"),
                 ) {
-                    Text("Retry")
+                    Text(stringResource(R.string.preference_retry))
                 }
             }
             layoutPreference.readState == LayoutPreferenceReadState.Failed -> {
                 Text(
-                    text = "Layout load failed; using ${layout.displayName()}; retry",
+                    text = stringResource(R.string.preference_load_failed, stringResource(R.string.settings_layout), layout.displayName()),
                     modifier = Modifier.testTag("layout_preference_error"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
@@ -468,28 +470,28 @@ private fun AppearanceSummary(
                     onClick = onLayoutRetry,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("layout_preference_retry"),
                 ) {
-                    Text("Retry")
+                    Text(stringResource(R.string.preference_retry))
                 }
             }
             layoutPreference.readState == LayoutPreferenceReadState.NotConfigured -> Text(
-                text = "This choice lasts until Oxygen is closed. Standard remains the launch default.",
+                text = stringResource(R.string.layout_session_only),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
             )
             else -> Text(
-                text = "Layout saved",
+                text = stringResource(R.string.preference_saved, stringResource(R.string.settings_layout)),
                 modifier = Modifier.testTag("layout_preference_saved"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
             )
         }
-        Text("Effects mode")
+        Text(stringResource(R.string.settings_effects_mode))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             EffectsChoice(
-                label = "Off",
+                label = stringResource(R.string.effects_off),
                 level = EffectsLevel.OFF,
                 selected = preference.selectedForUi == EffectsLevel.OFF,
                 enabled = preference.pending == null,
@@ -497,7 +499,7 @@ private fun AppearanceSummary(
                 modifier = Modifier.weight(1f),
             )
             EffectsChoice(
-                label = "Subtle",
+                label = stringResource(R.string.effects_subtle),
                 level = EffectsLevel.SUBTLE,
                 selected = preference.selectedForUi == EffectsLevel.SUBTLE,
                 enabled = preference.pending == null,
@@ -507,21 +509,21 @@ private fun AppearanceSummary(
         }
         when {
             preference.readState == EffectsPreferenceReadState.Loading ->
-                Text("Restoring your saved effects choice. Effects are temporarily Off.")
+                Text(stringResource(R.string.effects_restoring))
             preference.readState == EffectsPreferenceReadState.Failed -> {
-                Text("Oxygen could not read the saved effects choice. Effects are temporarily Off.")
+                Text(stringResource(R.string.effects_read_failed))
                 OutlinedButton(
                     onClick = onRetry,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("settings-effects-retry"),
                 ) {
-                    Text("Retry")
+                    Text(stringResource(R.string.preference_retry))
                 }
             }
-            preference.pending != null -> Text("Saving ${preference.pending.displayName()}...")
-            preference.writeError -> Text("Oxygen could not save this choice. Choose it again to retry.")
+            preference.pending != null -> Text(stringResource(R.string.preference_saving, preference.pending.displayName()))
+            preference.writeError -> Text(stringResource(R.string.effects_save_failed))
             !animationsEnabled && preference.confirmed != null && preference.confirmed != EffectsLevel.OFF ->
-                Text("Android animations are disabled, so effects are temporarily Off. Your saved choice is unchanged.")
-            else -> Text("Your effects choice is saved on this device.")
+                Text(stringResource(R.string.effects_android_disabled))
+            else -> Text(stringResource(R.string.effects_saved))
         }
     }
 }

@@ -170,11 +170,8 @@ in headless mode. To force a visible emulator window on a desktop machine:
 OXYGEN_EMULATOR_WINDOW=1 scripts/start-emulator.sh
 ```
 
-The older compatible variable also works:
-
-```bash
-SPACE_GAME_EMULATOR_WINDOW=1 scripts/start-emulator.sh
-```
+Existing local scripts using the former variable remain compatible for now;
+new scripts should use `OXYGEN_EMULATOR_WINDOW`.
 
 ## Important
 

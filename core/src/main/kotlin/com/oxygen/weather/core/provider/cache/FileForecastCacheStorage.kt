@@ -23,6 +23,13 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.Base64
 
+/**
+ * Alternate file-backed cache retained for portable core-boundary tests and
+ * non-Android integrations.
+ *
+ * The installed Android app uses RoomForecastCacheStorage. This implementation
+ * is intentionally not part of the installed production construction path.
+ */
 class FileForecastCacheStorage(
     private val directory: File,
     private val beforeCommit: () -> Unit = {},

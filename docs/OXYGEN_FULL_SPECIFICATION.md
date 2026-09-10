@@ -1,7 +1,7 @@
 # Oxygen Weather for Android — Full Product and Technical Specification
 
 **Specification version:** 0.2.0  
-**Status:** Scaffold implementation authority  
+**Status:** Implementation authority
 **Platform:** Android  
 **Primary implementation:** Kotlin + Jetpack Compose  
 **Product model:** Free, open source, no advertising, no account required  
@@ -465,7 +465,9 @@ Repositories
 Local and remote data sources
 ```
 
-The scaffold begins with `:app` and `:core` because the source project already proves that configuration. Split further only as code volume justifies it.
+The repository begins with `:app` and `:core` because that configuration
+already proves the required application and provider-neutral boundaries. Split
+further only as code volume justifies it.
 
 Long-term module target:
 
@@ -517,7 +519,8 @@ Do not prematurely create dozens of Gradle modules while the application is smal
 - MapLibre Native for maps.
 - `java.time` for time handling.
 
-The generated scaffold intentionally keeps dependencies minimal until the provider/storage phases are implemented.
+The repository intentionally keeps dependencies minimal until provider and
+storage behavior requires additional libraries.
 
 ---
 
@@ -1729,10 +1732,10 @@ Test:
 
 ## 47. Repository Direction
 
-Current generated scaffold:
+Current repository structure:
 
 ```text
-OxygenWeatherScaffold/
+oxygen/
 ├── app/
 │   └── src/main/kotlin/com/oxygen/weather/
 │       ├── MainActivity.kt
@@ -1755,7 +1758,9 @@ OxygenWeatherScaffold/
 └── settings.gradle.kts
 ```
 
-This deliberately mirrors the source scaffold's proven `:app` + `:core` structure while establishing package boundaries that can later become Gradle modules.
+The repository uses a focused `:app` + `:core` structure with explicit
+provider-neutral and Android application boundaries. Sample data remains in a
+debug preview path and is not part of installed production construction.
 
 ---
 
@@ -1914,9 +1919,9 @@ theme, layout, effects, and forecast requests.
 
 ---
 
-## 52. Scaffold Build Baseline
+## 52. Build Baseline
 
-The generated scaffold intentionally retains the source project's known build versions:
+The repository currently retains the known build versions:
 
 ```text
 Android Gradle Plugin: 9.3.0

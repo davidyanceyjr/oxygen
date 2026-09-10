@@ -1432,7 +1432,6 @@ data class OxygenAppPresentationState(
     val contrastPreference: ContrastPreferencePresentationState = ContrastPreferencePresentationState.notConfigured(),
 ) {
     val isShowingHome: Boolean = screen is OxygenAppScreen.Home && selectedLocation != null
-    val usesScaffoldWeather: Boolean = false
 }
 
 enum class LayoutPreferenceReadState {
