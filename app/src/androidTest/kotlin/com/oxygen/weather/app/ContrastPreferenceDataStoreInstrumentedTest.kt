@@ -15,8 +15,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.oxygen.weather.app.ui.theme.ContrastLevel
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
-import com.oxygen.weather.app.ui.theme.OxygenThemeId
 import com.oxygen.weather.core.model.CurrentConditions
 import com.oxygen.weather.core.model.DataProvenance
 import com.oxygen.weather.core.model.DataType
@@ -39,126 +39,112 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class ThemePreferenceDataStoreInstrumentedTest {
+class ContrastPreferenceDataStoreInstrumentedTest {
     @get:Rule
     val composeRule = createComposeRule()
 
     private lateinit var context: Context
-    private lateinit var storage: DataStoreThemePreferenceStorage
-    private var previous: ThemePreferenceReadResult = ThemePreferenceReadResult.NoSupportedChoice
+    private lateinit var storage: DataStoreContrastPreferenceStorage
+    private var previous: ContrastPreferenceReadResult = ContrastPreferenceReadResult.NoSupportedChoice
 
     @Before
-    fun prepareTestOwnedThemeRecord() {
+    fun prepareTestOwnedContrastRecord() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
-        storage = DataStoreThemePreferenceStorage(context)
-        previous = storage.readThemePreference()
-        storage.writeThemePreference(OxygenThemeId.OXYGEN)
+        storage = DataStoreContrastPreferenceStorage(context)
+        previous = storage.readContrastPreference()
+        storage.writeContrastPreference(ContrastLevel.STANDARD)
     }
 
     @After
-    fun restoreTestOwnedThemeRecord() {
-        val restore = (previous as? ThemePreferenceReadResult.Supported)?.theme
-            ?: OxygenThemeId.OXYGEN
-        storage.writeThemePreference(restore)
+    fun restoreTestOwnedContrastRecord() {
+        storage.writeContrastPreference(
+            (previous as? ContrastPreferenceReadResult.Supported)?.contrast ?: ContrastLevel.STANDARD,
+        )
         composeRule.waitForIdle()
     }
 
     @Test
-    fun supportedThemeSurvivesStorageAndStateHolderRecreation() {
-        val location = themeDataStoreFixtureLocation("theme-data-store")
-        val executor = ThemeDataStoreControlledExecutor()
+    fun highContrastSurvivesStorageAndStateHolderRecreation() {
+        val location = contrastDataStoreLocation()
+        val executor = ContrastDataStoreExecutor()
         val holder = OxygenAppStateHolder(
             selectedLocation = location,
-            weatherRepository = ThemeDataStoreWeatherRepository(location),
-            themePreferenceStorage = storage,
+            weatherRepository = ContrastDataStoreRepository(location),
+            contrastPreferenceStorage = storage,
             forecastExecutor = executor,
         )
         val holderState = setContent(holder)
-        drainUi(executor)
+        drain(executor)
 
         holder.onOpenSettings()
         holder.onSettingsDestinationSelected(SettingsDestination.Appearance)
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("settings-appearance-summary").assertIsDisplayed()
-
-        composeRule.onNodeWithTag("settings-theme-paper").performClick()
-        drainUi(executor)
-        composeRule.onNodeWithTag("settings-theme-paper").assertIsSelected()
+        composeRule.onNodeWithTag("settings-contrast-high").performClick()
+        drain(executor)
+        composeRule.onNodeWithTag("settings-contrast-high").assertIsSelected()
         assertEquals(
-            ThemePreferenceReadResult.Supported(OxygenThemeId.PAPER),
-            storage.readThemePreference(),
+            ContrastPreferenceReadResult.Supported(ContrastLevel.HIGH),
+            storage.readContrastPreference(),
         )
 
-        val restartedStorage = DataStoreThemePreferenceStorage(context)
-        val restartedExecutor = ThemeDataStoreControlledExecutor()
+        val restartedStorage = DataStoreContrastPreferenceStorage(context)
+        val restartedExecutor = ContrastDataStoreExecutor()
         val restartedHolder = OxygenAppStateHolder(
             selectedLocation = location,
-            weatherRepository = ThemeDataStoreWeatherRepository(location),
-            themePreferenceStorage = restartedStorage,
+            weatherRepository = ContrastDataStoreRepository(location),
+            contrastPreferenceStorage = restartedStorage,
             forecastExecutor = restartedExecutor,
         )
         composeRule.runOnIdle { holderState.value = restartedHolder }
-        drainUi(restartedExecutor)
-
+        drain(restartedExecutor)
         restartedHolder.onOpenSettings()
         restartedHolder.onSettingsDestinationSelected(SettingsDestination.Appearance)
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag("settings-appearance-summary").assertIsDisplayed()
-        composeRule.onNodeWithTag("settings-theme-paper").assertIsSelected()
+        composeRule.onNodeWithTag("settings-contrast-high").assertIsSelected()
     }
 
     private fun setContent(holder: OxygenAppStateHolder): MutableState<OxygenAppStateHolder> {
         val holderState = mutableStateOf(holder)
         composeRule.setContent {
-            Box(
-                modifier = Modifier.width(360.dp).height(640.dp),
-            ) {
-                OxygenApp(
-                    stateHolder = holderState.value,
-                    appearance = OxygenAppearance(),
-                )
+            Box(Modifier.width(360.dp).height(640.dp)) {
+                OxygenApp(stateHolder = holderState.value, appearance = OxygenAppearance())
             }
         }
         return holderState
     }
 
-    private fun drainUi(executor: ThemeDataStoreControlledExecutor) {
+    private fun drain(executor: ContrastDataStoreExecutor) {
         executor.drainAll()
         composeRule.waitForIdle()
     }
 }
 
-private class ThemeDataStoreControlledExecutor : Executor {
+private class ContrastDataStoreExecutor : Executor {
     private val tasks = ArrayDeque<Runnable>()
-
-    override fun execute(command: Runnable) {
-        synchronized(tasks) { tasks.addLast(command) }
-    }
-
+    override fun execute(command: Runnable) = synchronized(tasks) { tasks.addLast(command) }
     fun drainAll() {
         while (true) {
-            val task = synchronized(tasks) {
-                if (tasks.isEmpty()) null else tasks.removeFirst()
-            } ?: return
+            val task = synchronized(tasks) { if (tasks.isEmpty()) null else tasks.removeFirst() } ?: return
             task.run()
         }
     }
 }
 
-private class ThemeDataStoreWeatherRepository(
-    private val fixture: WeatherLocation,
+private class ContrastDataStoreRepository(
+    private val location: WeatherLocation,
 ) : WeatherRepository {
     override fun refresh(location: WeatherLocation): Sequence<WeatherRepositoryResult> = sequenceOf(
         WeatherRepositoryResult.Success(
             WeatherBundle(
-                location = fixture,
+                location = this.location,
                 current = CurrentConditions(
                     time = Instant.parse("2026-09-08T12:00:00Z"),
                     temperatureC = 21.0,
                     condition = WeatherCondition.CLEAR,
                     provenance = DataProvenance(
-                        providerId = "theme-data-store-test",
-                        sourceName = "Theme DataStore Test",
+                        providerId = "contrast-datastore-test",
+                        sourceName = "Contrast DataStore Test",
                         fetchedAt = Instant.parse("2026-09-08T12:00:00Z"),
                         type = DataType.FORECAST,
                     ),
@@ -169,9 +155,9 @@ private class ThemeDataStoreWeatherRepository(
     )
 }
 
-private fun themeDataStoreFixtureLocation(id: String): WeatherLocation = WeatherLocation(
-    id = LocationId(id),
-    displayName = "Theme DataStore Fixture",
+private fun contrastDataStoreLocation() = WeatherLocation(
+    id = LocationId("contrast-datastore"),
+    displayName = "Contrast DataStore",
     point = GeoPoint(43.0731, -89.4012),
     zoneId = ZoneId.of("America/Chicago"),
 )

@@ -20,6 +20,8 @@ import com.oxygen.weather.app.ui.settings.SettingsScreen
 import com.oxygen.weather.app.ui.theme.LayoutPreset
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.theme.OxygenTheme
+import com.oxygen.weather.app.ui.theme.OxygenThemeId
+import com.oxygen.weather.app.ui.theme.ContrastLevel
 
 @Composable
 fun OxygenApp(
@@ -83,9 +85,15 @@ fun OxygenApp(
     } else {
         appearance.theme
     }
+    val contrast = if (appState.contrastPreference.isManaged) {
+        appState.contrast
+    } else {
+        appearance.contrast
+    }
     val sessionAppearance = appearance.copy(
         theme = themeId,
         layout = appState.layout,
+        contrast = contrast,
     )
     val requestedAppearance = if (appState.effectsPreference.isManaged) {
         sessionAppearance.copy(effects = appState.effectsPreference.effectiveRequested)
@@ -96,7 +104,10 @@ fun OxygenApp(
         effects = if (animationsEnabled) requestedAppearance.effects else com.oxygen.weather.app.ui.theme.EffectsLevel.OFF,
     )
 
-    OxygenTheme(themeId = themeId) {
+    OxygenTheme(
+        themeId = themeId,
+        contrast = effectiveAppearance.contrast,
+    ) {
         when (val screen = appState.screen) {
             is OxygenAppScreen.FirstRunLocationEntry -> FirstRunLocationEntryScreen(
                 state = screen,
@@ -189,6 +200,8 @@ fun OxygenApp(
                 appearance = effectiveAppearance,
                 themeId = themeId,
                 effectsPreference = appState.effectsPreference,
+                themePreference = appState.themePreference,
+                contrastPreference = appState.contrastPreference,
                 layoutPreference = appState.layoutPreference,
                 animationsEnabled = animationsEnabled,
                 onDestinationSelected = {
@@ -211,6 +224,22 @@ fun OxygenApp(
                 },
                 onEffectsPreferenceRetry = {
                     appStateHolder.onEffectsPreferenceRetry()
+                    appState = appStateHolder.presentationState
+                },
+                onThemeSelected = { theme: OxygenThemeId ->
+                    appStateHolder.onThemeSelected(theme)
+                    appState = appStateHolder.presentationState
+                },
+                onThemePreferenceRetry = {
+                    appStateHolder.onThemePreferenceRetry()
+                    appState = appStateHolder.presentationState
+                },
+                onContrastPreferenceSelected = { contrast: ContrastLevel ->
+                    appStateHolder.onContrastPreferenceSelected(contrast)
+                    appState = appStateHolder.presentationState
+                },
+                onContrastPreferenceRetry = {
+                    appStateHolder.onContrastPreferenceRetry()
                     appState = appStateHolder.presentationState
                 },
                 onLayoutSelected = { layout: LayoutPreset ->

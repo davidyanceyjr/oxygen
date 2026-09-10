@@ -21,7 +21,7 @@ fun GlassPanel(
         modifier = modifier,
         color = roles.strongGlassSurface,
         shape = RoundedCornerShape(roles.homeCardCorner),
-        border = BorderStroke(1.dp, roles.outlineAccent),
+        border = BorderStroke(roles.normalBorderWidth, roles.outlineStrong),
         shadowElevation = 0.dp,
     ) {
         androidx.compose.foundation.layout.Box(Modifier.padding(contentPadding)) {

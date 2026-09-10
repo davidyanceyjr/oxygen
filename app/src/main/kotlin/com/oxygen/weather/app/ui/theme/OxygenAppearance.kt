@@ -3,12 +3,14 @@ package com.oxygen.weather.app.ui.theme
 enum class LayoutPreset { SIMPLE, STANDARD, DETAILED, METEOROLOGIST }
 enum class EffectsLevel { OFF, SUBTLE, FULL }
 enum class WeatherIconPack { OXYGEN, MONOCHROME }
+enum class ContrastLevel { STANDARD, HIGH }
 
 data class OxygenAppearance(
     val theme: OxygenThemeId = OxygenThemeId.OXYGEN,
     val layout: LayoutPreset = LayoutPreset.STANDARD,
     val effects: EffectsLevel = EffectsLevel.SUBTLE,
     val iconPack: WeatherIconPack = WeatherIconPack.OXYGEN,
+    val contrast: ContrastLevel = ContrastLevel.STANDARD,
 )
 
 fun LayoutPreset.displayName(): String = when (this) {

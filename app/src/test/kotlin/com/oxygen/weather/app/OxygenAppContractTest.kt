@@ -6,6 +6,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * Narrow source guards for boundaries that are difficult to observe through a
+ * JVM test. Production construction and repository behavior are covered by
+ * InstalledForecastRepositoryFactoryTest and connected installed-path tests.
+ */
 class OxygenAppContractTest {
     @Test
     fun `production oxygen app source does not import or pass sample weather`() {
@@ -14,33 +19,6 @@ class OxygenAppContractTest {
         assertFalse(source.contains("SampleWeather"))
         assertFalse(source.contains("SampleWeather.bundle"))
         assertFalse(source.contains("sessionLayout"))
-    }
-
-    @Test
-    fun `main activity wires DataStore selected location layout storage Room saved locations and installed fallback repository`() {
-        val source = Files.readString(Path.of("src/main/kotlin/com/oxygen/weather/MainActivity.kt"))
-
-        assertTrue(source.contains("DataStoreSelectedLocationStorage"))
-        assertTrue(source.contains("DataStoreLayoutPreferenceStorage"))
-        assertTrue(source.contains("RoomForecastCacheStorageFactory"))
-        assertTrue(source.contains("RoomSavedLocationStorageFactory"))
-        assertTrue(source.contains("savedLocationStorage = savedLocationStorage"))
-        assertTrue(source.contains("layoutPreferenceStorage = layoutPreferenceStorage"))
-        assertTrue(source.contains("InstalledForecastRepositoryFactory.create"))
-        assertFalse(source.contains("FileForecastCacheStorage"))
-        assertFalse(source.contains("SampleWeather"))
-    }
-
-    @Test
-    fun `installed forecast repository factory composes default fallback and cache repositories`() {
-        val source = Files.readString(Path.of("src/main/kotlin/com/oxygen/weather/app/InstalledForecastRepositoryFactory.kt"))
-
-        assertTrue(source.contains("OpenMeteoWeatherRepository"))
-        assertTrue(source.contains("MetNoWeatherRepository"))
-        assertTrue(source.contains("FallbackWeatherRepository"))
-        assertTrue(source.contains("CachedWeatherRepository"))
-        assertTrue(source.contains("MetNoForecastClient.DEFAULT_USER_AGENT"))
-        assertFalse(source.contains("SampleWeather"))
     }
 
     @Test

@@ -47,7 +47,10 @@ Current modules:
 :core  Provider-neutral domain models and provider interfaces
 ```
 
-The screen currently uses `SampleWeather.bundle`. Treat it as scaffold data, not a real provider integration.
+The installed app uses the production selected-location, provider, Room-cache,
+and fallback paths. `SampleWeather.bundle` remains preview/scaffold data only;
+it is not a real provider integration and must not enter the production Home
+path.
 
 ## Tracking Workflow
 
@@ -58,6 +61,11 @@ Use four components to track project state:
 - `.codex/plans/mvp-roadmap.md` lists ordered candidate slices.
 - `.codex/cycles/history.md` records completed slices and evidence.
 - `.codex/cycles/archive/` holds older live-history material when the live file grows too large.
+
+Every commit must use a descriptive subject and a concise body. The body must
+summarize the changed behavior or documentation, evidence and verification
+actually run, and important limits or skipped checks. Do not use subject-only
+messages for slice, fix, or documentation-sync commits.
 
 Keep the actionable item near the top of operational files. Prefer minimal reads of the current slice, roadmap candidate section, and recent history summary. Archive older live-history content before the readable tail gets too large.
 

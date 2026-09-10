@@ -4,11 +4,54 @@ Status: specified
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-07
-Reconciled against remote `main`: `be38405`
-Synchronized through local context-budget split commit after `a7b8434`
+Revised: 2026-09-10
+Reconciled against local `origin/main` ref: `82cf281`
+Synchronized through Slice 29B implementation `441d05d`, test follow-up
+`86e696c`, and evidence sync `86f046b`
+
+Repository audit cleanup and live-history compression were completed in commit
+6cab109; the active queue remains unchanged.
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
+
+Completed and superseded slice contracts are retained in
+`.codex/plans/archive/mvp-roadmap-through-2026-09-10-before-repo-audit-cleanup.md`.
+This live file keeps the operating rules, current queue, and remaining candidate
+contracts needed for normal discovery.
+
+## Current Implementation Queue
+
+Gate 30's first draft combined independent surfaces and Android conditions.
+Implement these bounded candidates in order; 30A1 and 30A2 are committed,
+30A3A1 evidence is complete, 30A3B2 is committed at `fb51f7b` as the
+documentation sync,
+and 30B1A1 is committed at `63ed25a` as the RTL semantic page navigation
+contract; 30B1A2 is committed at `20b6ddc`; 30B1A3 is the current candidate
+selected by `.codex/plans/current.md`:
+
+1. Slice 30A1 — Home Spoken-Weather Semantics
+2. Slice 30A2 — Home Compact and Large-Font Resilience
+3. Slice 30A3A1 — Home Speech/Layout Evidence
+4. Slice 30A3B2 — Home Accessibility Evidence Document Sync
+5. Slice 30B1A1 — RTL Semantic Page Navigation Contract
+6. Slice 30B1A2 — RTL Directional Affordances and Gesture Behavior
+7. Slice 30B1A3 — RTL Chronology and Spoken-Meaning Preservation
+8. Slice 30B1A4 — RTL Compact Layout and No-Refetch Evidence
+9. Gate 30B1B1 — RTL Installed Evidence and Documentation Sync
+10. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
+11. Gate 30B3 — Home Environment Evidence and Document Sync
+12. Slice 30C1 — Official-Alert Summary Accessibility
+13. Slice 30C2 — Official-Alert Detail Accessibility
+14. Gate 30C3 — Alert Accessibility Evidence and Document Sync
+15. Slice 30D1 — Appearance Control Semantics
+16. Slice 30D2 — Appearance Layout and Environment Resilience
+17. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
+18. Gate 30E — Installed TalkBack and Accessibility Closure
+
+Do not start a later entry merely because it appears here. Each entry remains
+`specified` until selected in `.codex/plans/current.md`. A production defect
+found by a later verification gate must be repaired at a separately named,
+bounded boundary before the affected gate can pass.
 
 ## Roadmap Rule
 
@@ -43,7 +86,10 @@ Raw build/test output may remain ignored under `.codex/test-artifacts/`, but evi
 
 ## Documentation Sync Rule
 
-README, roadmap, disclosure, and active-cycle state are part of the product contract. Add a documentation-sync gate after every four completed non-documentation implementation cycles, and sooner when a slice changes any of these status surfaces:
+README, roadmap, disclosure, and active-cycle state are part of the product
+contract. Make every third roadmap cycle a dedicated test-only and
+documentation-sync session after two implementation slices. Sync sooner when a
+slice changes any of these status surfaces:
 
 - installed-app behavior listed in README;
 - active/current provider or data-source disclosure;
@@ -164,1673 +210,459 @@ Out of scope:
 
 ---
 
-## Slice 1: Open-Meteo Provider Contract
 
-Status: specified
+### Slice 30A1: Home Spoken-Weather Semantics
 
-Release intent: Specify the default forecast provider before code is added.
+Status: committed at `da7b886`
 
-Must prove:
-
-- every required provider-template field is completed;
-- contracted fields support Home current/hourly/daily/metrics/sun/update/source/provenance/stale needs;
-- Open-Meteo current values are labeled model estimates unless documentation proves observation semantics;
-- provider-specific fields remain separate from Oxygen semantics.
-
-## Slice 2: Open-Meteo Fixtures and DTO Parsing
-
-Status: specified
-
-Release intent: Parse representative Open-Meteo fixtures without live internet.
+Release intent: give current, hourly, and daily Home weather a deliberate,
+provider-neutral spoken presentation contract.
 
 Must prove:
 
-- DTOs parse only required Home-path fields;
-- required envelope validation fails deterministically;
-- nullable values remain null;
-- provider DTOs remain isolated from UI/domain consumers.
-
-## Slice 3: Open-Meteo Weather-Code and Domain Mapping
-
-Status: specified
-
-Release intent: Convert parsed Open-Meteo data into provider-neutral Oxygen forecast domain data.
-
-Must prove:
-
-- supported weather codes map to `WeatherCondition`;
-- unknown codes map to `UNKNOWN`;
-- canonical units and `Instant` timestamps are used;
-- null preservation remains intact;
-- provenance identifies Open-Meteo and appropriate timestamps/source/license/data type.
-
-## Gate 3A: Repository License and Privacy Document Baseline
-
-Status: specified
-
-Must prove:
-
-- deliberate `LICENSE`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, `DATA_SOURCES.md`, and `PRIVACY.md` exist;
-- weather-data licensing remains separate from Oxygen source-code licensing;
-- only implemented providers are active/current;
-- privacy text covers no ads/tracking/account requirement, optional location permission, and request data sent to active providers.
-
-## Slice 4: Open-Meteo Client Transport and Error Classification
-
-Status: specified
-
-Release intent: Fetch Open-Meteo through an isolated production client.
-
-Must prove:
-
-- URL/query construction is isolated from UI;
-- only required fields are requested;
-- successful responses use production DTO parsing;
-- network/offline, provider unavailable, HTTP/rate-limit where detectable, and invalid-response failures are classified.
-
-## Slice 5: Explicit-Location Open-Meteo Repository Path
-
-Status: specified
-
-Release intent: Given an explicit `WeatherLocation`, return provider-neutral forecast data without sample weather.
-
-Must prove:
-
-- repository uses the selected location exactly;
-- loading/success/error are provider-neutral;
-- no hidden default location exists;
-- `SampleWeather.bundle`, DTOs, and provider-specific errors do not cross into production UI/domain boundaries.
-
-## Slice 6: Geocoding Provider Contract
-
-Status: specified
-
-Release intent: Specify the MVP geocoding provider before code is added.
-
-Must prove:
-
-- provider-template fields are completed;
-- fields support place search, coordinates, timezone, country/admin area, and optional elevation;
-- provider IDs are not user-facing `LocationId` values;
-- a public Nominatim server is not the only production autocomplete backend.
-
-## Slice 7: Geocoding Fixtures and Domain Mapping
-
-Status: specified
-
-Must prove:
-
-- fixtures cover normal, empty, ambiguous, malformed, missing optional, invalid coordinate, and invalid timezone cases;
-- mapper returns provider-neutral location data and stable local `LocationId`;
-- ambiguous places remain distinguishable;
-- invalid required fields map to explicit domain errors.
-
-## Slice 8: Geocoding Search Client and Repository Boundary
-
-Status: specified
-
-Must prove:
-
-- network construction is isolated from UI;
-- repository exposes loading/success/empty/provider-unavailable/network/rate-limit/invalid-response states;
-- search ordering is deterministic for identical responses;
-- only domain models cross the repository boundary.
-
-## Slice 9: First-Run Manual Location Entry
-
-Status: specified
-
-Release intent: A first-run user can start with manual search without granting location permission.
-
-Must prove:
-
-- manual search and "use my location" are separate actions;
-- manual search does not request location permission;
-- no selected location routes to manual selection rather than sample weather;
-- permission denial does not block manual forecast use;
-- no hidden/scaffold/default/sample location satisfies Home success.
-
-### Slice 9A: Manual Search Results Selection
-
-Status: specified
-
-Must prove:
-
-- results come from the production geocoding repository;
-- similar names are disambiguated;
-- selected results produce provider-neutral `WeatherLocation`;
-- provider DTOs/IDs do not cross into Home or saved-location UI;
-- empty/offline/rate-limit/provider-unavailable/invalid-response states are visible.
-
-### Slice 9B: Selected Location Handoff To Home
-
-Status: specified
-
-Must prove:
-
-- Home receives exactly the selected `WeatherLocation`;
-- no fallback location is substituted;
-- the handoff is observable before Home success;
-- long place names remain readable.
-
-## Slice 10: Manual Selection Routes to Home Loading, Error, and Retry
-
-Status: specified
-
-Must prove:
-
-- no selected location routes to first-run selection;
-- selected location drives Home loading;
-- Home loads through `WeatherRepository`;
-- loading/error/retry are tied to the selected location and remain provider-neutral;
-- retry never substitutes another location.
-
-## Slice 11: Provider-Backed Home Success Presentation
-
-Status: specified
-
-Release intent: Home renders provider-neutral forecast success data in the initial pre-pager presentation.
-
-Must prove:
-
-- location/current/hourly/daily/metrics/sun/update/source/provenance are shown where available;
-- values come from repository results;
-- missing values are omitted/unknown rather than fabricated;
-- long location names, large font, and effects-disabled presentation remain readable.
-
-## Slice 11A: Explicit Home Refresh and Retry
-
-Status: specified
-
-Must prove:
-
-- visible refresh or pull-to-refresh targets the selected location;
-- retry uses the same location;
-- recomposition does not trigger refresh loops;
-- failed refresh retains useful cache with stale/failure/source metadata where available.
-
-## Slice 12: MET Norway Provider Contract
-
-Status: specified
-
-Release intent: Specify the fallback provider before fallback code.
-
-Must prove:
-
-- provider-template fields including required User-Agent/header identity are completed;
-- fields map to the same provider-neutral Home/provenance needs;
-- provider-specific fields remain isolated;
-- fallback never averages/merges provider values.
-
-## Slice 13: MET Norway Forecast Production Path
-
-Status: specified
-
-Planning note: use bounded sub-slices.
-
-### Slice 13A: MET Norway Fixtures and DTO Parsing
-
-Status: specified
-
-Must prove:
-
-- required fields parse from fixtures;
-- invalid envelopes fail deterministically;
-- nullable values remain null;
-- DTOs remain isolated.
-
-### Slice 13B: MET Norway Symbol and Domain Mapping
-
-Status: specified
-
-Must prove:
-
-- symbols map to provider-neutral `WeatherCondition`;
-- unknown symbols map to `UNKNOWN`;
-- canonical units/timestamps/nulls remain correct;
-- provenance identifies MET Norway.
-
-### Slice 13C: MET Norway Client Transport and Error Classification
-
-Status: specified
-
-Must prove:
-
-- required headers/User-Agent/base URL/query are isolated;
-- production parsing is used;
-- network/offline/provider unavailable/rate-limit/cache-not-modified where applicable/invalid-response states are classified.
-
-### Slice 13D: Explicit-Location MET Norway Repository Path
-
-Status: specified
-
-Must prove:
-
-- repository accepts explicit selected location;
-- provider-neutral success/error are exposed;
-- no hidden location;
-- provider DTOs/errors do not reach UI, saved locations, unit presentation, or cache consumers.
-
-## Slice 14: Forecast Fallback Selection
-
-Status: specified
-
-Release intent: Repository attempts Open-Meteo and falls back to MET Norway only under eligible failures.
-
-Must prove:
-
-- Open-Meteo success does not call fallback;
-- eligible primary failure plus fallback success returns MET Norway provenance;
-- both-provider failure remains retryable and diagnostically preserves both causes;
-- repeated failures do not create wasteful retry loops.
-
-Boundary:
-
-This proves repository fallback selection only. Installed-app fallback wiring, fallback cache provenance, and real-path fallback verification remain later work.
-
-## Slice 15: In-App About, Privacy, Licenses, and Data-Source Surface
-
-Status: specified
-
-Must prove:
-
-- Data Sources, Open Source Licenses, and Privacy are visibly reachable;
-- active/current provider claims match production behavior;
-- source/update/provenance remain visible on Home;
-- repository disclosure files match in-app provider claims;
-- weather-data licensing remains separate from Oxygen source licensing.
-
-## Slice 16: Cache One Forecast Bundle Through Repository
-
-Status: specified
-
-Must prove:
-
-- provider results write transactionally and read through provider-neutral storage;
-- entities preserve location identity, current/hourly/daily data, provenance, timestamps, timezone, canonical units, and nulls;
-- rows are scoped by stable local `LocationId`.
-
-Boundary:
-
-This does not claim failed-refresh retention, offline launch, or broad offline-first behavior.
-
-## Slice 17: Failed Refresh Retains Cached Forecast
-
-Status: specified
-
-Must prove:
-
-- failed refresh with useful cache keeps Home usable;
-- stale age/source/update/refresh-failure metadata remain visible;
-- retry remains available;
-- failed refresh without cache becomes retryable no-cache error.
-
-## Slice 17A: Home Presentation Alignment
-
-Status: specified
-
-Historical baseline work superseded for future Home interaction architecture by Slice 18A.
-
-Must prove:
-
-- provider-backed success/stale-success content remains complete;
-- values remain provider-neutral and non-fabricated;
-- current hero contains Oxygen weather identity;
-- compact/large-font/effects-off behavior remains understandable;
-- loading/error/retry/source/stale/provenance behavior remains observable.
-
-## Slice 17B: Explicit Home Refresh Control
-
-Status: specified
-
-Must prove:
-
-- explicit refresh is reachable on success and stale-success;
-- refresh targets the exact selected location;
-- recomposition does not trigger refresh;
-- refresh-in-progress/success/failure/no-cache states remain provider-neutral;
-- control remains accessible on narrow/large-font configurations.
-
-## Slice 17C: Home Presentation Accessibility Evidence Baseline
-
-Status: specified
-
-Must prove:
-
-- success/stale/loading/error/source/provenance/refresh states are exercised at Compose or Android boundary;
-- important semantics have meaningful alternatives and logical reading order;
-- compact/large-font presentation avoids overlap;
-- effects-disabled presentation remains complete;
-- screenshots/hierarchy/test evidence are retained.
-
-## Persistence Architecture Gate
-
-Status: specified
-
-Prerequisites:
-
-- Repository Engineering Gate.
-- Slice 17B and Slice 17C unless an active cycle records a narrower reason.
-
-Release intent: Settle production forecast persistence architecture before later local-state work depends on it.
-
-Must prove:
-
-- Room or an explicitly amended alternative is the canonical forecast persistence boundary;
-- provider-neutral repository boundaries remain intact;
-- forecast persistence preserves location identity, forecast rows, provenance, timestamps, timezone, canonical units, and missing values;
-- provider-specific cache metadata may remain deferred to Slice 31B;
-- provider success writes through transaction replacement semantics;
-- same-location scoping prevents cross-location cache satisfaction;
-- the role/removal path for `FileForecastCacheStorage` is explicit;
-- persistence tests cover read/write, replacement, scoping, null preservation, provenance, and local failure mapping.
-
-## Slice 18: Offline Launch From Last Forecast
-
-Status: committed
-
-Prerequisites:
-
-- Persistence Architecture Gate.
-
-Release intent: Relaunching without network displays the last cached forecast for the selected location.
-
-Must prove:
-
-- small-state persistence stores selected local `LocationId`;
-- forecast remains in canonical forecast storage rather than DataStore;
-- startup restores selected location and local forecast;
-- offline Home shows cached data with explicit stale age;
-- no-cache launch is retryable;
-- startup refresh replaces persisted data on success and retains stale data on failure;
-- installed-app state uses lifecycle-aware collection/cancellation/process recreation boundaries;
-- online/offline with/without cache and failed foreground refresh with/without cache are observable.
-
-## Slice 18A: Home Paged Interaction Foundation
-
-Status: committed
-
-Prerequisites:
-
-- Slice 18.
-- Screenshot feedback workflow established.
-
-Release intent: Replace the continuous Home dashboard with the Standard semantic page container and navigation model while preserving provider-backed behavior.
-
-Must prove:
-
-- semantic Now, Hourly, Daily, Details pages exist;
-- page identities are semantic;
-- horizontal page navigation works;
-- appropriate page-state indication exists;
-- interactive children retain behavior;
-- accessibility exposes page identity/navigation;
-- existing Home information remains reachable;
-- current/hourly/daily/metrics/sun/source/stale/refresh/retry behavior remains intact;
-- normal Standard Home no longer depends on one page-level vertical dashboard;
-- installed screenshots prove interaction structure.
+- current speech identifies condition/current temperature and includes only
+  available feels-like/high/low facts;
+- hourly and daily rows identify time/date, condition, temperatures, and
+  available precipitation probability;
+- resolved units are spoken unambiguously and missing values are not converted
+  to zero;
+- one merged node exposes each weather item without duplicate decorative-
+  mark or child-text announcements;
+- visible weather text, named Home page actions, callbacks, canonical data, and
+  provider request count remain unchanged;
+- focused mapper, Compose semantics, and installed UI-hierarchy evidence exists.
 
 Out of scope:
 
-- substantial page visual redesign;
-- theme engine;
-- layout/effects preferences;
-- new analytics;
-- new providers;
-- foldable behavior.
+- layout matrix, alerts, Settings, theme redesign, and service TalkBack traversal.
 
-## Slice 18B: Now Page Visual Baseline
+### Slice 30A2: Home Compact and Large-Font Resilience
 
-Status: committed
+Status: committed at `1a8e14f`
 
-Prerequisite:
+Prerequisite: Slice 30A1.
 
-- Slice 18A committed.
-
-Release intent: Establish the canonical Oxygen current-conditions experience.
+Release intent: verify and, where necessary, correct Home overflow on compact
+phones and at large font settings without changing weather meaning.
 
 Must prove:
 
-- temperature/condition establish primary hierarchy;
-- location is understandable without dominating;
-- feels-like/high-low/current context form a coherent support group;
-- fresh source/update are tertiary;
-- stale/operational state can become prominent;
-- refresh/retry remain available;
-- Now behaves like a deliberate viewport rather than a generic card stack;
-- long location, large-font, effects-off paths remain complete;
-- screenshot evidence is retained.
-
-## Slice 18C: Hourly Page Visual Baseline
-
-Status: committed
-
-Prerequisite:
-
-- Slice 18B committed.
-
-Release intent: Make Hourly a dedicated, highly scannable near-term composition.
-
-Must prove:
-
-- time/condition/temperature/precipitation communicate upcoming weather efficiently;
-- condition identity is recognizable;
-- page answers "what happens next?";
-- visualization uses semantic numeric presentation data if introduced;
-- Composables do not parse formatted strings;
-- no data is fabricated;
-- ordinary presentation is not a long scrolling document;
-- screenshots and accessibility semantics validate density/hierarchy.
-
-## Slice 18D: Daily Page Visual Baseline
-
-Status: committed
-
-Prerequisite:
-
-- Slice 18C committed.
-
-Release intent: Optimize Daily for fast multi-day comparison.
-
-Must prove:
-
-- multiple days compare quickly;
-- Base Art Sheet direction informs strong numerals, compact marks, atmospheric surfaces, and calm density;
-- condition identity remains clear;
-- high/low information has comparative structure;
-- precipitation is visible where available;
-- temperature-range visualization may use semantic numeric data;
-- no formatted-string parsing;
-- sun data is used only where useful;
-- ordinary presentation is not another long document;
-- large-font/accessibility fallback remains complete.
-
-## Slice 18E: Details Page Visual Baseline
-
-Status: committed
-
-Prerequisite:
-
-- Slice 18D committed.
-
-Release intent: Create a coherent information-dense secondary page for metrics and provenance.
-
-Must prove:
-
-- already-supported metrics are presented meaningfully;
-- metrics are structured rather than dumped as one label/value list;
-- novelty gauges are avoided;
-- provenance remains reachable;
-- fresh provenance is normally tertiary;
-- stale/fallback/failure provenance can become prominent;
-- missing values remain missing/unknown/omitted;
-- ordinary Details composition avoids unnecessary scrolling;
-- screenshots verify density/organization;
-- provider capabilities are not added solely to populate Details.
-
-Implementation note:
-
-The committed Slice 18E cycle verified structured Comfort, Wind, Atmosphere, Source/update, Sun, and provenance sections through provider-neutral Home presentation data. The next roadmap candidate is therefore Slice 18F.
-
----
-
-
-## Slice 18F: Home Operational State Integration
-
-Status: committed
-Implementation commit: `79bd830`
-
-Prerequisites:
-
-- Slices 18A through 18E committed.
-- Existing offline restoration path intact.
-
-Release intent: Verify and tighten the Standard Home pager across existing operational states without redesigning providers, persistence, or the established page visuals.
-
-Committed result:
-
-- duplicate Home refresh calls are ignored while ready-state refresh is already in progress;
-- restored/stale cached Home content remains visible as stale-after-failed-refresh when foreground refresh fails;
-- fresh, cached/stale, refresh-failed, loading, retryable no-cache, source/update, and page-navigation behavior remain observable;
-- Now, Hourly, Daily, and Details remain reachable in restored-cache state;
-- provider, Room, DataStore, fallback, saved-location, units, alerts, and appearance-persistence behavior were not expanded.
-
-Verification boundary:
-
-- focused HomeForecast state tests;
-- focused Home Compose instrumentation;
-- installed cached/offline Home evidence;
-- installed retryable no-cache evidence;
-- broad Android compile/unit/assemble checks;
-- `git diff --check`.
-
-Historical note:
-
-This slice is complete. Do not create new 18F.x implementation slices or insert new gates before 18G. Any future improvement inspired by 18F must be planned after the current committed boundary.
-
----
-
-## Slice 18G: Oxygen Home Design-System Consolidation
-
-Status: committed
-Implementation commit: `fae63b3`
-
-Prerequisites:
-
-- Slice 18F committed.
-
-Release intent: Consolidate repeated Standard Home visual choices into app-local Oxygen design roles and make the Base Art Sheet direction visibly present in the installed Home UI.
-
-Committed result:
-
-- app-local Home spacing, card shape/padding, glass surface, outline/accent, weather-mark, and typography roles were introduced;
-- generic blob-like weather marks were replaced by provider-neutral gold-line marks for existing `WeatherCondition` values;
-- roles were applied across Now, Hourly, Daily, Details, status, metrics, source, and shared glass surfaces;
-- provider, repository, Room, DataStore, weather mapping, units, saved locations, alerts, and persisted appearance behavior were unchanged;
-- the full theme engine and persisted appearance selection remained deferred.
-
-Verification boundary:
-
-- focused HomeForecast tests;
-- focused Home Compose instrumentation including rendered weather-mark treatment;
-- installed Now/Hourly/Daily/Details/stale screenshots;
-- broad Android checks;
-- `git diff --check`.
-
-Documentation governance note:
-
-The tracked asset path and specification use Base Art Sheet v0.2 to match the
-visible title in the reviewable source image. This naming cleanup does not
-reopen Slice 18G.
-
----
-
-## Slice 18H: Standard Home Accessibility and Visual Verification Gate
-
-Status: committed
-Implementation commit: `4f5f383`
-
-Prerequisites:
-
-- Slice 18G committed.
-
-Release intent: Establish the completed Standard Home as the verified interaction/visual reference architecture for later MVP work.
-
-Committed result:
-
-- named previous/next accessibility actions were added to the existing pager;
-- tabs and swipe remain the visible navigation model;
-- Standard Home page tabs meet the 48dp minimum touch-height target;
-- an app-local non-persisted `OxygenAppearance` input permits `EffectsLevel.OFF` to render opaque surfaces while preserving weather semantics;
-- child-control isolation, compact width, large font, stale/source/error meaning, and effects-disabled meaning were exercised;
-- installed Now, Hourly, Daily, Details, and stale refresh-failed evidence was captured;
-- no persisted layout/theme/effects selection or new feature domain was added.
-
-Historical rule:
-
-Slice 18H freezes the Standard Home baseline for forward planning. Later feature work may extend the UI, but should not silently redefine the verified page architecture.
-
----
-
-## Slice 18I: Mobile One-Handed Home Ergonomics
-
-Status: committed
-Implementation commit: `02f701`
-
-Prerequisites:
-
-- Slice 18H committed.
-
-Release intent: Apply a bounded handheld ergonomics follow-up before Saved Locations without changing weather, provider, or persistence semantics.
-
-Committed result:
-
-- first-run and change-location content scroll above bottom-aligned Search, Use my location, Settings/About, and Back actions;
-- About overview/detail content scrolls above a bottom Back action;
-- scrollable Home pages receive footer clearance;
-- Now keeps current weather visually ahead of stale/refresh status while preserving operational visibility;
-- Details presents metrics and source/update before stale status/provenance;
-- compact/large-font non-overlap, touch targets, return behavior, and About recovery were covered;
-- no saved-location management, schema changes, provider changes, units, alerts, persisted appearance, installed-app MET Norway fallback, or release-readiness behavior was added.
-
-Verification boundary:
-
-- focused HomeForecast unit tests;
-- 24 focused Home Compose instrumentation tests on `oxygen_starter`;
-- installed first-run, location-result, Now, Hourly, Daily, Details, change-location return, About overview, and Privacy detail evidence;
-- broad Android compile/unit/assemble checks;
-- `git diff --check`.
-
-Current committed boundary:
-
-All implementation planning now moves forward from Slice 18J. Slice 18J-R
-restored the Open-Meteo ready forecast path, and Slice 18J has ready Home Now,
-Hourly, Daily, Details, and cached refresh-failed installed evidence through the
-real Open-Meteo manual-location path.
-
----
-
-## Slice 18J: Standard Home Visual Convergence
-
-Status: committed
-
-Prerequisites:
-
-- Slice 18I committed.
-- The committed Slice 18G design roles remain the design-system boundary.
-- The committed Slice 18H/18I installed screenshots remain the behavioral and accessibility baseline.
-
-Release intent: Complete the default Standard Oxygen Home presentation so it feels deliberately weather-first, atmospheric, and recognizably Oxygen before Saved Locations introduces another major user-facing surface.
-
-This is a forward-only visual-convergence slice. It does not reopen or invalidate Slices 18F through 18I.
-
-Must prove:
-
-- Standard Oxygen Home uses an atmospheric weather scene or equivalent scene role as a deliberate visual foundation rather than reading primarily as a normal Material `Surface`.
-- Weather condition and current temperature dominate the Now page more strongly than application chrome.
-- Weather marks integrate naturally with the surrounding composition rather than appearing as isolated decorative icons inside generic cards.
-- Home page navigation remains semantic and accessible but no longer looks like unmodified Material scaffold/navigation chrome.
-- Glass/translucent surfaces are used selectively and semantically rather than making every content block visually identical.
-- Typography hierarchy is weather-first: primary forecast values dominate; source/update/provenance and application controls remain appropriately quiet.
-- Hourly answers “what happens next?” more efficiently than a collection of independent generic tiles. A compact temporal visualization may be introduced when supported by semantic numeric presentation data.
-- Daily supports fast multi-day comparison. A temperature-range visualization may be introduced using existing semantic high/low numeric values.
-- Details groups metrics by semantic identity rather than exact English display-label matching.
-- Composables do not parse formatted display strings back into numeric values.
-- Metric grouping and visualization do not depend on strings such as `"Humidity"` or `"Wind"`.
-- Missing weather values remain missing/unknown/omitted rather than fabricated.
-- Effects-disabled rendering remains complete and understandable.
-- Current provider, repository, Room, DataStore, selected-location, cache, refresh/retry, and provenance behavior remain unchanged.
-- Compact phone, large-font, TalkBack, and touch-target behavior established by Slice 18H/18I remain intact.
-- Installed-app screenshots show a material visual improvement over the committed 18H/18I Standard Home reference for Now, Hourly, Daily, and Details.
-
-Preferred implementation direction:
-
-- Use `WeatherScene` or an equivalent semantic scene foundation in production Home where it improves the result.
-- Preserve `OxygenHomeDesignRoles` as the semantic design-system boundary and extend roles only when repeated visual decisions justify it.
-- Evolve Home presentation models deliberately when semantic metric identity or numeric visualization data is required.
-- Prefer custom Oxygen navigation/surface composition over stock Material appearance while keeping Material accessibility semantics where useful.
-- Keep weather marks procedural/vector where practical.
-- Keep decoration independent from weather meaning.
-
-Focused evidence:
-
-- Home presentation/state tests for any presentation-model changes.
-- Compose tests for semantic metric grouping, navigation semantics, compact/large-font non-overlap, effects-off meaning, and any new hourly/daily visualization semantics.
-- Static or focused checks proving production Home does not group metrics by localized display labels or parse formatted weather strings.
-
-Real-path evidence:
-
-- Installed-app screenshots and hierarchy evidence for:
-  - Now;
-  - Hourly;
-  - Daily;
-  - Details;
-  - one restored/stale or refresh-failed Home state;
-  - Effects Off where feasible.
-- Compare against the committed Slice 18H/18I reference screenshots and record the concrete visible improvements.
-
-Broad verification:
-
-```sh
-. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
-. scripts/android-env.sh && ./gradlew :app:assembleDebug
-git diff --check
-```
-
-Explicitly out of scope:
-
-- Saved-location persistence, selection, list UI, or concurrency behavior.
-- Unit preference persistence or conversion.
-- Device-location expansion.
-- Official alert provider implementation.
-- Persisted theme/layout/effects settings.
-- Paper/Terminal theme completion.
-- New weather-provider fields added solely for richer decoration.
-- Radar, maps, air quality, pollen, widgets, background refresh, or notifications.
-- Rewriting completed 18-series history.
-
-Completion gate:
-
-Slice 19A must not begin until Slice 18J is committed with installed-app visual evidence and no unresolved regression against the Slice 18H/18I accessibility/behavior baseline.
-
----
-
-## Slice 18J-R: Restore Installed Open-Meteo Ready Forecast Path
-
-Status: committed
-
-Prerequisites:
-
-- Slice 18J installed-app evidence attempt identified a real Open-Meteo invalid-response blocker.
-- Existing Open-Meteo forecast and geocoding provider contracts remain authoritative.
-
-Release intent: Restore the production installed-app path where a manually selected Open-Meteo geocoding result fetches, parses, maps, caches, and presents a usable ready forecast.
-
-Why this recovery slice exists:
-
-Slice 18J automated checks passed for its covered Home presentation changes, but the installed app could not capture final visual evidence because selecting "Madison, Wisconsin, United States" through the real manual Open-Meteo path rendered "Weather data returned in a form Oxygen could not read. Try again later." Provider/forecast parsing behavior was out of scope for 18J, so the fix is separated here.
-
-Must prove:
-
-- the known real manual-location path reaches `ForecastReady` without sample data, mocked provider success, or fabricated fallback data;
-- a representative real Open-Meteo response shape is covered at the provider, mapper, repository, or state boundary responsible for the failure;
-- current, hourly, daily, source/update, provenance, and required Home fields remain available after mapping;
-- invalid-response classification still applies to malformed or contract-breaking provider responses;
-- provider-specific diagnostics do not cross into Compose or user-facing Home copy;
-- the successful live fetch writes the selected location forecast into the Room cache, or a cache-write failure is recorded as a blocker/regression;
-- selected-location persistence, Room forecast cache, stale/restored behavior, refresh/retry behavior, and Open-Meteo attribution remain intact.
+- Now, Hourly, Daily, Details, and the Simple Forecast choice remain reachable
+  at 360x640 dp and font scale 1.3, plus one representative font-scale-2.0
+  overflow case;
+- long location/provider names and wide Celsius/Fahrenheit values use localized
+  scrolling or wrapping rather than clipping, overlap, hidden content, or
+  excessively reduced text;
+- important content does not clip or overlap, controls remain at least 48dp,
+  and accessibility overflow scrolls rather than hiding information;
+- page identity, spoken descriptions, visible values, callbacks, canonical
+  weather, and provider request count remain unchanged.
+
+Focused evidence: no more than six named connected cases using a pairwise set of
+Standard/Simple pages, long content, and both temperature-unit widths; one
+installed compact font-scale-1.3/2.0 journey; and an exact environment/command
+ledger. A failing geometry boundary receives a red assertion before a Home-only
+layout correction.
 
 Out of scope:
 
-- MET Norway installed-app fallback wiring;
-- saved-location list/switching/removal behavior;
-- unit preferences or conversion UI;
-- device-location expansion;
-- Home visual redesign beyond preserving the current in-progress 18J state;
-- alerts, air quality, radar/maps, widgets, background refresh, persisted appearance, release readiness, or MVP readiness.
+- RTL, disabled-animation/reduced-motion policy, cross-theme/contrast checks,
+  alerts, Settings, TalkBack, provider/state changes, and visual redesign.
 
-Focused evidence:
+### Slice 30A3A1: Home Speech/Layout Evidence
 
-- a focused failing-then-passing provider/parser/mapper/repository test, or request-construction test if request parameters caused the invalid response;
-- existing invalid-response coverage remains passing;
-- HomeForecast-focused state tests if the mapped Home contract changes.
+Status: evidence complete on 2026-09-10; documentation sync committed in 30A3B2
 
-Real-path evidence:
+Prerequisites: Slices 30A1 and 30A2.
 
-- installed debug app on `oxygen_starter`;
-- manual Open-Meteo geocoding selection, starting with Madison, Wisconsin unless provider availability requires a documented equivalent real result;
-- installed ready Home screenshot/hierarchy evidence for Now, Hourly, Daily, and Details;
-- stale/restored or refresh-failed cached Home evidence for the same selected location after confirming the successful live fetch populated the Room cache.
-
-Broad verification:
-
-```sh
-. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
-. scripts/android-env.sh && ./gradlew :app:assembleDebug
-git diff --check
-```
-
-Completion gate:
-
-After Slice 18J-R is verified, resume Slice 18J only for the remaining installed-app visual evidence and review. Slice 19A remains blocked until Slice 18J itself is committed.
-
----
-
-## Slice 19: Saved Locations
-
-Status: specified
-
-Planning note: the original Slice 19 was too broad for one active cycle. Use one bounded sub-slice.
-
-### Slice 19A: Saved Location Storage Model
-
-Status: committed at `d97e2ea`
-
-Prerequisites:
-
-- Slice 18J committed.
-- Persistence Architecture Gate.
-- Slice 18.
-
-Release intent: Persist a provider-neutral saved-location list independently from selected-location state.
+Mode: required third-cycle test-only evidence collection. Do not change
+production behavior or authoritative documents in this slice.
 
 Must prove:
 
-- stable local `LocationId` remains identity;
-- provider IDs never become user-facing identity;
-- add/remove/list behavior is deterministic;
-- duplicate policy is explicit;
-- removing the selected location has a defined outcome;
-- Room/DataStore responsibilities remain explicit.
+- the named 30A1 speech cases and selected 30A2 compact/large-font cases pass
+  without running the full historical Home connected class;
+- installed Home evidence covers Now/Hourly/Daily/Details, Simple Forecast,
+  360x640 dp, font scales 1.3 and one representative 2.0 overflow case, Effects
+  Off, long location/provider text, and converted units without overstating
+  untested combinations;
+- screenshots, UI hierarchies, semantics, command/result/rerun ledger, exact
+  environment, and any blockers are reviewable under the two cycle artifact
+  directories;
+- exact command results, environment, screenshots, hierarchies, skips, and
+  blockers are retained under one cycle artifact directory.
+
+A failing production boundary blocks this slice and creates a specifically
+named Home repair slice; it is not fixed here.
+
+### Slice 30A3B2: Home Accessibility Evidence Document Sync
+
+Status: committed at `fb51f7b` on 2026-09-10
+
+Prerequisite: Slice 30A3A1 with green focused and installed evidence.
+
+Mode: documentation-only closure of the required third-cycle gate.
+
+Must prove:
+
+- append a self-contained history entry with exact evidence, artifacts, skips,
+  blockers, and commit state;
+- reconcile this plan, the roadmap queue, and the specification/README only
+  where the retained evidence directly supports the claim;
+- preserve explicit limits for TalkBack traversal, RTL, reduced motion,
+  theme/contrast invariance, alerts, localization, and release readiness;
+- Slice 30B1A1 was selected after the evidence and document diff review passed.
+
+No Kotlin, Compose, provider, persistence, resource, manifest, dependency, or
+production behavior changes are allowed. A missing or contradictory artifact
+blocks closure and leaves 30A3B2 specified.
+
+### Slices 30B1A1–30B1B1: Home RTL Navigation and Chronology
+
+These replace the original combined 30B1 candidate. They preserve its release
+intent while separating state semantics, direction affordances, chronological
+meaning, compact-layout regression risk, and installed/documentation closure.
+
+#### Slice 30B1A1: RTL Semantic Page Navigation Contract
+
+Status: committed at `63ed25a`
+
+Prerequisite: Slice 30A3B2.
+
+Implement and test semantic page identity plus named previous/next custom
+actions in RTL for Standard and Simple Home. The action meaning remains
+chronological backward/forward movement, independent of physical left/right
+direction. Test RTL through a Compose-local layout direction so historical
+tests and the device configuration remain unchanged. Add behavior coverage
+before any production correction; if the existing index-derived semantics pass,
+this is deliberately a test-only implementation slice.
+
+Focused boundary: exactly two named connected cases covering complete Standard
+(`Now -> Hourly -> Daily -> Details`) and Simple (`Now -> Forecast`)
+action progression, including exact first/intermediate/final action sets,
+titles, positions, handled actions, and destinations. Production scope, only
+after behavior-red evidence, is limited to `HomeLoadingScreen.kt`. Swipe
+direction, visual mirroring, chronology, compact layout, request counts, and
+installed evidence remain owned by 30B1A2–30B1B1.
+
+The implementation/test commit passed its exact focused and broad checks. The
+live cycle history records the evidence and limits. Review README and the
+specification for conflict without claiming complete RTL support before Gate
+30B1B1.
+
+#### Slice 30B1A2: RTL Directional Affordances and Gesture Behavior
+
+Status: committed at `20b6ddc`
+
+Prerequisite: Slice 30B1A1.
+
+This remains one bounded implementation slice: one existing Home pager path,
+one Compose-local RTL condition, and two focused connected cases. Do not split
+it into sub-slices or add a parallel navigation model.
+
+Begin with red boundary assertions, then prove that visible controls and pager
+swipes mirror for RTL while preserving the semantic action contract from
+30B1A1. The logical page order remains Standard `Now -> Hourly -> Daily ->
+Details` and Simple `Now -> Forecast`; the visible selector order is mirrored
+to Standard `Details, Daily, Hourly, Now` and Simple `Forecast, Now` from left
+to right. In RTL, a rightward swipe advances to the next semantic page and a
+leftward swipe returns to the previous page. Boundary swipes do not overrun
+the available pages. All exercised controls remain at least 48dp.
+
+Limit production changes, only if a failing assertion requires them, to
+`HomeLoadingScreen.kt`. No provider, domain, repository, cache, preference,
+resource, manifest, dependency, new gesture framework, or accessibility
+framework changes are allowed.
+
+Focused boundary: exactly two named connected cases in
+`HomeDashboardUiTest.kt`, `rtlStandardHomeDirectionalAffordancesMirrorAndGestures`
+and `rtlSimpleHomeDirectionalAffordancesMirrorAndGestures`. They use the
+existing deterministic fixture and Compose-local `LayoutDirection.Rtl`, assert
+physical selector bounds, 48dp targets, exact semantic actions, settled page
+titles/positions/selection, forward and reverse gestures, and first/final page
+boundaries. No device RTL, installed journey, screenshot, chronology,
+compact/refetch, or provider evidence is part of this slice. The exact
+focused and broad checks passed; evidence and limits are recorded in the live
+cycle history and cycle artifact directory.
+
+Closure requires the focused two-case command, applicable compile/unit/assemble
+checks, and `git diff --check`, with exact artifacts and limits recorded before
+the roadmap/active-plan/history document sync. Review README and the
+specification without claiming complete RTL or TalkBack coverage before Gate
+30B1B1/30E.
+
+#### Slice 30B1A3: RTL Chronology and Spoken-Meaning Preservation
+
+Status: specified
+
+Prerequisite: Slice 30B1A2.
+
+Prove hourly and daily entries remain earliest-to-latest and that spoken
+time/date meaning and mapper-owned weather descriptions are unchanged under
+RTL. Use existing deterministic fixtures and presentation semantics; do not
+rewrite provider data or localized strings.
+
+Focused boundary: one or two named connected cases covering hourly/daily order,
+visible labels, and semantic descriptions in both layouts.
+
+#### Slice 30B1A4: RTL Compact Layout and No-Refetch Evidence
+
+Status: specified
+
+Prerequisite: Slice 30B1A3.
+
+Prove the 360x640 dp, font-scale-1.3, long-location path retains usable page
+controls, 48dp targets, no horizontal overlap, overflow reachability, and no
+unrelated persistence or forecast refetch when changing page/layout in RTL.
+
+Focused boundary: up to two named connected cases, using canonical request
+counts and bounds/overlap assertions. Preserve the existing production
+selected-location path.
+
+#### Gate 30B1B1: RTL Installed Evidence and Documentation Sync
+
+Status: specified
+
+Prerequisites: Slices 30B1A1–30B1A4.
+
+This is the documentation-only third-cycle closure gate. Run the minimum
+combined focused filter and one installed RTL Home journey with screenshots and
+UI hierarchies, restoring device direction afterward. Reconcile the active
+plan, this roadmap, `README.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`, and the
+live cycle history only to the evidence actually retained. Record skipped
+checks and limits. No Kotlin, Compose, provider, persistence, resource,
+manifest, dependency, or production behavior changes.
+
+All five sub-slices remain out of scope for font-scale-2.0 work owned by 30A2,
+reduced motion, theme/contrast matrix, alerts, Settings, localization changes,
+provider/state changes, and TalkBack service traversal. 30B2 now depends on
+Gate 30B1B1.
+
+### Slice 30B2: Home Reduced-Motion and Appearance Invariance
+
+Status: specified
+
+Prerequisites: Slice 30A3B2 and Gate 30B1B1.
+
+Release intent: verify Home accessibility meaning and navigation across the
+implemented effects, animation-policy, theme, and contrast axes.
+
+Must prove:
+
+- Effects Off and Android disabled-animation policy retain all Home meaning and
+  use non-animated page movement without overwriting the saved effects choice;
+- spoken descriptions, named page actions, visible weather, alert summary, and
+  source/provenance remain equivalent under Oxygen, Paper, Terminal and
+  Standard/High contrast through a documented pairwise matrix;
+- selection remains understandable without color and atmospheric decoration;
+- 360x640 dp/font scale 1.3 has no new clipping, overlap, or missing controls;
+- recomposition across presentation axes does not refetch, rewrite preferences,
+  change canonical weather, or change semantic page identity.
+
+Focused evidence: reuse the committed effects/theme/contrast fixtures, add no
+more than six named pairwise connected cases through the real Home path, and
+retain one installed disabled-animation/Effects-Off journey. Do not rerun whole
+historical theme classes or add a second appearance model.
 
 Out of scope:
 
-- UI switching;
-- reordering;
-- folders/groups;
-- background refresh of all locations.
+- Settings control semantics/layout, new preferences, automatic system contrast,
+  Full effects, icon packs, visual redesign, alerts detail, and TalkBack.
 
-### Slice 19B: Saved Location Selection and Concurrency
-
-Status: committed at `0f649aa`
-
-Prerequisite:
-
-- Slice 19A.
-
-Release intent: Selecting a saved location controls Home safely under overlapping asynchronous work.
-
-Must prove:
-
-- obsolete refresh work is cancelled or isolated;
-- late emissions for an older location cannot update the new location;
-- selected location persists;
-- matching cache may appear immediately;
-- wrong-location cache never satisfies Home;
-- refresh remains explicit/provider-neutral;
-- a focused race test covers older completion after newer selection.
-
-### Slice 19C: Saved Location List and Selection UI
-
-Status: committed at `e2efdd3`
-
-Prerequisites:
-
-- Slice 19B.
-- Slice 18I.
-
-Release intent: Show existing saved locations on the location-entry surface and
-let users select one through the committed saved-location app-state path.
-
-Must prove:
-
-- similar place names are disambiguated;
-- current selection is obvious;
-- select controls are visible;
-- selecting a saved row drives Home through local `LocationId`;
-- manual search remains fully available without permission;
-- compact and large-font layouts work.
-
-Out of scope:
-
-- search-result save UI;
-- saved-location removal UI;
-- drag reorder;
-- folders;
-- automatic multi-location refresh.
-
-### Slice 19D: Save Search Result UI
-
-Status: committed at `8599640`
-
-Prerequisite:
-
-- Slice 19C.
-
-Release intent: Let users save a searched place from the location-entry surface
-without making saving a prerequisite for one-off manual selection.
-
-Must prove:
-
-- search result rows expose a clear save control;
-- saving uses production `SavedLocationStorage`;
-- save success refreshes the saved list;
-- save failure surfaces as a local saved-location failure;
-- manual `Use now` selection still works when saved storage is unavailable or
-  save fails;
-- compact and large-font layouts keep search, save, and use-now controls
-  readable and reachable.
-
-Out of scope:
-
-- saved-location removal UI;
-- drag reorder;
-- folders/groups;
-- automatic multi-location refresh.
-
-### Slice 19E: Remove Saved Location UI
-
-Status: committed at `00cb88a`
-
-Prerequisite:
-
-- Slice 19D.
-
-Release intent: Let users remove saved locations from the location-entry surface
-without accidentally deleting rows or changing the current Home forecast.
-
-Must prove:
-
-- saved rows expose a visible remove control;
-- removal requires an explicit confirmation/cancel step before production
-  storage deletion;
-- cancel does not delete;
-- confirmed removal refreshes only saved-location list state;
-- removing the currently selected location does not clear or rewrite DataStore
-  selected-location state, forecast-cache rows, or the visible Home forecast;
-- compact and large-font layouts keep remove confirmation readable and
-  reachable.
-
-Out of scope:
-
-- drag reorder;
-- folders/groups;
-- automatic multi-location refresh;
-- automatic replacement when the removed row is currently selected.
-
-### Gate 19F: Saved Locations Documentation Sync
-
-Status: committed at `8386484`
-
-Prerequisite:
-
-- Slice 19E.
-
-Release intent: Align README, roadmap, disclosure, and active-cycle status with
-the saved-location behavior actually verified in Slices 19A through 19E.
-
-Must prove:
-
-- README implemented/not-implemented saved-location claims match verified
-  installed-app behavior;
-- roadmap saved-location sub-slice status does not exceed recorded evidence;
-- data-source, privacy, cache, and provider claims remain unchanged unless a
-  saved-location slice truly changed them;
-- skipped Android commands are named and justified if the gate is
-  documentation-only.
-
-Out of scope:
-
-- app behavior;
-- provider behavior;
-- persistence schema changes;
-- release-readiness or MVP-readiness claims.
-
----
-
-## Slice 20: Unit Preferences and Conversion
+### Gate 30B3: Home Environment Evidence and Document Sync
 
 Status: specified
 
-Planning note: use bounded sub-slices.
+Prerequisites: Gate 30B1B1 and Slice 30B2.
 
-### Slice 20A: Unit Preference Contract
-
-Status: committed at `3f6d741`
-
-Prerequisite:
-
-- small-state persistence foundation.
-
-Release intent: Define unit preferences before conversion/UI work.
-
-Must prove explicit preference behavior for:
-
-- temperature;
-- wind speed;
-- pressure;
-- precipitation;
-- visibility.
-
-Metric, US, UK, and custom behavior must be defined without changing canonical stored values.
-
-Committed result:
-
-- Added provider-neutral preference types and deterministic Metric, US, UK, and
-  Custom resolution in `:core`.
-- Proved all five categories and canonical `WeatherBundle` preservation with
-  focused unit tests.
-- No conversion math, persistence, UI, provider request, or cache behavior
-  changed.
-
-Evidence:
-
-- Focused provider canonical-unit and `UnitPreferenceTest` checks passed.
-- Broad compile, unit-test, assemble, and `git diff --check` checks passed.
-- Artifacts: `.codex/test-artifacts/2026-09-04-slice-20a-unit-preference-contract/`.
-
-## Gate 20-0: Presentation Semantics and Localization Safety
-
-Status: committed at `587b0ad`
-
-Recommended timing:
-
-- after Slice 20A defines the unit contract;
-- before Slice 20B adds conversion behavior;
-- before theme/layout variants proliferate.
-
-Release intent: Ensure presentation behavior depends on semantic data rather than English labels or formatted strings before units and alternate appearance modes multiply those paths.
+Mode: the required third-cycle test-only and documentation-sync session. Do not
+change production behavior in this gate.
 
 Must prove:
 
-- metric grouping does not depend on exact localized display labels;
-- metric identity needed for grouping, iconography, emphasis, units, or themes is represented semantically;
-- Composables do not parse formatted temperature, percentage, pressure, distance, precipitation, or wind strings back into numbers;
-- numeric values needed for visualization/conversion are deliberately exposed by presentation models alongside display text;
-- reusable touched Home/Settings strings move toward Android resources;
-- accessibility descriptions are not reconstructed by parsing English display text;
-- provider DTOs remain outside Composables;
-- missing values remain missing.
+- the selected RTL and reduced-motion/appearance cases pass together within the
+  connected-test budget without rerunning full historical Home classes;
+- installed RTL and disabled-animation journeys retain Home chronology, spoken
+  meaning, page actions, 48dp controls, Effects-Off behavior, visible weather,
+  and source/alert reachability;
+- retained screenshots, UI hierarchies, semantics, command/result/rerun ledger,
+  exact environment, and blockers support each claim;
+- README, specification, roadmap, current plan, and live history distinguish
+  deterministic/installed Home evidence from service-level TalkBack evidence
+  still owned by Gate 30E.
 
-This gate does not require shipping translations.
+A failing production boundary blocks this gate and creates a specifically named
+Home repair slice. Do not change provider, alert transport, preference schema,
+privacy/license/disclosure, or release status.
 
-Committed result:
-
-- Added explicit nullable canonical values and semantic unit identities to Home
-  current, hourly, daily, and metric presentation models while preserving
-  existing formatted output.
-- Preserved `HomeMetricIdentity` for grouping and `WeatherCondition` for
-  condition/icon semantics.
-- Verified Home composables do not parse formatted weather text back into
-  weather numbers.
-
-Evidence:
-
-- Focused `HomeForecastPresentationMapperTest` and
-  `HomeForecastStateHolderTest` checks passed.
-- Connected `HomeDashboardUiTest` passed on `oxygen_starter`.
-- Installed debug app launched on `oxygen_starter`.
-- Broad compile, app/core unit-test, assemble, and `git diff --check` checks
-  passed.
-- Artifacts:
-  `.codex/test-artifacts/2026-09-04-gate-20-0-presentation-semantics-localization-safety/`.
-
----
-
-### Slice 20B: Unit Conversion Presentation Boundary
-
-Status: committed at `1a2b5a0`
-
-Prerequisites:
-
-- Slice 20A.
-- Gate 20-0.
-
-Release intent: Convert canonical weather values only for presentation.
-
-Must prove:
-
-- stored canonical data is unchanged;
-- null remains null;
-- unavailable never becomes zero;
-- deterministic rounding;
-- correct wind-direction semantics;
-- source/provenance unaffected;
-- conversion edge cases are tested.
-
-### Slice 20C: Persisted Units UI
-
-Status: committed at `1b52718`
-
-Prerequisites:
-
-- Slice 20B.
-- Slice 18I.
-- Slice 25A recommended before or with this UI.
-
-Release intent: Users can persist units without destabilizing Home.
-
-Must prove:
-
-- settings are reachable;
-- values update consistently across Now/Hourly/Daily/Details;
-- long converted values fit;
-- large-font remains usable;
-- preferences survive restart;
-- unit change does not trigger provider fetch unless independently required.
-
----
-
-## Slice 21: Optional Device Location
-
-Status: committed at `3ea5ae6`
-
-Prerequisites:
-
-- saved-location selection foundation.
-
-Release intent: Device location is optional while manual search remains first-class.
-
-Must prove:
-
-- permission is requested only after explicit user action;
-- permission denial returns to usable manual search;
-- no background location;
-- coordinates resolve into provider-neutral location state;
-- device-resolved locations use the same selection/cache/forecast architecture;
-- approximate location is represented honestly.
-
-Manual location remains sufficient for successful onboarding and normal use.
-
----
-
-## Slice 22: NWS Alert Provider Contract
-
-Status: committed at `858c0a4`
-
-Prerequisites:
-
-- Persistence Architecture Gate.
-- forecast fallback remains independent from alert lookup.
-
-Release intent: Specify US official alert integration before implementation.
-
-Must prove the provider contract defines:
-
-- endpoint/authentication;
-- required User-Agent/header identity;
-- rate/request limits;
-- caching;
-- fields;
-- timestamps;
-- severity/urgency/certainty mapping;
-- errors;
-- attribution/license/privacy;
-- unsupported-region behavior;
-- fixtures/documentation;
-- alert identity/deduplication;
-- update/replacement semantics;
-- expiration handling;
-- geometry/affected-area fallback;
-- UI-required banner/detail fields.
-
-Official alerts must remain distinct from forecast-derived risk.
-
----
-
-## Slice 23: NWS Alert Provider Path
+### Slice 30C1: Official-Alert Summary Accessibility
 
 Status: specified
 
-Planning note: use bounded sub-slices.
+Prerequisite: Gate 30B3.
 
-### Slice 23A: NWS Alert Fixtures, Parsing, and Mapping
-
-Status: committed at `17dab0c`
-
-Must prove:
-
-- no/one/many alerts;
-- missing optional fields;
-- timestamps;
-- affected areas;
-- unknown severity;
-- severity/urgency/certainty/event/issuer/effective/expires/description/instructions/geometry/provenance retained where available;
-- provider DTOs remain isolated;
-- forecast risk is not represented as an official alert.
-
-### Slice 23B: NWS Alert Client and Error Classification
-
-Status: committed at `dcf707b`
+Release intent: make the Home official-alert summary complete, non-color-only,
+and operable without changing official alert meaning or selection.
 
 Must prove:
 
-- required headers/User-Agent/base URL/request are isolated;
-- successful responses use production parsing;
-- network/offline/provider unavailable/rate-limit/unsupported region/no alerts/invalid response are classified;
-- provider cache guidance is respected.
+- the summary exposes event, explicit severity, issuer, expiry, source-check
+  time, attribution, and active-alert count in logical non-duplicated semantics;
+- detail and official-source actions have meaningful labels/roles, 48dp targets,
+  and do not trigger Home page movement;
+- no-alert, one-alert, and multiple-alert fixtures remain truthful;
+- long event/issuer content remains reachable at 360x640 dp, font scales 1.3
+  and one 2.0 case, LTR/RTL, Effects Off, and High contrast;
+- opening the selected alert does not refetch or mutate weather/alert data.
 
-### Slice 23C: Alert Repository Merge
+Focused evidence: mapper tests only if a new presentation field is necessary,
+no more than five named connected summary cases, and one installed real-alert
+summary/detail-entry attempt. Live alert availability may be absent and must not
+be replaced by seeded installed success.
 
-Status: committed at `3c658a8`
+Out of scope: detail-document reading layout, alert transport/cache/background
+work, notifications, additional national providers, and TalkBack traversal.
 
-Must prove:
-
-- forecast and alert results combine without coupling provider selection;
-- alert failure does not block forecast display;
-- forecast fallback preference does not disable alert lookup;
-- stale forecast plus fresh alert is representable;
-- fresh forecast plus alert-provider failure is representable;
-- duplicate alert IDs do not duplicate UI;
-- unsupported regions are explicit.
-
----
-
-## Slice 24: Official Alert UI
+### Slice 30C2: Official-Alert Detail Accessibility
 
 Status: specified
 
-Planning note: use bounded sub-slices.
+Prerequisite: Slice 30C1.
 
-### Slice 24A: Alert Summary/Banner UI
-
-Status: committed at `cf9ddaf`
-
-Prerequisites:
-
-- Slice 23C.
-- Slice 18I.
-
-Release intent: Expose active official alerts on Home without overwhelming normal weather.
+Release intent: make the existing in-app official-alert detail a complete,
+logically ordered, scrollable reading surface.
 
 Must prove:
 
-- event and severity text are visible;
-- issuer/expiration are reachable;
-- severity is not color-only;
-- multiple alerts have an explicit affordance;
-- alerts do not destroy Now hierarchy;
-- stale forecast and active-alert state can coexist.
+- event, explicit severity, issuer, effective/expiry, affected area, official
+  description/instructions, source-check time, attribution, and source link stay
+  complete without paraphrasing official text;
+- multiple-alert selection, Back, and external source controls have meaningful
+  roles/labels/selected state and at least 48dp targets;
+- long provider/event/area/description/instruction content remains reachable at
+  360x640 dp, font scales 1.3 and 2.0, LTR/RTL, Effects Off, and High contrast;
+- reading/selecting/returning preserves Home page, alert selection, forecast,
+  request count, and official fixture meaning.
 
-### Slice 24B: Alert Detail UI
+Focused evidence: no more than six named deterministic connected cases using
+official fixtures plus one installed navigation/return journey only when a real
+alert is available. Do not make live NWS calls part of deterministic tests.
 
-Status: committed at `ceb6253`
+Out of scope: summary behavior already owned by 30C1, alert persistence,
+background polling, notifications, provider transport, and release readiness.
 
-Prerequisite:
-
-- Slice 24A.
-
-Must expose where available:
-
-- event;
-- severity;
-- urgency;
-- certainty;
-- issuer;
-- effective;
-- expires;
-- affected area;
-- description;
-- instructions;
-- attribution.
-
-Long official text may scroll. Large font and TalkBack reading order must remain usable.
-
----
-
-## Gate 25: Disclosure Baseline Check
-
-Status: committed
-Commit: `23a9d49`
-
-Prerequisite:
-
-- Repository Engineering Gate.
-
-Release intent: Confirm disclosure still matches implemented behavior before appearance and release work.
-
-Must prove:
-
-- `LICENSE`, `NOTICE`, `THIRD_PARTY_LICENSES.md`, `DATA_SOURCES.md`, and `PRIVACY.md` remain present and accurate;
-- active/current provider claims match production paths;
-- weather-data licensing remains separate from source-code licensing;
-- privacy still reflects no ads, no tracking, no account requirement, optional location permission, and provider request data.
-
-Committed result: Active Open-Meteo forecast/timezone and geocoding, GeoNames,
-MET Norway fallback, and foreground NOAA/NWS alert disclosures now include
-applicable attribution/license terms, provider links, and request/privacy
-facts. The installed direct Settings destinations are scrollable and reachable
-without repository calls or location permission requests. MET Norway's new and
-legacy-cached Home provenance presents `NLOD-2.0 AND CC-BY-4.0`.
-
----
-
-## Slice 25A: Settings Information Architecture
-
-Status: committed
-Commit state: committed
-Commit: `2484e90`
-
-Prerequisite:
-
-- Slice 18I.
-
-Release intent: Create a scalable Settings architecture before multiple preference families accumulate.
-
-Committed result: The installed Settings root now exposes all seven destinations,
-retains existing Units and disclosure behavior, opens the real Locations
-surface, and returns through both in-surface and Android Back. Appearance is a
-read-only summary of the effective presentation.
-
-Must prove distinct reachable categories as appropriate:
-
-- Appearance;
-- Units;
-- Locations;
-- Data Sources;
-- Privacy;
-- Open Source Licenses;
-- About.
-
-Boundary:
-
-This organizes navigation/surfaces. It does not implement new preference behavior by itself.
-
----
-
-## Recurring Documentation Sync Gate
+### Gate 30C3: Alert Accessibility Evidence and Document Sync
 
 Status: specified
 
-Cadence:
+Prerequisites: Slices 30C1 and 30C2.
 
-- after every four completed non-documentation implementation cycles since the previous documentation-sync gate;
-- immediately when behavior/disclosure/privacy/persistence/release-readiness or roadmap sequencing changes.
+Mode: required third-cycle test-only and documentation-sync session; no
+production behavior changes.
 
-Must prove:
+Must prove the selected summary/detail cases together within budget; reconcile
+long-content, LTR/RTL, large-font, Effects-Off/high-contrast, action, navigation,
+and no-refetch evidence; record honest installed real-alert availability; and
+sync README, specification, roadmap, current plan, and live history without
+claiming TalkBack or notification/background-alert completion. A production
+failure creates a separately named alert repair slice.
 
-- README status matches installed behavior;
-- roadmap next-candidate guidance matches completed work;
-- data-source/privacy/license documents distinguish active behavior from specified roadmap work;
-- `.codex/plans/current.md` records the sync or the next bounded slice;
-- `.codex/cycles/history.md` records evidence;
-- `git diff --check` passes;
-- skipped Android commands are named when documentation-only.
-
----
-
-## Appearance Preference Relationship
+### Slice 30D1: Appearance Control Semantics
 
 Status: specified
 
-Slice 18H establishes the canonical Standard Home reference and Slice 18I is the committed handheld-ergonomics follow-up. Later effects, layout, theme, and contrast variants must translate that current baseline without changing weather semantics, source/stale/error behavior, alerts, or accessibility guarantees.
+Prerequisite: Gate 30C3.
 
-Appearance work is not a generic polish backlog.
+Release intent: give Theme, Layout, Effects, and Contrast controls deliberate
+group/choice semantics through the real Settings / Appearance path.
 
----
+Must prove:
 
-## Slice 26: Effects Off Preference Baseline
+- each group and choice exposes meaningful label, role, selected/disabled,
+  pending, success, and read/write-failure state without color-only meaning;
+- retry and Back actions are named, operable, and at least 48dp;
+- confirmed-write selection, retained failed target, retry, preference
+  independence, and no-refetch behavior remain unchanged;
+- the implementation reuses existing preference state and control components,
+  not a second state model or test-only screen.
+
+Focused evidence: existing preference transaction JVM tests plus no more than
+five named connected semantic/action cases through `OxygenApp`.
+
+Out of scope: large-font/RTL layout matrix, new preferences, automatic system
+contrast, Full effects, icon packs, persistence formats, Home/alert behavior.
+
+### Slice 30D2: Appearance Layout and Environment Resilience
 
 Status: specified
 
-Prerequisites:
+Prerequisite: Slice 30D1.
 
-- Slice 18I.
-- Slice 25A.
-- small-state persistence.
+Release intent: keep the installed Appearance controls readable and reachable
+under compact, large-font, RTL, reduced-motion, theme, and contrast conditions.
 
 Must prove:
 
-- appearance settings are visibly reachable;
-- Effects Off removes continuous decorative animation/effects while preserving meaning;
-- reduced-motion preference is respected where available;
-- alerts/source/stale/provenance remain visible;
-- effects preference persists;
-- effects remain independent from layout/theme.
+- every group, choice, retry, status message, and Back action is scroll-reachable
+  at 360x640 dp and font scales 1.3/2.0 with no clipping or overlap;
+- RTL preserves logical label/control order;
+- selected/pending/error meaning remains understandable across Oxygen, Paper,
+  Terminal and Standard/High contrast using a pairwise matrix;
+- Effects Off/disabled animation does not hide state or rewrite the saved
+  preference; selection/restoration and no-refetch remain unchanged.
 
----
+Focused evidence: no more than six named pairwise connected cases plus installed
+LTR/RTL and representative font-scale-2.0 hierarchies/screenshots. Production
+repairs remain presentation-only and begin from a failing boundary assertion.
 
-## Slice 27: Layout Density Preference Baseline
+Out of scope: semantics already owned by 30D1, new preference/state/storage
+behavior, Home/alert changes, visual redesign, and TalkBack traversal.
+
+### Gate 30D3: Appearance Accessibility Evidence and Document Sync
 
 Status: specified
 
-Planning note: split definition from persistence.
+Prerequisites: Slices 30D1 and 30D2.
 
-### Slice 27A: Simple Layout Definition
+Mode: required third-cycle test-only and documentation-sync session; no
+production behavior changes.
 
-Status: committed at `660e376`
+Must prove the selected semantic/transaction/layout cases together within
+budget; reconcile installed LTR/RTL/large-font/reduced-motion evidence and exact
+pairwise coverage; and sync README, specification, roadmap, current plan, and
+live history without claiming automatic contrast or TalkBack. A production
+failure creates a separately named Appearance repair slice.
 
-Prerequisite:
-
-- Slice 18H.
-
-Release intent: Define Simple before persisted selection.
-
-Implemented result:
-
-- The installed Settings / Appearance surface can select Simple for the current
-  app session only. Standard remains the launch/restart default.
-- Simple Home exposes `Now -> Forecast`; Forecast exposes Hourly and Daily
-  choices without provider refetch.
-- Source/stale/provenance and official alert reachability remain visible where
-  supplied; Standard Home remains unchanged.
-
-Must prove:
-
-- required MVP weather meaning is retained;
-- Simple is not Standard with arbitrary content removed;
-- source/stale/alert information remains reachable;
-- page semantics remain coherent or an explicitly specified alternative replaces them.
-
-### Slice 27B1: Layout Preference Storage and State
-
-Status: committed at `b68ca19`
-
-Prerequisites:
-
-- Slice 27A, committed at `660e376`.
-- small-state persistence.
-
-Must prove:
-
-- the versioned DataStore codec accepts only Simple and Standard;
-- malformed, incomplete, future, Detailed, and Meteorologist records resolve to
-  the conservative Standard fallback without aliasing unsupported choices;
-- state-holder startup, retry, pending write, failed write, and successful write
-  transitions preserve the last confirmed effective layout;
-- layout state changes do not rebuild forecast, alert, location, unit, or
-  effects data.
-
-Implemented result:
-
-- Added versioned DataStore codec/storage for Simple and Standard layout
-  preferences only.
-- Added state-holder startup, retry, pending write, failed write, and
-  successful write transitions that preserve the last confirmed effective
-  layout.
-- Added focused unit coverage for codec behavior, event ordering, failed retry,
-  and preservation of forecast/location/unit/effects boundaries.
-
-Out of scope:
-
-- Settings UI changes;
-- installed Activity recreation or force-stop verification;
-- Detailed or Meteorologist storage.
-
-### Slice 27B2: Layout Settings Transaction UI
-
-Status: committed at `b68ca19`
-
-Prerequisites:
-
-- Slice 27B1.
-- Slice 25A.
-
-Must prove:
-
-- Standard remains default;
-- Simple/Standard switching requires no provider refetch;
-- Settings / Appearance exposes loading, saved, pending, failure, and retry
-  states truthfully;
-- failed writes retain the last confirmed layout and allow retry;
-- layout controls keep selected semantics, logical traversal, and at least 48dp
-  touch height;
-- layout remains independent from effects/theme.
-
-Implemented result:
-
-- Wired production `MainActivity`, `OxygenAppStateHolder`, `OxygenApp`, and
-  Settings / Appearance layout preference state.
-- Settings / Appearance exposes loading, saved, pending, failure, and retry
-  states for Simple/Standard layout selection.
-- Targeted connected UI coverage passed for commit, read/write failure retry,
-  no forecast refetch, preference independence, selected semantics, and compact
-  48dp layout controls.
-
-Out of scope:
-
-- Activity recreation and installed force-stop/relaunch persistence evidence;
-- Detailed or Meteorologist controls.
-
-### Slice 27B3: Installed Layout Restoration Verification
-
-Status: verified on 2026-09-08
-
-Evidence:
-
-- `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`;
-- one pinned-emulator production journey covered Activity recreation and
-  force-stop/relaunch for Simple and Standard at 360x640/font-scale 1.3 with
-  Effects Off;
-- focused `LayoutPreferenceDataStoreInstrumentedTest` connected check passed
-  1/1; assemble and `git diff --check` passed.
-
-Prerequisites:
-
-- Slice 27B2.
-
-Must prove:
-
-- a saved Simple or Standard choice restores through the production
-  `MainActivity -> OxygenAppStateHolder -> OxygenApp -> Home` path;
-- Activity recreation and installed-app force-stop/relaunch preserve the saved
-  layout;
-- restored Simple does not first expose a ready Standard Home;
-- both restored layouts remain usable at compact large-font Effects Off
-  settings.
-
-Out of scope:
-
-- new layout types;
-- theme, icon, high-contrast, or effects behavior changes.
-
----
-
-## Slice 28: Theme Selection Baseline
+### Gate 30E: Installed TalkBack and Accessibility Closure
 
 Status: specified
 
-Planning note: split translation quality by one theme at a time, then persist
-only themes that pass the rendering boundary.
+Prerequisites: Gates 30A3, 30B3, 30C3, and 30D3.
 
-### Slice 28A1: Paper Theme Rendering Baseline
+Release intent: exercise the completed production surfaces with Android
+accessibility services and close Gate 30 using retained cross-slice evidence.
 
-Status: committed
+Must prove where the emulator supports it:
 
-Committed in `06c987b` after cycle
-`2026-09-08-slice-28a1-paper-theme-rendering-baseline`; the
-installed rendering evidence is retained under
-`.codex/test-artifacts/2026-09-08-slice-28a1-paper-theme-rendering-baseline/`.
+- TalkBack traverses Home Now/Hourly/Daily, an available official-alert
+  summary/detail, and Settings / Appearance in logical order;
+- named Home movement, alert selection/Back/source, Appearance selection/retry,
+  and Back actions are operable without hidden gesture or color-only discovery;
+- spoken weather/hazard output matches visible meaning without duplicate marks
+  or omitted safety text;
+- the retained compact/large-font, RTL, theme/contrast, long-content,
+  unit-conversion, touch-target, reduced-motion, and Effects-Off matrix is
+  complete without claiming untested cross-products.
 
-Prerequisites:
+Attempt one bounded TalkBack setup/traversal on the pinned emulator. If the
+service is absent or cannot be enabled safely, retain exact package/service/
+settings evidence and mark only service traversal blocked; never convert it to
+mock success. A production defect creates a bounded repair slice ahead of 30E.
 
-- Slice 18G.
-- Slice 18I.
-
-Release intent: Make Paper a deliberate translation of semantic design roles
-before it can become a persisted choice.
-
-Must prove for Paper:
-
-- semantic surfaces are mapped deliberately;
-- operational/warning states remain readable;
-- weather marks remain readable;
-- typography is intentional;
-- effects-off remains complete;
-- weather semantics do not change.
-
-Theme quality rule:
-
-Existing scaffold values do not guarantee inclusion. Paper may be deferred
-rather than shipped weakly.
-
-### Slice 28A2: Terminal Theme Rendering Baseline
-
-Status: committed at `80dd961`
-
-Prerequisites:
-
-- Slice 18G.
-- Slice 18I.
-- Slice 28A1 or an explicit decision to defer Paper.
-
-Release intent: Make Terminal a deliberate translation of semantic design roles
-before it can become a persisted choice.
-
-Must prove for Terminal:
-
-- semantic surfaces are mapped deliberately;
-- operational/warning states remain readable;
-- weather marks remain readable;
-- typography is intentional;
-- effects-off remains complete;
-- weather semantics do not change.
-
-Theme quality rule:
-
-Terminal may be deferred rather than shipped weakly.
-
-Completion evidence: focused six-case connected rendering and broad local
-Gradle checks passed on 2026-09-09. Terminal remains non-persisted; Slice 28B1
-is the next candidate.
-
-### Slice 28B1: Theme Preference Storage and State
-
-Status: specified
-
-Prerequisites:
-
-- at least one verified alternate theme from Slice 28A1 or 28A2.
-- small-state persistence.
-
-Must prove:
-
-- only verified MVP theme choices are accepted;
-- unknown/future theme records fall back conservatively;
-- state-holder read/write failure behavior is observable and retryable;
-- theme state remains independent from layout/effects.
-
-### Slice 28B2: Persisted Theme Settings UI
-
-Status: specified
-
-Prerequisites:
-
-- Slice 28B1.
-- Slice 25A.
-
-Must prove:
-
-- theme settings are reachable;
-- choice persists across restart;
-- provider refetch is not required;
-- theme remains independent from layout/effects.
-
----
-
-## Slice 29A: High-Contrast Rendering Contract
-
-Status: specified
-
-Prerequisites:
-
-- Slice 18G.
-- Slice 18I.
-
-Must prove:
-
-- high contrast is a semantic accessibility presentation, not merely brighter colors;
-- required meaning never depends on color;
-- compact + large font + effects off remains usable;
-- operational and alert states remain distinct.
-
-Out of scope:
-
-- persisted setting or Settings UI.
-
-## Slice 29B: High-Contrast Preference UI
-
-Status: specified
-
-Prerequisites:
-
-- Slice 29A.
-- Slice 25A.
-- small-state persistence.
-
-Must prove:
-
-- high contrast is reachable only if the rendering contract passed;
-- preference persists across restart;
-- provider refetch is not required;
-- contrast remains independent from theme/layout/effects.
-
----
-
-## Gate 30: Accessibility Presentation Verification
-
-Status: specified
-
-Release intent: Verify MVP presentation paths under accessibility-oriented Android conditions.
-
-Must prove where applicable:
-
-- TalkBack order;
-- meaningful labels;
-- touch targets;
-- compact phone;
-- large font;
-- RTL;
-- reduced motion;
-- effects Off;
-- high contrast;
-- long location/provider/alert names;
-- unit-converted values;
-- no important clipping/overlap.
-
-Any skipped condition must name the exact blocker.
+Gate 30E is test/evidence/documentation work, not a refactor. On success,
+reconcile README, specification sections 25/31/33/34/37/46/53, this roadmap,
+the active plan, and cycle history with only exercised conditions. Provider,
+privacy, license, persistence, or release-readiness claims do not change.
 
 ---
 
@@ -2112,9 +944,11 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 
 ## Recommended Sequence From Current Committed State
 
-Remote `main` is reconciled through merge `be38405`. The latest completed local
-implementation slice is Slice 27A, implemented at `660e376` with completion
-evidence recorded at `.codex/test-artifacts/2026-09-07-slice-27a-simple-layout-definition/`.
+The checked-out branch is reconciled with its local `origin/main` ref through
+merge `82cf281`. The latest completed local implementation slice is Slice 29B,
+implemented at `441d05d` with test follow-up `86e696c` and evidence sync
+`86f046b`; retained evidence is under
+`.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
@@ -2150,14 +984,31 @@ Use this as sequencing guidance, not permission to work multiple slices at once.
 30. Slice 28B2 — Persisted Theme Settings UI
 31. Slice 29A — High-Contrast Rendering Contract
 32. Slice 29B — High-Contrast Preference UI
-33. Gate 30 — Accessibility Presentation Verification
-34. Slice 33A — Dependency and Manifest Privacy Audit
-35. Slice 33B — Provider Disclosure and Local Data Privacy Audit
-36. Gate 34A — Settings and About Release Check
-37. Gate 34B — Data-Source Release Check
-38. Gate 35A — MVP Core Behavior Verification
-39. Gate 35B — MVP Presentation and Accessibility Verification
-40. Gate 35C — Release Candidate Decision
+33. Slice 30A1 — Home Spoken-Weather Semantics
+34. Slice 30A2 — Home Compact and Large-Font Resilience
+35. Slice 30A3A1 — Home Speech/Layout Evidence
+36. Slice 30A3B2 — Home Accessibility Evidence Document Sync
+37. Slice 30B1A1 — RTL Semantic Page Navigation Contract
+38. Slice 30B1A2 — RTL Directional Affordances and Gesture Behavior
+39. Slice 30B1A3 — RTL Chronology and Spoken-Meaning Preservation
+40. Slice 30B1A4 — RTL Compact Layout and No-Refetch Evidence
+41. Gate 30B1B1 — RTL Installed Evidence and Documentation Sync
+42. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
+43. Gate 30B3 — Home Environment Evidence and Document Sync
+44. Slice 30C1 — Official-Alert Summary Accessibility
+45. Slice 30C2 — Official-Alert Detail Accessibility
+46. Gate 30C3 — Alert Accessibility Evidence and Document Sync
+47. Slice 30D1 — Appearance Control Semantics
+48. Slice 30D2 — Appearance Layout and Environment Resilience
+49. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
+50. Gate 30E — Installed TalkBack and Accessibility Closure
+51. Slice 33A — Dependency and Manifest Privacy Audit
+52. Slice 33B — Provider Disclosure and Local Data Privacy Audit
+53. Gate 34A — Settings and About Release Check
+54. Gate 34B — Data-Source Release Check
+55. Gate 35A — MVP Core Behavior Verification
+56. Gate 35B — MVP Presentation and Accessibility Verification
+57. Gate 35C — Release Candidate Decision
 
 Run recurring documentation-sync gates at the defined cadence.
 
@@ -2176,10 +1027,16 @@ Sequencing rationale:
 
 ## Active Slice
 
-Slice 28B1: Theme Preference Storage and State is planned in
-`.codex/plans/current.md`. Slice 28A1 is committed at `06c987b`, and Slice 28A2
-is committed at `80dd961`, with retained connected rendering evidence under
-their cycle artifact directories.
+Slice 30A1: Home Spoken-Weather Semantics is committed at `da7b886`; Slice 30A2
+is committed at `1a8e14f`; 30A3A1's evidence is complete; and 30A3B2 is the
+committed documentation-sync boundary at `fb51f7b`. Slice 30B1A1 is committed
+at `63ed25a`; Slice 30B1A2 is the current candidate in
+`.codex/plans/current.md`. It is the next bounded slice of the split Gate 30
+accessibility boundary. Slice 29B is committed at `441d05d` with test
+coverage follow-up `86e696c` and evidence sync `86f046b`. Slice 28A1 is
+committed at `06c987b`, Slice 28A2 is committed at `80dd961`, and Slice 28B1 is
+committed at `708172f` (merged by `82cf281`), with retained evidence under their
+cycle artifact directories.
 Slice 27B1/27B2 are committed together at `b68ca19`, and Slice 27B3 is
 verified with retained installed evidence at `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
 
@@ -2217,12 +1074,24 @@ Immediate planning boundary:
 -> Slice 27B3 installed layout restoration verification verified on 2026-09-08
 -> Slice 28A1 Paper theme rendering baseline committed at `06c987b`
 -> Slice 28A2 Terminal theme rendering baseline committed at `80dd961`
+-> Slice 28B1 theme preference storage/state committed at `708172f`, merged by `82cf281`
+-> Slice 28B2 persisted theme Settings UI committed at `2c88b9c`
+-> Slice 29A high-contrast rendering contract committed at `0dccc94`
+-> Slice 29B persisted high-contrast preference UI committed at `441d05d`
+-> Slice 30A1 Home spoken-weather semantics committed at `da7b886`
+-> Slice 30A2 Home compact/large-font resilience committed at `1a8e14f`
+-> Slice 30A3A1 Home speech/layout evidence verified on 2026-09-10
+-> Slice 30A3B2 Home accessibility evidence document sync committed at `fb51f7b`
+-> Slice 30B1A1 RTL semantic page navigation contract committed at `63ed25a`
+-> Slice 30B1A2 RTL directional affordances and gesture behavior planned
 ```
 
-Gate 25, Slice 27A, and committed 27B1/27B2 are prerequisites. Slice 27B3 is
-verified; Slice 28A1 and Slice 28A2 are committed; Slice 28B1 is the active
-bounded slice. Release work and release-candidate claims remain outside this
-boundary.
+Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,
+Slice 29B, Slice 30A1, Slice 30A2, and the 30A3B2 documentation sync are
+complete. Gate 30 is split into the bounded 30A1–30E queue at the head of this
+roadmap; 30A3A1 evidence is complete, Slice 30B1A1 is committed, and Slice
+30B1A2 is the active planned candidate after 30A3B2 closure. Release
+work and release-candidate claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

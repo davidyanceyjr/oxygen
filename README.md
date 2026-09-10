@@ -51,6 +51,21 @@ and `docs/data-sources/`.
   force-stop/relaunch. Standard uses Now, Hourly, Daily, and Details pages;
   Simple uses Now and Forecast pages with Hourly/Daily choices and no provider
   refetch.
+- Persisted Oxygen, Paper, and Terminal theme selection through the installed
+  Settings / Appearance surface. Confirmed choices restore through Activity
+  recreation and force-stop/relaunch; failed writes retain the confirmed theme
+  and offer retry.
+- Persisted Standard and High contrast selection through the installed
+  Settings / Appearance surface. Confirmed contrast restores through Activity
+  recreation and force-stop/relaunch, remains independent of theme, layout,
+  effects, and forecast requests, and failed writes retain the confirmed choice
+  with retry.
+- Installed Home current, hourly, and daily weather exposes concise
+  mapper-owned accessibility descriptions with resolved temperature units and
+  honest missing-value/precipitation semantics. Retained installed evidence
+  covers Standard Now, Hourly, Daily, and Details plus Simple Forecast choices
+  at 360x640 dp and font scale 1.3 with Effects Off; TalkBack traversal is not
+  yet verified.
 - Home presentation conversion for provider-neutral unit preferences at the
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
@@ -70,14 +85,12 @@ and `docs/data-sources/`.
   implementation, while the installed app uses Room storage.
 - Provider-neutral custom-unit model and alternate-unit Home presentation
   outputs retained for a future custom-unit editor.
-- Paper and Terminal Home theme translations with connected rendering
-  baselines, retained for later persisted theme selection.
 
 ## Not implemented yet
 
 - Custom unit editing UI.
 - Alert persistence/cache, background polling, and notifications.
-- Full effects behavior, persisted theme, and icon-pack settings.
+- Full effects behavior and icon-pack settings.
 - Release-candidate verification.
 
 ## Repository structure
@@ -157,11 +170,8 @@ in headless mode. To force a visible emulator window on a desktop machine:
 OXYGEN_EMULATOR_WINDOW=1 scripts/start-emulator.sh
 ```
 
-The older compatible variable also works:
-
-```bash
-SPACE_GAME_EMULATOR_WINDOW=1 scripts/start-emulator.sh
-```
+Existing local scripts using the former variable remain compatible for now;
+new scripts should use `OXYGEN_EMULATOR_WINDOW`.
 
 ## Important
 

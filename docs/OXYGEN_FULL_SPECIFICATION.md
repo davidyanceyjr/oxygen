@@ -1,7 +1,7 @@
 # Oxygen Weather for Android — Full Product and Technical Specification
 
 **Specification version:** 0.2.0  
-**Status:** Scaffold implementation authority  
+**Status:** Implementation authority
 **Platform:** Android  
 **Primary implementation:** Kotlin + Jetpack Compose  
 **Product model:** Free, open source, no advertising, no account required  
@@ -465,7 +465,9 @@ Repositories
 Local and remote data sources
 ```
 
-The scaffold begins with `:app` and `:core` because the source project already proves that configuration. Split further only as code volume justifies it.
+The repository begins with `:app` and `:core` because that configuration
+already proves the required application and provider-neutral boundaries. Split
+further only as code volume justifies it.
 
 Long-term module target:
 
@@ -517,7 +519,8 @@ Do not prematurely create dozens of Gradle modules while the application is smal
 - MapLibre Native for maps.
 - `java.time` for time handling.
 
-The generated scaffold intentionally keeps dependencies minimal until the provider/storage phases are implemented.
+The repository intentionally keeps dependencies minimal until provider and
+storage behavior requires additional libraries.
 
 ---
 
@@ -657,7 +660,13 @@ Presentation model
                      Compose
 ```
 
-Content, layout, theme, and effects are independent concerns.
+Content, layout, theme, contrast, and effects are independent concerns.
+
+Contrast is a presentation axis layered over the selected theme. A high-
+contrast presentation may replace palette, surface, outline, and supporting
+content roles while retaining the selected theme's identity, typography,
+sizing, shapes, weather marks, and information layout. It is not a fourth
+theme, and it must not alter weather semantics or provider behavior.
 
 A theme never owns business logic.
 
@@ -764,11 +773,31 @@ Future candidates:
 - Minimal;
 - Aurora;
 - Observatory;
-- High Contrast;
 - E-Ink;
 - Retro Weather Station.
 
+High contrast is not a theme candidate. It is an independent accessibility
+presentation axis that may be layered over Oxygen, Paper, Terminal, or future
+themes without changing their identity or weather semantics.
+
 Themes should be genuinely different, not twenty blue variants.
+
+The installed Settings / Appearance surface currently exposes Oxygen, Paper,
+and Terminal as persisted choices. The versioned local theme record accepts
+only those canonical values; a theme becomes effective after its write
+succeeds, and the confirmed choice is restored through Activity recreation and
+force-stop/relaunch. Failed reads and writes retain conservative, confirmed
+presentation and expose retry. Theme selection does not require a forecast
+refetch or change weather semantics. Full effects behavior and icon-pack
+settings remain unfinished.
+
+The same installed Appearance surface exposes the independent Standard and
+High contrast choices. The versioned local contrast record accepts only those
+canonical values; a choice becomes effective after its write succeeds and the
+confirmed value restores through Activity recreation and force-stop/relaunch.
+Failed reads and writes retain conservative confirmed presentation and expose
+retry. Contrast selection does not change theme, layout, effects, forecast
+data, or provider requests.
 
 ---
 
@@ -1150,6 +1179,13 @@ The hero is a summary, not a data dump.
        Updated 8 min ago
 ```
 
+The production Home mapper also supplies one concise spoken description on the
+current weather mark. It states the condition and current temperature, then
+available feels-like, high, and low values. Temperatures use resolved
+`degree/degrees Celsius` or `degree/degrees Fahrenheit` wording. The visible
+condition, temperature, feels-like, and Today range remain visible but are
+redundant to this summary for accessibility.
+
 ### 31.5 Hourly
 
 Hourly forecast content may use local horizontal movement or paging where it
@@ -1163,6 +1199,10 @@ Each hour includes:
 - temperature;
 - precipitation probability.
 
+Its mapper-owned spoken description uses local time, condition, temperature,
+and an available `percent chance of precipitation` fact. Missing temperature
+is announced as `Temperature unavailable`; absent precipitation is omitted.
+
 ### 31.6 Daily
 
 Rows include:
@@ -1172,6 +1212,11 @@ Rows include:
 - precipitation probability;
 - low/high;
 - optional range bar.
+
+Its mapper-owned spoken description uses local date, condition, available
+high/low values, and available precipitation probability. A row with neither a
+high nor low announces `High and low unavailable`; missing optional facts are
+omitted.
 
 ### 31.7 Metric grid
 
@@ -1384,7 +1429,8 @@ All important UI must:
 - provide spoken weather descriptions;
 - expose text alternatives for charts;
 - avoid flashing effects;
-- support high contrast;
+- support a high-contrast presentation independent of the selected theme,
+  layout, and effects level;
 - preserve logical TalkBack order;
 - honor reduced motion.
 
@@ -1623,6 +1669,32 @@ Required for:
 - null/missing fields;
 - theme validation.
 
+Slice 30A1 added mapper assertions for exact Fahrenheit/Celsius wording and
+missing-value meaning, plus Compose assertions for one merged description per
+current/hourly/daily item and retained visual descendants in the unmerged tree.
+The four named Home connected cases passed on `oxygen_starter` / `emulator-5554`
+at the compact fixture boundary; the installed hierarchy also exposed the
+mapper-owned descriptions on Now, Hourly, and Daily at 360x640 dp and font
+scale 1.3 with Effects Off. This evidence does not establish TalkBack service
+traversal or pronunciation.
+
+Slice 30A2 then passed its exact three-case compact/large-font connected
+filter, covering Standard and Simple Home reachability at 360x640 dp and font
+scale 1.3 plus one representative Standard Details overflow case at font
+scale 2.0. The 30A3A1 installed evidence run exercised the production Chicago
+selected-location path with Fahrenheit and Effects Off, and retained
+hierarchies for Standard Now, Hourly, Daily, and Details plus Simple Forecast
+Hourly and Daily choices. Those hierarchies exposed page identity,
+mapper-owned weather descriptions where captured, Open-Meteo source/update/
+provenance text, and page/footer controls. The 30A3A1 attempt to reach the
+Appearance lower section at font scale 2.0 triggered the emulator desktop/
+overview gesture surface twice, so it produced no new 2.0 evidence; the
+representative 2.0 evidence remains the committed 30A2 artifact. This is not
+service-level TalkBack traversal or pronunciation evidence and does not cover
+RTL, reduced-motion invariance, theme/contrast invariance, alerts,
+localization, a complete large-font matrix, release readiness, or MVP
+completion.
+
 ### Contract fixtures
 
 Store provider samples under:
@@ -1660,10 +1732,10 @@ Test:
 
 ## 47. Repository Direction
 
-Current generated scaffold:
+Current repository structure:
 
 ```text
-OxygenWeatherScaffold/
+oxygen/
 ├── app/
 │   └── src/main/kotlin/com/oxygen/weather/
 │       ├── MainActivity.kt
@@ -1686,7 +1758,9 @@ OxygenWeatherScaffold/
 └── settings.gradle.kts
 ```
 
-This deliberately mirrors the source scaffold's proven `:app` + `:core` structure while establishing package boundaries that can later become Gradle modules.
+The repository uses a focused `:app` + `:core` structure with explicit
+provider-neutral and Android application boundaries. Sample data remains in a
+debug preview path and is not part of installed production construction.
 
 ---
 
@@ -1831,16 +1905,23 @@ Oxygen 1.0 is ready when a user can:
 10. No Google dependency is required by the core design.
 11. Attribution and licensing are product features.
 12. Free data and free infrastructure are distinct problems.
-13. Theme, layout, icon pack, and effects are independent.
+13. Theme, contrast, layout, icon pack, and effects are independent.
 14. Themes cannot alter weather or hazard semantics.
 15. Decoration-independent usability is mandatory.
 16. The default Oxygen presentation must be excellent without configuration.
 
+High contrast is resolved as a presentation overlay on the selected theme. It
+does not create a fourth theme, alter provider behavior, or change weather
+semantics. The installed Settings / Appearance surface provides a persisted
+Standard/High choice with confirmed-write semantics and restoration through
+Activity recreation and force-stop/relaunch; the choice remains independent of
+theme, layout, effects, and forecast requests.
+
 ---
 
-## 52. Scaffold Build Baseline
+## 52. Build Baseline
 
-The generated scaffold intentionally retains the source project's known build versions:
+The repository currently retains the known build versions:
 
 ```text
 Android Gradle Plugin: 9.3.0
@@ -1963,10 +2044,46 @@ The installed 360x640, font-scale-1.3 journey also verified Effects
 Off, saved-state feedback, and usable forecast/page controls. Switching layout
 or Hourly/Daily presentation does not refetch forecast, alert, location, or
 geocoding data. Slice 28A1 and Slice 28A2 added committed Paper and Terminal
-Home rendering baselines without making either theme selectable or persisted.
-Full effects, richer scene behavior, and persisted theme/icon settings remain
-later work. The complete Slice 27B3 evidence package is retained under
-`.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
+Home rendering baselines. Slice 28B1 added the versioned theme preference
+boundary, and Slice 28B2 made Oxygen, Paper, and Terminal selectable through
+the installed Settings / Appearance surface with confirmed-write semantics and
+restoration evidence. Full effects, richer scene behavior, and icon-pack
+settings remain later work. The complete Slice 27B3 evidence package is
+retained under
+`.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`;
+the Slice 28B2 evidence package is retained under
+`.codex/test-artifacts/2026-09-09-slice-28b2-persisted-theme-settings-ui/`.
+
+Slice 29A, High-Contrast Rendering Contract, is implemented and verified at
+the deterministic Compose boundary. `OxygenAppearance` now carries a separate
+standard/high contrast input layered over Oxygen, Paper, or Terminal; the
+resolved high-contrast roles are opaque and preserve theme identity,
+typography, layout, weather meaning, operational state labels, and official
+alert semantics under compact large-font Effects Off rendering. It was followed
+by Slice 29B, which adds the persisted Settings / Appearance choice and
+restores confirmed contrast through Activity recreation and force-stop/relaunch.
+Selection keeps confirmed contrast effective until local write success, reports
+read/write failures with retry, and does not refetch or alter forecast state.
+Automatic system detection and TalkBack service traversal remain unverified.
+Evidence is retained under
+`.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`
+and `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
+
+Gate 30, Accessibility Presentation Verification, remains the next broader
+accessibility boundary and owns TalkBack, RTL, and the remaining presentation-
+condition matrix. The roadmap splits it into Home spoken semantics, compact/
+large-font Home layout, Home RTL, Home reduced-motion/appearance invariance,
+official-alert summary and detail, Appearance semantics and layout, required
+third-cycle test/document-sync gates, and an installed TalkBack closure gate.
+Slice 30A1, Home Spoken-Weather Semantics, is implemented, verified, and
+committed at `da7b886`; Slice 30A2, Home Compact and Large-Font Resilience, is
+implemented, verified, and committed at `1a8e14f`; and Slice 30A3A1 Home
+Speech/Layout Evidence is complete as evidence on 2026-09-10. Slice 30A3B2 is
+the documentation-sync boundary for that evidence. Slice 30B1A1 RTL semantic
+page navigation is committed at `63ed25a`, and Slice 30B1A2 RTL directional
+affordances and gesture behavior is committed at `20b6ddc`. Slice 30B1A3 is
+the next planned boundary. No later Gate 30 condition, including complete RTL
+support or TalkBack service traversal, is claimed complete.
 
 ---
 

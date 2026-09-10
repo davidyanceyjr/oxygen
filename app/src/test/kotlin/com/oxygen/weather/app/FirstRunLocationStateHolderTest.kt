@@ -35,7 +35,6 @@ class FirstRunLocationStateHolderTest {
         assertTrue(state.screen is OxygenAppScreen.FirstRunLocationEntry)
         assertNull(state.selectedLocation)
         assertFalse(state.isShowingHome)
-        assertFalse(state.usesScaffoldWeather)
     }
 
     @Test

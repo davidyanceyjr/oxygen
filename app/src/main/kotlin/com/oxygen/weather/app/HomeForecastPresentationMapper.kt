@@ -187,6 +187,7 @@ data class HomeCurrentPresentation(
     val lowTemperatureC: Double?,
     val updatedTime: String,
     val dataTypeLabel: String,
+    val spokenDescription: String,
 )
 
 data class HomeHourlyPresentation(
@@ -197,6 +198,7 @@ data class HomeHourlyPresentation(
     val temperatureC: Double?,
     val precipitationProbability: String?,
     val precipitationProbabilityPercent: Int?,
+    val spokenDescription: String,
 )
 
 data class HomeDailyPresentation(
@@ -211,6 +213,7 @@ data class HomeDailyPresentation(
     val lowC: Double?,
     val sunrise: String?,
     val sunset: String?,
+    val spokenDescription: String,
 )
 
 data class HomeMetricPresentation(
@@ -287,6 +290,13 @@ private fun CurrentConditions.toCurrentPresentation(
         lowTemperatureC = heroRange?.lowTemperatureC,
         updatedTime = "Updated ${time.formatLocalTime(zoneId)}",
         dataTypeLabel = provenance.type.displayLabel(),
+        spokenDescription = buildList {
+            add("${condition.displayName()}.")
+            add(temperatureC.formatSpokenTemperature(units.temperature)?.let { "$it." } ?: "Temperature unavailable.")
+            apparentTemperatureC.formatSpokenTemperature(units.temperature)?.let { add("Feels like $it.") }
+            heroRange?.highTemperatureC.formatSpokenTemperature(units.temperature)?.let { add("High $it.") }
+            heroRange?.lowTemperatureC.formatSpokenTemperature(units.temperature)?.let { add("Low $it.") }
+        }.joinToString(" "),
     )
 
 private fun DailyForecast.toHeroRangePresentation(units: ResolvedUnitPreference): HomeHeroRangePresentation =
@@ -309,6 +319,12 @@ private fun HourlyForecast.toHourlyPresentation(
         temperatureC = temperatureC,
         precipitationProbability = precipitationProbabilityPercent?.let { "$it%" },
         precipitationProbabilityPercent = precipitationProbabilityPercent,
+        spokenDescription = buildList {
+            add("${HOUR_FORMAT.format(time.atZone(zoneId))}.")
+            add("${condition.displayName()}.")
+            add(temperatureC.formatSpokenTemperature(units.temperature)?.let { "$it." } ?: "Temperature unavailable.")
+            precipitationProbabilityPercent?.let { add("$it percent chance of precipitation.") }
+        }.joinToString(" "),
     )
 
 private fun DailyForecast.toDailyPresentation(
@@ -327,6 +343,17 @@ private fun DailyForecast.toDailyPresentation(
         lowC = lowC,
         sunrise = sunrise?.formatLocalTime(zoneId),
         sunset = sunset?.formatLocalTime(zoneId),
+        spokenDescription = buildList {
+            add("${DAY_FORMAT.format(LocalDate.ofEpochDay(dateEpochDay))}.")
+            add("${condition.displayName()}.")
+            if (highC == null && lowC == null) {
+                add("High and low unavailable.")
+            } else {
+                highC.formatSpokenTemperature(units.temperature)?.let { add("High $it.") }
+                lowC.formatSpokenTemperature(units.temperature)?.let { add("Low $it.") }
+            }
+            precipitationProbabilityPercent?.let { add("$it percent chance of precipitation.") }
+        }.joinToString(" "),
     )
 
 private fun CurrentConditions.toMetricRows(
@@ -563,12 +590,25 @@ private fun Instant.formatLocalTime(zoneId: ZoneId): String = TIME_FORMAT.format
 private fun Instant.formatFetched(zoneId: ZoneId): String = FETCHED_FORMAT.format(atZone(zoneId))
 
 private fun Double?.formatTemperature(unit: TemperatureUnit): String = this?.let {
-    val value = when (unit) {
-        TemperatureUnit.CELSIUS -> it
-        TemperatureUnit.FAHRENHEIT -> it * 9.0 / 5.0 + 32.0
-    }
-    "${value.whole()} ${unit.symbol}"
+    "${it.convertTemperature(unit).whole()} ${unit.symbol}"
 } ?: UNAVAILABLE
+
+private fun Double?.formatSpokenTemperature(unit: TemperatureUnit): String? = this?.let {
+    val value = it.convertTemperature(unit).whole()
+    val degreeWord = if (value == "1" || value == "-1") "degree" else "degrees"
+    "$value $degreeWord ${unit.spokenName}"
+}
+
+private fun Double.convertTemperature(unit: TemperatureUnit): Double = when (unit) {
+    TemperatureUnit.CELSIUS -> this
+    TemperatureUnit.FAHRENHEIT -> this * 9.0 / 5.0 + 32.0
+}
+
+private val TemperatureUnit.spokenName: String
+    get() = when (this) {
+        TemperatureUnit.CELSIUS -> "Celsius"
+        TemperatureUnit.FAHRENHEIT -> "Fahrenheit"
+    }
 
 private val TemperatureUnit.symbol: String
     get() = when (this) {

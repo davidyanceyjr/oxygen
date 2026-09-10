@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.ui.theme.LocalOxygenHomeDesign
+import com.oxygen.weather.app.ui.theme.ContrastLevel
 import com.oxygen.weather.core.model.WeatherCondition
 import kotlin.math.cos
 import kotlin.math.sin
@@ -24,8 +25,16 @@ fun WeatherConditionMark(
     val roles = LocalOxygenHomeDesign.current
     Canvas(modifier = modifier.size(56.dp)) {
         val gold = roles.weatherMarkGold
-        val quiet = roles.weatherMarkQuiet.copy(alpha = 0.76f)
-        val precipitation = roles.weatherMarkQuiet.copy(alpha = 0.56f)
+        val quiet = if (roles.contrast == ContrastLevel.HIGH) {
+            roles.weatherMarkQuiet
+        } else {
+            roles.weatherMarkQuiet.copy(alpha = 0.76f)
+        }
+        val precipitation = if (roles.contrast == ContrastLevel.HIGH) {
+            roles.weatherMarkQuiet
+        } else {
+            roles.weatherMarkQuiet.copy(alpha = 0.56f)
+        }
         val stroke = size.minDimension * 0.045f
         val fineStroke = size.minDimension * 0.034f
 

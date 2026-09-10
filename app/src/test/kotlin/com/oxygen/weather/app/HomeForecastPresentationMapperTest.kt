@@ -23,6 +23,7 @@ import com.oxygen.weather.core.model.Wind
 import com.oxygen.weather.core.provider.AlertLookupStatus
 import com.oxygen.weather.core.provider.AlertSuccessMetadata
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -246,6 +247,98 @@ class HomeForecastPresentationMapperTest {
             HomeMetricNumericValues.PressureHpa(1012.4),
             presentation.metrics.single { it.identity == HomeMetricIdentity.Pressure }.numericValues,
         )
+    }
+
+    @Test
+    fun spokenDescriptionsUseResolvedTemperatureUnits() {
+        val fahrenheit = fullWeatherBundle().toHomeSuccessPresentation(testLocation)
+        val celsius = fullWeatherBundle().toHomeSuccessPresentation(
+            testLocation,
+            UnitPreference.Preset(UnitPreferencePreset.METRIC),
+        )
+
+        assertEquals(
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+            requireNotNull(fahrenheit.current).spokenDescription,
+        )
+        assertEquals(
+            "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+            fahrenheit.hourly.single().spokenDescription,
+        )
+        assertEquals(
+            "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
+            fahrenheit.daily.single().spokenDescription,
+        )
+
+        assertEquals(
+            "Rain showers. 18 degrees Celsius. Feels like 17 degrees Celsius. High 23 degrees Celsius. Low 12 degrees Celsius.",
+            requireNotNull(celsius.current).spokenDescription,
+        )
+        assertEquals(
+            "6 AM. Rain. 18 degrees Celsius. 60 percent chance of precipitation.",
+            celsius.hourly.single().spokenDescription,
+        )
+        assertEquals(
+            "Sat, Aug 22. Rain showers. High 23 degrees Celsius. Low 12 degrees Celsius. 40 percent chance of precipitation.",
+            celsius.daily.single().spokenDescription,
+        )
+    }
+
+    @Test
+    fun spokenDescriptionsHandleMissingValuesWithoutInventingZero() {
+        val weather = fullWeatherBundle().copy(
+            current = requireNotNull(fullWeatherBundle().current).copy(
+                temperatureC = null,
+                apparentTemperatureC = null,
+            ),
+            hourly = listOf(
+                fullWeatherBundle().hourly.single().copy(
+                    temperatureC = null,
+                    precipitationProbabilityPercent = null,
+                ),
+            ),
+            daily = listOf(
+                fullWeatherBundle().daily.single().copy(
+                    highC = 22.7,
+                    lowC = null,
+                    precipitationProbabilityPercent = null,
+                ),
+                fullWeatherBundle().daily.single().copy(
+                    dateEpochDay = LocalDate.parse("2026-08-23").toEpochDay(),
+                    highC = null,
+                    lowC = null,
+                    precipitationProbabilityPercent = null,
+                ),
+            ),
+        )
+
+        val presentation = weather.toHomeSuccessPresentation(testLocation)
+        val current = requireNotNull(presentation.current)
+        assertEquals(
+            "Rain showers. Temperature unavailable. High 73 degrees Fahrenheit.",
+            current.spokenDescription,
+        )
+        assertNull(current.temperatureC)
+        assertEquals(WeatherCondition.RAIN_SHOWERS, current.conditionIdentity)
+        assertEquals(
+            "6 AM. Rain. Temperature unavailable.",
+            presentation.hourly.single().spokenDescription,
+        )
+        assertNull(presentation.hourly.single().temperatureC)
+        assertEquals(WeatherCondition.RAIN, presentation.hourly.single().conditionIdentity)
+        assertEquals(
+            "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit.",
+            presentation.daily[0].spokenDescription,
+        )
+        assertEquals(
+            "Sun, Aug 23. Rain showers. High and low unavailable.",
+            presentation.daily[1].spokenDescription,
+        )
+        assertNull(presentation.daily[0].lowC)
+        assertNull(presentation.daily[1].highC)
+        assertNull(presentation.daily[1].lowC)
+        assertNull(presentation.daily[0].precipitationProbabilityPercent)
+        assertEquals(WeatherCondition.RAIN_SHOWERS, presentation.daily[1].conditionIdentity)
     }
 
     @Test
