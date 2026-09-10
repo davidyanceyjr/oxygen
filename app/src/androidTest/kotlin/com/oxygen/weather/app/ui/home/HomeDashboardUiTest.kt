@@ -2181,6 +2181,148 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun rtlStandardHomeDirectionalAffordancesMirrorAndGestures() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+            layoutDirection = LayoutDirection.Rtl,
+        )
+
+        composeRule.assertMirroredPageSelector(
+            "home-page-tab-details",
+            "home-page-tab-daily",
+            "home-page-tab-hourly",
+            "home-page-tab-now",
+        )
+        composeRule.assertHomePage(
+            title = "Now",
+            position = "Page 1 of 4",
+            selectedTab = "home-page-tab-now",
+            actions = listOf("Show next page: Hourly"),
+        )
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        composeRule.assertHomePage(
+            title = "Now",
+            position = "Page 1 of 4",
+            selectedTab = "home-page-tab-now",
+            actions = listOf("Show next page: Hourly"),
+        )
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+        composeRule.assertHomePage(
+            title = "Hourly",
+            position = "Page 2 of 4",
+            selectedTab = "home-page-tab-hourly",
+            actions = listOf("Show previous page: Now", "Show next page: Daily"),
+        )
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+        composeRule.assertHomePage(
+            title = "Daily",
+            position = "Page 3 of 4",
+            selectedTab = "home-page-tab-daily",
+            actions = listOf("Show previous page: Hourly", "Show next page: Details"),
+        )
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+        composeRule.assertHomePage(
+            title = "Details",
+            position = "Page 4 of 4",
+            selectedTab = "home-page-tab-details",
+            actions = listOf("Show previous page: Daily"),
+        )
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+        composeRule.assertHomePage(
+            title = "Details",
+            position = "Page 4 of 4",
+            selectedTab = "home-page-tab-details",
+            actions = listOf("Show previous page: Daily"),
+        )
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        composeRule.assertHomePage(
+            title = "Daily",
+            position = "Page 3 of 4",
+            selectedTab = "home-page-tab-daily",
+            actions = listOf("Show previous page: Hourly", "Show next page: Details"),
+        )
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        composeRule.assertHomePage(
+            title = "Hourly",
+            position = "Page 2 of 4",
+            selectedTab = "home-page-tab-hourly",
+            actions = listOf("Show previous page: Now", "Show next page: Daily"),
+        )
+    }
+
+    @Test
+    fun rtlSimpleHomeDirectionalAffordancesMirrorAndGestures() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            appearance = OxygenAppearance(layout = LayoutPreset.SIMPLE, effects = EffectsLevel.OFF),
+            layoutDirection = LayoutDirection.Rtl,
+        )
+
+        composeRule.assertMirroredPageSelector(
+            "home-page-tab-forecast",
+            "home-page-tab-now",
+        )
+        composeRule.assertHomePage(
+            title = "Now",
+            position = "Page 1 of 2",
+            selectedTab = "home-page-tab-now",
+            actions = listOf("Show next page: Forecast"),
+        )
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+        composeRule.assertHomePage(
+            title = "Forecast",
+            position = "Page 2 of 2",
+            selectedTab = "home-page-tab-forecast",
+            actions = listOf("Show previous page: Now"),
+        )
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        composeRule.assertHomePage(
+            title = "Now",
+            position = "Page 1 of 2",
+            selectedTab = "home-page-tab-now",
+            actions = listOf("Show next page: Forecast"),
+        )
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        composeRule.assertHomePage(
+            title = "Now",
+            position = "Page 1 of 2",
+            selectedTab = "home-page-tab-now",
+            actions = listOf("Show next page: Forecast"),
+        )
+    }
+
+    @Test
     fun homeInteractiveControlsExposeMinimumTouchTargetsAndDoNotPageAccidentally() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
@@ -3497,6 +3639,31 @@ private fun ComposeTestRule.assertMinimumTouchTarget(vararg tags: String) {
         assertTrue("$tag should be at least 48dp wide", rect.width >= 48f)
         assertTrue("$tag should be at least 48dp tall", rect.height >= 48f)
     }
+}
+
+private fun ComposeTestRule.assertMirroredPageSelector(vararg tagsInLeftToRightOrder: String) {
+    assertMinimumTouchTarget(*tagsInLeftToRightOrder)
+    val leftCoordinates = tagsInLeftToRightOrder.map { tag ->
+        onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.left
+    }
+    leftCoordinates.zipWithNext().forEachIndexed { index, (left, nextLeft) ->
+        assertTrue(
+            "${tagsInLeftToRightOrder[index]} should be left of ${tagsInLeftToRightOrder[index + 1]}",
+            left < nextLeft,
+        )
+    }
+}
+
+private fun ComposeTestRule.assertHomePage(
+    title: String,
+    position: String,
+    selectedTab: String,
+    actions: List<String>,
+) {
+    onNodeWithTag("home-page-title").assertTextContains(title)
+    onNodeWithTag("home-page-position").assertTextContains(position)
+    onNodeWithTag(selectedTab).assertIsSelected()
+    onNodeWithTag("home-page-container").assertCustomActions(*actions.toTypedArray())
 }
 
 private fun ComposeTestRule.assertMinimumTouchTargetAfterScroll(vararg tags: String) {
