@@ -9,8 +9,8 @@ Reconciled against local `origin/main` ref: `82cf281`
 Synchronized through Slice 29B implementation `441d05d`, test follow-up
 `86e696c`, and evidence sync `86f046b`
 
-Repository audit cleanup and live-history compression were completed in the
-2026-09-10 audit-cleanup commit; the active queue remains unchanged.
+Repository audit cleanup and live-history compression were completed in commit
+6cab109; the active queue remains unchanged.
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 

@@ -105,9 +105,10 @@ the active plan.
 
 ### 2026-09-10-repository-audit-cleanup
 
-Status: verified
+Status: committed
 Mode: repository cleanup and documentation synchronization
 Scope: Findings from the 2026-09-10 Repository Messiness Audit
+Commit: 6cab109
 
 Result:
 
@@ -138,5 +139,3 @@ Limits:
 - No connected tests, emulator journey, provider network checks, or dependency
   audit tooling were rerun; this slice changed no provider, domain, cache
   schema, DataStore format, manifest, or user-facing weather behavior.
-
-Commit state: this commit.
