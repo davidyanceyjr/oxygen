@@ -59,6 +59,11 @@ Use four components to track project state:
 - `.codex/cycles/history.md` records completed slices and evidence.
 - `.codex/cycles/archive/` holds older live-history material when the live file grows too large.
 
+Every commit must use a descriptive subject and a concise body. The body must
+summarize the changed behavior or documentation, evidence and verification
+actually run, and important limits or skipped checks. Do not use subject-only
+messages for slice, fix, or documentation-sync commits.
+
 Keep the actionable item near the top of operational files. Prefer minimal reads of the current slice, roadmap candidate section, and recent history summary. Archive older live-history content before the readable tail gets too large.
 
 ## Authority Order
