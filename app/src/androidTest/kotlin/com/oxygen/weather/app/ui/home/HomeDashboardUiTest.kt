@@ -2052,6 +2052,9 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("18 deg C").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Rain showers. 18 degrees Celsius. Feels like 17 degrees Celsius. High 23 degrees Celsius. Low 12 degrees Celsius.",
+        ).assertIsDisplayed()
         composeRule.onNodeWithText("Open-Meteo | Fetched Aug 22, 7:00 AM CDT").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
@@ -2160,6 +2163,33 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun currentWeatherExposesOneCompleteSpokenSummaryWithoutRedundantChildren() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 640,
+            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+        )
+
+        val description =
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit."
+        composeRule.onAllNodesWithContentDescription(description).assertCountEquals(1)
+        composeRule.onAllNodesWithContentDescription("Rain showers").assertCountEquals(0)
+        composeRule.onAllNodesWithContentDescription("65 deg F").assertCountEquals(0)
+        composeRule.onNodeWithTag("home-current-mark", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("Rain showers", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("65 deg F", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("H 73 deg F   L 54 deg F", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag("home-page-container").assertCustomActions("Show next page: Hourly")
+        composeRule.writeSemanticsArtifact("current-summary-spoken-semantics.txt")
+    }
+
+    @Test
     fun compactHourlyPageShowsFourChronologicalEntriesWithHonestPrecipitation() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(
@@ -2176,13 +2206,15 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
         composeRule.onNodeWithTag("home-hourly-grid").assertIsDisplayed()
         listOf(
-            "6 AM, Rain, 64 deg F, 60%",
-            "7 AM, Cloudy, 67 deg F, Precipitation unavailable",
-            "8 AM, Partly cloudy, 68 deg F, 20%",
-            "9 AM, Mostly clear, 70 deg F, 10%",
+            "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+            "7 AM. Cloudy. 67 degrees Fahrenheit.",
+            "8 AM. Partly cloudy. 68 degrees Fahrenheit. 20 percent chance of precipitation.",
+            "9 AM. Mostly clear. 70 degrees Fahrenheit. 10 percent chance of precipitation.",
         ).forEach { description ->
-            composeRule.onNodeWithContentDescription(description).assertIsDisplayed()
+            composeRule.onAllNodesWithContentDescription(description).assertCountEquals(1)
         }
+        composeRule.onNodeWithTag("home-hourly-entry-0", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("6 AM", useUnmergedTree = true).assertExists()
         composeRule.assertWithinRootBounds(
             "home-hourly-entry-0",
             "home-hourly-entry-1",
@@ -2213,13 +2245,15 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
         composeRule.onNodeWithTag("home-daily-list").assertIsDisplayed()
         listOf(
-            "Sat, Aug 22, Rain showers, High 73 deg F, Low 54 deg F, 40%",
-            "Sun, Aug 23, Cloudy, High 70 deg F, Low 52 deg F, Precipitation unavailable",
-            "Mon, Aug 24, Partly cloudy, High 77 deg F, Low 57 deg F, 20%",
-            "Tue, Aug 25, Mostly clear, High 82 deg F, Low 61 deg F, 10%",
+            "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
+            "Sun, Aug 23. Cloudy. High 70 degrees Fahrenheit. Low 52 degrees Fahrenheit.",
+            "Mon, Aug 24. Partly cloudy. High 77 degrees Fahrenheit. Low 57 degrees Fahrenheit. 20 percent chance of precipitation.",
+            "Tue, Aug 25. Mostly clear. High 82 degrees Fahrenheit. Low 61 degrees Fahrenheit. 10 percent chance of precipitation.",
         ).forEach { description ->
-            composeRule.onNodeWithContentDescription(description).assertIsDisplayed()
+            composeRule.onAllNodesWithContentDescription(description).assertCountEquals(1)
         }
+        composeRule.onNodeWithTag("home-daily-entry-0", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("Rain showers", useUnmergedTree = true).assertExists()
         composeRule.assertWithinRootBounds(
             "home-daily-entry-0",
             "home-daily-entry-1",

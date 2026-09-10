@@ -43,7 +43,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
@@ -560,7 +562,7 @@ private fun NowPage(
                         .clip(RoundedCornerShape(8.dp))
                         .testTag("home-current-mark")
                         .semantics {
-                            contentDescription = dashboard.current.condition
+                            contentDescription = dashboard.current.spokenDescription
                         },
                 ) {
                     WeatherConditionMark(
@@ -574,11 +576,13 @@ private fun NowPage(
                 ) {
                     Text(
                         text = dashboard.current.condition,
+                        modifier = Modifier.semantics { hideFromAccessibility() },
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         text = dashboard.current.temperature,
+                        modifier = Modifier.semantics { hideFromAccessibility() },
                         style = temperatureStyle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -591,13 +595,16 @@ private fun NowPage(
             ).joinToString("   ").ifEmpty { null }
             Text(
                 text = dashboard.current.apparentTemperature,
+                modifier = Modifier.semantics { hideFromAccessibility() },
                 style = roles.compactWeatherValue,
             )
             NowContextGrid(
                 items = listOfNotNull(
-                    range?.let { "Today" to it },
-                    dashboard.metrics.firstOrNull { it.identity == HomeMetricIdentity.Humidity }?.let { it.label to it.value },
-                    dashboard.metrics.firstOrNull { it.identity == HomeMetricIdentity.Wind }?.let { it.label to it.value },
+                    range?.let { NowContextItem("Today", it, redundantFromCurrentSummary = true) },
+                    dashboard.metrics.firstOrNull { it.identity == HomeMetricIdentity.Humidity }
+                        ?.let { NowContextItem(it.label, it.value) },
+                    dashboard.metrics.firstOrNull { it.identity == HomeMetricIdentity.Wind }
+                        ?.let { NowContextItem(it.label, it.value) },
                 ),
             )
             Text("${dashboard.current.updatedTime} | ${dashboard.current.dataTypeLabel}", style = roles.supportingLabel)
@@ -704,8 +711,14 @@ private fun OfficialAlertSummary(
     }
 }
 
+private data class NowContextItem(
+    val label: String,
+    val value: String,
+    val redundantFromCurrentSummary: Boolean = false,
+)
+
 @Composable
-private fun NowContextGrid(items: List<Pair<String, String>>) {
+private fun NowContextGrid(items: List<NowContextItem>) {
     val roles = LocalOxygenHomeDesign.current
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -720,15 +733,22 @@ private fun NowContextGrid(items: List<Pair<String, String>>) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 54.dp),
+                            .heightIn(min = 54.dp)
+                            .then(
+                                if (item.redundantFromCurrentSummary) {
+                                    Modifier.semantics { hideFromAccessibility() }
+                                } else {
+                                    Modifier
+                                },
+                            ),
                     ) {
                         Text(
-                            text = item.first,
+                            text = item.label,
                             style = roles.supportingLabel,
                             color = homeSupportingContent(0.68f),
                         )
                         Text(
-                            text = item.second,
+                            text = item.value,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                         )
@@ -1159,14 +1179,8 @@ private fun DailyEntry(
             .fillMaxWidth()
             .heightIn(min = 60.dp)
             .testTag("home-daily-entry-$index")
-            .semantics {
-                contentDescription = listOf(
-                    day.date,
-                    day.condition,
-                    day.high,
-                    day.low,
-                    day.precipitationProbability ?: "Precipitation unavailable",
-                ).joinToString(", ")
+            .clearAndSetSemantics {
+                contentDescription = day.spokenDescription
             },
         shape = RoundedCornerShape(roles.homeCardCorner),
         border = BorderStroke(roles.normalBorderWidth, roles.outlineQuiet),
@@ -1377,13 +1391,8 @@ private fun HourlyTile(
         modifier = modifier
             .heightIn(min = 116.dp)
             .testTag("home-hourly-entry-$index")
-            .semantics {
-                contentDescription = listOf(
-                    hour.time,
-                    hour.condition,
-                    hour.temperature,
-                    hour.precipitationProbability ?: "Precipitation unavailable",
-                ).joinToString(", ")
+            .clearAndSetSemantics {
+                contentDescription = hour.spokenDescription
             },
         shape = RoundedCornerShape(roles.homeCardCorner),
         border = BorderStroke(roles.normalBorderWidth, roles.outlineQuiet),
