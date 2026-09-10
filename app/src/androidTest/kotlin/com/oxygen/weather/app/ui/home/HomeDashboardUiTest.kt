@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.platform.testTag
@@ -45,6 +46,7 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.espresso.Espresso.pressBack
@@ -2099,6 +2101,86 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun rtlStandardHomeNamedActionsPreserveSemanticPageProgression() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+            layoutDirection = LayoutDirection.Rtl,
+        )
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show next page: Hourly")
+        composeRule.performPagerCustomAction("Show next page: Hourly")
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 4")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show previous page: Now", "Show next page: Daily")
+        composeRule.performPagerCustomAction("Show next page: Daily")
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 3 of 4")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show previous page: Hourly", "Show next page: Details")
+        composeRule.performPagerCustomAction("Show next page: Details")
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show previous page: Daily")
+        composeRule.performPagerCustomAction("Show previous page: Daily")
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 3 of 4")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show previous page: Hourly", "Show next page: Details")
+    }
+
+    @Test
+    fun rtlSimpleHomeNamedActionsPreserveSemanticPageProgression() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            appearance = OxygenAppearance(layout = LayoutPreset.SIMPLE, effects = EffectsLevel.OFF),
+            layoutDirection = LayoutDirection.Rtl,
+        )
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show next page: Forecast")
+        composeRule.performPagerCustomAction("Show next page: Forecast")
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 2")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show previous page: Now")
+        composeRule.performPagerCustomAction("Show previous page: Now")
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show next page: Forecast")
+    }
+
+    @Test
     fun homeInteractiveControlsExposeMinimumTouchTargetsAndDoNotPageAccidentally() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
@@ -3008,10 +3090,14 @@ private fun ComposeContentTestRule.setHomeContent(
     fontScale: Float = 1f,
     appearance: OxygenAppearance = OxygenAppearance(),
     themeId: OxygenThemeId = appearance.theme,
+    layoutDirection: LayoutDirection = LayoutDirection.Ltr,
     onRetry: () -> Unit = {},
 ) {
     setContent {
-        CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = fontScale)) {
+        CompositionLocalProvider(
+            LocalDensity provides Density(density = 1f, fontScale = fontScale),
+            LocalLayoutDirection provides layoutDirection,
+        ) {
             OxygenTheme(themeId = themeId, contrast = appearance.contrast) {
                 if (widthDp == null) {
                     HomeLoadingScreen(state = state, appearance = appearance, onRetry = onRetry)
@@ -3448,9 +3534,7 @@ private fun ComposeTestRule.assertSecondaryActionsUseLessWidthThanPageTabs() {
 private fun SemanticsNodeInteraction.assertCustomActions(vararg labels: String) {
     val actions = fetchSemanticsNode().config.getOrElse(SemanticsActions.CustomActions) { emptyList() }
     val actualLabels = actions.map { it.label }
-    labels.forEach { label ->
-        assertTrue("Expected custom action '$label' in $actualLabels", actualLabels.contains(label))
-    }
+    assertEquals(labels.toList(), actualLabels)
 }
 
 private fun ComposeTestRule.performPagerCustomAction(label: String) {
