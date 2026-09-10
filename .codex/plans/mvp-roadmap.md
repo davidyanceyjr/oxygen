@@ -26,7 +26,8 @@ Implement these bounded candidates in order; 30A1 and 30A2 are committed,
 30A3A1 evidence is complete, 30A3B2 is committed at `fb51f7b` as the
 documentation sync,
 and 30B1A1 is committed at `63ed25a` as the RTL semantic page navigation
-contract; 30B1A2 is the current candidate selected by `.codex/plans/current.md`:
+contract; 30B1A2 is committed at `20b6ddc`; 30B1A3 is the current candidate
+selected by `.codex/plans/current.md`:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -351,17 +352,44 @@ specification for conflict without claiming complete RTL support before Gate
 
 #### Slice 30B1A2: RTL Directional Affordances and Gesture Behavior
 
-Status: planned
+Status: committed at `20b6ddc`
 
 Prerequisite: Slice 30B1A1.
 
-Prove that visible controls, pager direction, and swipe behavior mirror for
-RTL while preserving the semantic action contract from 30B1A1. Keep touch
-targets at least 48dp. Limit production changes to Home navigation/layout and
-add no new gesture or accessibility framework.
+This remains one bounded implementation slice: one existing Home pager path,
+one Compose-local RTL condition, and two focused connected cases. Do not split
+it into sub-slices or add a parallel navigation model.
 
-Focused boundary: up to two named connected cases for directional controls and
-gestures across Standard and Simple layouts.
+Begin with red boundary assertions, then prove that visible controls and pager
+swipes mirror for RTL while preserving the semantic action contract from
+30B1A1. The logical page order remains Standard `Now -> Hourly -> Daily ->
+Details` and Simple `Now -> Forecast`; the visible selector order is mirrored
+to Standard `Details, Daily, Hourly, Now` and Simple `Forecast, Now` from left
+to right. In RTL, a rightward swipe advances to the next semantic page and a
+leftward swipe returns to the previous page. Boundary swipes do not overrun
+the available pages. All exercised controls remain at least 48dp.
+
+Limit production changes, only if a failing assertion requires them, to
+`HomeLoadingScreen.kt`. No provider, domain, repository, cache, preference,
+resource, manifest, dependency, new gesture framework, or accessibility
+framework changes are allowed.
+
+Focused boundary: exactly two named connected cases in
+`HomeDashboardUiTest.kt`, `rtlStandardHomeDirectionalAffordancesMirrorAndGestures`
+and `rtlSimpleHomeDirectionalAffordancesMirrorAndGestures`. They use the
+existing deterministic fixture and Compose-local `LayoutDirection.Rtl`, assert
+physical selector bounds, 48dp targets, exact semantic actions, settled page
+titles/positions/selection, forward and reverse gestures, and first/final page
+boundaries. No device RTL, installed journey, screenshot, chronology,
+compact/refetch, or provider evidence is part of this slice. The exact
+focused and broad checks passed; evidence and limits are recorded in the live
+cycle history and cycle artifact directory.
+
+Closure requires the focused two-case command, applicable compile/unit/assemble
+checks, and `git diff --check`, with exact artifacts and limits recorded before
+the roadmap/active-plan/history document sync. Review README and the
+specification without claiming complete RTL or TalkBack coverage before Gate
+30B1B1/30E.
 
 #### Slice 30B1A3: RTL Chronology and Spoken-Meaning Preservation
 

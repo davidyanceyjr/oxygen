@@ -179,3 +179,42 @@ Limits:
   hierarchies, visual mirroring, swipe-direction acceptance, chronology,
   compact/refetch, provider, or release evidence was collected; those remain
   in 30B1A2–30B1B1 or later scope.
+
+### 2026-09-10-slice-30b1a2-rtl-directional-affordances-gesture
+
+Status: committed
+Mode: bounded Home RTL control-mirroring and pager-gesture test slice
+Slice: Slice 30B1A2, RTL Directional Affordances and Gesture Behavior
+Commit: 20b6ddc
+
+Result:
+
+- Added exactly two Compose-local RTL connected cases covering mirrored
+  Standard `Details, Daily, Hourly, Now` and Simple `Forecast, Now` selector
+  placement, 48dp targets, selected state, complete semantic action lists,
+  settled forward/reverse swipes, and first/final page boundaries.
+- No production correction was needed; provider, repository, cache, forecast
+  meaning, persistence, and custom-action labels were unchanged.
+
+Evidence:
+
+- The exact focused command passed on `oxygen_starter` / `emulator-5554`:
+  exactly 2 completed, 0 skipped, 0 failed. The device was API 37, 420dpi,
+  font scale 1.0; RTL remained Compose-local and device direction was not
+  changed.
+- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed;
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
+  passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed;
+  and `git diff --check` passed. No checks were rerun.
+
+Artifacts:
+
+- `.codex/test-artifacts/2026-09-10-slice-30b1a2-rtl-directional-affordances-gesture/`
+  contains the focused instrumentation result files and verification ledger.
+
+Limits:
+
+- No APK reinstall, installed/manual RTL journey, screenshots, UI hierarchies,
+  device-level RTL, chronology/spoken-meaning, compact/refetch, provider, or
+  TalkBack service evidence was collected; those remain in 30B1A3–30B1B1 or
+  later scope.
