@@ -1503,3 +1503,61 @@ Boundaries:
   1.3, animator scale unset, and transition/window animation scales 1.0.
 - Gate 30A3 is the next planned session; this entry does not claim Gate 30 or
   TalkBack completion.
+
+### 2026-09-10-slice-30a3b2-home-accessibility-evidence-document-sync
+
+Status: committed
+Mode: documentation-only closure of the required third-cycle evidence gate
+Slice: Slice 30A3B2, Home Accessibility Evidence Document Sync
+Documentation commit: `fb51f7b`
+Changed documents: `README.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`,
+`.codex/plans/mvp-roadmap.md`, `.codex/plans/current.md`, and this history
+entry.
+
+Result:
+- Reviewed the completed 30A3A1 evidence without changing production behavior.
+- Confirmed the exact focused command selected the three named
+  `HomeDashboardUiTest` cases and completed 3 tests with 0 skipped and 0
+  failed on `oxygen_starter` / `emulator-5554`.
+- Reconciled the installed compact evidence for Standard Now, Hourly, Daily,
+  and Details plus Simple Forecast Hourly and Daily choices at 360x640 dp and
+  font scale 1.3, using the production Chicago selected-location path,
+  Fahrenheit, Effects Off, and the normal Oxygen setup. The retained
+  hierarchies expose page identity, mapper-owned weather speech descriptions
+  where captured, Open-Meteo source/update/provenance text, and page/footer
+  controls.
+- Kept the representative Standard Details font-scale-2.0 evidence attributed
+  to the committed 30A2 artifact directory. The 30A3A1 attempt to reach the
+  Appearance lower section at font scale 2.0 triggered the emulator
+  desktop/overview gesture surface twice and produced no new 2.0 evidence.
+
+Evidence:
+- Focused command inherited from
+  `.codex/test-artifacts/2026-09-10-slice-30a3a1-home-speech-layout-evidence/verification-ledger.md`:
+
+  ```sh
+  . scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest \
+    '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest#standardCompactHomeAtFontScale13KeepsLongContentAndAllPagesReachable,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#simpleCompactHomeAtFontScale13KeepsCelsiusForecastChoicesReachableWithoutRefetch,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#standardDetailsAtFontScale20KeepsLongProviderContentScrollReachable'
+  ```
+
+  Result: `BUILD SUCCESSFUL`; 3 tests completed, 0 skipped, and 0 failed on
+  `oxygen_starter` / `emulator-5554`, as recorded in `focused-connected.log`.
+- Broad inherited results: `:app:compileDebugKotlin`,
+  `:app:testDebugUnitTest :core:testDebugUnitTest`, and `:app:assembleDebug`
+  all passed in the reviewed 30A3A1 ledger. The new documentation check
+  `git diff --check` also passed after these edits.
+- Artifacts: `.codex/test-artifacts/2026-09-10-slice-30a3a1-home-speech-layout-evidence/`
+  and retained 30A2 files under
+  `.codex/test-artifacts/2026-09-09-slice-30a2-home-compact-large-font-resilience/final-installed-standard-details-font20*.{png,xml}`.
+
+Skipped and limited:
+- Android, emulator, provider, unit, connected, and assemble checks were not
+  rerun because this slice changes only Markdown authorities and the exact
+  30A3A1 results were retained and reviewed.
+- This evidence does not establish service-level TalkBack traversal or
+  pronunciation, RTL, reduced-motion invariance, theme/contrast invariance,
+  alert accessibility, localization, a complete large-font matrix, release
+  readiness, MVP completion, or the rest of Gate 30.
+
+Next candidate: Slice 30B1, Home RTL Navigation and Chronology, selected in the
+new active plan after this documentation sync.

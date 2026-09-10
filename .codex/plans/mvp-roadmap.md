@@ -14,22 +14,25 @@ Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/c
 ## Current Implementation Queue
 
 Gate 30's first draft combined independent surfaces and Android conditions.
-Implement these bounded candidates in order; 30A1 and 30A2 are committed, and
-Gate 30A3 is the next specified candidate:
+Implement these bounded candidates in order; 30A1 and 30A2 are committed,
+30A3A1 evidence is complete, 30A3B2 is committed at `fb51f7b` as the
+documentation sync,
+and 30B1 is the current candidate selected by `.codex/plans/current.md`:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
-3. Gate 30A3 — Home Speech/Layout Evidence and Document Sync
-4. Slice 30B1 — Home RTL Navigation and Chronology
-5. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
-6. Gate 30B3 — Home Environment Evidence and Document Sync
-7. Slice 30C1 — Official-Alert Summary Accessibility
-8. Slice 30C2 — Official-Alert Detail Accessibility
-9. Gate 30C3 — Alert Accessibility Evidence and Document Sync
-10. Slice 30D1 — Appearance Control Semantics
-11. Slice 30D2 — Appearance Layout and Environment Resilience
-12. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
-13. Gate 30E — Installed TalkBack and Accessibility Closure
+3. Slice 30A3A1 — Home Speech/Layout Evidence
+4. Slice 30A3B2 — Home Accessibility Evidence Document Sync
+5. Slice 30B1 — Home RTL Navigation and Chronology
+6. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
+7. Gate 30B3 — Home Environment Evidence and Document Sync
+8. Slice 30C1 — Official-Alert Summary Accessibility
+9. Slice 30C2 — Official-Alert Detail Accessibility
+10. Gate 30C3 — Alert Accessibility Evidence and Document Sync
+11. Slice 30D1 — Appearance Control Semantics
+12. Slice 30D2 — Appearance Layout and Environment Resilience
+13. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
+14. Gate 30E — Installed TalkBack and Accessibility Closure
 
 Do not start a later entry merely because it appears here. Each entry remains
 `specified` until selected in `.codex/plans/current.md`. A production defect
@@ -1911,7 +1914,7 @@ Out of scope:
 
 ### Slice 30A2: Home Compact and Large-Font Resilience
 
-Status: specified
+Status: committed at `1a8e14f`
 
 Prerequisite: Slice 30A1.
 
@@ -1942,14 +1945,14 @@ Out of scope:
 - RTL, disabled-animation/reduced-motion policy, cross-theme/contrast checks,
   alerts, Settings, TalkBack, provider/state changes, and visual redesign.
 
-### Gate 30A3: Home Speech/Layout Evidence and Document Sync
+### Slice 30A3A1: Home Speech/Layout Evidence
 
-Status: specified
+Status: evidence complete on 2026-09-10; documentation sync committed in 30A3B2
 
 Prerequisites: Slices 30A1 and 30A2.
 
-Mode: the required third-cycle test-only and documentation-sync session. Do not
-change production behavior in this gate.
+Mode: required third-cycle test-only evidence collection. Do not change
+production behavior or authoritative documents in this slice.
 
 Must prove:
 
@@ -1962,19 +1965,39 @@ Must prove:
 - screenshots, UI hierarchies, semantics, command/result/rerun ledger, exact
   environment, and any blockers are reviewable under the two cycle artifact
   directories;
-- README, specification, roadmap, current plan, and live cycle history state
-  only the Home accessibility behavior actually implemented and exercised.
+- exact command results, environment, screenshots, hierarchies, skips, and
+  blockers are retained under one cycle artifact directory.
 
-A failing production boundary blocks this gate and creates a specifically named
-Home repair slice; it is not fixed inside the test/doc session. Provider,
-privacy, licensing, persistence, alert, Settings, and release status remain
-unchanged.
+A failing production boundary blocks this slice and creates a specifically
+named Home repair slice; it is not fixed here.
+
+### Slice 30A3B2: Home Accessibility Evidence Document Sync
+
+Status: committed at `fb51f7b` on 2026-09-10
+
+Prerequisite: Slice 30A3A1 with green focused and installed evidence.
+
+Mode: documentation-only closure of the required third-cycle gate.
+
+Must prove:
+
+- append a self-contained history entry with exact evidence, artifacts, skips,
+  blockers, and commit state;
+- reconcile this plan, the roadmap queue, and the specification/README only
+  where the retained evidence directly supports the claim;
+- preserve explicit limits for TalkBack traversal, RTL, reduced motion,
+  theme/contrast invariance, alerts, localization, and release readiness;
+- select Slice 30B1 only after the evidence and document diff review pass.
+
+No Kotlin, Compose, provider, persistence, resource, manifest, dependency, or
+production behavior changes are allowed. A missing or contradictory artifact
+blocks closure and leaves 30A3B2 specified.
 
 ### Slice 30B1: Home RTL Navigation and Chronology
 
 Status: specified
 
-Prerequisite: Gate 30A3.
+Prerequisite: Slice 30A3B2.
 
 Release intent: make the existing Standard/Simple Home navigation and forecast
 progression deliberately correct under RTL without changing chronological data.
@@ -2004,7 +2027,7 @@ Out of scope:
 
 Status: specified
 
-Prerequisites: Gate 30A3 and Slice 30B1.
+Prerequisites: Slice 30A3B2 and Slice 30B1.
 
 Release intent: verify Home accessibility meaning and navigation across the
 implemented effects, animation-policy, theme, and contrast axes.
@@ -2548,15 +2571,16 @@ Use this as sequencing guidance, not permission to work multiple slices at once.
 32. Slice 29B — High-Contrast Preference UI
 33. Slice 30A1 — Home Spoken-Weather Semantics
 34. Slice 30A2 — Home Compact and Large-Font Resilience
-35. Gate 30A3 — Home Speech/Layout Evidence and Document Sync
-36. Slice 30B1 — Home RTL Navigation and Chronology
-37. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
-38. Gate 30B3 — Home Environment Evidence and Document Sync
-39. Slice 30C1 — Official-Alert Summary Accessibility
-40. Slice 30C2 — Official-Alert Detail Accessibility
-41. Gate 30C3 — Alert Accessibility Evidence and Document Sync
-42. Slice 30D1 — Appearance Control Semantics
-43. Slice 30D2 — Appearance Layout and Environment Resilience
+35. Slice 30A3A1 — Home Speech/Layout Evidence
+36. Slice 30A3B2 — Home Accessibility Evidence Document Sync
+37. Slice 30B1 — Home RTL Navigation and Chronology
+38. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
+39. Gate 30B3 — Home Environment Evidence and Document Sync
+40. Slice 30C1 — Official-Alert Summary Accessibility
+41. Slice 30C2 — Official-Alert Detail Accessibility
+42. Gate 30C3 — Alert Accessibility Evidence and Document Sync
+43. Slice 30D1 — Appearance Control Semantics
+44. Slice 30D2 — Appearance Layout and Environment Resilience
 44. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
 45. Gate 30E — Installed TalkBack and Accessibility Closure
 46. Slice 33A — Dependency and Manifest Privacy Audit
@@ -2585,9 +2609,10 @@ Sequencing rationale:
 ## Active Slice
 
 Slice 30A1: Home Spoken-Weather Semantics is committed at `da7b886`; Slice 30A2
-is the next specified candidate in `.codex/plans/mvp-roadmap.md`. It was the
-first implementation slice of the split Gate 30 accessibility boundary. Slice
-29B is committed at `441d05d` with test
+is committed at `1a8e14f`; 30A3A1's evidence is complete; and 30A3B2 is the
+committed documentation-sync boundary at `fb51f7b`. Slice 30B1 is the current
+candidate in `.codex/plans/current.md`. It is the next bounded slice of the split Gate 30
+accessibility boundary. Slice 29B is committed at `441d05d` with test
 coverage follow-up `86e696c` and evidence sync `86f046b`. Slice 28A1 is
 committed at `06c987b`, Slice 28A2 is committed at `80dd961`, and Slice 28B1 is
 committed at `708172f` (merged by `82cf281`), with retained evidence under their
@@ -2634,12 +2659,17 @@ Immediate planning boundary:
 -> Slice 29A high-contrast rendering contract committed at `0dccc94`
 -> Slice 29B persisted high-contrast preference UI committed at `441d05d`
 -> Slice 30A1 Home spoken-weather semantics committed at `da7b886`
+-> Slice 30A2 Home compact/large-font resilience committed at `1a8e14f`
+-> Slice 30A3A1 Home speech/layout evidence verified on 2026-09-10
+-> Slice 30A3B2 Home accessibility evidence document sync committed at `fb51f7b`
+-> Slice 30B1 Home RTL navigation and chronology planned
 ```
 
 Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,
-Slice 29B, and Slice 30A1 are complete. Gate 30 is split into the bounded
-30A1–30E queue at the head of this roadmap; Slice 30A2 is next and remains
-specified. Release
+Slice 29B, Slice 30A1, Slice 30A2, and the 30A3B2 documentation sync are
+complete. Gate 30 is split into the bounded 30A1–30E queue at the head of this
+roadmap; 30A3A1 evidence is complete and Slice 30B1 is the active planned
+candidate after 30A3B2 closure. Release
 work and release-candidate claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.

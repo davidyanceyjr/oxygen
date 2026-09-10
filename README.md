@@ -62,8 +62,10 @@ and `docs/data-sources/`.
   with retry.
 - Installed Home current, hourly, and daily weather exposes concise
   mapper-owned accessibility descriptions with resolved temperature units and
-  honest missing-value/precipitation semantics; TalkBack traversal is not yet
-  verified.
+  honest missing-value/precipitation semantics. Retained installed evidence
+  covers Standard Now, Hourly, Daily, and Details plus Simple Forecast choices
+  at 360x640 dp and font scale 1.3 with Effects Off; TalkBack traversal is not
+  yet verified.
 - Home presentation conversion for provider-neutral unit preferences at the
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,

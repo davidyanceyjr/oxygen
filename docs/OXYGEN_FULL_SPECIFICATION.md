@@ -1675,6 +1675,23 @@ mapper-owned descriptions on Now, Hourly, and Daily at 360x640 dp and font
 scale 1.3 with Effects Off. This evidence does not establish TalkBack service
 traversal or pronunciation.
 
+Slice 30A2 then passed its exact three-case compact/large-font connected
+filter, covering Standard and Simple Home reachability at 360x640 dp and font
+scale 1.3 plus one representative Standard Details overflow case at font
+scale 2.0. The 30A3A1 installed evidence run exercised the production Chicago
+selected-location path with Fahrenheit and Effects Off, and retained
+hierarchies for Standard Now, Hourly, Daily, and Details plus Simple Forecast
+Hourly and Daily choices. Those hierarchies exposed page identity,
+mapper-owned weather descriptions where captured, Open-Meteo source/update/
+provenance text, and page/footer controls. The 30A3A1 attempt to reach the
+Appearance lower section at font scale 2.0 triggered the emulator desktop/
+overview gesture surface twice, so it produced no new 2.0 evidence; the
+representative 2.0 evidence remains the committed 30A2 artifact. This is not
+service-level TalkBack traversal or pronunciation evidence and does not cover
+RTL, reduced-motion invariance, theme/contrast invariance, alerts,
+localization, a complete large-font matrix, release readiness, or MVP
+completion.
+
 ### Contract fixtures
 
 Store provider samples under:
@@ -2054,11 +2071,12 @@ large-font Home layout, Home RTL, Home reduced-motion/appearance invariance,
 official-alert summary and detail, Appearance semantics and layout, required
 third-cycle test/document-sync gates, and an installed TalkBack closure gate.
 Slice 30A1, Home Spoken-Weather Semantics, is implemented, verified, and
-committed at `da7b886`; Slice 30A2 is next and remains specified. The mapper
-owns the exact current/hourly/daily spoken descriptions, and the installed Home
-hierarchy verified those descriptions with resolved Fahrenheit units on Now,
-Hourly, and Daily at 360x640 dp, font scale 1.3, and Effects Off. No later Gate
-30 condition, including TalkBack service traversal, is claimed complete.
+committed at `da7b886`; Slice 30A2, Home Compact and Large-Font Resilience, is
+implemented, verified, and committed at `1a8e14f`; and Slice 30A3A1 Home
+Speech/Layout Evidence is complete as evidence on 2026-09-10. Slice 30A3B2 is
+the documentation-sync boundary for that evidence, and Slice 30B1 Home RTL
+Navigation and Chronology remains next after its closure. No later Gate 30
+condition, including TalkBack service traversal, is claimed complete.
 
 ---
 
