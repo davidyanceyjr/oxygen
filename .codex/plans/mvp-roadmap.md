@@ -14,8 +14,8 @@ Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/c
 ## Current Implementation Queue
 
 Gate 30's first draft combined independent surfaces and Android conditions.
-Implement these bounded candidates in order; 30A1 is committed and 30A2 is the
-next specified candidate:
+Implement these bounded candidates in order; 30A1 and 30A2 are committed, and
+Gate 30A3 is the next specified candidate:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience

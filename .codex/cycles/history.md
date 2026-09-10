@@ -1452,3 +1452,54 @@ Boundaries:
   alert, theme, navigation, localization, or release behavior changed.
 - Slice 30A2 is the next specified slice; this entry does not claim Gate 30 or
   TalkBack completion.
+
+### 2026-09-09-slice-30a2-home-compact-large-font-resilience
+
+Status: committed
+Mode: bounded Home layout/accessibility implementation
+Slice: Slice 30A2, Home Compact and Large-Font Resilience
+Implementation commit: `1a8e14f`
+
+Result:
+- Added exactly three focused connected cases to `HomeDashboardUiTest` with
+  explicit 360x640dp roots and stated font scales: Standard compact at 1.3,
+  Simple Celsius/layout-choice no-refetch at 1.3, and Standard Details at 2.0.
+- The cases preserve the mapper-owned current/hourly/daily descriptions,
+  exercise long location/provider/source/disclosure text, validate page and
+  footer touch targets, check horizontal bounds/non-overlap, and retain the
+  canonical repository request count through layout and unit changes.
+- No production Home, theme, provider, domain, repository, storage,
+  preference, navigation, alert, resource, dependency, or manifest code
+  changed; no production failure was exposed.
+
+Evidence:
+- One `oxygen_starter` / `emulator-5554` session was used. The committed
+  installed baseline and final installed evidence were captured at 360x640dp,
+  density 160, font scale 1.3; a representative Standard Details baseline and
+  final path were also captured at font scale 2.0.
+- The final exact three-case connected filter passed:
+  `standardCompactHomeAtFontScale13KeepsLongContentAndAllPagesReachable`,
+  `simpleCompactHomeAtFontScale13KeepsCelsiusForecastChoicesReachableWithoutRefetch`,
+  and `standardDetailsAtFontScale20KeepsLongProviderContentScrollReachable`.
+- The installed path used normal Chicago search and `Use now` selection, then
+  exercised Standard Now/Hourly/Daily/Details, Simple Now/Forecast Hourly and
+  Daily, and Standard Details at 2.0. Screenshots and UI hierarchies are in
+  `.codex/test-artifacts/2026-09-09-slice-30a2-home-compact-large-font-resilience/`.
+- Broad checks passed: `:app:compileDebugKotlin`, app/core debug unit tests,
+  `:app:assembleDebug`, and `git diff --check`.
+
+Reruns and blockers:
+- Initial focused failures were corrected to match existing stale-age and
+  unit-format contracts. A nested-pager `performScrollTo` attempt on a Daily
+  card hung; that bounded attempt was stopped, the redundant scroll was
+  removed while retaining representative bounds and sibling checks, and the
+  affected cases plus the final three-case filter passed.
+- Full Home-class rerun, TalkBack service traversal/pronunciation, RTL,
+  reduced-motion, theme/contrast matrix, alerts, localization, and release
+  verification remain outside this slice.
+
+Boundaries:
+- The emulator was restored to physical 1080x2400, density 420, font scale
+  1.3, animator scale unset, and transition/window animation scales 1.0.
+- Gate 30A3 is the next planned session; this entry does not claim Gate 30 or
+  TalkBack completion.

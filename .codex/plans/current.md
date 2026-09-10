@@ -1,212 +1,196 @@
-# Slice 30A1 — Home Spoken-Weather Semantics
+# Gate 30A3 — Home Speech/Layout Evidence and Document Sync
 
-**Status:** committed at `da7b886`
-**Cycle ID:** `2026-09-09-slice-30a1-home-spoken-weather-semantics`
-**Mode:** bounded Home presentation/accessibility implementation
+**Status:** planned
+**Cycle ID:** `2026-09-09-gate-30a3-home-speech-layout-evidence`
+**Mode:** bounded test-only evidence and documentation sync
 
-**Basis:** Home already exposes named page actions and visible current, hourly,
-and daily weather, but the spoken contract is incomplete: the current mark
-announces only the condition, while hourly/daily descriptions are assembled in
-Compose from display strings and leave redundant child semantics exposed. This
-slice moves that one concern to the existing presentation boundary. Later Home
-layout, alert, Appearance, and service-level TalkBack work is split into the
-ordered Gate 30 queue in the roadmap.
+**Basis:** Slice 30A2 is committed at `1a8e14f`. Its three named connected
+cases and the installed Standard/Simple/large-font journey passed without a
+production Home change. Gate 30A3 is the required third-cycle evidence and
+documentation session before Slice 30B1.
 
-**Next action:** select Slice 30A2 as a new bounded plan; do not claim its
-compact/large-font resilience or any later Gate 30 condition until exercised.
+**Discovery finding:** tests whose `setHomeContent(...)` call omits
+`heightDp` render in a 3200dp root. Existing tests named `compact` therefore
+do not establish a 360x640dp boundary. 30A2 must pass `heightDp = 640` at every
+new or corrected compact assertion and use page scroll reachability rather than
+requiring all forecast rows in one viewport.
+
+**Next action:** review the 30A1/30A2 artifacts and run the minimum selected
+speech/layout connected cases plus applicable repository checks. If a
+regression is found, stop the gate and create a separately named repair slice;
+do not alter production behavior inside this documentation gate.
+
+## Gate 30A3 acceptance boundary
+
+Rerun the selected 30A1 and 30A2 Home cases on one emulator, reconcile the
+retained installed screenshots and hierarchies with the current contracts, and
+sync cycle history, roadmap sequencing, README/spec status where directly
+supported, and this active plan. Do not claim TalkBack service traversal, RTL,
+reduced motion, theme/contrast invariance, alerts, or release readiness.
+
+Use one `oxygen_starter` emulator session and the normal selected-location path;
+do not use `SampleWeather.bundle` or seeded production state. Retain gate
+artifacts under `.codex/test-artifacts/2026-09-09-gate-30a3-home-speech-layout-evidence/`.
+
+## Completed Slice 30A2 record
 
 ## Behavior and acceptance boundary
 
-The production Home success path exposes one concise spoken description for the
-current-weather summary and one for each rendered hourly and daily forecast
-item. Descriptions come from provider-neutral values while their meaning and
-resolved temperature unit are known; Compose does not parse visible labels or
-reconstruct weather meaning.
+At 360x640dp and font scale 1.3, a selected location with long location and
+provider text keeps Standard `Now`, `Hourly`, `Daily`, and `Details` reachable,
+and keeps Simple `Now`, `Forecast`, and both `Hourly`/`Daily` choices reachable.
+At font scale 2.0, the representative long-provider Standard Details path stays
+scroll-reachable. The representative 2.0 case is deliberately not a full
+layout/theme matrix.
 
-Exact English contract for this non-localization slice:
+For each selected path, page identity, weather values, mapper-owned
+descriptions, named page actions, source/provenance text, and 48dp navigation
+and choice controls remain usable. Long text must wrap or be reachable by the
+page's existing vertical scroll; it must not cover a sibling, extend outside the
+360dp width, or make information inaccessible. The real Home screen must retain
+the footer controls while page content scrolls. Celsius/Fahrenheit remapping and
+layout/page changes must not issue a new forecast request or modify canonical
+forecast data.
 
-- current: condition and current temperature, followed by available feels-like,
-  high, and low values;
-- hourly: local time, condition, temperature, and available precipitation
-  probability;
-- daily: local date, condition, available high/low values, and available
-  precipitation probability;
-- temperatures use `degree/degrees Celsius` or `degree/degrees Fahrenheit`, and
-  probability uses `percent chance of precipitation`;
-- a missing current/hourly temperature is announced as `Temperature
-  unavailable`; missing optional facts are omitted; a daily row with neither a
-  high nor low announces `High and low unavailable`; no missing value becomes
-  zero.
+Primary automated boundary: `HomeDashboardUiTest` renders the production Home
+path inside an explicit `Box(360.dp, 640.dp)` at density 1.0, verifies
+scroll-reachability/bounds/touch targets, and uses the existing recording
+repository for the Simple no-refetch check. The installed boundary is a normal
+manual selected-location journey, never `SampleWeather.bundle` or seeded
+app-private production state.
 
-For the committed fixture, exact examples are `Rain showers. 65 degrees
-Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low
-54 degrees Fahrenheit.`, `6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance
-of precipitation.`, and `Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit.
-Low 54 degrees Fahrenheit. 40 percent chance of precipitation.` Use those
-sentence boundaries and fact order. Visible `deg C` / `deg F`, `Precip n/a`,
-canonical nullable values, condition identity, and page content remain
-unchanged.
+## Implementation
 
-Primary acceptance boundary: mapper tests prove exact Fahrenheit/Celsius and
-missing-value meaning; the merged Compose tree exposes exactly one description
-per current/hourly/daily item while the unmerged tree retains visual test tags;
-and the installed 360x640 dp, font-scale-1.3, Effects-Off Home hierarchy exposes
-the same production descriptions on Now, Hourly, and Daily.
+1. Correct the compact test setup first. New 30A2 tests, and any existing
+   compact test reused as acceptance evidence, pass `widthDp = 360`,
+   `heightDp = 640`, and the stated font scale. Replace any assertion that all
+   rows fit simultaneously with `performScrollTo()` followed by positive,
+   horizontally in-root bounds and non-overlap checks for the visible siblings.
+2. Add exactly these focused connected cases in the existing Home class; retain
+   its real presentation fixture, test tags, screenshot/semantics helpers, and
+   `RecordingWeatherRepository`:
 
-## Implementation contract
+   - `standardCompactHomeAtFontScale13KeepsLongContentAndAllPagesReachable`:
+     long location, long Open-Meteo attribution, stale/source context, and
+     Fahrenheit; visit Now/Hourly/Daily/Details. Assert page title and named
+     actions, exact existing mapper descriptions, scroll reachability of the
+     long location/source/disclosure and representative forecast rows, valid
+     horizontal bounds, and 48dp page/footer targets.
+   - `simpleCompactHomeAtFontScale13KeepsCelsiusForecastChoicesReachableWithoutRefetch`:
+     use the production `OxygenApp` state-holder fixture, select Simple and
+     Celsius through its existing path, visit Forecast and both choice chips,
+     assert their selected state, visible Celsius presentation and existing
+     speech semantics, 48dp targets, scroll reachability, and an unchanged
+     recording-repository request count.
+   - `standardDetailsAtFontScale20KeepsLongProviderContentScrollReachable`:
+     use the same truthful long-provider fixture at 2.0, navigate to Details,
+     and prove the source values, metrics, sun/provenance footer, and Standard
+     page controls are individually reachable without horizontal clipping or
+     overlapping the item currently brought into view.
 
-1. Append a required trailing `spokenDescription` field to
-   `HomeCurrentPresentation`, `HomeHourlyPresentation`, and
-   `HomeDailyPresentation`. Discovery found their only construction sites in
-   `HomeForecastPresentationMapper.kt`, so update those owned constructors and
-   do not add an empty compatibility default or reorder existing fields.
-2. Build each description in the mapper from canonical nullable temperatures,
-   `WeatherCondition`, local time/date, precipitation probability, and the
-   resolved `TemperatureUnit`. Share the existing conversion/round-half-up rule
-   so spoken and visible numbers cannot diverge; add speech-specific unit wording
-   instead of transforming `deg C` / `deg F` output.
-3. Keep `home-current-mark` as the stable current-summary semantics and bitmap
-   boundary. Give it the complete current description and hide only the
-   redundant visible condition, temperature, feels-like, and Today high/low
-   semantics with `hideFromAccessibility()`. Humidity, wind, update/source text,
-   alerts, actions, and other Now content must remain independently reachable.
-   Pass the Today range's redundant-semantic identity explicitly to the local
-   UI item; do not infer it by comparing the rendered `Today` label.
-4. Replace the hand-built hourly/daily card descriptions with each mapper-owned
-   `spokenDescription`. Use `clearAndSetSemantics` on the complete forecast card
-   so its covered descendants are not announced again. Preserve the existing
-   row tags and visible descendants in the unmerged test tree; never clear
-   semantics from content not represented by the replacement description.
-5. Preserve Standard and Simple page identity/selection, named previous/next
-   actions, visible controls, callbacks, chronology, layout geometry, RTL
-   primitives, theme/contrast/effects rendering, and accessibility overflow.
-   Do not reconstruct `OxygenAppStateHolder`, write preferences, or issue any
-   forecast, alert, location, or geocoding request.
+3. Preserve the existing current/hourly/daily `spokenDescription` contract and
+   visible text. Do not infer weather semantics from display strings or loosen
+   assertions to node counts, screenshots, or source text. Test bounds prove
+   geometry/reachability; final screenshots provide the human visual review.
+4. Change `HomeLoadingScreen.kt` only if one of those observable tests exposes
+   a production failure. Limit a fix to the failing Home container, page
+   scroll, header/footer, row, or text constraint. Prefer the existing
+   `verticalScroll`, `heightIn`, `widthIn`, wrapping, and `LocalOxygenHomeDesign`
+   roles. Add a design token in `OxygenTheme.kt` only for a repeated layout value
+   needed by the production fix; do not change theme palettes or typography
+   policy merely to pass geometry checks.
 
-## Intended files and limits
+## Files and explicit limits
 
-Production:
+Required test file:
 
-- `app/src/main/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapper.kt`
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`
-
-Tests:
-
-- `app/src/test/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapperTest.kt`
 - `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
 
-Extend the existing Home connected class because it owns the real compact
-fixture, request-count fake, screenshot helpers, and weather-mark assertions.
-Do not create a parallel accessibility fixture or production-only test screen.
+Conditional production files, only after a retained failing behavior boundary:
 
-Do not change `:core`, provider/repository/cache/storage models, preference
-state, Settings, alert presentation, theme roles, weather-mark drawing,
-navigation, manifests, dependencies, resources, or localization. Artifacts and
-the verification ledger belong under
-`.codex/test-artifacts/2026-09-09-slice-30a1-home-spoken-weather-semantics/` and
-remain out of source control.
+- `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`
+- `app/src/main/kotlin/com/oxygen/weather/app/ui/theme/OxygenTheme.kt`
 
-## Focused tests and real-path evidence
+Do not change `:core`, provider/domain/repository/cache/storage behavior,
+DataStore formats, selected-location flow, requests, navigation semantics,
+alerts, effects/reduced-motion policy, themes/contrast, RTL, localization,
+resources, manifests, dependencies, or test-only production routes.
 
-1. Before production edits, use the committed APK on one pinned emulator. Reach
-   Home through the normal installed selected-location path (live or truthful
-   cached weather; no sample bundle or app-private-state seeding), set Effects
-   Off through Settings, configure 360x640 dp and font scale 1.3, and retain
-   Now/Hourly/Daily screenshots plus UI hierarchies. Record commit, serial/AVD,
-   physical and logical viewport, density, font scale, layout direction,
-   animation scales, theme/contrast/layout/effects/units, commands, and any
-   provider/cache state. Restore platform settings after the cycle.
-2. Add two mapper tests before production code and retain the expected red log:
-   exact current/hourly/daily descriptions for Fahrenheit and Celsius, and
-   null handling for required temperature, partial/absent daily ranges, and
-   absent precipitation. Also assert canonical values and condition identities
-   remain unchanged.
-3. Add one current-summary case to `HomeDashboardUiTest`; update the existing
-   compact hourly and compact daily cases to the new exact descriptions and
-   one-node merged-tree counts. Assert redundant condition-mark descriptions are
-   absent from the merged tree, while visible text and `home-current-mark` /
-   row tags remain available in the unmerged tree for layout/bitmap checks.
-4. Extend the existing installed-path unit-selection/no-refetch case with the
-   changed Celsius spoken description and retain its canonical fixture and
-   single repository-request assertions. In the current-summary case, retain
-   the existing named next-page action. Do not rerun the whole historical Home
-   class.
-5. After the final APK change, install once and repeat the installed
-   Now/Hourly/Daily journey in the same recorded environment. Retain screenshots
-   as presentation evidence and UI hierarchies as Android-node evidence; compare
-   descriptions and page controls with the baseline. This does not prove spoken
-   pronunciation, focus order, or service traversal—Gate 30E owns TalkBack.
+Artifacts and the command/result/rerun ledger belong under
+`.codex/test-artifacts/2026-09-09-slice-30a2-home-compact-large-font-resilience/`
+and remain untracked.
 
-## Verification budget and commands
+## Evidence and verification budget
 
-Budget: one emulator session, one baseline/final installed journey, one mapper
-red/green cycle, four connected cases, and one broad pass. Do not rerun a pass
-unless relevant production code, test input, or environment changed. Stop after
-one bounded platform timeout and record the gap.
+Budget: one emulator session; one pre-edit and one final installed exercise;
+three named connected cases (well below the six-case limit); focused reruns only
+when production code, fixture input, or the execution environment changed; and
+one broad pass. Stop after one bounded platform timeout and record the exact
+blocker instead of substituting fixture success.
 
-Planned focused filters (use the final method names recorded by the red run):
+1. Start one `oxygen_starter` session and record AVD/serial, physical display,
+   `wm size`, `wm density`, logical 360x640 override and density 160, font
+   scale, LTR, animation scales, theme, contrast, layout, effects, unit,
+   selected location, and forecast/cache state. Capture pre-edit Standard and
+   Simple screenshots plus UI hierarchies at 1.3 and the Details 2.0 baseline
+   when the normal path is available. Restore every platform setting at the end.
+2. Run the named 30A2 connected filter after the test setup change. A baseline
+   pass is valid evidence. If an assertion exposes a Home defect, save its red
+   result, make one bounded correction, then rerun only the affected named case
+   plus the focused three-case filter.
+3. After the final APK change, install once. Via normal manual search/saved
+   selection, set Effects Off and exercise Standard at 1.3 through all pages,
+   Simple at 1.3 through both Forecast choices, and the representative 2.0
+   Details overflow path. Retain screenshots and `uiautomator dump` hierarchies;
+   inspect that important text and controls are visible or scrollable. This is
+   presentation evidence, not TalkBack traversal proof.
+4. Run the broad commands once after focused green. Keep the ledger separate
+   from ephemeral Gradle/device output and record every rerun reason.
 
 ```sh
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest \
-  --tests 'com.oxygen.weather.app.HomeForecastPresentationMapperTest.spokenDescriptionsUseResolvedTemperatureUnits' \
-  --tests 'com.oxygen.weather.app.HomeForecastPresentationMapperTest.spokenDescriptionsHandleMissingValuesWithoutInventingZero'
+scripts/list-avds.sh
+scripts/start-emulator.sh
 . scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest \
-  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest#currentWeatherExposesOneCompleteSpokenSummaryWithoutRedundantChildren,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#compactHourlyPageShowsFourChronologicalEntriesWithHonestPrecipitation,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#compactDailyPageShowsFourChronologicalEntriesWithHonestPrecipitation,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#oxygenAppUnitsSelectionReturnsHomeWithAlternateUnitsAndKeepsPagesReachable'
+  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest#standardCompactHomeAtFontScale13KeepsLongContentAndAllPagesReachable,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#simpleCompactHomeAtFontScale13KeepsCelsiusForecastChoicesReachableWithoutRefetch,com.oxygen.weather.app.ui.home.HomeDashboardUiTest#standardDetailsAtFontScale20KeepsLongProviderContentScrollReachable'
+scripts/install-debug.sh
 . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
 . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
 . scripts/android-env.sh && ./gradlew :app:assembleDebug
-scripts/install-debug.sh
 git diff --check
 ```
 
-The ledger must distinguish setup, red evidence, focused green, connected cases,
-installed inspection, and broad checks. A screenshot, source-text assertion,
-symbol-existence test, or build alone is not spoken-semantics evidence.
+## Required document updates after evidence
 
-## Completion record
+This plan selection is the only documentation change now. Do not update
+`README.md` or the specification with an unverified resilience claim.
 
-- Implementation commit: `da7b886`.
-- Environment: `oxygen_starter` / `emulator-5554`; physical 1080x2400,
-  logical override 360x640, physical density 420, logical density 160, font
-  scale 1.3, LTR, animation scales 0/0/0, Oxygen theme, High contrast,
-  Standard layout, Effects Off, Fahrenheit.
-- Baseline setup used the committed APK after `:app:assembleDebug`; the normal
-  installed path manually searched Chicago, saved it, selected the saved row,
-  changed Effects Off and Standard through Settings, and captured Now/Hourly/
-  Daily screenshots and hierarchies before edits.
-- Red: both mapper tests failed at the missing `spokenDescription` contract in
-  `mapper-red-final.log`. Green: both named mapper tests passed. Connected:
-  the four named cases passed, with the hourly case passing in its named rerun
-  after removing an ambiguous duplicate unmerged-text assertion. Final
-  `scripts/install-debug.sh` plus the same normal Chicago selection path
-  exposed mapper-owned descriptions on installed Now/Hourly/Daily.
-- Broad: `:app:compileDebugKotlin`, `:app:testDebugUnitTest
-  :core:testDebugUnitTest`, final `:app:assembleDebug` through
-  `scripts/install-debug.sh`, and `git diff --check` passed. Artifacts are under
-  `.codex/test-artifacts/2026-09-09-slice-30a1-home-spoken-weather-semantics/`.
-- Skips/boundaries: no bounded platform timeout occurred; full Home-class
-  rerun, TalkBack traversal/pronunciation, RTL, large-font resilience matrix,
-  and later Gate 30 conditions were not run and remain out of scope.
+After an implementation commit, perform the mandatory authoritative doc sync:
 
-## Post-commit authority sync
+- append the self-contained 30A2 result, exact evidence, artifacts, blockers,
+  and commit state to `.codex/cycles/history.md`;
+- update `.codex/plans/current.md` to select Gate 30A3 and update
+  `.codex/plans/mvp-roadmap.md` only with the actual 30A2 commit/next-candidate
+  state;
+- update `README.md` and specification sections 46/53 only if the installed
+  evidence proves the precise compact/large-font behavior stated above; retain
+  the limits on TalkBack, RTL, reduced motion, alert layout, and theme/contrast
+  invariance; and
+- leave provider, privacy, license, attribution, and provider-contract
+  documents unchanged because this slice does not alter those facts.
 
-The separate authority sync updates README, specification sections 31.4–31.6,
-37, 46, and 53, the roadmap, this plan, and live cycle history with the actual
-`da7b886` implementation and retained evidence. Provider, privacy, license,
-attribution, and data-source documents require no change. The sync is reviewed
-with `git diff --check` and committed separately from the implementation.
+Gate 30A3 remains the no-production-change, third-cycle session that reruns the
+selected 30A1/30A2 cases and reconciles the broader Home accessibility evidence
+and documents. A defect found there creates a separately named repair slice.
 
 ## Out of scope and ready criteria
 
-Out of scope: Home large-font/RTL/reduced-motion/theme matrix work; alert and
-Appearance accessibility; service-level TalkBack; automatic system contrast;
-visual redesign; localization/resource migration; custom units; provider,
-domain, cache, location, persistence, background, notification, release, or MVP
-work.
+Out of scope: service-level TalkBack traversal/pronunciation or focus order;
+RTL; disabled-animation/reduced-motion; theme/contrast matrix; alerts;
+Appearance/Settings controls; localization; release or MVP claims; and Gate
+30A3 closure.
 
-30A1 is ready only when mapper-owned descriptions exist on the production path,
-the two mapper and four connected cases pass, merged/unmerged semantics retain
-the intended accessibility and visual boundaries, the installed hierarchy shows
-the descriptions without redundant decorative nodes, broad checks are recorded,
-and the post-commit authority sync is committed. Later Gate 30 conditions remain
-specified, not implied complete.
+30A2 is ready only when the explicit 360x640 connected cases pass (or a real
+red production defect has been corrected and passes), the final installed normal
+path covers the stated Standard/Simple/2.0 journeys, mapper-owned weather
+meaning and request counts remain unchanged, the ledger names all commands and
+skips, broad checks pass, and the post-commit authority sync is complete.
