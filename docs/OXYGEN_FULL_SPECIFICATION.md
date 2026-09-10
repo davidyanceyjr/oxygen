@@ -1176,6 +1176,13 @@ The hero is a summary, not a data dump.
        Updated 8 min ago
 ```
 
+The production Home mapper also supplies one concise spoken description on the
+current weather mark. It states the condition and current temperature, then
+available feels-like, high, and low values. Temperatures use resolved
+`degree/degrees Celsius` or `degree/degrees Fahrenheit` wording. The visible
+condition, temperature, feels-like, and Today range remain visible but are
+redundant to this summary for accessibility.
+
 ### 31.5 Hourly
 
 Hourly forecast content may use local horizontal movement or paging where it
@@ -1189,6 +1196,10 @@ Each hour includes:
 - temperature;
 - precipitation probability.
 
+Its mapper-owned spoken description uses local time, condition, temperature,
+and an available `percent chance of precipitation` fact. Missing temperature
+is announced as `Temperature unavailable`; absent precipitation is omitted.
+
 ### 31.6 Daily
 
 Rows include:
@@ -1198,6 +1209,11 @@ Rows include:
 - precipitation probability;
 - low/high;
 - optional range bar.
+
+Its mapper-owned spoken description uses local date, condition, available
+high/low values, and available precipitation probability. A row with neither a
+high nor low announces `High and low unavailable`; missing optional facts are
+omitted.
 
 ### 31.7 Metric grid
 
@@ -1650,6 +1666,15 @@ Required for:
 - null/missing fields;
 - theme validation.
 
+Slice 30A1 added mapper assertions for exact Fahrenheit/Celsius wording and
+missing-value meaning, plus Compose assertions for one merged description per
+current/hourly/daily item and retained visual descendants in the unmerged tree.
+The four named Home connected cases passed on `oxygen_starter` / `emulator-5554`
+at the compact fixture boundary; the installed hierarchy also exposed the
+mapper-owned descriptions on Now, Hourly, and Daily at 360x640 dp and font
+scale 1.3 with Effects Off. This evidence does not establish TalkBack service
+traversal or pronunciation.
+
 ### Contract fixtures
 
 Store provider samples under:
@@ -2022,9 +2047,18 @@ Evidence is retained under
 `.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`
 and `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
 
-Gate 30, Accessibility Presentation Verification, is the next specified
-candidate. It remains unplanned and owns the broader TalkBack, RTL, and
-accessibility-condition matrix.
+Gate 30, Accessibility Presentation Verification, remains the next broader
+accessibility boundary and owns TalkBack, RTL, and the remaining presentation-
+condition matrix. The roadmap splits it into Home spoken semantics, compact/
+large-font Home layout, Home RTL, Home reduced-motion/appearance invariance,
+official-alert summary and detail, Appearance semantics and layout, required
+third-cycle test/document-sync gates, and an installed TalkBack closure gate.
+Slice 30A1, Home Spoken-Weather Semantics, is implemented, verified, and
+committed at `da7b886`; Slice 30A2 is next and remains specified. The mapper
+owns the exact current/hourly/daily spoken descriptions, and the installed Home
+hierarchy verified those descriptions with resolved Fahrenheit units on Now,
+Hourly, and Daily at 360x640 dp, font scale 1.3, and Effects Off. No later Gate
+30 condition, including TalkBack service traversal, is claimed complete.
 
 ---
 

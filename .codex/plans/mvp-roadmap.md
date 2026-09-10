@@ -5,10 +5,36 @@ Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
 Revised: 2026-09-09
-Reconciled against remote `main`: `be38405`
-Synchronized through Slice 29B implementation commits `441d05d` and `86e696c`
+Reconciled against local `origin/main` ref: `82cf281`
+Synchronized through Slice 29B implementation `441d05d`, test follow-up
+`86e696c`, and evidence sync `86f046b`
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
+
+## Current Implementation Queue
+
+Gate 30's first draft combined independent surfaces and Android conditions.
+Implement these bounded candidates in order; 30A1 is committed and 30A2 is the
+next specified candidate:
+
+1. Slice 30A1 — Home Spoken-Weather Semantics
+2. Slice 30A2 — Home Compact and Large-Font Resilience
+3. Gate 30A3 — Home Speech/Layout Evidence and Document Sync
+4. Slice 30B1 — Home RTL Navigation and Chronology
+5. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
+6. Gate 30B3 — Home Environment Evidence and Document Sync
+7. Slice 30C1 — Official-Alert Summary Accessibility
+8. Slice 30C2 — Official-Alert Detail Accessibility
+9. Gate 30C3 — Alert Accessibility Evidence and Document Sync
+10. Slice 30D1 — Appearance Control Semantics
+11. Slice 30D2 — Appearance Layout and Environment Resilience
+12. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
+13. Gate 30E — Installed TalkBack and Accessibility Closure
+
+Do not start a later entry merely because it appears here. Each entry remains
+`specified` until selected in `.codex/plans/current.md`. A production defect
+found by a later verification gate must be repaired at a separately named,
+bounded boundary before the affected gate can pass.
 
 ## Roadmap Rule
 
@@ -43,7 +69,10 @@ Raw build/test output may remain ignored under `.codex/test-artifacts/`, but evi
 
 ## Documentation Sync Rule
 
-README, roadmap, disclosure, and active-cycle state are part of the product contract. Add a documentation-sync gate after every four completed non-documentation implementation cycles, and sooner when a slice changes any of these status surfaces:
+README, roadmap, disclosure, and active-cycle state are part of the product
+contract. Make every third roadmap cycle a dedicated test-only and
+documentation-sync session after two implementation slices. Sync sooner when a
+slice changes any of these status surfaces:
 
 - installed-app behavior listed in README;
 - active/current provider or data-source disclosure;
@@ -1836,26 +1865,366 @@ Out of scope:
 
 ## Gate 30: Accessibility Presentation Verification
 
+Status: specified; split into bounded Slices/Gates 30A1 through 30E
+
+Release intent: complete the MVP accessibility presentation boundary without a
+single cross-surface implementation/test cycle or a combinatorial UI matrix.
+
+Gate-wide invariants:
+
+- provider-neutral weather and alert meaning must not change;
+- accessibility meaning must not depend on color, animation, decoration, or an
+  unexplained gesture;
+- accessibility descriptions must be created while semantic values are
+  available, not by parsing rendered English strings or inspecting pixels;
+- theme, contrast, layout, effects, units, and provider requests remain
+  independent;
+- screenshots are presentation evidence, not semantic or TalkBack proof;
+- any skipped Android condition names the exact blocker;
+- a discovered production defect is fixed and verified at one bounded surface
+  before the owning sub-slice or final gate advances.
+
+### Slice 30A1: Home Spoken-Weather Semantics
+
+Status: committed at `da7b886`
+
+Release intent: give current, hourly, and daily Home weather a deliberate,
+provider-neutral spoken presentation contract.
+
+Must prove:
+
+- current speech identifies condition/current temperature and includes only
+  available feels-like/high/low facts;
+- hourly and daily rows identify time/date, condition, temperatures, and
+  available precipitation probability;
+- resolved units are spoken unambiguously and missing values are not converted
+  to zero;
+- one merged node exposes each weather item without duplicate decorative-
+  mark or child-text announcements;
+- visible weather text, named Home page actions, callbacks, canonical data, and
+  provider request count remain unchanged;
+- focused mapper, Compose semantics, and installed UI-hierarchy evidence exists.
+
+Out of scope:
+
+- layout matrix, alerts, Settings, theme redesign, and service TalkBack traversal.
+
+### Slice 30A2: Home Compact and Large-Font Resilience
+
 Status: specified
 
-Release intent: Verify MVP presentation paths under accessibility-oriented Android conditions.
+Prerequisite: Slice 30A1.
 
-Must prove where applicable:
+Release intent: verify and, where necessary, correct Home overflow on compact
+phones and at large font settings without changing weather meaning.
 
-- TalkBack order;
-- meaningful labels;
-- touch targets;
-- compact phone;
-- large font;
-- RTL;
-- reduced motion;
-- effects Off;
-- high contrast;
-- long location/provider/alert names;
-- unit-converted values;
-- no important clipping/overlap.
+Must prove:
 
-Any skipped condition must name the exact blocker.
+- Now, Hourly, Daily, Details, and the Simple Forecast choice remain reachable
+  at 360x640 dp and font scale 1.3, plus one representative font-scale-2.0
+  overflow case;
+- long location/provider names and wide Celsius/Fahrenheit values use localized
+  scrolling or wrapping rather than clipping, overlap, hidden content, or
+  excessively reduced text;
+- important content does not clip or overlap, controls remain at least 48dp,
+  and accessibility overflow scrolls rather than hiding information;
+- page identity, spoken descriptions, visible values, callbacks, canonical
+  weather, and provider request count remain unchanged.
+
+Focused evidence: no more than six named connected cases using a pairwise set of
+Standard/Simple pages, long content, and both temperature-unit widths; one
+installed compact font-scale-1.3/2.0 journey; and an exact environment/command
+ledger. A failing geometry boundary receives a red assertion before a Home-only
+layout correction.
+
+Out of scope:
+
+- RTL, disabled-animation/reduced-motion policy, cross-theme/contrast checks,
+  alerts, Settings, TalkBack, provider/state changes, and visual redesign.
+
+### Gate 30A3: Home Speech/Layout Evidence and Document Sync
+
+Status: specified
+
+Prerequisites: Slices 30A1 and 30A2.
+
+Mode: the required third-cycle test-only and documentation-sync session. Do not
+change production behavior in this gate.
+
+Must prove:
+
+- the named 30A1 speech cases and selected 30A2 compact/large-font cases pass
+  without running the full historical Home connected class;
+- installed Home evidence covers Now/Hourly/Daily/Details, Simple Forecast,
+  360x640 dp, font scales 1.3 and one representative 2.0 overflow case, Effects
+  Off, long location/provider text, and converted units without overstating
+  untested combinations;
+- screenshots, UI hierarchies, semantics, command/result/rerun ledger, exact
+  environment, and any blockers are reviewable under the two cycle artifact
+  directories;
+- README, specification, roadmap, current plan, and live cycle history state
+  only the Home accessibility behavior actually implemented and exercised.
+
+A failing production boundary blocks this gate and creates a specifically named
+Home repair slice; it is not fixed inside the test/doc session. Provider,
+privacy, licensing, persistence, alert, Settings, and release status remain
+unchanged.
+
+### Slice 30B1: Home RTL Navigation and Chronology
+
+Status: specified
+
+Prerequisite: Gate 30A3.
+
+Release intent: make the existing Standard/Simple Home navigation and forecast
+progression deliberately correct under RTL without changing chronological data.
+
+Must prove:
+
+- directional layout and visible previous/next affordances mirror appropriately;
+- semantic page identity and named previous/next actions continue to mean
+  chronological backward/forward movement rather than raw left/right movement;
+- hourly/daily data stays earliest-to-latest and spoken time/date meaning is
+  unchanged in both Standard and Simple layouts;
+- 360x640 dp, font scale 1.3, long location text, and both layouts retain usable
+  page controls, at least 48dp targets, no overlap, and overflow reachability;
+- switching layout/page in RTL does not persist unrelated state or refetch.
+
+Focused evidence: no more than five named connected RTL cases and one installed
+RTL Home journey with screenshots/hierarchies and restored device direction.
+Production corrections, if necessary, remain in Home layout/navigation code and
+receive a failing behavior assertion first.
+
+Out of scope:
+
+- font-scale-2.0 work already owned by 30A2, reduced motion, theme/contrast
+  matrix, alerts, Settings, provider/state changes, and TalkBack traversal.
+
+### Slice 30B2: Home Reduced-Motion and Appearance Invariance
+
+Status: specified
+
+Prerequisites: Gate 30A3 and Slice 30B1.
+
+Release intent: verify Home accessibility meaning and navigation across the
+implemented effects, animation-policy, theme, and contrast axes.
+
+Must prove:
+
+- Effects Off and Android disabled-animation policy retain all Home meaning and
+  use non-animated page movement without overwriting the saved effects choice;
+- spoken descriptions, named page actions, visible weather, alert summary, and
+  source/provenance remain equivalent under Oxygen, Paper, Terminal and
+  Standard/High contrast through a documented pairwise matrix;
+- selection remains understandable without color and atmospheric decoration;
+- 360x640 dp/font scale 1.3 has no new clipping, overlap, or missing controls;
+- recomposition across presentation axes does not refetch, rewrite preferences,
+  change canonical weather, or change semantic page identity.
+
+Focused evidence: reuse the committed effects/theme/contrast fixtures, add no
+more than six named pairwise connected cases through the real Home path, and
+retain one installed disabled-animation/Effects-Off journey. Do not rerun whole
+historical theme classes or add a second appearance model.
+
+Out of scope:
+
+- Settings control semantics/layout, new preferences, automatic system contrast,
+  Full effects, icon packs, visual redesign, alerts detail, and TalkBack.
+
+### Gate 30B3: Home Environment Evidence and Document Sync
+
+Status: specified
+
+Prerequisites: Slices 30B1 and 30B2.
+
+Mode: the required third-cycle test-only and documentation-sync session. Do not
+change production behavior in this gate.
+
+Must prove:
+
+- the selected RTL and reduced-motion/appearance cases pass together within the
+  connected-test budget without rerunning full historical Home classes;
+- installed RTL and disabled-animation journeys retain Home chronology, spoken
+  meaning, page actions, 48dp controls, Effects-Off behavior, visible weather,
+  and source/alert reachability;
+- retained screenshots, UI hierarchies, semantics, command/result/rerun ledger,
+  exact environment, and blockers support each claim;
+- README, specification, roadmap, current plan, and live history distinguish
+  deterministic/installed Home evidence from service-level TalkBack evidence
+  still owned by Gate 30E.
+
+A failing production boundary blocks this gate and creates a specifically named
+Home repair slice. Do not change provider, alert transport, preference schema,
+privacy/license/disclosure, or release status.
+
+### Slice 30C1: Official-Alert Summary Accessibility
+
+Status: specified
+
+Prerequisite: Gate 30B3.
+
+Release intent: make the Home official-alert summary complete, non-color-only,
+and operable without changing official alert meaning or selection.
+
+Must prove:
+
+- the summary exposes event, explicit severity, issuer, expiry, source-check
+  time, attribution, and active-alert count in logical non-duplicated semantics;
+- detail and official-source actions have meaningful labels/roles, 48dp targets,
+  and do not trigger Home page movement;
+- no-alert, one-alert, and multiple-alert fixtures remain truthful;
+- long event/issuer content remains reachable at 360x640 dp, font scales 1.3
+  and one 2.0 case, LTR/RTL, Effects Off, and High contrast;
+- opening the selected alert does not refetch or mutate weather/alert data.
+
+Focused evidence: mapper tests only if a new presentation field is necessary,
+no more than five named connected summary cases, and one installed real-alert
+summary/detail-entry attempt. Live alert availability may be absent and must not
+be replaced by seeded installed success.
+
+Out of scope: detail-document reading layout, alert transport/cache/background
+work, notifications, additional national providers, and TalkBack traversal.
+
+### Slice 30C2: Official-Alert Detail Accessibility
+
+Status: specified
+
+Prerequisite: Slice 30C1.
+
+Release intent: make the existing in-app official-alert detail a complete,
+logically ordered, scrollable reading surface.
+
+Must prove:
+
+- event, explicit severity, issuer, effective/expiry, affected area, official
+  description/instructions, source-check time, attribution, and source link stay
+  complete without paraphrasing official text;
+- multiple-alert selection, Back, and external source controls have meaningful
+  roles/labels/selected state and at least 48dp targets;
+- long provider/event/area/description/instruction content remains reachable at
+  360x640 dp, font scales 1.3 and 2.0, LTR/RTL, Effects Off, and High contrast;
+- reading/selecting/returning preserves Home page, alert selection, forecast,
+  request count, and official fixture meaning.
+
+Focused evidence: no more than six named deterministic connected cases using
+official fixtures plus one installed navigation/return journey only when a real
+alert is available. Do not make live NWS calls part of deterministic tests.
+
+Out of scope: summary behavior already owned by 30C1, alert persistence,
+background polling, notifications, provider transport, and release readiness.
+
+### Gate 30C3: Alert Accessibility Evidence and Document Sync
+
+Status: specified
+
+Prerequisites: Slices 30C1 and 30C2.
+
+Mode: required third-cycle test-only and documentation-sync session; no
+production behavior changes.
+
+Must prove the selected summary/detail cases together within budget; reconcile
+long-content, LTR/RTL, large-font, Effects-Off/high-contrast, action, navigation,
+and no-refetch evidence; record honest installed real-alert availability; and
+sync README, specification, roadmap, current plan, and live history without
+claiming TalkBack or notification/background-alert completion. A production
+failure creates a separately named alert repair slice.
+
+### Slice 30D1: Appearance Control Semantics
+
+Status: specified
+
+Prerequisite: Gate 30C3.
+
+Release intent: give Theme, Layout, Effects, and Contrast controls deliberate
+group/choice semantics through the real Settings / Appearance path.
+
+Must prove:
+
+- each group and choice exposes meaningful label, role, selected/disabled,
+  pending, success, and read/write-failure state without color-only meaning;
+- retry and Back actions are named, operable, and at least 48dp;
+- confirmed-write selection, retained failed target, retry, preference
+  independence, and no-refetch behavior remain unchanged;
+- the implementation reuses existing preference state and control components,
+  not a second state model or test-only screen.
+
+Focused evidence: existing preference transaction JVM tests plus no more than
+five named connected semantic/action cases through `OxygenApp`.
+
+Out of scope: large-font/RTL layout matrix, new preferences, automatic system
+contrast, Full effects, icon packs, persistence formats, Home/alert behavior.
+
+### Slice 30D2: Appearance Layout and Environment Resilience
+
+Status: specified
+
+Prerequisite: Slice 30D1.
+
+Release intent: keep the installed Appearance controls readable and reachable
+under compact, large-font, RTL, reduced-motion, theme, and contrast conditions.
+
+Must prove:
+
+- every group, choice, retry, status message, and Back action is scroll-reachable
+  at 360x640 dp and font scales 1.3/2.0 with no clipping or overlap;
+- RTL preserves logical label/control order;
+- selected/pending/error meaning remains understandable across Oxygen, Paper,
+  Terminal and Standard/High contrast using a pairwise matrix;
+- Effects Off/disabled animation does not hide state or rewrite the saved
+  preference; selection/restoration and no-refetch remain unchanged.
+
+Focused evidence: no more than six named pairwise connected cases plus installed
+LTR/RTL and representative font-scale-2.0 hierarchies/screenshots. Production
+repairs remain presentation-only and begin from a failing boundary assertion.
+
+Out of scope: semantics already owned by 30D1, new preference/state/storage
+behavior, Home/alert changes, visual redesign, and TalkBack traversal.
+
+### Gate 30D3: Appearance Accessibility Evidence and Document Sync
+
+Status: specified
+
+Prerequisites: Slices 30D1 and 30D2.
+
+Mode: required third-cycle test-only and documentation-sync session; no
+production behavior changes.
+
+Must prove the selected semantic/transaction/layout cases together within
+budget; reconcile installed LTR/RTL/large-font/reduced-motion evidence and exact
+pairwise coverage; and sync README, specification, roadmap, current plan, and
+live history without claiming automatic contrast or TalkBack. A production
+failure creates a separately named Appearance repair slice.
+
+### Gate 30E: Installed TalkBack and Accessibility Closure
+
+Status: specified
+
+Prerequisites: Gates 30A3, 30B3, 30C3, and 30D3.
+
+Release intent: exercise the completed production surfaces with Android
+accessibility services and close Gate 30 using retained cross-slice evidence.
+
+Must prove where the emulator supports it:
+
+- TalkBack traverses Home Now/Hourly/Daily, an available official-alert
+  summary/detail, and Settings / Appearance in logical order;
+- named Home movement, alert selection/Back/source, Appearance selection/retry,
+  and Back actions are operable without hidden gesture or color-only discovery;
+- spoken weather/hazard output matches visible meaning without duplicate marks
+  or omitted safety text;
+- the retained compact/large-font, RTL, theme/contrast, long-content,
+  unit-conversion, touch-target, reduced-motion, and Effects-Off matrix is
+  complete without claiming untested cross-products.
+
+Attempt one bounded TalkBack setup/traversal on the pinned emulator. If the
+service is absent or cannot be enabled safely, retain exact package/service/
+settings evidence and mark only service traversal blocked; never convert it to
+mock success. A production defect creates a bounded repair slice ahead of 30E.
+
+Gate 30E is test/evidence/documentation work, not a refactor. On success,
+reconcile README, specification sections 25/31/33/34/37/46/53, this roadmap,
+the active plan, and cycle history with only exercised conditions. Provider,
+privacy, license, persistence, or release-readiness claims do not change.
 
 ---
 
@@ -2137,9 +2506,11 @@ Existing enum/scaffold values do not make a deferred feature implemented.
 
 ## Recommended Sequence From Current Committed State
 
-Remote `main` is reconciled through merge `be38405`. The latest completed local
-implementation slice is Slice 27A, implemented at `660e376` with completion
-evidence recorded at `.codex/test-artifacts/2026-09-07-slice-27a-simple-layout-definition/`.
+The checked-out branch is reconciled with its local `origin/main` ref through
+merge `82cf281`. The latest completed local implementation slice is Slice 29B,
+implemented at `441d05d` with test follow-up `86e696c` and evidence sync
+`86f046b`; retained evidence is under
+`.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
 
 Use this as sequencing guidance, not permission to work multiple slices at once.
 
@@ -2175,14 +2546,26 @@ Use this as sequencing guidance, not permission to work multiple slices at once.
 30. Slice 28B2 — Persisted Theme Settings UI
 31. Slice 29A — High-Contrast Rendering Contract
 32. Slice 29B — High-Contrast Preference UI
-33. Gate 30 — Accessibility Presentation Verification
-34. Slice 33A — Dependency and Manifest Privacy Audit
-35. Slice 33B — Provider Disclosure and Local Data Privacy Audit
-36. Gate 34A — Settings and About Release Check
-37. Gate 34B — Data-Source Release Check
-38. Gate 35A — MVP Core Behavior Verification
-39. Gate 35B — MVP Presentation and Accessibility Verification
-40. Gate 35C — Release Candidate Decision
+33. Slice 30A1 — Home Spoken-Weather Semantics
+34. Slice 30A2 — Home Compact and Large-Font Resilience
+35. Gate 30A3 — Home Speech/Layout Evidence and Document Sync
+36. Slice 30B1 — Home RTL Navigation and Chronology
+37. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
+38. Gate 30B3 — Home Environment Evidence and Document Sync
+39. Slice 30C1 — Official-Alert Summary Accessibility
+40. Slice 30C2 — Official-Alert Detail Accessibility
+41. Gate 30C3 — Alert Accessibility Evidence and Document Sync
+42. Slice 30D1 — Appearance Control Semantics
+43. Slice 30D2 — Appearance Layout and Environment Resilience
+44. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
+45. Gate 30E — Installed TalkBack and Accessibility Closure
+46. Slice 33A — Dependency and Manifest Privacy Audit
+47. Slice 33B — Provider Disclosure and Local Data Privacy Audit
+48. Gate 34A — Settings and About Release Check
+49. Gate 34B — Data-Source Release Check
+50. Gate 35A — MVP Core Behavior Verification
+51. Gate 35B — MVP Presentation and Accessibility Verification
+52. Gate 35C — Release Candidate Decision
 
 Run recurring documentation-sync gates at the defined cadence.
 
@@ -2201,11 +2584,14 @@ Sequencing rationale:
 
 ## Active Slice
 
-Slice 29B: High-Contrast Preference UI is committed at `441d05d` with test
-coverage follow-up `86e696c` in
-`.codex/plans/current.md`. Slice 28A1 is committed at `06c987b`, Slice 28A2 is
-committed at `80dd961`, and Slice 28B1 is committed at `708172f` (merged by
-`82cf281`), with retained evidence under their cycle artifact directories.
+Slice 30A1: Home Spoken-Weather Semantics is committed at `da7b886`; Slice 30A2
+is the next specified candidate in `.codex/plans/mvp-roadmap.md`. It was the
+first implementation slice of the split Gate 30 accessibility boundary. Slice
+29B is committed at `441d05d` with test
+coverage follow-up `86e696c` and evidence sync `86f046b`. Slice 28A1 is
+committed at `06c987b`, Slice 28A2 is committed at `80dd961`, and Slice 28B1 is
+committed at `708172f` (merged by `82cf281`), with retained evidence under their
+cycle artifact directories.
 Slice 27B1/27B2 are committed together at `b68ca19`, and Slice 27B3 is
 verified with retained installed evidence at `.codex/test-artifacts/2026-09-08-slice-27b3-installed-layout-restoration/`.
 
@@ -2247,12 +2633,14 @@ Immediate planning boundary:
 -> Slice 28B2 persisted theme Settings UI committed at `2c88b9c`
 -> Slice 29A high-contrast rendering contract committed at `0dccc94`
 -> Slice 29B persisted high-contrast preference UI committed at `441d05d`
+-> Slice 30A1 Home spoken-weather semantics committed at `da7b886`
 ```
 
 Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,
-and Slice 29B are complete. Gate 30 remains the next specified candidate; it is
-not planned by this sync. Release work and release-candidate claims remain
-outside this boundary.
+Slice 29B, and Slice 30A1 are complete. Gate 30 is split into the bounded
+30A1–30E queue at the head of this roadmap; Slice 30A2 is next and remains
+specified. Release
+work and release-candidate claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

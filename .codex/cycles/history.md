@@ -33,15 +33,19 @@ ledger states.
 ## Recent State Summary
 
 - Latest implementation and verification state: Slice 29B, High-Contrast
-  Preference UI, is committed at `441d05d` with test follow-up `86e696c`;
-  focused, broad, and installed
+  Preference UI, is committed at `441d05d` with test follow-up `86e696c` and
+  evidence sync `86f046b`; focused, broad, and installed
   evidence is retained at
   `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
 - Slice 28B1 is committed at `708172f` and merged by `82cf281`; the current
   Settings path now wires its production DataStore and exposes Oxygen, Paper,
   and Terminal selection with confirmed-write semantics.
-- Current process state: Gate 30 remains the next specified candidate; no
-  later slice is planned in this sync.
+- Current process state: Gate 30 has been split into the bounded 30A1–30E queue
+  covering Home speech/layout/environment, alert summary/detail, Appearance,
+  required test/doc-sync gates, and installed TalkBack closure. Slice 30A1,
+  Home Spoken-Weather Semantics, is committed at `da7b886`; Slice 30A2 is the
+  next specified candidate, and no later Gate 30 boundary is planned or claimed
+  complete.
 
 ## Recent Cycles
 
@@ -1401,3 +1405,50 @@ Boundaries:
 - No new high-contrast palette or rendering contract, provider/domain,
   repository/cache/location/unit/alert behavior, dependency, preference
   migration, or Gate 30 claim changed.
+
+### 2026-09-09-slice-30a1-home-spoken-weather-semantics
+
+Status: committed
+Mode: bounded Home presentation/accessibility implementation
+Slice: Slice 30A1, Home Spoken-Weather Semantics
+Implementation commit: `da7b886`
+
+Result:
+- Added required mapper-owned `spokenDescription` values to current, hourly,
+  and daily Home presentation models. Descriptions use canonical nullable
+  weather values, resolved Celsius/Fahrenheit units, local time/date, and
+  honest missing-value and precipitation semantics.
+- Replaced Compose-built forecast descriptions with complete card semantics,
+  hid only redundant current-summary descendants, and retained visual text and
+  test tags in the unmerged tree.
+
+Evidence:
+- Baseline captured from the committed APK before edits, then final installed
+  evidence was captured after normal manual Chicago search/saved-location
+  selection on `oxygen_starter` / `emulator-5554`, pinned to 360x640 dp,
+  density 160, font scale 1.3, Effects Off, Standard layout, and Fahrenheit.
+- Mapper red evidence recorded the expected missing-field compile failure in
+  `mapper-red-final.log`; both mapper cases then passed in focused JVM tests.
+- The four named Home connected cases passed: three in the initial filtered
+  run and the hourly case in its named rerun after removing an ambiguous
+  duplicate unmerged-text assertion. Merged exact descriptions, current
+  summary deduplication, unmerged visual boundaries, and the Celsius no-refetch
+  path were exercised.
+- Final installed Now/Hourly/Daily hierarchies exposed mapper-owned
+  descriptions, and screenshots were retained. Broad compile, app/core unit
+  tests, final assemble through the install command, and `git diff --check`
+  passed.
+
+Artifacts:
+- `.codex/test-artifacts/2026-09-09-slice-30a1-home-spoken-weather-semantics/`.
+
+Blockers/skips:
+- No bounded platform timeout occurred. Full Home-class rerun, TalkBack
+  service traversal/pronunciation, RTL, large-font resilience matrix, and
+  later Gate 30 conditions remain out of scope.
+
+Boundaries:
+- No provider, domain, repository, cache, storage, preference, Settings,
+  alert, theme, navigation, localization, or release behavior changed.
+- Slice 30A2 is the next specified slice; this entry does not claim Gate 30 or
+  TalkBack completion.

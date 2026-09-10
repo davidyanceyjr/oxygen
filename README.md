@@ -60,6 +60,10 @@ and `docs/data-sources/`.
   recreation and force-stop/relaunch, remains independent of theme, layout,
   effects, and forecast requests, and failed writes retain the confirmed choice
   with retry.
+- Installed Home current, hourly, and daily weather exposes concise
+  mapper-owned accessibility descriptions with resolved temperature units and
+  honest missing-value/precipitation semantics; TalkBack traversal is not yet
+  verified.
 - Home presentation conversion for provider-neutral unit preferences at the
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
