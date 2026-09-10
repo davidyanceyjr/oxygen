@@ -2079,9 +2079,11 @@ Slice 30A1, Home Spoken-Weather Semantics, is implemented, verified, and
 committed at `da7b886`; Slice 30A2, Home Compact and Large-Font Resilience, is
 implemented, verified, and committed at `1a8e14f`; and Slice 30A3A1 Home
 Speech/Layout Evidence is complete as evidence on 2026-09-10. Slice 30A3B2 is
-the documentation-sync boundary for that evidence, and Slice 30B1 Home RTL
-Navigation and Chronology remains next after its closure. No later Gate 30
-condition, including TalkBack service traversal, is claimed complete.
+the documentation-sync boundary for that evidence. Slice 30B1A1 RTL semantic
+page navigation is committed at `63ed25a`, and Slice 30B1A2 directional
+affordances and gesture behavior is the next planned boundary. No later Gate
+30 condition, including complete RTL support or TalkBack service traversal, is
+claimed complete.
 
 ---
 

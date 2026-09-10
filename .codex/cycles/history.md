@@ -42,8 +42,10 @@ ledger states.
 - Slice 30A1 is committed at da7b886; Slice 30A2 is committed at 1a8e14f;
   30A3A1 evidence is complete; and 30A3B2 document sync is committed at
   fb51f7b.
-- Slice 30B1, Home RTL Navigation and Chronology, is the active planned slice
-  in .codex/plans/current.md. No later Gate 30 boundary is claimed complete.
+- Slice 30B1A1, RTL Semantic Page Navigation Contract, is committed at
+  63ed25a; Slice 30B1A2, RTL Directional Affordances and Gesture Behavior, is
+  the next planned slice in .codex/plans/current.md. No later Gate 30 boundary
+  is claimed complete.
 
 ## Recent Cycles
 
@@ -139,3 +141,41 @@ Limits:
 - No connected tests, emulator journey, provider network checks, or dependency
   audit tooling were rerun; this slice changed no provider, domain, cache
   schema, DataStore format, manifest, or user-facing weather behavior.
+
+### 2026-09-10-slice-30b1a1-rtl-semantic-page-navigation
+
+Status: committed
+Mode: bounded Home RTL semantic page navigation test slice
+Slice: Slice 30B1A1, RTL Semantic Page Navigation Contract
+Commit: 63ed25a
+
+Result:
+
+- Added two Compose-local RTL connected cases covering exact semantic action
+  progression for Standard Now -> Hourly -> Daily -> Details and Simple Now
+  -> Forecast, including first/intermediate/final action sets, page positions,
+  titles, handled actions, and destinations.
+- Added an explicit layout-direction parameter to the existing test content
+  helper, defaulting to LTR, and tightened the custom-action assertion to the
+  complete ordered action list. No production correction was needed.
+
+Evidence:
+
+- The exact focused command passed twice on one `oxygen_starter` / `emulator-5554`
+  session: 2 completed, 0 skipped, 0 failed each run. The device was API 37,
+  420dpi, font scale 1.0, initially LTR (`ldltr`); device direction was not
+  changed.
+- Broad compile, app/core unit tests, debug assembly, and `git diff --check`
+  passed.
+
+Artifacts:
+
+- `.codex/test-artifacts/2026-09-10-slice-30b1a1-rtl-semantic-page-navigation/`
+  contains the ledger and focused/broad command logs.
+
+Limits:
+
+- No installed/manual RTL journey, device-level RTL, screenshots or UI
+  hierarchies, visual mirroring, swipe-direction acceptance, chronology,
+  compact/refetch, provider, or release evidence was collected; those remain
+  in 30B1A2–30B1B1 or later scope.
