@@ -2454,6 +2454,133 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun rtlSimpleHomeForecastChoicesPreserveChronologicalRenderedOrder() {
+        val location = weatherLocation()
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+        )
+        val layoutDirection = mutableStateOf(LayoutDirection.Ltr)
+        val expectedHourlyTags = (0..5).map { "home-hourly-entry-$it" }
+        val expectedHourlyLabels = listOf("6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM")
+        val expectedDailyTags = (0..5).map { "home-daily-entry-$it" }
+        val expectedDailyLabels = listOf(
+            "Sat, Aug 22",
+            "Sun, Aug 23",
+            "Mon, Aug 24",
+            "Tue, Aug 25",
+            "Wed, Aug 26",
+            "Thu, Aug 27",
+        )
+
+        fun assertHourlyEntries(entries: List<SemanticsNode>) {
+            assertEquals(6, entries.size)
+            assertEquals(expectedHourlyTags, entries.map { it.hourlyTag() })
+            assertEquals(expectedHourlyTags.size, entries.map { it.hourlyTag() }.toSet().size)
+            assertEquals(expectedHourlyLabels, entries.map { it.hourlyTimeLabel() })
+            assertEquals(
+                "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+                entries.first().config
+                    .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                    .singleOrNull(),
+            )
+            assertEquals(
+                "11 AM. Rain showers. 71 degrees Fahrenheit. 40 percent chance of precipitation.",
+                entries.last().config
+                    .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                    .singleOrNull(),
+            )
+            assertEquals(
+                listOf("6 AM", "Rain", "64 deg F", "Precip 60%"),
+                entries.first().hourlyRenderedText(),
+            )
+            assertEquals(
+                listOf("11 AM", "Rain showers", "71 deg F", "Precip 40%"),
+                entries.last().hourlyRenderedText(),
+            )
+        }
+
+        fun assertDailyEntries(entries: List<SemanticsNode>) {
+            assertEquals(6, entries.size)
+            assertEquals(expectedDailyTags, entries.map { it.dailyTag() })
+            assertEquals(expectedDailyTags.size, entries.map { it.dailyTag() }.toSet().size)
+            assertEquals(expectedDailyLabels, entries.map { it.dailyDateLabel() })
+            assertEquals(
+                "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
+                entries.first().dailyDescription(),
+            )
+            assertEquals(
+                "Thu, Aug 27. Rain. High 67 degrees Fahrenheit.",
+                entries.last().dailyDescription(),
+            )
+            assertEquals(
+                listOf("Sat, Aug 22", "Rain showers", "Precip 40%", "Low", "54 deg F", "High", "73 deg F"),
+                entries.first().dailyRenderedText(),
+            )
+            assertEquals(
+                listOf("Thu, Aug 27", "Rain", "Precip n/a", "Low", "unavailable", "High", "67 deg F"),
+                entries.last().dailyRenderedText(),
+            )
+        }
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1f),
+                LocalLayoutDirection provides layoutDirection.value,
+            ) {
+                OxygenTheme {
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = OxygenAppearance(layout = LayoutPreset.SIMPLE, effects = EffectsLevel.OFF),
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 2")
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
+
+        val ltrHourlyEntries = composeRule.renderedHourlyEntriesInSemanticsOrder()
+        assertHourlyEntries(ltrHourlyEntries)
+        val ltrHourlyLabels = ltrHourlyEntries.map { it.hourlyTimeLabel() }
+
+        composeRule.onNodeWithTag("home-simple-forecast-daily").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-simple-forecast-daily").assertIsSelected()
+        val ltrDailyEntries = composeRule.renderedDailyEntriesInSemanticsOrder()
+        assertDailyEntries(ltrDailyEntries)
+        val ltrDailyLabels = ltrDailyEntries.map { it.dailyDateLabel() }
+
+        composeRule.runOnIdle { layoutDirection.value = LayoutDirection.Rtl }
+        composeRule.waitForIdle()
+        val rtlDailyEntries = composeRule.renderedDailyEntriesInSemanticsOrder()
+        assertDailyEntries(rtlDailyEntries)
+        assertEquals(
+            ltrDailyLabels,
+            rtlDailyEntries.map { it.dailyDateLabel() },
+        )
+        composeRule.writeSemanticsArtifact("rtl-simple-daily-chronology-semantics.txt")
+
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
+        val rtlHourlyEntries = composeRule.renderedHourlyEntriesInSemanticsOrder()
+        assertHourlyEntries(rtlHourlyEntries)
+        assertEquals(
+            ltrHourlyLabels,
+            rtlHourlyEntries.map { it.hourlyTimeLabel() },
+        )
+        composeRule.writeSemanticsArtifact("rtl-simple-hourly-chronology-semantics.txt")
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 2")
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
+    }
+
+    @Test
     fun homeInteractiveControlsExposeMinimumTouchTargetsAndDoNotPageAccidentally() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
