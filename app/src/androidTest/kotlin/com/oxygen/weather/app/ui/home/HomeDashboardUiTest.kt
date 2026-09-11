@@ -2581,6 +2581,99 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun rtlStandardForecastSpokenMeaningMatchesLtr() {
+        val location = weatherLocation()
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+        )
+        val layoutDirection = mutableStateOf(LayoutDirection.Ltr)
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1f),
+                LocalLayoutDirection provides layoutDirection.value,
+            ) {
+                OxygenTheme {
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        val ltrHourly = composeRule.renderedWeatherEntrySemantics("home-hourly-entry")
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+        val ltrDaily = composeRule.renderedWeatherEntrySemantics("home-daily-entry")
+
+        composeRule.runOnIdle { layoutDirection.value = LayoutDirection.Rtl }
+        composeRule.waitForIdle()
+        val rtlDaily = composeRule.renderedWeatherEntrySemantics("home-daily-entry")
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        val rtlHourly = composeRule.renderedWeatherEntrySemantics("home-hourly-entry")
+
+        assertEquals(ltrHourly, rtlHourly)
+        assertEquals(ltrDaily, rtlDaily)
+        composeRule.writeTextArtifact(
+            "rtl-standard-spoken-meaning-semantics.txt",
+            "LTR HOURLY\n${ltrHourly.format()}\n\nLTR DAILY\n${ltrDaily.format()}\n\n" +
+                "RTL HOURLY\n${rtlHourly.format()}\n\nRTL DAILY\n${rtlDaily.format()}\n",
+        )
+    }
+
+    @Test
+    fun rtlSimpleForecastSpokenMeaningMatchesLtr() {
+        val location = weatherLocation()
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+        )
+        val layoutDirection = mutableStateOf(LayoutDirection.Ltr)
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1f),
+                LocalLayoutDirection provides layoutDirection.value,
+            ) {
+                OxygenTheme {
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = OxygenAppearance(
+                            layout = LayoutPreset.SIMPLE,
+                            effects = EffectsLevel.OFF,
+                        ),
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
+        composeRule.waitForIdle()
+        val ltrHourly = composeRule.renderedWeatherEntrySemantics("home-hourly-entry")
+        composeRule.onNodeWithTag("home-simple-forecast-daily").performClick()
+        composeRule.waitForIdle()
+        val ltrDaily = composeRule.renderedWeatherEntrySemantics("home-daily-entry")
+
+        composeRule.runOnIdle { layoutDirection.value = LayoutDirection.Rtl }
+        composeRule.waitForIdle()
+        val rtlDaily = composeRule.renderedWeatherEntrySemantics("home-daily-entry")
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").performClick()
+        composeRule.waitForIdle()
+        val rtlHourly = composeRule.renderedWeatherEntrySemantics("home-hourly-entry")
+
+        assertEquals(ltrHourly, rtlHourly)
+        assertEquals(ltrDaily, rtlDaily)
+        composeRule.writeTextArtifact(
+            "rtl-simple-spoken-meaning-semantics.txt",
+            "LTR HOURLY\n${ltrHourly.format()}\n\nLTR DAILY\n${ltrDaily.format()}\n\n" +
+                "RTL HOURLY\n${rtlHourly.format()}\n\nRTL DAILY\n${rtlDaily.format()}\n",
+        )
+    }
+
+    @Test
     fun homeInteractiveControlsExposeMinimumTouchTargetsAndDoNotPageAccidentally() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
@@ -3929,6 +4022,45 @@ private fun ComposeTestRule.renderedDailyEntriesInSemanticsOrder(): List<Semanti
             node.config.getOrElse(SemanticsProperties.TestTag) { "" }
                 .matches(Regex("home-daily-entry-[0-5]"))
         }
+
+private data class RenderedWeatherEntrySemantics(
+    val entryTag: String,
+    val nodes: List<String>,
+) {
+    fun format(): String = buildString {
+        appendLine(entryTag)
+        nodes.forEach { appendLine(it) }
+    }
+}
+
+private fun List<RenderedWeatherEntrySemantics>.format(): String =
+    joinToString(separator = "\n") { it.format() }
+
+private fun ComposeTestRule.renderedWeatherEntrySemantics(
+    tagPrefix: String,
+): List<RenderedWeatherEntrySemantics> =
+    onRoot(useUnmergedTree = true)
+        .fetchSemanticsNode()
+        .flattenSemantics()
+        .filter { node ->
+            node.config.getOrElse(SemanticsProperties.TestTag) { "" }
+                .matches(Regex("$tagPrefix-[0-5]"))
+        }
+        .map { entry ->
+            RenderedWeatherEntrySemantics(
+                entryTag = entry.config.getOrElse(SemanticsProperties.TestTag) { "" },
+                nodes = entry.flattenSemantics().map { node ->
+                    node.config.toString().replace(Regex("@[0-9a-f]+"), "@<stable>")
+                },
+            )
+        }
+
+private fun ComposeTestRule.writeTextArtifact(fileName: String, content: String) {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val artifact = File(context.filesDir, fileName)
+    artifact.writeText(content)
+    assertTrue("$fileName should contain rendered semantics", artifact.readText().contains("LTR"))
+}
 
 private fun SemanticsNode.dailyTag(): String =
     config.getOrElse(SemanticsProperties.TestTag) { "" }
