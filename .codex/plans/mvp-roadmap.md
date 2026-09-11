@@ -530,7 +530,7 @@ evidence, artifact directory, result ledger, commit, and next-plan handoff.
 
 #### Slice 30B1A4: RTL Compact Layout and No-Refetch Evidence
 
-Status: specified
+Status: implemented; connected acceptance incomplete
 
 Prerequisite: Slices 30B1A3A1–30B1A3B1.
 
@@ -540,7 +540,12 @@ unrelated persistence or forecast refetch when changing page/layout in RTL.
 
 Focused boundary: up to two named connected cases, using canonical request
 counts and bounds/overlap assertions. Preserve the existing production
-selected-location path.
+selected-location path. The two cases and RTL test-composition helper are
+implemented. Source-side checks passed, but the corrected Standard connected
+run stalled in the emulator runner before producing a result and the Simple
+case was not run; therefore this slice is not verified or committed as
+complete. Evidence is retained under
+`.codex/test-artifacts/2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch/`.
 
 #### Gate 30B1B1: RTL Installed Evidence and Documentation Sync
 

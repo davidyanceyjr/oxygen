@@ -385,3 +385,37 @@ Limits:
   hierarchy, TalkBack service traversal, compact/refetch, reduced-motion or
   theme/contrast matrix, localization, provider/network/cache, alerts, or
   release evidence was collected. The next planned slice is 30B1A4.
+
+### 2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch
+
+Status: implemented; connected acceptance incomplete
+Mode: bounded Home RTL compact-layout and request-count test implementation
+Slice: Slice 30B1A4, RTL Compact Layout and No-Refetch Evidence
+
+Result:
+
+- Added the two planned Compose-local RTL cases covering Standard and Simple
+  Home compact bounds, touch targets, overlap, long-content reachability, and
+  exact repository request-list stability. Extended the content helper with a
+  default-LTR-preserving layout-direction parameter. No production correction
+  was needed.
+
+Evidence:
+
+- Compile, app/core unit tests, debug assembly, and `git diff --check` passed.
+- The corrected Standard connected attempt installed and started on
+  `oxygen_starter` / `emulator-5554`, API 37, but stalled at `Tests 0/1
+  completed` without a test result. The Simple connected case was not run.
+- The first Standard attempt failed on a shortened attribution assertion; the
+  assertion was corrected to the existing full provider/fetch line.
+
+Artifacts:
+
+- `.codex/test-artifacts/2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch/`
+  contains the verification ledger.
+
+Limits:
+
+- Connected acceptance is incomplete, so this slice is not verified or ready
+  for Gate 30B1B1. No commit was previously made for the slice; this status
+  sync is being committed with the incomplete-evidence limit explicit.

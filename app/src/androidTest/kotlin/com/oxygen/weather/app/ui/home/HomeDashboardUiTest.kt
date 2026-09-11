@@ -3301,6 +3301,175 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun rtlStandardHomeCompactLongContentKeepsControlsReachableWithoutRefetch() {
+        val location = weatherLocation(
+            name = "A Very Long Selected Location Name Near The Lakefront, Wisconsin, United States",
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(
+                        location = location,
+                        provenance = forecastProvenance(
+                            sourceName = "Open-Meteo Long Provider Attribution Name",
+                            licenseId = "Creative Commons Attribution 4.0 International",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactOxygenAppContent(
+            stateHolder = stateHolder,
+            appearance = OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+            layoutDirection = LayoutDirection.Rtl,
+        )
+        composeRule.waitForIdle()
+        val requestLocationsAfterReady = repository.locations.toList()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertWithinRootBounds(
+            "home-page-tab-now", "home-page-tab-hourly", "home-page-tab-daily",
+            "home-page-tab-details", "home-change-location", "home-refresh", "home-about-entry",
+        )
+        composeRule.assertMinimumTouchTarget(
+            "home-page-tab-now", "home-page-tab-hourly", "home-page-tab-daily",
+            "home-page-tab-details", "home-change-location", "home-refresh", "home-about-entry",
+        )
+        composeRule.assertNoSiblingOverlap(
+            "home-page-tab-now", "home-page-tab-hourly", "home-page-tab-daily", "home-page-tab-details",
+        )
+        composeRule.assertNoSiblingOverlap("home-change-location", "home-refresh", "home-about-entry")
+        composeRule.assertTextWithinRootBoundsAfterScroll(location.displayName)
+        composeRule.assertTextWithinRootBoundsAfterScroll(
+            "Open-Meteo Long Provider Attribution Name | Fetched Aug 22, 7:00 AM CDT",
+        )
+
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithContentDescription(
+            "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+        ).performScrollTo().assertIsDisplayed()
+        composeRule.assertReadableBoundsAfterScroll("home-hourly-entry-0")
+        composeRule.onNodeWithTag("home-hourly-entry-0").performScrollTo()
+        composeRule.assertNoSiblingOverlap("home-hourly-entry-0", "home-hourly-entry-1")
+        assertEquals(requestLocationsAfterReady, repository.locations)
+
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithContentDescription(
+            "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
+        ).performScrollTo().assertIsDisplayed()
+        composeRule.assertWithinRootBounds("home-daily-entry-0")
+        composeRule.assertCheckedSiblingSpacing("home-daily-entry-0", "home-daily-entry-1")
+        assertEquals(requestLocationsAfterReady, repository.locations)
+
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.assertReadableBoundsAfterScroll(
+            "home-section-comfort", "home-section-wind", "home-section-atmosphere",
+            "home-section-source", "home-section-status", "home-section-sun",
+            "home-section-provenance-footer",
+        )
+        composeRule.onNodeWithText("Weather data by Open-Meteo Long Provider Attribution Name.")
+            .performScrollTo().assertIsDisplayed()
+        assertEquals(requestLocationsAfterReady, repository.locations)
+    }
+
+    @Test
+    fun rtlSimpleHomeCompactLayoutAndForecastChoicesDoNotRefetch() {
+        val location = weatherLocation(
+            name = "A Very Long Selected Location Name Near The Lakefront, Wisconsin, United States",
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(
+                        location = location,
+                        provenance = forecastProvenance(
+                            sourceName = "Open-Meteo Long Provider Attribution Name",
+                            licenseId = "Creative Commons Attribution 4.0 International",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactOxygenAppContent(
+            stateHolder = stateHolder,
+            appearance = OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+            layoutDirection = LayoutDirection.Rtl,
+        )
+        composeRule.waitForIdle()
+        val requestLocationsAfterReady = repository.locations.toList()
+        composeRule.onNodeWithTag("home-about-entry").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings-destination-appearance").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings-layout-simple").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        assertEquals(requestLocationsAfterReady, repository.locations)
+        composeRule.onNodeWithTag("settings-back").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertWithinRootBounds(
+            "home-page-tab-now", "home-page-tab-forecast", "home-change-location", "home-refresh", "home-about-entry",
+        )
+        composeRule.assertMinimumTouchTarget(
+            "home-page-tab-now", "home-page-tab-forecast", "home-change-location", "home-refresh", "home-about-entry",
+        )
+        composeRule.assertNoSiblingOverlap("home-page-tab-now", "home-page-tab-forecast")
+        composeRule.assertNoSiblingOverlap("home-change-location", "home-refresh", "home-about-entry")
+        composeRule.assertTextWithinRootBoundsAfterScroll(location.displayName)
+        composeRule.assertTextWithinRootBoundsAfterScroll(
+            "Open-Meteo Long Provider Attribution Name | Fetched Aug 22, 7:00 AM CDT",
+        )
+        assertEquals(requestLocationsAfterReady, repository.locations)
+
+        composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
+        composeRule.assertMinimumTouchTargetAfterScroll("home-simple-forecast-hourly", "home-simple-forecast-daily")
+        composeRule.onNodeWithContentDescription(
+            "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+        ).performScrollTo().assertIsDisplayed()
+        composeRule.assertReadableBoundsAfterScroll("home-hourly-entry-0")
+        composeRule.onNodeWithTag("home-hourly-entry-0").performScrollTo()
+        composeRule.assertNoSiblingOverlap("home-hourly-entry-0", "home-hourly-entry-1")
+        assertEquals(requestLocationsAfterReady, repository.locations)
+
+        composeRule.onNodeWithTag("home-simple-forecast-daily").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-simple-forecast-daily").assertIsSelected()
+        composeRule.onNodeWithContentDescription(
+            "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
+        ).performScrollTo().assertIsDisplayed()
+        composeRule.assertWithinRootBounds("home-daily-entry-0")
+        composeRule.assertCheckedSiblingSpacing("home-daily-entry-0", "home-daily-entry-1")
+        assertEquals(requestLocationsAfterReady, repository.locations)
+    }
+
+    @Test
     fun standardDetailsAtFontScale20KeepsLongProviderContentScrollReachable() {
         val location = weatherLocation(
             name = "A Very Long Selected Location Name Near The Lakefront, Wisconsin, United States",
@@ -3614,9 +3783,13 @@ private fun ComposeContentTestRule.setCompactOxygenAppContent(
     widthDp: Int = 360,
     heightDp: Int = 640,
     fontScale: Float = 1.3f,
+    layoutDirection: LayoutDirection = LayoutDirection.Ltr,
 ) {
     setContent {
-        CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = fontScale)) {
+        CompositionLocalProvider(
+            LocalDensity provides Density(density = 1f, fontScale = fontScale),
+            LocalLayoutDirection provides layoutDirection,
+        ) {
             androidx.compose.foundation.layout.Box(
                 Modifier
                     .width(widthDp.dp)
