@@ -35,17 +35,17 @@ ledger states.
 
 ## Recent State Summary
 
-- Latest implementation and verification state: Slice 30B1A3A2, Standard Home
-  RTL Daily Chronology, is committed at 9390601; evidence is retained under
-  .codex/test-artifacts/2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology/.
+- Latest implementation and verification state: Slice 30B1A3A3, Simple Home
+  RTL Forecast Chronology, is committed at 91974b2; evidence is retained under
+  .codex/test-artifacts/2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology/.
 - Slice 30A1 is committed at da7b886; Slice 30A2 is committed at 1a8e14f;
   30A3A1 evidence is complete; and 30A3B2 document sync is committed at
   fb51f7b.
 - Slice 30B1A1, RTL Semantic Page Navigation Contract, is committed at
   63ed25a; Slice 30B1A2 is committed at 20b6ddc; Slice 30B1A3A1 is committed
-  at 74675e2; and Slice 30B1A3A2 is committed at 9390601. Slice 30B1A3A3 is
-  the next planned slice in .codex/plans/current.md. No later Gate 30 boundary
-  is claimed complete.
+  at 74675e2; Slice 30B1A3A2 is committed at 9390601; and Slice 30B1A3A3 is
+  committed at 91974b2. Slice 30B1A3B1 is the next planned slice in
+  .codex/plans/current.md. No later Gate 30 boundary is claimed complete.
 
 ## Recent Cycles
 
