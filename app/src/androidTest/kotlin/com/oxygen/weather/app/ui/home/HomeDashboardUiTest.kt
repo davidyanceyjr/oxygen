@@ -21,6 +21,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
@@ -2323,6 +2325,75 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun rtlStandardHomeHourlyPreservesChronologicalRenderedOrder() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+        val layoutDirection = mutableStateOf(LayoutDirection.Ltr)
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1f),
+                LocalLayoutDirection provides layoutDirection.value,
+            ) {
+                OxygenTheme {
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        val ltrEntries = composeRule.renderedHourlyEntriesInSemanticsOrder()
+
+        composeRule.runOnIdle { layoutDirection.value = LayoutDirection.Rtl }
+        composeRule.waitForIdle()
+        val rtlEntries = composeRule.renderedHourlyEntriesInSemanticsOrder()
+
+        val expectedLabels = listOf("6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM")
+        assertEquals(
+            (0..5).map { "home-hourly-entry-$it" },
+            ltrEntries.map { it.hourlyTag() },
+        )
+        assertEquals(
+            (0..5).map { "home-hourly-entry-$it" },
+            rtlEntries.map { it.hourlyTag() },
+        )
+        assertEquals(expectedLabels, ltrEntries.map { it.hourlyTimeLabel() })
+        assertEquals(expectedLabels, rtlEntries.map { it.hourlyTimeLabel() })
+        assertEquals(
+            ltrEntries.map { it.hourlyTimeLabel() },
+            rtlEntries.map { it.hourlyTimeLabel() },
+        )
+        assertEquals(
+            "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+            rtlEntries.first().config
+                .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                .singleOrNull(),
+        )
+        assertEquals(
+            "11 AM. Rain showers. 71 degrees Fahrenheit. 40 percent chance of precipitation.",
+            rtlEntries.last().config
+                .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                .singleOrNull(),
+        )
+        assertEquals(
+            listOf("6 AM", "Rain", "64 deg F", "Precip 60%"),
+            rtlEntries.first().hourlyRenderedText(),
+        )
+        assertEquals(
+            listOf("11 AM", "Rain showers", "71 deg F", "Precip 40%"),
+            rtlEntries.last().hourlyRenderedText(),
+        )
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 4")
+        composeRule.writeSemanticsArtifact("rtl-standard-hourly-chronology-semantics.txt")
+    }
+
+    @Test
     fun homeInteractiveControlsExposeMinimumTouchTargetsAndDoNotPageAccidentally() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
@@ -3653,6 +3724,34 @@ private fun ComposeTestRule.assertMirroredPageSelector(vararg tagsInLeftToRightO
         )
     }
 }
+
+private fun ComposeTestRule.renderedHourlyEntriesInSemanticsOrder(): List<SemanticsNode> =
+    onRoot(useUnmergedTree = true)
+        .fetchSemanticsNode()
+        .flattenSemantics()
+        .filter { node ->
+            node.config.getOrElse(SemanticsProperties.TestTag) { "" }
+                .matches(Regex("home-hourly-entry-[0-5]"))
+        }
+
+private fun SemanticsNode.flattenSemantics(): List<SemanticsNode> =
+    listOf(this) + children.flatMap { it.flattenSemantics() }
+
+private fun SemanticsNode.hourlyTag(): String =
+    config.getOrElse(SemanticsProperties.TestTag) { "" }
+
+private fun SemanticsNode.hourlyRenderedText(): List<String> =
+    flattenSemantics()
+        .asSequence()
+        .flatMap { node ->
+            node.config.getOrElse(SemanticsProperties.Text) { emptyList() }.asSequence()
+        }
+        .map { it.text }
+        .toList()
+
+private fun SemanticsNode.hourlyTimeLabel(): String =
+    hourlyRenderedText()
+        .first { it.matches(Regex("\\d{1,2} AM")) }
 
 private fun ComposeTestRule.assertHomePage(
     title: String,
