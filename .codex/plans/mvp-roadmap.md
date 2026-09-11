@@ -27,8 +27,9 @@ Implement these bounded candidates in order; 30A1 and 30A2 are committed,
 documentation sync, 30B1A1 is committed at `63ed25a` as the RTL semantic page
 navigation contract, 30B1A2 is committed at `20b6ddc`, and 30B1A3A1 is
 committed at `74675e2`. The former 30B1A3 draft is decomposed into
-independently observable sub-slices; `30B1A3A2` is committed at `9390601`, and
-`30B1A3A3` is the current candidate selected by `.codex/plans/current.md`:
+independently observable sub-slices; `30B1A3A2` is committed at `9390601`,
+`30B1A3A3` is committed at `91974b2`, and `30B1A3B1` is the current candidate
+selected by `.codex/plans/current.md`:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -461,7 +462,7 @@ and later chronology/spoken-meaning boundaries remain out of scope.
 
 #### Slice 30B1A3A3: Simple Home RTL Forecast Chronology
 
-Status: specified
+Status: committed at `91974b2`
 
 Prerequisite: Slice 30B1A3A2.
 
@@ -480,6 +481,18 @@ condition/value association for each. It must not assert repository request
 counts; that belongs to 30B1A4. Any production correction is limited to the
 existing Simple Forecast/Hourly/Daily rendering boundary in
 `HomeLoadingScreen.kt`, only after a red assertion.
+
+The focused connected case passed with exactly 1 completed, 0 skipped, and 0
+failed on `oxygen_starter` / `emulator-5554`, API 37, 420 dpi, font scale 1.0.
+It exercised both Simple Forecast choices through the production Home
+composition with Compose-local RTL, and retained exact rendered chronology,
+first/last visible payloads, and mapper-owned descriptions. Debug compile,
+app/core unit tests, debug assembly, and `git diff --check` passed. No
+production correction was needed. Evidence is retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology/`.
+Device-wide or installed/manual RTL, screenshots, UI hierarchies, TalkBack
+service traversal, spoken-meaning equivalence, compact/refetch, provider, and
+release evidence remain out of scope.
 
 #### Slice 30B1A3B1: RTL/LTR Spoken-Meaning Equivalence
 

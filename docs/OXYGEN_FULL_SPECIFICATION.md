@@ -2090,9 +2090,13 @@ The former Slice 30B1A3 draft is decomposed in the roadmap into
 committed at `9390601`; its focused Compose-local RTL chronology evidence and
 broad checks are retained under
 `.codex/test-artifacts/2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology/`.
-Slice 30B1A3A3 Simple Home RTL forecast chronology is the next planned
-boundary. No later Gate 30 condition, including complete RTL
-support or TalkBack service traversal, is claimed complete.
+Slice 30B1A3A3 Simple Home RTL forecast chronology is committed at `91974b2`;
+its focused Compose-local RTL evidence for both Simple Forecast choices and
+broad checks are retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology/`.
+Slice 30B1A3B1 RTL/LTR spoken-meaning equivalence is the next planned
+boundary. No later Gate 30 condition, including complete RTL support or
+TalkBack service traversal, is claimed complete.
 
 ---
 

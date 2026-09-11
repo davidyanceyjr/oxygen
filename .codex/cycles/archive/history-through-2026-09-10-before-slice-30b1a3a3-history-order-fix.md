@@ -219,6 +219,53 @@ Limits:
   TalkBack service evidence was collected; those remain in 30B1A3–30B1B1 or
   later scope.
 
+### 2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology
+
+Status: committed
+Mode: bounded Simple Home RTL rendered-chronology test slice
+Slice: Slice 30B1A3A3, Simple Home RTL Forecast Chronology
+Commit: 91974b2
+
+Result:
+
+- Added `rtlSimpleHomeForecastChoicesPreserveChronologicalRenderedOrder` to
+  the production-Compose Home test boundary. It selects Simple Forecast
+  Hourly and Daily choices, compares rendered unmerged semantics order under
+  LTR and Compose-local RTL, and asserts exact six-entry chronology, tags,
+  first/last visible payloads, and mapper-owned descriptions.
+- No production correction was needed; `HomeLoadingScreen.kt`, provider,
+  mapper, repository, cache, persistence, navigation, gestures, and resources
+  were unchanged.
+
+Evidence:
+
+- The adjacent RTL Daily baseline passed with 1 completed, 0 skipped, and 0
+  failed. The final focused command passed with exactly 1 completed, 0 skipped,
+  and 0 failed on `oxygen_starter` / `emulator-5554`, API 37, 420 dpi, font
+  scale 1.0. RTL was Compose-local and device-wide direction was unchanged.
+- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed;
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
+  passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed;
+  and `git diff --check` passed.
+
+Artifacts:
+
+- `.codex/test-artifacts/2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology/`
+  contains focused logs, successful result XML/textproto, emulator metadata,
+  both retained rendered semantics files, and the verification ledger.
+- The first post-edit attempt failed on detached test semantics nodes; LTR
+  labels were snapshotted before branch replacement and the focused case then
+  passed. An artifact-capture rerun was required because the connected runner
+  uninstalls the app after completion; the corrected rerun pulled both files
+  before teardown and is not counted as a second acceptance result.
+
+Limits:
+
+- No device-wide or installed/manual RTL journey, screenshots, UI hierarchies,
+  TalkBack service traversal, spoken-meaning equivalence, compact/refetch,
+  provider/network/cache, or release evidence was collected. The next active
+  candidate is Slice 30B1A3B1.
+
 ### 2026-09-10-slice-30b1a3a1-rtl-standard-hourly-chronology
 
 Status: committed
@@ -297,50 +344,3 @@ Limits:
   service traversal, Simple chronology, spoken-meaning equivalence,
   compact/refetch, provider, or release evidence was collected. Slice
   30B1A3A3 is the next planned boundary.
-
-### 2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology
-
-Status: committed
-Mode: bounded Simple Home RTL rendered-chronology test slice
-Slice: Slice 30B1A3A3, Simple Home RTL Forecast Chronology
-Commit: 91974b2
-
-Result:
-
-- Added `rtlSimpleHomeForecastChoicesPreserveChronologicalRenderedOrder` to
-  the production-Compose Home test boundary. It selects Simple Forecast
-  Hourly and Daily choices, compares rendered unmerged semantics order under
-  LTR and Compose-local RTL, and asserts exact six-entry chronology, tags,
-  first/last visible payloads, and mapper-owned descriptions.
-- No production correction was needed; `HomeLoadingScreen.kt`, provider,
-  mapper, repository, cache, persistence, navigation, gestures, and resources
-  were unchanged.
-
-Evidence:
-
-- The adjacent RTL Daily baseline passed with 1 completed, 0 skipped, and 0
-  failed. The final focused command passed with exactly 1 completed, 0 skipped,
-  and 0 failed on `oxygen_starter` / `emulator-5554`, API 37, 420 dpi, font
-  scale 1.0. RTL was Compose-local and device-wide direction was unchanged.
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed;
-  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-  passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed;
-  and `git diff --check` passed.
-
-Artifacts:
-
-- `.codex/test-artifacts/2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology/`
-  contains focused logs, successful result XML/textproto, emulator metadata,
-  both retained rendered semantics files, and the verification ledger.
-- The first post-edit attempt failed on detached test semantics nodes; LTR
-  labels were snapshotted before branch replacement and the focused case then
-  passed. An artifact-capture rerun was required because the connected runner
-  uninstalls the app after completion; the corrected rerun pulled both files
-  before teardown and is not counted as a second acceptance result.
-
-Limits:
-
-- No device-wide or installed/manual RTL journey, screenshots, UI hierarchies,
-  TalkBack service traversal, spoken-meaning equivalence, compact/refetch,
-  provider/network/cache, or release evidence was collected. The next active
-  candidate is Slice 30B1A3B1.
