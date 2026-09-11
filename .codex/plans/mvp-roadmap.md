@@ -4,10 +4,11 @@ Status: specified
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-10
+Revised: 2026-09-11
 Reconciled against local `origin/main` ref: `82cf281`
-Synchronized through Slice 29B implementation `441d05d`, test follow-up
-`86e696c`, and evidence sync `86f046b`
+Synchronized through Slice 30B1A3B1 implementation `26b32b8`; prior baseline
+roadmap synchronization remains recorded through Slice 29B implementation
+`441d05d`, test follow-up `86e696c`, and evidence sync `86f046b`.
 
 Repository audit cleanup and live-history compression were completed in commit
 6cab109; the active queue remains unchanged.
@@ -28,8 +29,8 @@ documentation sync, 30B1A1 is committed at `63ed25a` as the RTL semantic page
 navigation contract, 30B1A2 is committed at `20b6ddc`, and 30B1A3A1 is
 committed at `74675e2`. The former 30B1A3 draft is decomposed into
 independently observable sub-slices; `30B1A3A2` is committed at `9390601`,
-`30B1A3A3` is committed at `91974b2`, and `30B1A3B1` is the current candidate
-selected by `.codex/plans/current.md`:
+`30B1A3A3` is committed at `91974b2`, `30B1A3B1` is committed at `26b32b8`,
+and `30B1A4` is the current candidate selected by `.codex/plans/current.md`:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -496,7 +497,7 @@ release evidence remain out of scope.
 
 #### Slice 30B1A3B1: RTL/LTR Spoken-Meaning Equivalence
 
-Status: specified
+Status: committed at `26b32b8`
 
 Prerequisite: Slices 30B1A3A1–30B1A3A3.
 
@@ -508,14 +509,20 @@ production Home composition. Compare exact content descriptions and visible
 time/date labels; do not reconstruct descriptions from visible text and do not
 test only mapper objects.
 
-Focused boundary: at most two named connected cases,
+Focused boundary: exactly two named connected cases,
 `rtlStandardForecastSpokenMeaningMatchesLtr` and
 `rtlSimpleForecastSpokenMeaningMatchesLtr`, with all six Hourly and all six
-Daily items captured. Missing-value and precipitation semantics must remain
-unchanged because the descriptions are compared, not regenerated. Any
-production correction is limited to the rendered semantics boundary in
-`HomeLoadingScreen.kt`, only after a red assertion; mapper, provider, and
-localized resource changes are out of scope.
+Daily items captured. Missing-value and precipitation semantics remain
+unchanged because the complete unmerged rendered semantics are compared, not
+regenerated. No production correction was needed; mapper, provider, and
+localized resource changes were out of scope.
+
+The final focused cases passed with exactly 1 completed, 0 skipped, and 0
+failed each on `oxygen_starter` / `emulator-5554`, API 37, 420 dpi, font scale
+1.0, using Compose-local RTL. Debug compile, app/core unit tests, debug
+assembly, and `git diff --check` passed. Retained paired LTR/RTL semantics,
+result/log output, emulator metadata, and the verification ledger are under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence/`.
 
 The four 30B1A3 sub-slices deliberately separate three chronology surfaces
 from the cross-layout spoken-meaning contract. Each gets its own focused

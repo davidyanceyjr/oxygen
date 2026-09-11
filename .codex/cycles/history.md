@@ -35,17 +35,18 @@ ledger states.
 
 ## Recent State Summary
 
-- Latest implementation and verification state: Slice 30B1A3A3, Simple Home
-  RTL Forecast Chronology, is committed at 91974b2; evidence is retained under
-  .codex/test-artifacts/2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology/.
+- Latest implementation and verification state: Slice 30B1A3B1, RTL/LTR
+  Spoken-Meaning Equivalence, is committed at 26b32b8; evidence is retained
+  under .codex/test-artifacts/2026-09-10-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence/.
 - Slice 30A1 is committed at da7b886; Slice 30A2 is committed at 1a8e14f;
   30A3A1 evidence is complete; and 30A3B2 document sync is committed at
   fb51f7b.
 - Slice 30B1A1, RTL Semantic Page Navigation Contract, is committed at
   63ed25a; Slice 30B1A2 is committed at 20b6ddc; Slice 30B1A3A1 is committed
-  at 74675e2; Slice 30B1A3A2 is committed at 9390601; and Slice 30B1A3A3 is
-  committed at 91974b2. Slice 30B1A3B1 is the next planned slice in
-  .codex/plans/current.md. No later Gate 30 boundary is claimed complete.
+  at 74675e2; Slice 30B1A3A2 is committed at 9390601; Slice 30B1A3A3 is
+  committed at 91974b2; and Slice 30B1A3B1 is committed at 26b32b8. Slice
+  30B1A4 is the next planned slice in .codex/plans/current.md. No later Gate
+  30 boundary is claimed complete.
 
 ## Recent Cycles
 
@@ -344,3 +345,43 @@ Limits:
   TalkBack service traversal, spoken-meaning equivalence, compact/refetch,
   provider/network/cache, or release evidence was collected. The next active
   candidate is Slice 30B1A3B1.
+
+### 2026-09-11-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence
+
+Status: committed
+Mode: bounded Home RTL/LTR rendered spoken-meaning test slice
+Slice: Slice 30B1A3B1, RTL/LTR Spoken-Meaning Equivalence
+Commit: 26b32b8
+
+Result:
+
+- Added exactly two Compose-local connected cases using the production
+  `HomeLoadingScreen` fixture: Standard Hourly/Daily and both Simple Forecast
+  choices. Each captures complete unmerged semantics for all six entries per
+  choice and compares RTL with the corresponding LTR rendering.
+- Comparisons retain mapper-owned content descriptions, visible time/date
+  labels, tags, descendant semantics, and honest missing precipitation/value
+  output. No production correction was needed.
+
+Evidence:
+
+- `rtlStandardForecastSpokenMeaningMatchesLtr`: 1 completed, 0 skipped, 0
+  failed; `rtlSimpleForecastSpokenMeaningMatchesLtr`: 1 completed, 0 skipped,
+  0 failed, on `oxygen_starter` / `emulator-5554`, API 37, 420 dpi, font
+  scale 1.0. RTL was Compose-local and device-wide direction was unchanged.
+- Debug compile, app/core unit tests, debug assembly, and `git diff --check`
+  passed. The initial focused compile exposed and then fixed a test-helper
+  formatting error before acceptance; no product source failed.
+
+Artifacts:
+
+- `.codex/test-artifacts/2026-09-10-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence/`
+  contains paired LTR/RTL semantics for Standard and Simple, final focused
+  logs, result metadata, emulator metadata, and the verification ledger.
+
+Limits:
+
+- No device-wide or installed/manual RTL journey, screenshots or UI
+  hierarchy, TalkBack service traversal, compact/refetch, reduced-motion or
+  theme/contrast matrix, localization, provider/network/cache, alerts, or
+  release evidence was collected. The next planned slice is 30B1A4.
