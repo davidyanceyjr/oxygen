@@ -35,15 +35,15 @@ ledger states.
 
 ## Recent State Summary
 
-- Latest implementation and verification state: Slice 29B, High-Contrast
-  Preference UI, is committed at 441d05d with test follow-up 86e696c and
-  evidence sync 86f046b; evidence is retained under
-  .codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/.
+- Latest implementation and verification state: Slice 30B1A3A2, Standard Home
+  RTL Daily Chronology, is committed at 9390601; evidence is retained under
+  .codex/test-artifacts/2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology/.
 - Slice 30A1 is committed at da7b886; Slice 30A2 is committed at 1a8e14f;
   30A3A1 evidence is complete; and 30A3B2 document sync is committed at
   fb51f7b.
 - Slice 30B1A1, RTL Semantic Page Navigation Contract, is committed at
-  63ed25a; Slice 30B1A2, RTL Directional Affordances and Gesture Behavior, is
+  63ed25a; Slice 30B1A2 is committed at 20b6ddc; Slice 30B1A3A1 is committed
+  at 74675e2; and Slice 30B1A3A2 is committed at 9390601. Slice 30B1A3A3 is
   the next planned slice in .codex/plans/current.md. No later Gate 30 boundary
   is claimed complete.
 
@@ -259,3 +259,41 @@ Limits:
   service traversal, Standard Daily/Simple chronology, spoken-meaning
   equivalence, compact/refetch, provider, or release evidence was collected.
   Slice 30B1A3A2 is the next planned boundary.
+
+### 2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology
+
+Status: committed
+Mode: bounded Home RTL rendered-chronology test slice
+Slice: Slice 30B1A3A2, Standard Home RTL Daily Chronology
+Commit: 9390601
+
+Result:
+
+- Added `rtlStandardHomeDailyPreservesChronologicalRenderedOrder` to the
+  production-Compose Home test boundary. It compares LTR and Compose-local RTL
+  semantics traversal, requiring exactly six rendered Daily tags in `Sat, Aug
+  22` through `Thu, Aug 27` order plus first/last row meaning.
+- No production correction was needed; provider, mapper, repository, cache,
+  persistence, navigation, gestures, and localized strings were unchanged.
+
+Evidence:
+
+- The final focused command passed with 1 completed, 0 skipped, and 0 failed on
+  `oxygen_starter` / `emulator-5554`, API 37, 420dpi, font scale 1.0. RTL was
+  Compose-local and device direction was unchanged.
+- Debug compile, app/core unit tests, debug assembly, and `git diff --check`
+  passed.
+
+Artifacts:
+
+- `.codex/test-artifacts/2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology/`
+  contains focused logs, result XML, retained rendered semantics, emulator
+  metadata, and the verification ledger. Artifact capture required one rerun
+  because the connected runner uninstalls the app after completion.
+
+Limits:
+
+- No device-wide or installed/manual RTL journey, screenshots, TalkBack
+  service traversal, Simple chronology, spoken-meaning equivalence,
+  compact/refetch, provider, or release evidence was collected. Slice
+  30B1A3A3 is the next planned boundary.

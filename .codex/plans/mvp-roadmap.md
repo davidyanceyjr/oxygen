@@ -27,8 +27,8 @@ Implement these bounded candidates in order; 30A1 and 30A2 are committed,
 documentation sync, 30B1A1 is committed at `63ed25a` as the RTL semantic page
 navigation contract, 30B1A2 is committed at `20b6ddc`, and 30B1A3A1 is
 committed at `74675e2`. The former 30B1A3 draft is decomposed into
-independently observable sub-slices; `30B1A3A2` is the current candidate
-selected by `.codex/plans/current.md`:
+independently observable sub-slices; `30B1A3A2` is committed at `9390601`, and
+`30B1A3A3` is the current candidate selected by `.codex/plans/current.md`:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -432,7 +432,7 @@ traversal, and later chronology/spoken-meaning boundaries remain out of scope.
 
 #### Slice 30B1A3A2: Standard Home RTL Daily Chronology
 
-Status: planned in `.codex/plans/current.md`
+Status: committed at `9390601`
 
 Prerequisite: Slice 30B1A3A1.
 
@@ -450,6 +450,14 @@ still attached to the corresponding rendered rows. Effects are Off; no device
 RTL, installed journey, screenshots, TalkBack, provider, or refetch evidence.
 Any production correction is limited to the Daily rendering boundary in
 `HomeLoadingScreen.kt` and is allowed only after a failing rendered assertion.
+
+The focused connected case passed with exactly 1 completed, 0 skipped, and 0
+failed on `oxygen_starter` / `emulator-5554` using Compose-local RTL. Debug
+compile, app/core unit tests, debug assembly, and `git diff --check` passed.
+No production correction was needed. Evidence is retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology/`.
+Device-wide RTL, installed/manual RTL, screenshots, TalkBack service traversal,
+and later chronology/spoken-meaning boundaries remain out of scope.
 
 #### Slice 30B1A3A3: Simple Home RTL Forecast Chronology
 

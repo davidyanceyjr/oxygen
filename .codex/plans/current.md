@@ -1,9 +1,41 @@
-# Slice 30B1A3A2 — RTL Standard Daily Chronology
+# Slice 30B1A3A3 — Simple Home RTL Forecast Chronology
 
 **Status:** planned
-**Cycle ID:** `2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology`
+**Cycle ID:** `2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology`
 **Umbrella:** Slice 30B1A3 — RTL Chronology and Spoken-Meaning Preservation
-**Mode:** bounded Home RTL presentation-contract implementation
+**Mode:** bounded Simple Home RTL presentation-contract implementation
+
+## Active slice
+
+Under Compose-local `LayoutDirection.Rtl`, Simple Home must preserve the
+mapper-produced chronological order for both Hourly and Daily forecast
+choices. Add one focused connected Compose test of the production
+`HomeLoadingScreen` path that selects each Simple forecast choice, collects
+rendered tagged entries in semantic/traversal order, and compares exact
+expected labels and first/last row meaning under LTR and RTL.
+
+Use the existing full-weather fixture, provider-neutral presentation state,
+and `EffectsLevel.OFF`. Keep physical mirroring, spoken-description
+equivalence, compact/refetch behavior, device-wide RTL, screenshots, TalkBack
+service traversal, provider/network/cache behavior, and installed/manual
+journeys out of scope. Production changes are authorized only after a failing
+rendered boundary and must be limited to the Simple forecast rendering
+boundary.
+
+Focused case: `rtlSimpleHomeForecastPreservesChronologicalRenderedOrder`.
+Do not sort rendered output or parse display strings back into weather values.
+Save command output, result XML, rendered semantics, emulator metadata, and a
+concise ledger under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology/`.
+Require one completed, zero skipped, and zero failed. After focused green,
+run the standard compile, app/core unit, assemble, and `git diff --check`
+commands. Commit with a descriptive body and synchronize the plan, roadmap,
+cycle history, and specification progress note.
+
+## Completed Slice 30B1A3A2 — RTL Standard Daily Chronology
+
+Status: committed at `9390601`; evidence is retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology/`.
 
 ## Selected behavior and acceptance boundary
 
@@ -21,7 +53,23 @@ inspect rendered nodes and their semantics, not only the fixture, mapper, or
 source ordering. This sub-slice owns Daily chronology only; Simple Forecast
 chronology and spoken-description equivalence are later `30B1A3` sub-slices.
 
-## Contract and implementation approach
+## Discovery and decomposition decision
+
+The production path already renders Standard Daily through `DailyPage`, which
+iterates `dashboard.daily.take(6)` in mapper order and gives each row a stable
+`home-daily-entry-0` through `home-daily-entry-5` tag. `DailyEntry` exposes the
+mapper-owned spoken description while retaining visible date, condition,
+precipitation, low, and high content in the rendered row. The existing full
+fixture contains the six required dates, including nullable high/low and
+precipitation cases.
+
+No additional implementation sub-slices are warranted. This is one bounded
+rendered-list behavior, one existing Home surface, one connected acceptance
+case, and no new persistence format, state machine, provider path, platform
+adapter, or installed/manual journey. `30B1A3A3`, `30B1A3B1`, `30B1A4`, and
+`30B1B1` remain separate roadmap boundaries.
+
+## First-draft implementation plan
 
 1. Establish the LTR baseline from the same fixture and record the current
    rendered Daily node order and labels before editing production code.
@@ -68,8 +116,9 @@ visible tab, then assert:
 - rendered date labels in logical semantics/traversal order are exactly
   `Sat, Aug 22` through `Thu, Aug 27`;
 - the same ordered labels collected under LTR are identical to the RTL labels;
-- the first and last rendered entries retain their corresponding conditions and
-  available low/high values; and
+- the first rendered row retains `Rain showers`, `High 73 deg F`, and `Low 54
+  deg F`, while the last retains `Rain`, `High 67 deg F`, and `Low unavailable`,
+  proving those values remain attached to their corresponding rows; and
 - the page remains Standard Daily with its existing page position and page
   controls, without repeating the complete 30B1A1/30B1A2 contracts.
 
@@ -107,9 +156,10 @@ git diff --check
 ```
 
 The connected test exercises the production Home rendering path with a
-deterministic provider-neutral state. No live provider request or APK install
-is required for this sub-slice; installed/device RTL evidence belongs to Gate
-30B1B1 after all chronology and compact-layout sub-slices. Do not rerun a
+deterministic provider-neutral state. No live provider request or separate
+manual APK installation is required for this sub-slice; installed/device RTL
+evidence belongs to Gate 30B1B1 after all chronology and compact-layout
+sub-slices. Do not rerun a
 passing command unless production code, test input, or the environment changes.
 
 ## Required document updates at completion
