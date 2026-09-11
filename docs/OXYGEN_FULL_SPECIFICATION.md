@@ -2081,8 +2081,13 @@ implemented, verified, and committed at `1a8e14f`; and Slice 30A3A1 Home
 Speech/Layout Evidence is complete as evidence on 2026-09-10. Slice 30A3B2 is
 the documentation-sync boundary for that evidence. Slice 30B1A1 RTL semantic
 page navigation is committed at `63ed25a`, and Slice 30B1A2 RTL directional
-affordances and gesture behavior is committed at `20b6ddc`. Slice 30B1A3 is
-the next planned boundary. No later Gate 30 condition, including complete RTL
+affordances and gesture behavior is committed at `20b6ddc`. Slice 30B1A3A1
+Standard Home RTL Hourly chronology is committed at `74675e2`; its focused
+Compose-local RTL chronology evidence and broad checks are retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a1-rtl-standard-hourly-chronology/`.
+The former Slice 30B1A3 draft is decomposed in the roadmap into
+30B1A3A1–30B1A3B1, with 30B1A3A2 Standard Home RTL Daily chronology as the
+next planned boundary. No later Gate 30 condition, including complete RTL
 support or TalkBack service traversal, is claimed complete.
 
 ---

@@ -218,3 +218,44 @@ Limits:
   device-level RTL, chronology/spoken-meaning, compact/refetch, provider, or
   TalkBack service evidence was collected; those remain in 30B1A3–30B1B1 or
   later scope.
+
+### 2026-09-10-slice-30b1a3a1-rtl-standard-hourly-chronology
+
+Status: committed
+Mode: bounded Home RTL rendered-chronology test slice
+Slice: Slice 30B1A3A1, Standard Home RTL Hourly Chronology
+Commit: 74675e2
+
+Result:
+
+- Added `rtlStandardHomeHourlyPreservesChronologicalRenderedOrder` to the
+  production-Compose Home test boundary. It compares LTR and Compose-local RTL
+  semantics traversal, requiring exactly the six rendered Hourly tags in
+  `6 AM` through `11 AM` order plus visible and spoken first/last payloads.
+- No production correction was needed; provider, mapper, repository, cache,
+  persistence, navigation, gesture, and localized strings were unchanged.
+
+Evidence:
+
+- The exact focused command passed with 1 completed, 0 skipped, and 0 failed on
+  `oxygen_starter` / `emulator-5554`, API 37, 420dpi, font scale 1.0. RTL was
+  Compose-local and device direction was unchanged.
+- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed;
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
+  passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed;
+  and `git diff --check` passed.
+
+Artifacts:
+
+- `.codex/test-artifacts/2026-09-10-slice-30b1a3a1-rtl-standard-hourly-chronology/`
+  contains the command logs, result XML/textproto, retained rendered
+  semantics, environment record, and verification ledger. The semantics
+  artifact required one capture rerun because the connected task uninstalls
+  the app after completion.
+
+Limits:
+
+- No device-wide or installed/manual RTL journey, screenshots, TalkBack
+  service traversal, Standard Daily/Simple chronology, spoken-meaning
+  equivalence, compact/refetch, provider, or release evidence was collected.
+  Slice 30B1A3A2 is the next planned boundary.

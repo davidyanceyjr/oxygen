@@ -1,28 +1,42 @@
-# Slice 30B1A3 — RTL Chronology and Spoken-Meaning Preservation
+# Slice 30B1A3A2 — RTL Standard Daily Chronology
 
 **Status:** planned
-**Cycle ID:** `2026-09-10-slice-30b1a3-rtl-chronology-spoken-meaning`
-**Mode:** bounded Home RTL chronology and spoken-meaning test implementation
+**Cycle ID:** `2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology`
+**Umbrella:** Slice 30B1A3 — RTL Chronology and Spoken-Meaning Preservation
+**Mode:** bounded Home RTL presentation-contract implementation
 
 ## Selected behavior and acceptance boundary
 
-Under a Compose RTL layout direction, Standard and Simple Home must preserve
-the chronological order and meaning of forecast content already established in
-LTR. Hourly and daily entries remain earliest-to-latest, visible time/date
-labels remain mapper-owned presentation values, and semantic descriptions do
-not change because the layout direction changes.
+Under Compose-local `LayoutDirection.Rtl`, the Standard Home Daily page must
+preserve the forecast list’s logical earliest-to-latest order and its existing
+mapper-produced date labels. RTL may mirror physical placement; it must not
+reverse the forecast data or the semantic traversal order. The six entries from
+the deterministic full-weather fixture must remain ordered as the mapper
+presents them: Sat, Aug 22 through Thu, Aug 27. The rendered RTL sequence must
+match the rendered LTR sequence for this same fixture.
 
-This is one Compose-local RTL content contract. It does not change provider
-data, page navigation, localized strings, persistence, or device direction.
+The acceptance boundary is one connected Compose test of the production
+`HomeLoadingScreen` path with provider-neutral presentation state. It must
+inspect rendered nodes and their semantics, not only the fixture, mapper, or
+source ordering. This sub-slice owns Daily chronology only; Simple Forecast
+chronology and spoken-description equivalence are later `30B1A3` sub-slices.
 
-Acceptance is limited to:
+## Contract and implementation approach
 
-- Standard RTL Hourly and Daily entries remain earliest-to-latest by their
-  visible time/date labels;
-- Simple RTL Forecast choices preserve the existing chronological labels and
-  mapper-owned descriptions for the selected hourly/daily content; and
-- the tested RTL descriptions and visible labels match the corresponding LTR
-  deterministic fixture without altering weather values or page controls.
+1. Establish the LTR baseline from the same fixture and record the current
+   rendered Daily node order and labels before editing production code.
+2. Add a red boundary assertion that collects all six rendered Daily entries
+   in semantic/traversal order and asserts the exact expected date-label list.
+   The assertion must distinguish logical order from RTL left-to-right bounds;
+   physical mirroring is already covered by 30B1A2.
+3. Run the focused test before any production correction. If the baseline is
+   green, keep production unchanged. If it is red, correct only the smallest
+   Daily rendering boundary in `HomeLoadingScreen.kt`, preserving the
+   provider-neutral mapper output, row values, page navigation, gestures,
+   and physical RTL affordances.
+4. Keep the test sensitive to an accidental reversal, omission, duplicate, or
+   changed date label. Do not derive the expected order by sorting the rendered
+   result inside the assertion.
 
 ## Intended files
 
@@ -30,38 +44,60 @@ Expected:
 
 - `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
 
-Conditional only after a failing boundary assertion:
+Conditional only for a failing rendered-behavior assertion:
 
 - `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`
 
-No provider, domain, repository, cache, preference, resource, manifest,
-dependency, navigation, gesture, or production-only test-hook changes are in
-scope.
+No provider, domain, repository, cache, preference, resource, localization,
+manifest, dependency, navigation, gesture, or production-only test-hook change
+is authorized by this plan.
 
-## Focused evidence
+## Focused test and evidence
 
-Begin with red/baseline assertions before changing production code. Add one or
-two named connected cases using the existing deterministic full-weather
-fixture, `EffectsLevel.OFF`, and Compose-local `LayoutDirection.Rtl`. Compare
-the RTL hourly/daily content order, visible labels, and semantic descriptions
-with the corresponding LTR content. Keep the existing page and touch-target
-contracts intact.
+Add one named connected case:
 
-Focused command, limited to the new named cases:
+`rtlStandardHomeDailyPreservesChronologicalRenderedOrder`
+
+Use `EffectsLevel.OFF`, the existing full-weather fixture, and the production
+Home composition. In the same test, collect the LTR baseline, recompose with
+Compose-local `LayoutDirection.Rtl`, and collect the RTL result; do not change
+device-wide RTL. Navigate to the Standard Daily page through its existing
+visible tab, then assert:
+
+- all six Daily entries are present exactly once;
+- rendered date labels in logical semantics/traversal order are exactly
+  `Sat, Aug 22` through `Thu, Aug 27`;
+- the same ordered labels collected under LTR are identical to the RTL labels;
+- the first and last rendered entries retain their corresponding conditions and
+  available low/high values; and
+- the page remains Standard Daily with its existing page position and page
+  controls, without repeating the complete 30B1A1/30B1A2 contracts.
+
+Use the existing test tags and unmerged semantics as needed to observe visible
+labels. Do not use screen x-coordinates as the chronology oracle, and do not
+parse display strings back into weather values. A test helper may be added only
+to collect already-rendered semantics and must remain local to the test file.
+
+Run only the named case on one ADB-ready emulator session:
 
 ```sh
 . scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest \
-  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest#rtlHomeForecastChronologyAndSpokenMeaningRemainStable'
+  '-Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.app.ui.home.HomeDashboardUiTest#rtlStandardHomeDailyPreservesChronologicalRenderedOrder'
 ```
 
-If the case is split into two named tests, update the filter before running it.
-Acceptance requires every named case to complete with zero skipped and zero
-failed on one ADB-ready emulator session. Save command output and the ledger
-under `.codex/test-artifacts/2026-09-10-slice-30b1a3-rtl-chronology-spoken-meaning/`.
+Require one completed, zero skipped, and zero failed test. Save the command
+output, result XML, rendered semantics artifact, and a concise verification
+ledger under:
 
-## Broad verification and limits
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology/`
 
-After focused green, run once as applicable:
+The artifact must state the emulator/API/density/font scale, that RTL was
+Compose-local, and any rerun reason. Do not claim device-level RTL, TalkBack
+service traversal, screenshots, or installed RTL behavior from this test.
+
+## Broad checks and real-path boundary
+
+After focused green, run once:
 
 ```sh
 . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
@@ -70,8 +106,58 @@ After focused green, run once as applicable:
 git diff --check
 ```
 
-The acceptance boundary is the deterministic Compose Android test. Do not
-add installed/manual RTL screenshots, UI hierarchies, device RTL, TalkBack
-service traversal, compact/refetch, provider/network/cache/storage,
-localization, alert, release, or MVP evidence here; installed RTL belongs to
-Gate 30B1B1.
+The connected test exercises the production Home rendering path with a
+deterministic provider-neutral state. No live provider request or APK install
+is required for this sub-slice; installed/device RTL evidence belongs to Gate
+30B1B1 after all chronology and compact-layout sub-slices. Do not rerun a
+passing command unless production code, test input, or the environment changes.
+
+## Required document updates at completion
+
+This is an implementation sub-slice, not a documentation-only gate. When the
+focused and broad checks are green and the diff is reviewed:
+
+- commit with a descriptive subject and body naming the changed behavior,
+  evidence actually run, and limits or skipped checks;
+- perform the required post-commit sync of `.codex/plans/current.md`,
+  `.codex/plans/mvp-roadmap.md`, `.codex/cycles/history.md`, and the
+  progress note in `docs/OXYGEN_FULL_SPECIFICATION.md`;
+- mark only `30B1A3A2` with the evidence and commit; select the next specified
+  sub-slice as the following active plan; and
+- leave `README.md` unchanged because this sub-slice does not change an
+  installed-app claim. Keep the specification progress note synchronized to
+  the next selected sub-slice, but do not claim complete RTL support there;
+  the final installed-evidence gate owns that status reconciliation.
+
+The history entry must be self-contained and include the focused command,
+broad commands, artifact path, exact result counts, production files changed
+or explicitly unchanged, and limits. No history entry or completion status is
+to be written before evidence exists.
+
+## Decomposed 30B1A3 sequence
+
+The umbrella is intentionally split into four independently observable
+sub-slices:
+
+1. `30B1A3A1` — Standard Home Hourly chronology (committed).
+2. `30B1A3A2` — Standard Home Daily chronology (**active**).
+3. `30B1A3A3` — Simple Home Forecast chronology for Hourly and Daily choices.
+4. `30B1A3B1` — RTL/LTR spoken-description equivalence for Standard and Simple
+   forecast content.
+
+Only the second item is selected by this active plan. The following items must
+not be implemented in the same cycle or silently folded into this test.
+
+## Out of scope and completion gate
+
+Out of scope: Simple Forecast chronology, spoken-meaning comparison,
+provider/network/cache behavior, persistence or refetch counts,
+device-wide RTL, installed/manual journeys, screenshots, UI hierarchies,
+TalkBack service traversal, font-scale-2.0 evidence, reduced motion,
+theme/contrast matrices, localization changes, alerts, Settings, release
+readiness, and MVP completion.
+
+This sub-slice is ready only after its named connected case passes with the
+required result counts, the applicable broad checks pass, artifacts and the
+verification ledger are retained, and the post-commit operational documents
+are synchronized to facts actually established.
