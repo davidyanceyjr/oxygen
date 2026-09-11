@@ -2394,6 +2394,66 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun rtlStandardHomeDailyPreservesChronologicalRenderedOrder() {
+        val location = weatherLocation()
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+        )
+        val layoutDirection = mutableStateOf(LayoutDirection.Ltr)
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1f),
+                LocalLayoutDirection provides layoutDirection.value,
+            ) {
+                OxygenTheme {
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+        val ltrEntries = composeRule.renderedDailyEntriesInSemanticsOrder()
+
+        composeRule.runOnIdle { layoutDirection.value = LayoutDirection.Rtl }
+        composeRule.waitForIdle()
+        val rtlEntries = composeRule.renderedDailyEntriesInSemanticsOrder()
+
+        val expectedLabels = listOf(
+            "Sat, Aug 22",
+            "Sun, Aug 23",
+            "Mon, Aug 24",
+            "Tue, Aug 25",
+            "Wed, Aug 26",
+            "Thu, Aug 27",
+        )
+        assertEquals((0..5).map { "home-daily-entry-$it" }, ltrEntries.map { it.dailyTag() })
+        assertEquals((0..5).map { "home-daily-entry-$it" }, rtlEntries.map { it.dailyTag() })
+        assertEquals(expectedLabels, ltrEntries.map { it.dailyDateLabel() })
+        assertEquals(expectedLabels, rtlEntries.map { it.dailyDateLabel() })
+        assertEquals(
+            ltrEntries.map { it.dailyDateLabel() },
+            rtlEntries.map { it.dailyDateLabel() },
+        )
+        assertEquals(
+            "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
+            rtlEntries.first().dailyDescription(),
+        )
+        assertEquals(
+            "Thu, Aug 27. Rain. High 67 degrees Fahrenheit.",
+            rtlEntries.last().dailyDescription(),
+        )
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 3 of 4")
+        composeRule.onNodeWithText("67 deg F", useUnmergedTree = true).assertExists()
+        composeRule.writeSemanticsArtifact("rtl-standard-daily-chronology-semantics.txt")
+    }
+
+    @Test
     fun homeInteractiveControlsExposeMinimumTouchTargetsAndDoNotPageAccidentally() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
@@ -3733,6 +3793,33 @@ private fun ComposeTestRule.renderedHourlyEntriesInSemanticsOrder(): List<Semant
             node.config.getOrElse(SemanticsProperties.TestTag) { "" }
                 .matches(Regex("home-hourly-entry-[0-5]"))
         }
+
+private fun ComposeTestRule.renderedDailyEntriesInSemanticsOrder(): List<SemanticsNode> =
+    onRoot(useUnmergedTree = true)
+        .fetchSemanticsNode()
+        .flattenSemantics()
+        .filter { node ->
+            node.config.getOrElse(SemanticsProperties.TestTag) { "" }
+                .matches(Regex("home-daily-entry-[0-5]"))
+        }
+
+private fun SemanticsNode.dailyTag(): String =
+    config.getOrElse(SemanticsProperties.TestTag) { "" }
+
+private fun SemanticsNode.dailyRenderedText(): List<String> =
+    flattenSemantics()
+        .asSequence()
+        .flatMap { node ->
+            node.config.getOrElse(SemanticsProperties.Text) { emptyList() }.asSequence()
+        }
+        .map { it.text }
+        .toList()
+
+private fun SemanticsNode.dailyDateLabel(): String =
+    dailyRenderedText().first { it.matches(Regex("[A-Z][a-z]{2}, Aug \\d{2}")) }
+
+private fun SemanticsNode.dailyDescription(): String =
+    config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }.single()
 
 private fun SemanticsNode.flattenSemantics(): List<SemanticsNode> =
     listOf(this) + children.flatMap { it.flattenSemantics() }
