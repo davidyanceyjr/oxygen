@@ -425,7 +425,7 @@ Limits:
 Status: committed; Standard acceptance remains blocked
 Mode: bounded Android test-runner triage and recovery
 Slice: Test Runner Triage — Healthy Emulator and Bounded Instrumentation
-Commit: 2bae724
+Commit: 1972972
 
 Result:
 
