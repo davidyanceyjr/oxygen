@@ -47,6 +47,7 @@ import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -3315,6 +3316,10 @@ class HomeDashboardUiTest {
                             licenseId = "Creative Commons Attribution 4.0 International",
                         ),
                     ),
+                    freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                        staleAge = Duration.ofMinutes(95),
+                        refreshFailure = ForecastError.ProviderUnavailable("open-meteo"),
+                    ),
                 ),
             ),
         )
@@ -3367,9 +3372,15 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
         composeRule.onNodeWithContentDescription(
             "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
-        ).performScrollTo().assertIsDisplayed()
+        ).assertIsDisplayed()
         composeRule.assertWithinRootBounds("home-daily-entry-0")
-        composeRule.assertCheckedSiblingSpacing("home-daily-entry-0", "home-daily-entry-1")
+        composeRule.onNodeWithTag("home-page-daily").performTouchInput { swipeUp() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription(
+            "Wed, Aug 26. Thunderstorm. Low 59 degrees Fahrenheit. 50 percent chance of precipitation.",
+        ).assertIsDisplayed()
+        composeRule.assertWithinRootBounds("home-daily-entry-4")
+        composeRule.assertCheckedSiblingSpacing("home-daily-entry-4", "home-daily-entry-5")
         assertEquals(requestLocationsAfterReady, repository.locations)
 
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
