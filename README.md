@@ -173,6 +173,18 @@ OXYGEN_EMULATOR_WINDOW=1 scripts/start-emulator.sh
 Existing local scripts using the former variable remain compatible for now;
 new scripts should use `OXYGEN_EMULATOR_WINDOW`.
 
+For a bounded connected-test recovery run, use an artifact directory below
+`.codex/test-artifacts/`:
+
+```bash
+scripts/start-emulator.sh --recover \
+  --artifact-dir .codex/test-artifacts/<cycle-id>/emulator
+serial=$(tr -d '\r\n' < .codex/test-artifacts/<cycle-id>/emulator/serial.txt)
+scripts/run-connected-method.sh --serial "$serial" \
+  com.oxygen.weather.app.ui.home.HomeDashboardUiTest#methodName \
+  .codex/test-artifacts/<cycle-id>/method
+```
+
 ## Important
 
 The installed app uses active Open-Meteo production paths for manual location

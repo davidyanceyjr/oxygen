@@ -419,3 +419,35 @@ Limits:
 - Connected acceptance is incomplete, so this slice is not verified or ready
   for Gate 30B1B1. No commit was previously made for the slice; this status
   sync is being committed with the incomplete-evidence limit explicit.
+
+### 2026-09-12-test-runner-recovery
+
+Status: committed; Standard acceptance remains blocked
+Mode: bounded Android test-runner triage and recovery
+Slice: Test Runner Triage — Healthy Emulator and Bounded Instrumentation
+Commit: 2bae724
+
+Result:
+
+- Added recovery mode to `start-emulator.sh` with exact AVD/device selection,
+  no-snapshot non-wipe launch, detached PID/log retention, health preflight,
+  serial record, and bounded diagnostics.
+- Added `run-connected-method.sh` for one fully qualified method, exact recovery
+  serial enforcement, a 120-second Gradle bound, result freshness/identity
+  validation, and post-run diagnostics. Documented the invocation in README.
+
+Evidence:
+
+- Shell syntax, diff checks, and invalid-argument rejection paths passed.
+- Recovery preflight passed on `oxygen_starter` API 37 x86_64; the corrected
+  canary passed with exactly 1 completed, 0 skipped, 0 failed.
+- Standard ran once and timed out at 120 seconds at `Tests 0/1 completed`; no
+  fresh result was produced. This is Standard-only test/application-path
+  evidence, not emulator recovery success for that method.
+
+Artifacts: `.codex/test-artifacts/2026-09-11-test-runner-recovery/`
+
+Limits:
+
+- Simple was not run; no app/test Kotlin or dependency changes were made.
+- A new bounded A4 investigation is required before 30B1A4 can be verified.
