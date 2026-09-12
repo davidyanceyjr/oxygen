@@ -2,452 +2,165 @@
 
 ## Reading Contract
 
-Normal discovery must not read the full archived cycle ledger.
+Normal discovery reads this live file's summary and at most its most recent
+three entries. Older detailed history is retained under
+`.codex/cycles/archive/`, including
+`history-through-2026-09-12-before-30b1a4-a4-stall-handoff.md`.
 
-Read AGENTS.md, .codex/plans/current.md, and this file first. For cycle
-history context, use this live file plus at most the most recent three cycle
-entries unless a specific implementation detail, regression, artifact, commit,
-or authority conflict requires older evidence.
-
-Older detailed history is retained in:
-
-.codex/cycles/archive/history-through-2026-09-01-before-tail-limited-history.md
-.codex/cycles/archive/history-through-2026-09-01-before-three-entry-trim-20260901-203633.md
-.codex/cycles/archive/history-through-2026-09-03-before-19a-tail-refresh.md
-.codex/cycles/archive/history-through-2026-09-03-before-post-19c-doc-sync.md
-.codex/cycles/archive/history-through-2026-09-03-before-slice-32-planning.md
-.codex/cycles/archive/history-through-2026-09-04-before-plan-gap-fixes.md
-.codex/cycles/archive/history-through-2026-09-04-before-pre-19d-authority-drift-cleanup.md
-.codex/cycles/archive/history-through-2026-09-04-before-post-20a-doc-sync.md
-.codex/cycles/archive/history-through-2026-09-05-before-slice-21-ledger-update.md
-.codex/cycles/archive/history-through-2026-09-05-before-slice-22-commit-status-update.md
-.codex/cycles/archive/history-through-2026-09-10-before-repo-audit-cleanup.md
-
-When adding a new history entry, append it to this file as a self-contained
-section with status, changed behavior or documents, focused evidence, broad
-evidence, artifacts, blockers, and commit state. Keep each entry concise enough
-that the last one to three entries remain usable within roughly 1,000 tokens.
-
-Before replacing or compressing this live file, archive the previous live file
-under .codex/cycles/archive/. Do not create a full duplicate archive before
-ordinary append-only writes; Git history plus the archive file preserve previous
-ledger states.
+When adding a new entry, append a concise self-contained section with status,
+result, evidence, artifacts, limits, and commit state. Archive the current live
+file before replacing or compressing it.
 
 ## Recent State Summary
 
-- Latest implementation and verification state: Slice 30B1A3B1, RTL/LTR
-  Spoken-Meaning Equivalence, is committed at 26b32b8; evidence is retained
-  under .codex/test-artifacts/2026-09-10-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence/.
-- Slice 30A1 is committed at da7b886; Slice 30A2 is committed at 1a8e14f;
-  30A3A1 evidence is complete; and 30A3B2 document sync is committed at
-  fb51f7b.
-- Slice 30B1A1, RTL Semantic Page Navigation Contract, is committed at
-  63ed25a; Slice 30B1A2 is committed at 20b6ddc; Slice 30B1A3A1 is committed
-  at 74675e2; Slice 30B1A3A2 is committed at 9390601; Slice 30B1A3A3 is
-  committed at 91974b2; and Slice 30B1A3B1 is committed at 26b32b8. Slice
-  30B1A4 is the next planned slice in .codex/plans/current.md. No later Gate
-  30 boundary is claimed complete.
+- Slice 30B1A3B1, RTL/LTR Spoken-Meaning Equivalence, is committed at
+  `26b32b8`.
+- Slice 30B1A4's two RTL compact cases are implemented at `d95d268`; the
+  Standard case's Daily interaction and stale Details fixture are committed at
+  `8b5647b` and its connected boundary passed. The Simple method remains the
+  only pending A4 acceptance boundary.
+- The recovery runner is committed at `1972972`; no later Gate 30B1 boundary
+  is complete.
 
 ## Recent Cycles
-
-
-### 2026-09-09-slice-30a2-home-compact-large-font-resilience
-
-Status: committed
-Mode: bounded Home layout/accessibility implementation
-Slice: Slice 30A2, Home Compact and Large-Font Resilience
-Commit: 1a8e14f
-
-Result:
-
-- Added three focused connected cases covering Standard compact 1.3, Simple
-  compact 1.3 with no-refetch unit/layout changes, and Standard Details 2.0.
-- Preserved mapper-owned descriptions, long-content reachability, touch
-  targets, bounds, non-overlap, and canonical repository request counts.
-
-Evidence:
-
-- The exact three-case connected filter passed on oxygen_starter / emulator-5554;
-  the installed production Chicago path exercised Standard, Simple, and Details.
-- Broad compile, app/core unit tests, assemble, and git diff --check passed.
-
-Artifacts:
-
-- .codex/test-artifacts/2026-09-09-slice-30a2-home-compact-large-font-resilience/
-
-Limits:
-
-- RTL, reduced motion, appearance matrix, alerts, localization, and release
-  verification remained outside the slice.
-
-### 2026-09-10-slice-30a3b2-home-accessibility-evidence-document-sync
-
-Status: committed
-Mode: documentation-only evidence and authority sync
-Slice: Slice 30A3B2, Home Accessibility Evidence Document Sync
-Commit: fb51f7b
-
-Result:
-
-- Reconciled README, specification, roadmap, active plan, and cycle evidence
-  for the completed Home speech/layout boundary.
-- Confirmed the named three-case connected command passed with 3 completed,
-  0 skipped, and 0 failed tests.
-- Retained installed compact Home hierarchies and screenshots under the
-  30A3A1 artifact directory and preserved limits around TalkBack, RTL, reduced
-  motion, localization, and release readiness.
-
-Evidence:
-
-- Reviewed the retained focused command, installed evidence, and broad
-  compile/unit/assemble results; git diff --check passed.
-- Android and emulator checks were not rerun because this was documentation-only.
-
-Next candidate: Slice 30B1, Home RTL Navigation and Chronology, selected in
-the active plan.
-
-### 2026-09-10-repository-audit-cleanup
-
-Status: committed
-Mode: repository cleanup and documentation synchronization
-Scope: Findings from the 2026-09-10 Repository Messiness Audit
-Commit: 6cab109
-
-Result:
-
-- Corrected the active cycle summary and retained complete prior history in
-  dated archives; the live history now keeps the reading contract, summary,
-  and three recent entries.
-- Archived completed roadmap material while retaining the current queue and
-  remaining candidate contracts in the live roadmap.
-- Corrected stale production-path, wrapper, and current specification wording;
-  renamed the completed license decision record.
-- Removed dead scaffold presentation state, moved sample data to the debug
-  preview source set, and documented the retained file-backed cache boundary.
-- Moved reusable Home and Settings presentation strings into Android resources
-  without changing their English output, semantics, or test tags.
-- Preserved SPACE_GAME_EMULATOR_WINDOW as an undocumented compatibility fallback
-  while making OXYGEN_EMULATOR_WINDOW the supported variable.
-
-Evidence:
-
-- Focused compile and unit checks passed:
-  . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :core:testDebugUnitTest
-- Broad debug and release assembly passed:
-  . scripts/android-env.sh && ./gradlew :app:assembleDebug :app:assembleRelease
-- git diff --check passed after the cleanup.
-
-Limits:
-
-- No connected tests, emulator journey, provider network checks, or dependency
-  audit tooling were rerun; this slice changed no provider, domain, cache
-  schema, DataStore format, manifest, or user-facing weather behavior.
-
-### 2026-09-10-slice-30b1a1-rtl-semantic-page-navigation
-
-Status: committed
-Mode: bounded Home RTL semantic page navigation test slice
-Slice: Slice 30B1A1, RTL Semantic Page Navigation Contract
-Commit: 63ed25a
-
-Result:
-
-- Added two Compose-local RTL connected cases covering exact semantic action
-  progression for Standard Now -> Hourly -> Daily -> Details and Simple Now
-  -> Forecast, including first/intermediate/final action sets, page positions,
-  titles, handled actions, and destinations.
-- Added an explicit layout-direction parameter to the existing test content
-  helper, defaulting to LTR, and tightened the custom-action assertion to the
-  complete ordered action list. No production correction was needed.
-
-Evidence:
-
-- The exact focused command passed twice on one `oxygen_starter` / `emulator-5554`
-  session: 2 completed, 0 skipped, 0 failed each run. The device was API 37,
-  420dpi, font scale 1.0, initially LTR (`ldltr`); device direction was not
-  changed.
-- Broad compile, app/core unit tests, debug assembly, and `git diff --check`
-  passed.
-
-Artifacts:
-
-- `.codex/test-artifacts/2026-09-10-slice-30b1a1-rtl-semantic-page-navigation/`
-  contains the ledger and focused/broad command logs.
-
-Limits:
-
-- No installed/manual RTL journey, device-level RTL, screenshots or UI
-  hierarchies, visual mirroring, swipe-direction acceptance, chronology,
-  compact/refetch, provider, or release evidence was collected; those remain
-  in 30B1A2–30B1B1 or later scope.
-
-### 2026-09-10-slice-30b1a2-rtl-directional-affordances-gesture
-
-Status: committed
-Mode: bounded Home RTL control-mirroring and pager-gesture test slice
-Slice: Slice 30B1A2, RTL Directional Affordances and Gesture Behavior
-Commit: 20b6ddc
-
-Result:
-
-- Added exactly two Compose-local RTL connected cases covering mirrored
-  Standard `Details, Daily, Hourly, Now` and Simple `Forecast, Now` selector
-  placement, 48dp targets, selected state, complete semantic action lists,
-  settled forward/reverse swipes, and first/final page boundaries.
-- No production correction was needed; provider, repository, cache, forecast
-  meaning, persistence, and custom-action labels were unchanged.
-
-Evidence:
-
-- The exact focused command passed on `oxygen_starter` / `emulator-5554`:
-  exactly 2 completed, 0 skipped, 0 failed. The device was API 37, 420dpi,
-  font scale 1.0; RTL remained Compose-local and device direction was not
-  changed.
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed;
-  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-  passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed;
-  and `git diff --check` passed. No checks were rerun.
-
-Artifacts:
-
-- `.codex/test-artifacts/2026-09-10-slice-30b1a2-rtl-directional-affordances-gesture/`
-  contains the focused instrumentation result files and verification ledger.
-
-Limits:
-
-- No APK reinstall, installed/manual RTL journey, screenshots, UI hierarchies,
-  device-level RTL, chronology/spoken-meaning, compact/refetch, provider, or
-  TalkBack service evidence was collected; those remain in 30B1A3–30B1B1 or
-  later scope.
-
-### 2026-09-10-slice-30b1a3a1-rtl-standard-hourly-chronology
-
-Status: committed
-Mode: bounded Home RTL rendered-chronology test slice
-Slice: Slice 30B1A3A1, Standard Home RTL Hourly Chronology
-Commit: 74675e2
-
-Result:
-
-- Added `rtlStandardHomeHourlyPreservesChronologicalRenderedOrder` to the
-  production-Compose Home test boundary. It compares LTR and Compose-local RTL
-  semantics traversal, requiring exactly the six rendered Hourly tags in
-  `6 AM` through `11 AM` order plus visible and spoken first/last payloads.
-- No production correction was needed; provider, mapper, repository, cache,
-  persistence, navigation, gesture, and localized strings were unchanged.
-
-Evidence:
-
-- The exact focused command passed with 1 completed, 0 skipped, and 0 failed on
-  `oxygen_starter` / `emulator-5554`, API 37, 420dpi, font scale 1.0. RTL was
-  Compose-local and device direction was unchanged.
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed;
-  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-  passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed;
-  and `git diff --check` passed.
-
-Artifacts:
-
-- `.codex/test-artifacts/2026-09-10-slice-30b1a3a1-rtl-standard-hourly-chronology/`
-  contains the command logs, result XML/textproto, retained rendered
-  semantics, environment record, and verification ledger. The semantics
-  artifact required one capture rerun because the connected task uninstalls
-  the app after completion.
-
-Limits:
-
-- No device-wide or installed/manual RTL journey, screenshots, TalkBack
-  service traversal, Standard Daily/Simple chronology, spoken-meaning
-  equivalence, compact/refetch, provider, or release evidence was collected.
-  Slice 30B1A3A2 is the next planned boundary.
-
-### 2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology
-
-Status: committed
-Mode: bounded Home RTL rendered-chronology test slice
-Slice: Slice 30B1A3A2, Standard Home RTL Daily Chronology
-Commit: 9390601
-
-Result:
-
-- Added `rtlStandardHomeDailyPreservesChronologicalRenderedOrder` to the
-  production-Compose Home test boundary. It compares LTR and Compose-local RTL
-  semantics traversal, requiring exactly six rendered Daily tags in `Sat, Aug
-  22` through `Thu, Aug 27` order plus first/last row meaning.
-- No production correction was needed; provider, mapper, repository, cache,
-  persistence, navigation, gestures, and localized strings were unchanged.
-
-Evidence:
-
-- The final focused command passed with 1 completed, 0 skipped, and 0 failed on
-  `oxygen_starter` / `emulator-5554`, API 37, 420dpi, font scale 1.0. RTL was
-  Compose-local and device direction was unchanged.
-- Debug compile, app/core unit tests, debug assembly, and `git diff --check`
-  passed.
-
-Artifacts:
-
-- `.codex/test-artifacts/2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology/`
-  contains focused logs, result XML, retained rendered semantics, emulator
-  metadata, and the verification ledger. Artifact capture required one rerun
-  because the connected runner uninstalls the app after completion.
-
-Limits:
-
-- No device-wide or installed/manual RTL journey, screenshots, TalkBack
-  service traversal, Simple chronology, spoken-meaning equivalence,
-  compact/refetch, provider, or release evidence was collected. Slice
-  30B1A3A3 is the next planned boundary.
-
-### 2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology
-
-Status: committed
-Mode: bounded Simple Home RTL rendered-chronology test slice
-Slice: Slice 30B1A3A3, Simple Home RTL Forecast Chronology
-Commit: 91974b2
-
-Result:
-
-- Added `rtlSimpleHomeForecastChoicesPreserveChronologicalRenderedOrder` to
-  the production-Compose Home test boundary. It selects Simple Forecast
-  Hourly and Daily choices, compares rendered unmerged semantics order under
-  LTR and Compose-local RTL, and asserts exact six-entry chronology, tags,
-  first/last visible payloads, and mapper-owned descriptions.
-- No production correction was needed; `HomeLoadingScreen.kt`, provider,
-  mapper, repository, cache, persistence, navigation, gestures, and resources
-  were unchanged.
-
-Evidence:
-
-- The adjacent RTL Daily baseline passed with 1 completed, 0 skipped, and 0
-  failed. The final focused command passed with exactly 1 completed, 0 skipped,
-  and 0 failed on `oxygen_starter` / `emulator-5554`, API 37, 420 dpi, font
-  scale 1.0. RTL was Compose-local and device-wide direction was unchanged.
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin` passed;
-  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-  passed; `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed;
-  and `git diff --check` passed.
-
-Artifacts:
-
-- `.codex/test-artifacts/2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology/`
-  contains focused logs, successful result XML/textproto, emulator metadata,
-  both retained rendered semantics files, and the verification ledger.
-- The first post-edit attempt failed on detached test semantics nodes; LTR
-  labels were snapshotted before branch replacement and the focused case then
-  passed. An artifact-capture rerun was required because the connected runner
-  uninstalls the app after completion; the corrected rerun pulled both files
-  before teardown and is not counted as a second acceptance result.
-
-Limits:
-
-- No device-wide or installed/manual RTL journey, screenshots, UI hierarchies,
-  TalkBack service traversal, spoken-meaning equivalence, compact/refetch,
-  provider/network/cache, or release evidence was collected. The next active
-  candidate is Slice 30B1A3B1.
-
-### 2026-09-11-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence
-
-Status: committed
-Mode: bounded Home RTL/LTR rendered spoken-meaning test slice
-Slice: Slice 30B1A3B1, RTL/LTR Spoken-Meaning Equivalence
-Commit: 26b32b8
-
-Result:
-
-- Added exactly two Compose-local connected cases using the production
-  `HomeLoadingScreen` fixture: Standard Hourly/Daily and both Simple Forecast
-  choices. Each captures complete unmerged semantics for all six entries per
-  choice and compares RTL with the corresponding LTR rendering.
-- Comparisons retain mapper-owned content descriptions, visible time/date
-  labels, tags, descendant semantics, and honest missing precipitation/value
-  output. No production correction was needed.
-
-Evidence:
-
-- `rtlStandardForecastSpokenMeaningMatchesLtr`: 1 completed, 0 skipped, 0
-  failed; `rtlSimpleForecastSpokenMeaningMatchesLtr`: 1 completed, 0 skipped,
-  0 failed, on `oxygen_starter` / `emulator-5554`, API 37, 420 dpi, font
-  scale 1.0. RTL was Compose-local and device-wide direction was unchanged.
-- Debug compile, app/core unit tests, debug assembly, and `git diff --check`
-  passed. The initial focused compile exposed and then fixed a test-helper
-  formatting error before acceptance; no product source failed.
-
-Artifacts:
-
-- `.codex/test-artifacts/2026-09-10-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence/`
-  contains paired LTR/RTL semantics for Standard and Simple, final focused
-  logs, result metadata, emulator metadata, and the verification ledger.
-
-Limits:
-
-- No device-wide or installed/manual RTL journey, screenshots or UI
-  hierarchy, TalkBack service traversal, compact/refetch, reduced-motion or
-  theme/contrast matrix, localization, provider/network/cache, alerts, or
-  release evidence was collected. The next planned slice is 30B1A4.
 
 ### 2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch
 
 Status: implemented; connected acceptance incomplete
 Mode: bounded Home RTL compact-layout and request-count test implementation
 Slice: Slice 30B1A4, RTL Compact Layout and No-Refetch Evidence
+Commit: `d95d268`
 
 Result:
 
-- Added the two planned Compose-local RTL cases covering Standard and Simple
-  Home compact bounds, touch targets, overlap, long-content reachability, and
-  exact repository request-list stability. Extended the content helper with a
-  default-LTR-preserving layout-direction parameter. No production correction
-  was needed.
+- Added the planned Compose-local RTL Standard and Simple cases for compact
+  bounds, touch targets, overlap, long-content reachability, and stable
+  repository request lists. No production correction was needed.
 
-Evidence:
+Evidence and limits:
 
 - Compile, app/core unit tests, debug assembly, and `git diff --check` passed.
-- The corrected Standard connected attempt installed and started on
-  `oxygen_starter` / `emulator-5554`, API 37, but stalled at `Tests 0/1
-  completed` without a test result. The Simple connected case was not run.
-- The first Standard attempt failed on a shortened attribution assertion; the
-  assertion was corrected to the existing full provider/fetch line.
-
-Artifacts:
-
-- `.codex/test-artifacts/2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch/`
-  contains the verification ledger.
-
-Limits:
-
-- Connected acceptance is incomplete, so this slice is not verified or ready
-  for Gate 30B1B1. No commit was previously made for the slice; this status
-  sync is being committed with the incomplete-evidence limit explicit.
+- Standard connected acceptance stalled with no result; Simple was not run.
+  Artifacts: `.codex/test-artifacts/2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch/`.
 
 ### 2026-09-12-test-runner-recovery
 
 Status: committed; Standard acceptance remains blocked
 Mode: bounded Android test-runner triage and recovery
 Slice: Test Runner Triage — Healthy Emulator and Bounded Instrumentation
-Commit: 1972972
+Commit: `1972972`
 
 Result:
 
-- Added recovery mode to `start-emulator.sh` with exact AVD/device selection,
-  no-snapshot non-wipe launch, detached PID/log retention, health preflight,
-  serial record, and bounded diagnostics.
-- Added `run-connected-method.sh` for one fully qualified method, exact recovery
-  serial enforcement, a 120-second Gradle bound, result freshness/identity
-  validation, and post-run diagnostics. Documented the invocation in README.
-
-Evidence:
-
-- Shell syntax, diff checks, and invalid-argument rejection paths passed.
-- Recovery preflight passed on `oxygen_starter` API 37 x86_64; the corrected
-  canary passed with exactly 1 completed, 0 skipped, 0 failed.
-- Standard ran once and timed out at 120 seconds at `Tests 0/1 completed`; no
-  fresh result was produced. This is Standard-only test/application-path
-  evidence, not emulator recovery success for that method.
+- Added an exact-device recovery session and bounded one-method connected-test
+  runner. The recovery canary completed with 1 passed test; Standard still
+  timed out with `Tests 0/1 completed` and no fresh XML.
 
 Artifacts: `.codex/test-artifacts/2026-09-11-test-runner-recovery/`
 
-Limits:
+### 2026-09-12-slice-30b1a4-a4-standard-rtl-stall
 
-- Simple was not run; no app/test Kotlin or dependency changes were made.
-- A new bounded A4 investigation is required before 30B1A4 can be verified.
+Status: blocked; uncommitted diagnostic handoff
+Mode: bounded Android/Compose test-path diagnosis
+Slice: Slice 30B1A4-A4, Standard RTL Compact Stall Investigation
+
+Result:
+
+- Added non-production Android-log checkpoints to the Standard case. The
+  initial bounded run reached Daily after Now and Hourly; the post-hypothesis
+  run isolated the first non-returning operation to the Daily spoken-weather
+  node's `performScrollTo()` after the Daily title rendered and the page was
+  idle.
+- Both runs timed out at the runner's 120-second bound with `Tests 0/1
+  completed` and no fresh XML. No app ANR was recorded. A disabled-motion
+  harness hypothesis was reverted because it did not change the outcome.
+
+Evidence:
+
+- The retained preflight, both runner outputs, Android checkpoints, diagnostics,
+  cleanup records, and ledger are under
+  `.codex/test-artifacts/2026-09-12-slice-30b1a4-a4-standard-rtl-stall/`.
+- `git diff --check` passed. Compile, unit, and assembly checks were not run
+  after this terminal connected-test blocker.
+
+Limits and next action:
+
+- No Simple method, installed RTL journey, provider/persistence work, or
+  production Home change was performed. Select a new bounded investigation for
+  the RTL Daily `performScrollTo()` test interaction before retrying Standard.
+
+### 2026-09-12-slice-30b1a4-a5-rtl-daily-scroll
+
+Status: implemented; connected acceptance failed normally; uncommitted
+Mode: bounded Android/Compose test-harness correction
+Slice: Slice 30B1A4-A5, RTL Daily Scroll Interaction Draft
+
+Result:
+
+- Replaced the blocked Daily child `performScrollTo()` with one direct
+  `swipeUp()` on the visible `home-page-daily` scroll container. No production
+  Home change was made.
+- The bounded runner reached the named test and returned a normal assertion
+  failure: the exact spoken Daily weather node was not displayed after the
+  gesture. This converts the prior stall into a reproducible red rendered
+  boundary, but does not satisfy the slice acceptance.
+
+Evidence and limits:
+
+- Artifacts are under
+  `.codex/test-artifacts/2026-09-12-slice-30b1a4-a5-rtl-daily-scroll/`.
+- Final result was `Tests 1/1 completed, 0 skipped, 1 failed`; no fresh passing
+  result exists. `git diff --check` passed.
+- Compile, unit tests, assembly, Simple method, installed RTL journey, and
+  production correction were not run or performed after the red result.
+
+Commit state: uncommitted diagnostic/test interaction change; next action is a
+separately selected bounded A4/Home correction investigation from this red
+Daily visibility evidence.
+
+### 2026-09-12-slice-30b1a4-rtl-compact-layout-completion
+
+Status: implemented; connected acceptance failed normally; uncommitted
+Mode: bounded Android-test correction and RTL compact-layout verification
+Slice: Slice 30B1A4, RTL Compact Layout and No-Refetch Evidence Completion
+
+Result:
+
+- Corrected the Standard Daily contract to verify entry 0 before one bounded
+  container swipe and entry 4's exact speech, bounds, and spacing afterward;
+  removed all temporary checkpoint logging.
+- The Daily boundary passed, but the later Details helper failed because
+  `home-section-status` was absent. The fresh XML records 1 completed, 0
+  skipped, and 1 failed test. No production defect is established.
+
+Evidence and limits:
+
+- Artifacts: `.codex/test-artifacts/2026-09-12-slice-30b1a4-rtl-compact-layout-completion/`.
+- The wrapper reached its 120-second bound after instrumentation wrote the
+  ordinary failure. Per the plan, Simple, broad checks, retries, commit, and
+  document-sync completion were not performed. A4 remains unverified.
+
+### 2026-09-12-slice-30b1a4-a6-details-status-fixture-alignment
+
+Status: committed; Standard boundary verified; Simple pending
+Mode: bounded Android-test fixture correction and one-method connected verification
+Slice: Slice 30B1A4-A6, Standard Details Status Fixture Alignment
+Commit: `8b5647b`
+
+Result:
+
+- Retained the Daily container-scroll correction and made the Standard RTL
+  fixture explicitly stale, aligning its Details status-card expectation with
+  the production freshness contract. No production code changed.
+- The sole Standard connected method completed with 1 test, 0 skipped, and 0
+  failed on the recovered `oxygen_starter` emulator; the recovery emulator was
+  stopped afterward.
+
+Evidence and limits:
+
+- `git diff --check`, `:app:compileDebugKotlin`, app/core debug unit tests,
+  and `:app:assembleDebug` passed. Artifacts are under
+  `.codex/test-artifacts/2026-09-12-slice-30b1a4-a6-details-status-fixture-alignment/`.
+- The Simple RTL method, installed RTL journey, TalkBack, and Gate 30B1B1 were
+  not run or completed. The next selected slice is the one-method Simple A4
+  completion boundary.

@@ -30,7 +30,8 @@ navigation contract, 30B1A2 is committed at `20b6ddc`, and 30B1A3A1 is
 committed at `74675e2`. The former 30B1A3 draft is decomposed into
 independently observable sub-slices; `30B1A3A2` is committed at `9390601`,
 `30B1A3A3` is committed at `91974b2`, `30B1A3B1` is committed at `26b32b8`,
-and `30B1A4` is the current candidate selected by `.codex/plans/current.md`:
+and `30B1A4` has a verified Standard boundary at `8b5647b`; its Simple
+boundary is the current candidate selected by `.codex/plans/current.md`:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -530,7 +531,7 @@ evidence, artifact directory, result ledger, commit, and next-plan handoff.
 
 #### Slice 30B1A4: RTL Compact Layout and No-Refetch Evidence
 
-Status: implemented; connected acceptance incomplete
+Status: implemented; Standard boundary verified; Simple boundary pending
 
 Prerequisite: Slices 30B1A3A1–30B1A3B1.
 
@@ -541,11 +542,11 @@ unrelated persistence or forecast refetch when changing page/layout in RTL.
 Focused boundary: up to two named connected cases, using canonical request
 counts and bounds/overlap assertions. Preserve the existing production
 selected-location path. The two cases and RTL test-composition helper are
-implemented. Source-side checks passed, but the corrected Standard connected
-run stalled in the emulator runner before producing a result and the Simple
-case was not run; therefore this slice is not verified or committed as
-complete. Evidence is retained under
-`.codex/test-artifacts/2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch/`.
+implemented. The corrected Standard case passed at its one-method connected
+boundary after the stale status fixture alignment in `8b5647b`; the Simple case
+remains unrun, so this slice is not complete. Evidence is retained under
+`.codex/test-artifacts/2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch/`
+and `.codex/test-artifacts/2026-09-12-slice-30b1a4-a6-details-status-fixture-alignment/`.
 
 #### Gate 30B1B1: RTL Installed Evidence and Documentation Sync
 
@@ -1162,9 +1163,11 @@ Slice 30A1: Home Spoken-Weather Semantics is committed at `da7b886`; Slice 30A2
 is committed at `1a8e14f`; 30A3A1's evidence is complete; and 30A3B2 is the
 committed documentation-sync boundary at `fb51f7b`. Slice 30B1A1 is committed
 at `63ed25a`; Slice 30B1A2 is committed at `20b6ddc`; and Slice 30B1A3A1 is
-committed at `74675e2`. Slice 30B1A3A2 is the current candidate in
-`.codex/plans/current.md`. It is the next bounded
-slice of the split Gate 30
+committed at `74675e2`. Slice 30B1A3A2 is committed at `9390601`, Slice
+30B1A3A3 is committed at `91974b2`, and Slice 30B1A3B1 is committed at
+`26b32b8`. Slice 30B1A4's Standard boundary is committed at `8b5647b`; its
+Simple boundary is the current candidate in `.codex/plans/current.md`. It is
+the next bounded slice of the split Gate 30
 accessibility boundary. Slice 29B is committed at `441d05d` with test
 coverage follow-up `86e696c` and evidence sync `86f046b`. Slice 28A1 is
 committed at `06c987b`, Slice 28A2 is committed at `80dd961`, and Slice 28B1 is
@@ -1218,15 +1221,18 @@ Immediate planning boundary:
 -> Slice 30B1A1 RTL semantic page navigation contract committed at `63ed25a`
 -> Slice 30B1A2 RTL directional affordances and gesture behavior committed at `20b6ddc`
 -> Slice 30B1A3A1 Standard Home RTL Hourly chronology committed at `74675e2`
--> Slice 30B1A3A2 Standard Home RTL Daily chronology is the active planned slice
+-> Slice 30B1A3A2 Standard Home RTL Daily chronology committed at `9390601`
+-> Slice 30B1A3A3 Simple Home RTL forecast chronology committed at `91974b2`
+-> Slice 30B1A3B1 RTL/LTR spoken-meaning equivalence committed at `26b32b8`
+-> Slice 30B1A4 Standard RTL compact boundary committed at `8b5647b`; Simple is planned
 ```
 
 Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,
 Slice 29B, Slice 30A1, Slice 30A2, and the 30A3B2 documentation sync are
 complete. Gate 30 is split into the bounded 30A1–30E queue at the head of this
-roadmap; 30A3A1 evidence is complete, Slices 30B1A1, 30B1A2, and 30B1A3A1
-are committed, and Slice 30B1A3A2 is the active planned candidate after
-30A3B2 closure. Release
+roadmap; 30A3A1 evidence is complete, Slices 30B1A1 through 30B1A3B1 are
+committed, and only the Simple boundary of Slice 30B1A4 is the active planned
+candidate. Release
 work and release-candidate claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.

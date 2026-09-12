@@ -2100,9 +2100,13 @@ and Daily semantics for Standard and Simple Home under LTR and RTL; paired
 semantics, result/log output, emulator metadata, and the verification ledger
 are retained under
 `.codex/test-artifacts/2026-09-10-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence/`.
-Slice 30B1A4 RTL compact layout and no-refetch evidence is the next planned
-boundary. No later Gate 30 condition, including complete RTL support or
-TalkBack service traversal, is claimed complete.
+Slice 30B1A4 RTL compact layout and no-refetch evidence has a verified Standard
+boundary: the Daily container interaction and stale Details status fixture are
+committed at `8b5647b`, with the one named connected case passing and evidence
+under `.codex/test-artifacts/2026-09-12-slice-30b1a4-a6-details-status-fixture-alignment/`.
+Its Simple boundary remains planned, so Slice 30B1A4, complete RTL support,
+TalkBack service traversal, and later Gate 30 conditions are not claimed
+complete.
 
 ---
 
