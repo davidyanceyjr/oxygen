@@ -30,8 +30,8 @@ navigation contract, 30B1A2 is committed at `20b6ddc`, and 30B1A3A1 is
 committed at `74675e2`. The former 30B1A3 draft is decomposed into
 independently observable sub-slices; `30B1A3A2` is committed at `9390601`,
 `30B1A3A3` is committed at `91974b2`, `30B1A3B1` is committed at `26b32b8`,
-and `30B1A4` has a verified Standard boundary at `8b5647b`; its Simple
-boundary is the current candidate selected by `.codex/plans/current.md`:
+`30B1A4` has verified Standard and Simple boundaries, and Gate 30B1B1 is
+committed as the RTL evidence/documentation closure:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -531,7 +531,7 @@ evidence, artifact directory, result ledger, commit, and next-plan handoff.
 
 #### Slice 30B1A4: RTL Compact Layout and No-Refetch Evidence
 
-Status: implemented; Standard boundary verified; Simple boundary pending
+Status: verified
 
 Prerequisite: Slices 30B1A3A1–30B1A3B1.
 
@@ -543,24 +543,33 @@ Focused boundary: up to two named connected cases, using canonical request
 counts and bounds/overlap assertions. Preserve the existing production
 selected-location path. The two cases and RTL test-composition helper are
 implemented. The corrected Standard case passed at its one-method connected
-boundary after the stale status fixture alignment in `8b5647b`; the Simple case
-remains unrun, so this slice is not complete. Evidence is retained under
-`.codex/test-artifacts/2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch/`
-and `.codex/test-artifacts/2026-09-12-slice-30b1a4-a6-details-status-fixture-alignment/`.
+boundary after the stale status fixture alignment in `8b5647b`; the Simple
+method then passed once with one completed, zero skipped, and zero failed.
+Evidence is retained under
+`.codex/test-artifacts/2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch/`,
+`.codex/test-artifacts/2026-09-12-slice-30b1a4-a6-details-status-fixture-alignment/`,
+and `.codex/test-artifacts/2026-09-12-slice-30b1a4-a7-simple-rtl-compact-completion/`.
 
 #### Gate 30B1B1: RTL Installed Evidence and Documentation Sync
 
-Status: specified
+Status: committed
 
 Prerequisites: Slices 30B1A1, 30B1A2, 30B1A3A1–30B1A3B1, and 30B1A4.
 
-This is the documentation-only third-cycle closure gate. Run the minimum
-combined focused filter and one installed RTL Home journey with screenshots and
-UI hierarchies, restoring device direction afterward. Reconcile the active
-plan, this roadmap, `README.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`, and the
-live cycle history only to the evidence actually retained. Record skipped
-checks and limits. No Kotlin, Compose, provider, persistence, resource,
-manifest, dependency, or production behavior changes.
+This documentation-only third-cycle closure gate reused the retained focused
+30B1A4 filter and completed one installed RTL Standard Home journey with
+screenshots and UI hierarchies. The device direction was restored and verified.
+The active plan, this roadmap, `README.md`,
+`docs/OXYGEN_FULL_SPECIFICATION.md`, and live cycle history were reconciled
+only to the retained evidence. No Kotlin, Compose, provider, persistence,
+resource, manifest, dependency, or production behavior changed.
+
+The installed evidence is under
+`.codex/test-artifacts/2026-09-12-gate-30b1b1-rtl-installed-evidence-doc-sync/`.
+It covers a real manual selected-location Standard Home path through Now,
+Hourly, Daily, and Details while the activity configuration was `ldrtl`.
+TalkBack service traversal and all later environment conditions remain outside
+this gate.
 
 All 30B1 implementation sub-slices remain out of scope for font-scale-2.0 work
 owned by 30A2, reduced motion, theme/contrast matrix, alerts, Settings,
@@ -1224,7 +1233,7 @@ Immediate planning boundary:
 -> Slice 30B1A3A2 Standard Home RTL Daily chronology committed at `9390601`
 -> Slice 30B1A3A3 Simple Home RTL forecast chronology committed at `91974b2`
 -> Slice 30B1A3B1 RTL/LTR spoken-meaning equivalence committed at `26b32b8`
--> Slice 30B1A4 Standard RTL compact boundary committed at `8b5647b`; Simple is planned
+-> Slice 30B1A4 Standard and Simple RTL compact boundaries verified; Gate 30B1B1 committed as RTL evidence/documentation closure
 ```
 
 Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,

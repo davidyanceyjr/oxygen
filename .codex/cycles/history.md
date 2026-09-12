@@ -15,12 +15,11 @@ file before replacing or compressing it.
 
 - Slice 30B1A3B1, RTL/LTR Spoken-Meaning Equivalence, is committed at
   `26b32b8`.
-- Slice 30B1A4's two RTL compact cases are implemented at `d95d268`; the
-  Standard case's Daily interaction and stale Details fixture are committed at
-  `8b5647b` and its connected boundary passed. The Simple method remains the
-  only pending A4 acceptance boundary.
-- The recovery runner is committed at `1972972`; no later Gate 30B1 boundary
-  is complete.
+- Slice 30B1A4's two RTL compact/no-refetch boundaries are verified: the
+  Standard fixture alignment is committed at `8b5647b`, and the one-method
+  Simple result passed with 1 completed, 0 skipped, and 0 failed.
+- Gate 30B1B1 is committed as the installed device-wide RTL Home evidence and
+  documentation closure. Slice 30B2 remains the next specified candidate.
 
 ## Recent Cycles
 
@@ -164,3 +163,69 @@ Evidence and limits:
 - The Simple RTL method, installed RTL journey, TalkBack, and Gate 30B1B1 were
   not run or completed. The next selected slice is the one-method Simple A4
   completion boundary.
+
+### 2026-09-12-slice-30b1a4-a7-simple-rtl-compact-completion
+
+Status: verified; tracking handoff pending Gate 30B1B1 documentation sync
+Mode: bounded one-method Android connected verification
+Slice: Slice 30B1A4-A7, Simple RTL Compact Completion
+
+Result:
+
+- `HomeDashboardUiTest#rtlSimpleHomeCompactLayoutAndForecastChoicesDoNotRefetch`
+  completed once on the recovered `oxygen_starter` emulator with 1 completed,
+  0 skipped, and 0 failed. The runner's Gradle status was 0, and the recovery
+  emulator was stopped afterward.
+- No production or test source changed. Together with Standard evidence at
+  `8b5647b`, this verifies both focused 30B1A4 compact/no-refetch boundaries.
+
+Evidence and limits:
+
+- Recovery preflight, runner result, copied Android test result, and ledger
+  are under
+  `.codex/test-artifacts/2026-09-12-slice-30b1a4-a7-simple-rtl-compact-completion/`.
+  An initial recovery invocation stopped before creating an emulator because
+  the new cycle's parent artifact directory was absent; after that directory
+  was created, the one planned emulator session and one method ran.
+- `git diff --check` passed. A6's compile, app/core unit-test, and debug
+  assembly checks are reused because source and execution environment were
+  unchanged. No Standard rerun, full class, installed RTL journey, screenshots,
+  hierarchy capture, TalkBack, or Gate 30B1B1 work was run.
+
+### 2026-09-12-gate-30b1b1-rtl-installed-evidence-doc-sync
+
+Status: committed
+Mode: bounded installed RTL evidence and documentation-sync gate
+Slice: Gate 30B1B1, RTL Installed Evidence and Documentation Sync
+
+Result:
+
+- Reused the focused 30B1A4 evidence: Standard at `8b5647b` and the retained
+  Simple one-method result with 1 completed, 0 skipped, and 0 failed. No
+  connected-test, compile, unit-test, or assembly rerun was needed because no
+  source or relevant execution-environment change occurred.
+- Installed the existing debug APK on `oxygen_starter` (API 37), used its real
+  manual Open-Meteo selected-location path for Chicago, and then exercised the
+  installed Standard Home surface while the activity configuration was
+  `ldrtl`. Now, Hourly, Daily, and Details retained their titles/positions and
+  semantic order; the visible selector was `Details`, `Daily`, `Hourly`,
+  `Now` from left to right.
+- Restored the original `en-US` device locale, absent global RTL setting, false
+  RTL property, and `ldltr` configuration. Android required one no-data-wipe
+  restart to apply the restored direction; the emulator was then stopped.
+
+Evidence and limits:
+
+- Screenshots and matching UI hierarchies for all four Standard pages, install
+  and launch output, direction records, emulator logs, and the verification
+  ledger are under
+  `.codex/test-artifacts/2026-09-12-gate-30b1b1-rtl-installed-evidence-doc-sync/`.
+- The initial direct RTL-setting attempt retained `ldltr`; its launch/location
+  captures are diagnostic only and are excluded from the RTL acceptance claim.
+  `ar-SA` plus the Android RTL flag produced the verified `ldrtl` Home state.
+- `git diff --check` passed. TalkBack traversal, Simple installed RTL,
+  font-scale-2.0, reduced motion, theme/contrast invariance, alerts,
+  localization, and release checks remain outside this gate.
+
+Commit state: committed by this documentation-sync entry; no production or test
+source changed.

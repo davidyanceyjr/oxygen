@@ -2100,13 +2100,20 @@ and Daily semantics for Standard and Simple Home under LTR and RTL; paired
 semantics, result/log output, emulator metadata, and the verification ledger
 are retained under
 `.codex/test-artifacts/2026-09-10-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence/`.
-Slice 30B1A4 RTL compact layout and no-refetch evidence has a verified Standard
-boundary: the Daily container interaction and stale Details status fixture are
-committed at `8b5647b`, with the one named connected case passing and evidence
-under `.codex/test-artifacts/2026-09-12-slice-30b1a4-a6-details-status-fixture-alignment/`.
-Its Simple boundary remains planned, so Slice 30B1A4, complete RTL support,
-TalkBack service traversal, and later Gate 30 conditions are not claimed
-complete.
+Slice 30B1A4 RTL compact layout and no-refetch evidence has verified Standard
+and Simple boundaries. The Daily container interaction and stale Details status
+fixture are committed at `8b5647b`; the separate Simple method completed once
+with one test, zero skipped, and zero failed. Evidence is retained under
+`.codex/test-artifacts/2026-09-12-slice-30b1a4-a6-details-status-fixture-alignment/`
+and `.codex/test-artifacts/2026-09-12-slice-30b1a4-a7-simple-rtl-compact-completion/`.
+Gate 30B1B1 then exercised the installed Standard Home path with a device-wide
+`ldrtl` configuration and a real manual selected-location flow, retaining Now,
+Hourly, Daily, and Details navigation plus screenshots and UI hierarchies under
+`.codex/test-artifacts/2026-09-12-gate-30b1b1-rtl-installed-evidence-doc-sync/`.
+Device direction was restored and verified after the journey. This does not
+claim TalkBack service traversal, Simple installed RTL evidence, reduced
+motion, theme/contrast invariance, alert accessibility, localization, or later
+Gate 30 conditions.
 
 ---
 
