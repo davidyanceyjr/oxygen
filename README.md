@@ -71,6 +71,12 @@ and `docs/data-sources/`.
   recreation and force-stop/relaunch, remains independent of theme, layout,
   effects, and forecast requests, and failed writes retain the confirmed choice
   with retry.
+- The installed Settings / Appearance surface exposes Theme, Contrast, Layout,
+  and Effects as labeled single-choice controls with selected/disabled/action
+  semantics, readable pending/saved/failure status, and named 48dp Retry and
+  Back actions. Five focused connected cases and one installed Chicago journey
+  verify this boundary; TalkBack service traversal, localization, and the
+  large-font/RTL matrix remain unverified.
 - Installed Home current, hourly, and daily weather exposes concise
   mapper-owned accessibility descriptions with resolved temperature units and
   honest missing-value/precipitation semantics. Retained evidence covers

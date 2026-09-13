@@ -39,7 +39,8 @@ documentation closure, and Slice 30C1 is committed at `4ffc507` as the
 deterministic official-alert summary accessibility boundary. Slice 30C2 is
 committed at `70304b8` as the deterministic official-alert detail accessibility
 boundary. Gate 30C3 is committed as the deterministic alert evidence and
-documentation closure. Slice 30D1 is the next specified candidate:
+documentation closure. Slice 30D1 is committed at `78ecb84`; Slice 30D2 is
+the next specified candidate:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -729,7 +730,7 @@ production failure would create a separately named alert repair slice.
 
 ### Slice 30D1: Appearance Control Semantics
 
-Status: specified
+Status: committed at `78ecb84`
 
 Prerequisite: Gate 30C3.
 
@@ -748,6 +749,12 @@ Must prove:
 
 Focused evidence: existing preference transaction JVM tests plus no more than
 five named connected semantic/action cases through `OxygenApp`.
+
+Evidence: five named connected cases completed with zero skipped and zero
+failed on API-37 `oxygen_starter`, plus an installed Chicago/Open-Meteo
+Appearance journey with saved Paper selection and Home return retaining source,
+update, and provenance. Large-font/RTL, TalkBack, localization, and release
+checks remain outside this slice.
 
 Out of scope: large-font/RTL layout matrix, new preferences, automatic system
 contrast, Full effects, icon packs, persistence formats, Home/alert behavior.

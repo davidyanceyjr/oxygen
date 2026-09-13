@@ -799,6 +799,18 @@ Failed reads and writes retain conservative confirmed presentation and expose
 retry. Contrast selection does not change theme, layout, effects, forecast
 data, or provider requests.
 
+The installed Appearance surface presents the four supported preference groups
+with readable group headings and visible single-choice controls: Oxygen/Paper/
+Terminal Theme, Standard/High Contrast, Simple/Standard Layout, and Off/Subtle
+Effects. Each control exposes its label, selected state, action, and disabled
+state independently of color or decoration. Loading and pending writes retain
+the confirmed selection while naming the operation; saved and failure states
+are readable, with named Retry actions where the existing transaction supports
+them. Effects preserves its same-choice retry behavior after a failed write.
+This contract is covered at the OxygenApp Compose/Android boundary; TalkBack
+service traversal, localization, and the large-font/RTL environment matrix are
+separate verification work.
+
 ---
 
 ## 24. Layout Presets
@@ -2179,7 +2191,15 @@ summary and 30C2 detail boundaries. Its seven retained deterministic connected
 results and two truthful installed no-alert attempts are recorded without
 upgrading the claim to service-level TalkBack, localization, alert persistence,
 background polling, notifications, or release readiness. Slice 30D1,
-Appearance Control Semantics, remains the next specified candidate.
+Appearance Control Semantics, is committed at `78ecb84`. Its five retained
+focused connected cases cover the four managed groups' headings, labels,
+single-choice roles, selected/disabled/action semantics, pending/confirmed
+selection, status/retry behavior, 48dp controls, preference independence, and
+no-refetch behavior. One installed Chicago/Open-Meteo journey confirms loaded
+Appearance controls, a saved Paper choice, and return to the same Home
+provenance/update presentation. Large-font/RTL resilience, TalkBack service
+traversal, localization, and release checks remain unverified. Slice 30D2,
+Appearance Layout and Environment Resilience, is the next specified candidate.
 
 ---
 

@@ -1,6 +1,6 @@
 # Slice 30D1 — Appearance Control Semantics
 
-**Status:** verified
+**Status:** committed
 **Cycle ID:** `2026-09-13-slice-30d1-appearance-control-semantics`
 **Prerequisite:** Gate 30C3 — Alert Accessibility Evidence and Documentation Sync
 
@@ -194,7 +194,8 @@ visual redesign, localization, notifications, and release readiness.
 
 ## Completion evidence
 
-Production changed only in `app/src/main/kotlin/com/oxygen/weather/app/ui/settings/SettingsScreen.kt`:
+Commit `78ecb84` records production changed only in
+`app/src/main/kotlin/com/oxygen/weather/app/ui/settings/SettingsScreen.kt`:
 managed Theme, Contrast, Layout, and Effects headings now expose heading
 semantics; every supported choice exposes a visible label, RadioButton role,
 selected state, click action, and disabled state when unavailable; Effects no
@@ -235,7 +236,8 @@ hierarchies are retained as `installed-appearance-saved.png`,
 `installed-appearance-saved.xml`, and `installed-home-return.xml`.
 
 The installed journey does not prove a numeric request count; fixture-backed
-connected tests prove no forecast refetch. TalkBack service traversal,
+connected tests prove no forecast refetch. Post-commit authority
+synchronization is complete. TalkBack service traversal,
 large-font/RTL resilience, localization, and release checks remain out of
 scope. The next bounded slice is Slice 30D2 — Appearance Layout and Environment
 Resilience.

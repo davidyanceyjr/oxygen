@@ -490,3 +490,51 @@ Checks:
 Commit state: committed by this documentation-sync entry; the unrelated
 untracked archive `.codex/cycles/archive/2026-09-12-before-slice-30b2-runner-finalization-repair.md`
 was preserved unchanged. Slice 30D1 remains the next specified candidate.
+
+### 2026-09-13-slice-30d1-appearance-control-semantics
+
+Status: committed at `78ecb84`
+Mode: bounded Settings / Appearance presentation and accessibility semantics
+Slice: Slice 30D1, Appearance Control Semantics
+
+Result:
+
+- `SettingsScreen` now exposes readable headings for Theme, Contrast, Layout,
+  and Effects; visible labels and RadioButton roles for all supported choices;
+  selected/disabled/action semantics; confirmed selection during pending writes;
+  named Effects status nodes; and named 48dp Retry/Back controls. Effects no
+  longer hides its action behind a wrapper semantics node.
+- Added the real-`OxygenApp` cross-group semantics case and aligned the four
+  existing preference connected cases to the named D1 boundary. Existing
+  storage/state models, callbacks, preference independence, and forecast
+  request behavior were preserved.
+
+Evidence:
+
+- Retained under `.codex/test-artifacts/2026-09-13-slice-30d1-appearance-control-semantics/`:
+  pre-change semantics dump, five accepted connected results, the Layout
+  viewport-repair attempts, and installed screenshots/UI hierarchies.
+- `appearanceGroupsAndChoicesExposeMeaningfulSemantics`,
+  `themePreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry`,
+  `layoutPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry`,
+  `effectsPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry`,
+  and `contrastPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry`
+  each completed with one test, zero skipped, and zero failed on API-37
+  `oxygen_starter` / `emulator-5554`. The Layout method passed after its
+  test-only scroll-to-status correction.
+- Focused preference JVM tests, Android-test compilation, broad app/core
+  compile and unit tests, debug assembly, and `git diff --check` passed.
+  The installed journey selected Chicago through Open-Meteo without location
+  permission, saved Paper, and returned to Home with the same source/update/
+  provenance presentation. Numeric request-count proof remains fixture-backed.
+
+Limits:
+
+- TalkBack service traversal, large-font/RTL resilience, localization,
+  storage-failure behavior on the installed path, and release checks remain
+  unverified or out of scope. Slice 30D2 is next.
+
+Commit state: committed; post-commit README, specification, roadmap, active
+plan, and this history entry are synchronized to the retained evidence. The
+untracked archive `.codex/cycles/archive/2026-09-12-before-slice-30b2-runner-finalization-repair.md`
+was preserved unchanged.
