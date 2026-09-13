@@ -891,6 +891,178 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun officialAlertSummaryExposesRequiredFieldsAndActionSemanticsAtCompactFont() {
+        val location = weatherLocation(name = "Alert Contract City")
+        val alert = fullWeatherBundle(location).alerts.single().copy(
+            event = "Flash Flood Warning",
+            severity = AlertSeverity.SEVERE,
+            issuer = "National Weather Service",
+            expires = Instant.parse("2026-08-22T18:00:00Z"),
+            web = "https://alerts.weather.gov/contract",
+        )
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = listOf(alert)),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+        val openedUris = mutableListOf<String>()
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(1f, 1.3f),
+                LocalUriHandler provides object : UriHandler {
+                    override fun openUri(uri: String) {
+                        openedUris += uri
+                    }
+                },
+            ) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        HomeLoadingScreen(
+                            state = state,
+                            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.assertSemanticsTreeOrder(
+            "home-section-alert",
+            "home-alert-details",
+            "home-alert-source-link",
+        )
+        composeRule.onNodeWithText("Flash Flood Warning").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Severity: Severe").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Issuer: National Weather Service").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Expires 1:00 PM").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Alert source checked Aug 22, 10:05 AM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Official alerts from NOAA/National Weather Service").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("View alert details").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("View official alert details").assertExists()
+        composeRule.onNodeWithContentDescription("Open official NOAA/National Weather Service alert source")
+            .assertExists()
+        composeRule.assertMinimumTouchTarget("home-alert-details", "home-alert-source-link")
+        composeRule.onNodeWithTag("home-alert-source-link").performClick()
+        assertEquals(listOf("https://alerts.weather.gov/contract"), openedUris)
+        composeRule.onAllNodesWithTag("home-alert-count").assertCountEquals(0)
+    }
+
+    @Test
+    fun noAlertStatusDoesNotRenderSummaryCardCountOrActions() {
+        val location = weatherLocation(name = "No Alert Contract City")
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = emptyList()),
+            alertStatus = AlertLookupStatus.NoAlerts(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 640,
+            fontScale = 1.3f,
+            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+        )
+
+        composeRule.onNodeWithText("No Alert Contract City").assertIsDisplayed()
+        composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-section-alert").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-alert-details").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-alert-source-link").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-alert-count").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Official alert").assertCountEquals(0)
+    }
+
+    @Test
+    fun oxygenAppAlertDetailRoundTripPreservesHomeAndDoesNotRefresh() {
+        val location = weatherLocation(name = "Alert Round Trip City")
+        val alert = fullWeatherBundle(location).alerts.single().copy(
+            event = "Flash Flood Warning",
+            severity = AlertSeverity.SEVERE,
+            web = "https://alerts.weather.gov/round-trip",
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location).copy(alerts = listOf(alert)),
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+                    ),
+                ),
+            ),
+        )
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactOxygenAppContent(
+            stateHolder = holder,
+            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+        )
+        composeRule.waitForIdle()
+        val requestsBefore = repository.locations.toList()
+        val homeBefore = holder.presentationState.screen as OxygenAppScreen.Home
+        val summaryBefore = (homeBefore.forecast as HomeForecastPresentationState.ForecastReady).dashboard.alertSummary
+
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("alert-detail-title").assertIsDisplayed()
+        composeRule.onNodeWithText("Flash Flood Warning").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("alert-detail-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithText("Flash Flood Warning").performScrollTo().assertIsDisplayed()
+        val homeAfter = holder.presentationState.screen as OxygenAppScreen.Home
+        assertEquals(requestsBefore, repository.locations)
+        assertEquals(homeBefore.forecast, homeAfter.forecast)
+        assertEquals(summaryBefore, (homeAfter.forecast as HomeForecastPresentationState.ForecastReady).dashboard.alertSummary)
+    }
+
+    @Test
+    fun officialAlertSummaryLongTextRemainsScrollableInRtlHighContrast() {
+        val location = weatherLocation(name = "RTL Alert Contract City")
+        val alert = fullWeatherBundle(location).alerts.single().copy(
+            event = "Extremely Long Flash Flood Warning Event Name For A Narrow Display",
+            severity = AlertSeverity.SEVERE,
+            issuer = "National Weather Service Central Wisconsin Emergency Coordination Office",
+            web = "https://alerts.weather.gov/rtl-overflow",
+        )
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = listOf(alert)),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 640,
+            fontScale = 2f,
+            appearance = OxygenAppearance(effects = EffectsLevel.OFF, contrast = ContrastLevel.HIGH),
+            layoutDirection = LayoutDirection.Rtl,
+        )
+
+        composeRule.assertTextWithinRootBoundsAfterScroll(alert.event)
+        composeRule.assertTextWithinRootBoundsAfterScroll("Issuer: ${alert.issuer}")
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-alert-source-link").performScrollTo().assertIsDisplayed()
+        composeRule.assertMinimumTouchTargetAfterScroll("home-alert-details", "home-alert-source-link")
+        composeRule.onNodeWithContentDescription("View official alert details").assertExists()
+        composeRule.onNodeWithContentDescription("Open official NOAA/National Weather Service alert source")
+            .assertExists()
+    }
+
+    @Test
     fun highContrastStandardHomePreservesMeaningAcrossPagesEffectsOff() {
         val location = weatherLocation(name = "High Contrast Home City")
         val baseAlert = fullWeatherBundle(location).alerts.single()
