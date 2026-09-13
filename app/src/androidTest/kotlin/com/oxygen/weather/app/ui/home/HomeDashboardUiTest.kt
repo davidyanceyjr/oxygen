@@ -38,6 +38,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -1338,6 +1339,17 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-alert-details").performClick()
         composeRule.onNodeWithTag("alert-detail-title").assertIsDisplayed()
         composeRule.onNodeWithTag("alert-detail-selector-0").assertIsSelected()
+        composeRule.assertSemanticsTreeOrder(
+            "alert-detail-back",
+            "alert-detail-title",
+            "alert-detail-selector",
+            "alert-detail-content",
+        )
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "alert-detail-back",
+            "alert-detail-selector-0",
+            "alert-detail-selector-1",
+        )
         composeRule.onNodeWithText("Issuer: Madison Warning Office").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Urgency: Immediate").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Certainty: Likely").performScrollTo().assertIsDisplayed()
@@ -1356,6 +1368,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("Drink water.\nTake breaks.").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("alert-detail-source-link").performScrollTo().performClick()
         assertEquals(listOf("https://alerts.weather.gov/detail-two"), openedUris)
+        composeRule.assertMinimumTouchTargetAfterScroll("alert-detail-source-link")
 
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         context.filesDir.resolve("alert-detail-effects-off-360x640-font-1.3-semantics.txt")
@@ -1368,6 +1381,108 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("alert-detail-back").performScrollTo().performClick()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
         composeRule.onNodeWithTag("home-section-alert").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun officialAlertDetailLongContentRemainsReachableInRtlLargeFont() {
+        val location = weatherLocation(name = "RTL Detail Accessibility City")
+        val baseAlert = fullWeatherBundle(location).alerts.single()
+        val alerts = listOf(
+            baseAlert.copy(
+                id = "rtl-detail-alert-1",
+                event = "Extremely Long Flash Flood Warning Event Name For A Narrow Display",
+                severity = AlertSeverity.SEVERE,
+                issuer = "National Weather Service Central Wisconsin Emergency Coordination Office",
+                affectedArea = com.oxygen.weather.core.model.AlertAffectedArea(
+                    areaDescription = "Dane County river corridors, low-lying roads, and nearby communities",
+                ),
+                description = "First official description paragraph with a long line that must wrap safely.\n" +
+                    "Second official description paragraph remains verbatim and reachable.",
+                instruction = "Move to higher ground immediately.\n" +
+                    "Do not drive through flooded roads or barricades.\n" +
+                    "Monitor official updates for changes.",
+                web = "https://alerts.weather.gov/rtl-detail-one",
+            ),
+            baseAlert.copy(
+                id = "rtl-detail-alert-2",
+                event = "Heat Advisory",
+                issuer = "Central Forecast Office",
+                description = "Second alert description",
+                instruction = "Drink water and take breaks.",
+                web = "https://alerts.weather.gov/rtl-detail-two",
+            ),
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location).copy(alerts = alerts),
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+                    ),
+                ),
+            ),
+        )
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+        val openedUris = mutableListOf<String>()
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 2f),
+                LocalLayoutDirection provides LayoutDirection.Rtl,
+                LocalUriHandler provides object : UriHandler {
+                    override fun openUri(uri: String) {
+                        openedUris += uri
+                    }
+                },
+            ) {
+                Box(Modifier.width(360.dp).height(640.dp)) {
+                    OxygenApp(
+                        stateHolder = holder,
+                        appearance = OxygenAppearance(
+                            effects = EffectsLevel.OFF,
+                            contrast = ContrastLevel.HIGH,
+                        ),
+                    )
+                }
+            }
+        }
+
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().performClick()
+        composeRule.onNodeWithTag("alert-detail-selector-0").assertIsSelected()
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "alert-detail-back",
+            "alert-detail-selector-0",
+            "alert-detail-selector-1",
+        )
+        composeRule.assertLastTextWithinRootBoundsAfterScroll(alerts[0].event)
+        composeRule.assertTextWithinRootBoundsAfterScroll("Severity: Severe")
+        composeRule.assertTextWithinRootBoundsAfterScroll("Issuer: ${alerts[0].issuer}")
+        composeRule.assertTextWithinRootBoundsAfterScroll("Affected area: ${alerts[0].affectedArea?.areaDescription}")
+        composeRule.assertTextWithinRootBoundsAfterScroll(alerts[0].description!!)
+        composeRule.assertTextWithinRootBoundsAfterScroll(alerts[0].instruction!!)
+        composeRule.onNodeWithContentDescription(
+            "Open official NOAA/National Weather Service alert source for ${alerts[0].event}",
+        ).assertExists()
+        composeRule.assertMinimumTouchTargetAfterScroll("alert-detail-source-link")
+
+        composeRule.onNodeWithTag("alert-detail-selector-1").performScrollTo().performClick()
+        composeRule.onNodeWithTag("alert-detail-selector-1").assertIsSelected()
+        composeRule.onNodeWithText("Second alert description").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("alert-detail-source-link").performScrollTo().performClick()
+        assertEquals(listOf("https://alerts.weather.gov/rtl-detail-two"), openedUris)
+
+        InstrumentationRegistry.getInstrumentation().targetContext.filesDir
+            .resolve("alert-detail-rtl-font-2-high-semantics.txt")
+            .writeText(composeRule.onRoot(useUnmergedTree = true).printToString(maxDepth = 120))
+        composeRule.writeScreenshotArtifact("alert-detail-rtl-font-2-high.png")
+        composeRule.onNodeWithTag("alert-detail-back").performScrollTo().performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        assertEquals(listOf(location), repository.locations)
     }
 
     @Test
@@ -4402,6 +4517,15 @@ private fun ComposeTestRule.assertReadableBoundsAfterScroll(vararg tags: String)
 private fun ComposeTestRule.assertTextWithinRootBoundsAfterScroll(text: String) {
     onNodeWithText(text).performScrollTo().assertIsDisplayed()
     val rect = onNodeWithText(text).fetchSemanticsNode().boundsInRoot
+    assertTrue("$text should have positive width", rect.width > 0f)
+    assertTrue("$text should have positive height", rect.height > 0f)
+    assertTrue("$text should stay inside compact root width", rect.left >= 0f && rect.right <= 360f)
+}
+
+private fun ComposeTestRule.assertLastTextWithinRootBoundsAfterScroll(text: String) {
+    val node = onAllNodesWithText(text).onLast()
+    node.performScrollTo().assertIsDisplayed()
+    val rect = node.fetchSemanticsNode().boundsInRoot
     assertTrue("$text should have positive width", rect.width > 0f)
     assertTrue("$text should have positive height", rect.height > 0f)
     assertTrue("$text should stay inside compact root width", rect.left >= 0f && rect.right <= 360f)
