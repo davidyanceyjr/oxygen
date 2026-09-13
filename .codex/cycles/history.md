@@ -19,7 +19,9 @@ file before replacing or compressing it.
   Standard fixture alignment is committed at `8b5647b`, and the one-method
   Simple result passed with 1 completed, 0 skipped, and 0 failed.
 - Gate 30B1B1 is committed as the installed device-wide RTL Home evidence and
-  documentation closure. Slice 30B2 remains the next specified candidate.
+  documentation closure. Slice 30B2 is committed at `728f4c2`; Gate 30B3 is
+  the combined Home-environment evidence/documentation closure, leaving Slice
+  30C1 as the next specified candidate.
 
 ## Recent Cycles
 
@@ -229,3 +231,124 @@ Evidence and limits:
 
 Commit state: committed by this documentation-sync entry; no production or test
 source changed.
+
+### 2026-09-12-slice-30b2-reduced-motion-appearance-invariance
+
+Status: planned; focused matrix incomplete; uncommitted
+Mode: bounded reduced-motion and theme/contrast connected verification
+Slice: Slice 30B2, Home Reduced-Motion and Appearance Invariance
+
+Result:
+
+- Added the two planned Paper/High and Terminal/High injected-disabled-motion
+  contracts and strengthened the Android-policy case with saved-choice,
+  preference-write, and repository-request assertions.
+- Cases 1, 2, 3, and 5 each passed with 1 completed, 0 skipped, and 0 failed.
+- Cases 4 and 6 each failed initially and on one reserved rerun at the alert
+  assertion. Diagnosis identified test-fixture setup: the production-path
+  fixture lacked an explicit severe alert plus `AlertLookupStatus.Available`;
+  no production defect was established. The source fixture is corrected but
+  has not been rerun.
+
+Evidence and limits:
+
+- Android-test compilation and `git diff --check` passed before the matrix.
+  All per-method runner outputs, XML/log copies, device diagnostics, and the
+  verification ledger are under
+  `.codex/test-artifacts/2026-09-12-slice-30b2-reduced-motion-appearance-invariance/`.
+- The recovery wrapper hung after ADB boot during optional diagnostics; the
+  healthy `emulator-5554` session remained in use and its serial was recorded.
+- The connected budget is exhausted for this cycle. Broad compile/unit/
+  assembly checks, installed real-path exercise, commit, and post-commit
+  authority sync were not run.
+
+Commit state: uncommitted test contracts and fixture correction; next action is
+a fresh bounded rerun of cases 4 and 6.
+
+### 2026-09-12-slice-30b2-fixture-correction-retry
+
+Status: planned; focused matrix incomplete; uncommitted
+Mode: bounded two-method connected verification after fixture correction
+Slice: Slice 30B2, Home Reduced-Motion and Appearance Invariance
+
+Result:
+
+- Created fresh evidence under
+  `.codex/test-artifacts/2026-09-12-slice-30b2-reduced-motion-appearance-invariance-fixture-correction/`.
+- Recovered one API-37 `oxygen_starter` emulator. Manual validation recorded
+  only `emulator-5554` online with ADB state `device` and SDK 37.
+- Case 4, `paperHighContrastDisabledMotionPreservesHomeMeaning`, passed once:
+  1 completed, 0 skipped, 0 failed; runner Gradle status 0.
+- Case 6, `terminalHighContrastDisabledMotionPreservesHomeMeaning`, received
+  one bounded attempt. The runner ended with status 137 at its 120-second
+  timeout after the log reached `Tests 0/1 completed`; its Gradle log later
+  contained `BUILD SUCCESSFUL`, but no accepted completed-test result exists.
+- The emulator was stopped after the timeout. No rerun or production change
+  was made.
+
+Evidence and limits:
+
+- Case 6 remains red/timeout for acceptance purposes. Installed production Home
+  exercise, exact settings restoration exercise, broad checks, review, commit,
+  and post-commit authority sync were not performed.
+- The active plan records the timeout and selects a future case-6 investigation
+  before any retry. The connected budget for this bounded attempt is closed.
+
+### 2026-09-12-slice-30b2-runner-finalization-repair
+
+Status: implemented; connected reruns prohibited
+
+Result:
+
+- Corrected `run-connected-method.sh` to require fresh matching XML, test log,
+  and AGP textproto terminal evidence, then accept the result before allowing a
+  five-second Gradle grace period and cleaning up only its own process group.
+  Accepted results return `pass-after-runner-cleanup` when cleanup was needed.
+- Retained case 4 and case 6 evidence remains authoritative: both methods passed
+  at the Android instrumentation boundary. Case 6's prior 137 was a false
+  wrapper timeout after completion, not a product or fixture failure.
+
+Evidence and limits:
+
+- Fresh ledger: `.codex/test-artifacts/2026-09-12-slice-30b2-runner-finalization-repair/`.
+- `sh -n scripts/run-connected-method.sh` and `git diff --check` passed.
+- No connected rerun, installed Home journey, broad checks, or commit was done;
+  those remain the next Slice 30B2 action.
+
+### 2026-09-12-gate-30b3-home-environment-evidence-doc-sync
+
+Status: committed
+Mode: bounded Home evidence/documentation sync
+Slice: Gate 30B3, Home Environment Evidence and Documentation Sync
+Commits: Slice 30B2 `728f4c2`; this documentation sync
+
+Result:
+
+- Reconciled retained RTL compact/install evidence with six retained 30B2
+  focused Android results. The 30B2 matrix covers every implemented
+  theme/contrast pair at 360x640 dp and font scale 1.3; every selected method
+  has one completed test, zero skipped, and zero failed instrumentation output.
+  Case 6's prior 137 was a false wrapper timeout after matching passing XML,
+  test log, and textproto evidence; the repaired runner's isolated fixture
+  accepted the same terminal-evidence shape and returned
+  `pass-after-runner-cleanup`.
+- Installed the debug APK once on API-37 `oxygen_starter`, chose Chicago through
+  the production manual Open-Meteo path, set all Android animation scales to
+  zero, and force-stopped/relaunched. Appearance was effectively Off while the
+  saved Subtle choice remained selected; Standard Now, Hourly, Daily, and
+  Details retained page identity, weather, source/update/provenance, and their
+  visible navigation. Original scales and saved appearance were restored before
+  stopping the emulator.
+
+Evidence and limits:
+
+- Artifacts are under
+  `.codex/test-artifacts/2026-09-12-slice-30b2-reduced-motion-appearance-invariance/`,
+  `.codex/test-artifacts/2026-09-12-slice-30b2-runner-finalization-repair/`,
+  and the retained Gate 30B1B1 directory.
+- `sh -n scripts/run-connected-method.sh`, the isolated runner fixture,
+  Android-test compilation, `:app:compileDebugKotlin`, app/core debug unit
+  tests, `:app:assembleDebug`, and `git diff --check` passed. No connected case
+  was rerun after runner repair.
+- TalkBack service traversal, Simple installed RTL, localization, live-alert
+  success, alert accessibility, and release checks remain outside this gate.

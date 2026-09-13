@@ -1695,6 +1695,18 @@ RTL, reduced-motion invariance, theme/contrast invariance, alerts,
 localization, a complete large-font matrix, release readiness, or MVP
 completion.
 
+Slice 30B2 then retained six selected one-method Android results spanning all
+implemented Oxygen/Paper/Terminal and Standard/High theme/contrast pairs at
+the 360x640 dp, font-scale-1.3 full-weather fixture boundary. They prove
+Effects-Off/effective-Off Home meaning, navigation, and the selected
+no-preference-write/no-refetch contracts. The API-37 installed production
+Chicago journey set Android animation scales to zero, force-stopped/relaunched,
+and retained Standard Now, Hourly, Daily, and Details plus visible live weather
+and source/update/provenance while Appearance was effectively Off. It restored
+the original scales and saved appearance before the emulator stopped. This is
+not service-level TalkBack evidence, a live-alert success claim, Simple
+installed RTL evidence, localization, or a complete font/theme cross-product.
+
 ### Contract fixtures
 
 Store provider samples under:
@@ -2114,6 +2126,15 @@ Device direction was restored and verified after the journey. This does not
 claim TalkBack service traversal, Simple installed RTL evidence, reduced
 motion, theme/contrast invariance, alert accessibility, localization, or later
 Gate 30 conditions.
+
+Slice 30B2, Home Reduced-Motion and Appearance Invariance, is committed at
+`728f4c2`. Its six retained focused Android results cover the implemented
+theme/contrast pairs under explicit or effective Effects Off. The installed
+manual Chicago journey exercised Android disabled-animation effective Off
+through Standard Now, Hourly, Daily, and Details and restored the original
+system scales and saved appearance. Gate 30B3 records the combined RTL and
+Home-environment evidence without upgrading TalkBack, live-alert, Simple
+installed RTL, localization, or release claims.
 
 ---
 

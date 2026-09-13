@@ -1,87 +1,75 @@
-# Gate 30B1B1 — RTL Installed Evidence and Documentation Sync
+# Gate 30B3 — Home Environment Evidence and Documentation Sync
 
 **Status:** committed
-**Cycle ID:** `2026-09-12-gate-30b1b1-rtl-installed-evidence-doc-sync`
-**Prerequisites:** Slice 30B1A4's Standard boundary at `8b5647b` and its
-Simple boundary verified in
-`.codex/test-artifacts/2026-09-12-slice-30b1a4-a7-simple-rtl-compact-completion/`.
-**Mode:** bounded installed RTL evidence and documentation-sync gate
+**Cycle ID:** `2026-09-12-gate-30b3-home-environment-evidence-doc-sync`
+**Prerequisites:** Gate 30B1B1 (`e1c15e6`) and Slice 30B2 (`728f4c2`).
+**Mode:** required third-cycle test-only and documentation-sync gate; no
+production behavior change
 
 ## Selected behavior and acceptance boundary
 
-On one installed Android journey with device-wide RTL temporarily enabled, the
-installed Home surface must retain the already-covered Home meaning and
-navigation through the selected minimum flow. Capture the required screenshots
-and UI hierarchies, restore the prior device direction, and reconcile project
-authorities only to the retained evidence.
+Reconcile the retained RTL and reduced-motion/appearance Home evidence without
+rerunning whole Android test classes or changing production code. The gate is
+closed only for the supported combination of deterministic and installed
+evidence; it does not claim TalkBack service traversal or untested
+cross-products.
 
-## Contract and scope
+## Retained evidence
 
-This third-cycle closure gate owns the minimum combined focused filter, one
-installed RTL Home journey, visual and hierarchy evidence, restoration of
-device direction, and the resulting documentation sync for 30B1. It must not
-alter Kotlin, Compose, providers, persistence, resources, manifests, or
-dependencies.
+- RTL: the two 30B1A4 compact/no-refetch methods each completed once with one
+  test, zero skipped, and zero failed. The installed API-37 `ldrtl` Standard
+  Home journey used a real manual Chicago selection and retained Now, Hourly,
+  Daily, and Details titles/positions, mirrored controls, screenshots, and UI
+  hierarchies. Device direction was restored.
+- Reduced motion and appearance: six selected 30B2 methods cover all
+  Oxygen/Paper/Terminal and Standard/High pairs at the deterministic 360x640
+  dp, font-scale-1.3 fixture boundary. Each has accepted one-test, zero-skipped,
+  zero-failed Android instrumentation evidence. Case 6's original wrapper
+  timeout followed completed matching XML, instrumentation-log, and textproto
+  results; `run-connected-method.sh` now accepts that terminal evidence before
+  bounded cleanup, and its isolated ADB-preflight fixture passed
+  `pass-after-runner-cleanup`.
+- The installed API-37 disabled-animation journey used a production manual
+  Chicago Open-Meteo selection. All three Android animation scales were zeroed,
+  the app was force-stopped/relaunched, Appearance reported effective Off while
+  the saved Subtle choice remained selected, and Standard Now, Hourly, Daily,
+  and Details were captured with page identity, live weather, and
+  source/update/provenance. The original scale values and saved appearance were
+  restored before the emulator stopped.
 
-The A4 Simple boundary is verified: its one bounded method completed with one
-test, zero skipped, and zero failed. Its recovery preflight, runner result,
-and ledger are retained under
-`.codex/test-artifacts/2026-09-12-slice-30b1a4-a7-simple-rtl-compact-completion/`.
+Artifacts are retained below:
 
-## Completed evidence
-
-The retained focused filter is the two already-passing 30B1A4 methods; it was
-not rerun because no source or execution-environment change occurred after the
-A6 compile/unit/assembly evidence and the A7 Simple result. This follows the
-selected minimum-evidence budget rather than spending further connected-test
-capacity.
-
-One `oxygen_starter` API-37 emulator journey used the installed debug APK and
-a real manual Open-Meteo location selection for Chicago, Illinois. Device-wide
-RTL was confirmed as `ldrtl` by temporarily selecting `ar-SA` and enabling the
-Android RTL flag, then restarting the activity. The installed Standard Home
-journey retained Now, Hourly, Daily, and Details in semantic order; the
-mirrored selector was `Details`, `Daily`, `Hourly`, `Now` from left to right.
-Each page preserved its page title/position and Home content in the captured UI
-hierarchy.
-
-- Screenshots: `rtl-home-now-device-wide.png`,
-  `rtl-home-hourly-device-wide.png`, `rtl-home-daily-device-wide.png`, and
-  `rtl-home-details-device-wide.png`.
-- UI hierarchies: the matching `*.xml` files in
-  `.codex/test-artifacts/2026-09-12-gate-30b1b1-rtl-installed-evidence-doc-sync/`.
-- Device-direction evidence: `device-direction-before.txt`,
-  `device-direction-method.txt`, and
-  `restoration-emulator/restoration-verified.txt`. The latter confirms the
-  original `en-US`, no global `debug.force_rtl` setting, false RTL property,
-  and `ldltr` configuration after restoration.
-
-The initial direct setting write did not update Android's active configuration
-(`ldltr`), so its launch/location captures are retained only as diagnostic
-records and are not RTL acceptance evidence. Restarting the no-data-wipe
-emulator once was required to apply and verify the restored direction; it was
-then stopped.
+- `.codex/test-artifacts/2026-09-12-gate-30b1b1-rtl-installed-evidence-doc-sync/`
+- `.codex/test-artifacts/2026-09-12-slice-30b2-reduced-motion-appearance-invariance/`
+- `.codex/test-artifacts/2026-09-12-slice-30b2-runner-finalization-repair/`
 
 ## Verification ledger
 
-- Reused: A6 `:app:compileDebugKotlin`, app/core unit tests, and
-  `:app:assembleDebug`; A7's one passing Simple method. No source or relevant
-  environment changed.
-- Ran: emulator health preflight, debug APK install, real selected-location
-  Home journey, four screenshot/UI-hierarchy captures, device-direction
-  restoration/verification, `git diff --check`, and tracking-document review.
-- Skipped: all Gradle compile/unit/assembly and connected-test reruns (reused
-  evidence); TalkBack, Simple installed journey, font-scale-2.0, reduced
-  motion, appearance matrix, alerts, localization, and release checks (outside
-  this gate).
+- Focused Android evidence: retained selected RTL results and six selected 30B2
+  results; no connected case was rerun after runner repair.
+- Final source checks: `sh -n scripts/run-connected-method.sh`, the isolated
+  runner fixture, `:app:compileDebugAndroidTestKotlin`,
+  `:app:compileDebugKotlin`, app/core debug unit tests, `:app:assembleDebug`,
+  and `git diff --check` passed.
+- Installed evidence: one recovered `oxygen_starter` API-37 session, APK
+  install, real manual Chicago forecast path, effective-Off Appearance check,
+  four Standard Home captures, and restoration of system animation scales and
+  saved appearance.
 
-## Next action
+## Documentation sync
 
-Select the separately specified Slice 30B2; do not imply its reduced-motion
-or appearance-invariance behavior from this RTL gate.
+README and specification sections 46 and 53 distinguish deterministic
+theme/contrast evidence from the installed disabled-animation journey. The
+roadmap, live history, and this plan identify Gate 30B3 as committed and leave
+Slice 30C1 as the next specified candidate.
 
 ## Out of scope
 
-New production behavior, additional RTL implementation slices, TalkBack service
-traversal, font-scale-2.0 work, reduced motion, appearance matrices,
-localization, alerts, and release readiness.
+TalkBack service traversal/pronunciation, Simple installed RTL, full
+theme/contrast or font-scale cross-products, localization, official-alert
+accessibility, new preferences, provider/cache behavior, and release readiness.
+
+## Next action
+
+Select the separately specified Slice 30C1; do not infer its official-alert
+summary accessibility behavior from this Home-only gate.

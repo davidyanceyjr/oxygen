@@ -30,8 +30,10 @@ navigation contract, 30B1A2 is committed at `20b6ddc`, and 30B1A3A1 is
 committed at `74675e2`. The former 30B1A3 draft is decomposed into
 independently observable sub-slices; `30B1A3A2` is committed at `9390601`,
 `30B1A3A3` is committed at `91974b2`, `30B1A3B1` is committed at `26b32b8`,
-`30B1A4` has verified Standard and Simple boundaries, and Gate 30B1B1 is
-committed as the RTL evidence/documentation closure:
+`30B1A4` has verified Standard and Simple boundaries, Gate 30B1B1 is committed
+as the RTL evidence/documentation closure, Slice 30B2 is committed at
+`728f4c2`, and Gate 30B3 is committed as the Home-environment evidence and
+documentation closure:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -609,7 +611,7 @@ Out of scope:
 
 ### Gate 30B3: Home Environment Evidence and Document Sync
 
-Status: specified
+Status: committed
 
 Prerequisites: Gate 30B1B1 and Slice 30B2.
 

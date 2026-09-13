@@ -65,9 +65,13 @@ and `docs/data-sources/`.
   honest missing-value/precipitation semantics. Retained evidence covers
   Standard Now, Hourly, Daily, and Details plus Simple Forecast choices at
   360x640 dp and font scale 1.3 with Effects Off. An installed device-wide RTL
-  Standard Home journey retains Now through Details and mirrored controls;
-  TalkBack traversal, Simple installed RTL evidence, and the later
-  reduced-motion/appearance matrix are not yet verified.
+  Standard Home journey retains Now through Details and mirrored controls. The
+  retained six-case 30B2 fixture matrix covers every implemented
+  theme/contrast pair with explicit or effective Effects Off; its installed
+  production Chicago journey confirms Android disabled-animation effective Off
+  through Standard Now, Hourly, Daily, and Details while retaining live
+  weather and source/update/provenance. TalkBack traversal, Simple installed
+  RTL evidence, localization, and alert accessibility remain unverified.
 - Home presentation conversion for provider-neutral unit preferences at the
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
