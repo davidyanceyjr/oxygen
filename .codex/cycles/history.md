@@ -402,3 +402,41 @@ Installed result and limits:
 
 Commit state: committed; the post-commit README, specification section 53,
 roadmap, active plan, and this history entry are synchronized to the evidence.
+
+### 2026-09-13-slice-30c2-official-alert-detail-accessibility
+
+Status: committed
+Mode: bounded official-alert detail accessibility acceptance coverage
+Slice: Slice 30C2, Official-Alert Detail Accessibility
+Commit: `70304b8`
+
+Result:
+
+- Strengthened the existing rendered detail fixture with logical route order,
+  selector/source/Back target-size checks, and preserved verbatim text/action
+  behavior. Added one `OxygenApp` RTL/font-scale-2.0, High-contrast, Effects-Off
+  long-content case covering event, severity, issuer, area, description,
+  instructions, source action, selection, return, and no-refetch.
+- No production code or provider behavior changed.
+
+Evidence:
+
+- Focused mapper/state-holder unit methods passed; Android-test compilation
+  passed. The three named connected methods each passed with 1 completed,
+  0 skipped, and 0 failed on one API-37 `oxygen_starter` session. An initial
+  ambiguous-text/fixture/helper test failure was corrected in test code and
+  rerun after the relevant source changes.
+- Broad `:app:compileDebugKotlin`, app/core debug unit tests, `:app:assembleDebug`,
+  and `git diff --check` passed. Artifacts are under
+  `.codex/test-artifacts/2026-09-13-slice-30c2-official-alert-detail-accessibility/`.
+
+Installed result and limits:
+
+- Manual Chicago search and selection completed through the production
+  Open-Meteo path after one debug APK install. The resulting Home had weather
+  data but no active-alert summary/detail action; no alert data was seeded.
+- Alert transport/cache/background work, notifications, TalkBack, localization,
+  and release checks remain outside this slice.
+
+Commit state: committed; the post-commit README, specification, roadmap, and
+active-plan synchronization is pending in the following documentation commit.

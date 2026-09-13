@@ -2146,6 +2146,15 @@ Home, so live-alert summary/detail-entry evidence is unavailable. Full alert
 detail reading accessibility, TalkBack service traversal, localization, and
 release readiness remain unverified and are not implied by this slice.
 
+Slice 30C2, Official-Alert Detail Accessibility, is committed at `70304b8`.
+Its deterministic Compose boundary covers complete verbatim detail content,
+logical reading reachability, meaningful selected/unselected alert semantics,
+validated source action, 48dp controls, Home return without refetch, and long
+content at RTL/font scale 2.0 with High contrast and Effects Off. The installed
+manual Chicago selection again returned a truthful no-alert Home, so no live
+detail journey is claimed. Alert persistence/background work, TalkBack service
+traversal, localization, and release readiness remain unverified.
+
 ---
 
 ## 54. Source Documentation Starting Points

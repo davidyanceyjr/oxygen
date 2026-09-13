@@ -1,89 +1,61 @@
-# Slice 30C2 — Official-Alert Detail Accessibility
+# Gate 30C3 — Alert Accessibility Evidence and Documentation Sync
 
 **Status:** planned
-**Cycle ID:** `2026-09-13-slice-30c2-official-alert-detail-accessibility`
-**Prerequisite:** Slice 30C1, committed at `4ffc507`.
+**Cycle ID:** `2026-09-13-gate-30c3-alert-accessibility-evidence-doc-sync`
+**Prerequisites:** Slice 30C1 at `4ffc507` and Slice 30C2 at `70304b8`.
 
 ## Selected behavior and acceptance boundary
 
-Make the existing Home official-alert detail route a complete, logically
-ordered, scrollable reading surface. For an available alert, the installed
-detail screen must expose event, explicit severity, issuer, effective time,
-expiry, affected area, official description and instructions without
-paraphrase, source-check time, attribution, and the validated official-source
-action. Multiple-alert selection, Back, and source actions must be meaningful,
-selected where applicable, and at least 48dp. Return to Home must preserve the
-same forecast/alert state and request count.
+Close the alert accessibility evidence gate as a test-only and documentation-
+sync session. Reconcile the committed deterministic Home summary and detail
+boundaries: required non-color semantics, validated actions, 48dp targets,
+selection and return state, no-refetch behavior, compact/large-font LTR/RTL,
+Effects Off, and High contrast. Record the installed real-alert availability
+truthfully. No production behavior changes are authorized in this gate.
 
-The deterministic boundary owns detail rendering and interaction. A live NWS
-alert is not a fixture; the installed attempt is observational and must report
-truthful no-alert availability.
+## Evidence to reuse and verify
 
-## Implementation limits
+- Slice 30C1's four passing named summary cases and its installed Chicago
+  no-alert result under `.codex/test-artifacts/2026-09-12-slice-30c1-official-alert-summary-accessibility/`.
+- Slice 30C2's three passing named detail cases and its installed Chicago
+  no-alert result under `.codex/test-artifacts/2026-09-13-slice-30c2-official-alert-detail-accessibility/`.
 
-- Preserve `WeatherAlert`, `AlertLookupStatus`, NWS routing, validated source
-  URLs, official text, cache policy, canonical weather, and the existing
-  summary route.
-- Do not parse display strings into data, abbreviate critical instructions, or
-  add a second alert model/selection state machine.
-- Start with the existing `AlertDetailScreen.kt`; change only the smallest
-  demonstrated detail rendering/semantics defect. Do not reopen C1 summary
-  behavior, provider transport, persistence, notifications, or Settings.
+Do not rerun passing connected cases unless source or execution environment
+changes. If a retained artifact is incomplete or a focused production failure
+is found, stop documentation sync and select a separately named repair slice.
 
-## Planned focused tests
+## Required documentation updates
 
-Add or extend deterministic fixtures in
-`app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`:
+Review the committed behavior and synchronize only factual status in:
 
-1. One complete detail document case at 360x640, font 1.3, LTR, Effects Off:
-   reading order, every required field, exact multiline text, source action,
-   Back, and 48dp targets.
-2. Multiple-alert selection case: selected state, distinct event/issuer/text,
-   source URI, and return behavior.
-3. Long detail-content case at font 2.0, RTL, Effects Off, and High contrast:
-   event/area/description/instructions remain scroll-reachable and controls
-   remain usable without overlap.
-4. No-alert/unavailable detail guard case: no fabricated document and Home
-   summary remains truthful.
+- `README.md` — summary and detail deterministic coverage, installed no-alert
+  limit, and remaining TalkBack/localization/release limits;
+- `docs/OXYGEN_FULL_SPECIFICATION.md` — Gate 30 implementation-status narrative;
+- `.codex/plans/mvp-roadmap.md` — 30C1/30C2 committed references and Gate 30C3
+  completion state;
+- `.codex/cycles/history.md` — one self-contained gate entry with reused
+  evidence, artifacts, limits, and commit state;
+- this file — select the next specified candidate only after review.
 
-Run affected unit methods before connected tests. Use no more than six named
-connected cases and `run-connected-method.sh`; do not run the historical Home
-class. Use one emulator session and retain screenshots, semantics/UI
-hierarchies, exact results, and rerun decisions under:
+Do not modify provider contracts, production source, alert transport/cache,
+notifications, or release claims.
 
-`.codex/test-artifacts/2026-09-13-slice-30c2-official-alert-detail-accessibility/`
+## Verification and review
 
-## Verification commands
+Run only checks affected by the documentation changes, plus a final repository
+consistency check:
 
 ```text
-sh -n scripts/run-connected-method.sh
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests 'com.oxygen.weather.app.HomeForecastPresentationMapperTest' --tests 'com.oxygen.weather.app.HomeForecastStateHolderTest'
-. scripts/android-env.sh && ./gradlew :app:compileDebugAndroidTestKotlin
-. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
-. scripts/android-env.sh && ./gradlew :app:assembleDebug
 git diff --check
+git status --short
 ```
 
-After focused green, install the debug APK once per APK change and attempt a
-real manual location. If no alert is live, record the no-alert result and do
-not seed installed alert data. Restore any changed device settings.
-
-## Intended files and out of scope
-
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/alerts/AlertDetailScreen.kt`
-  only if a red rendered boundary requires it;
-- `app/src/test/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapperTest.kt`
-  and `HomeForecastStateHolderTest.kt` only for missing detail contract seams;
-- `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
-  for the named rendered boundaries.
-
-Out of scope: alert transport, cache/persistence, background polling,
-notifications, additional providers, summary changes, appearance redesign,
-localization, service-level TalkBack traversal, and release readiness.
+Confirm every cited command and artifact exists, no status claims exceed the
+retained evidence, the prior untracked archive remains untouched, and the
+documentation commit has a descriptive subject and evidence/limits body.
 
 ## Next action
 
-Inspect the existing detail tests and capture a 360x640/font-scale-1.3/
-Effects-Off baseline screenshot and semantics tree before adding the first
-missing detail-reading boundary.
+Audit the 30C1 and 30C2 artifact ledgers and the four synchronized documents,
+then commit this gate's documentation-only reconciliation after `git diff
+--check` passes.

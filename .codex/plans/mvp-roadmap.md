@@ -6,7 +6,7 @@ Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
 Revised: 2026-09-13
 Reconciled against local `origin/main` ref: `82cf281`
-Synchronized through Slice 30C1 implementation `4ffc507`; prior baseline
+Synchronized through Slice 30C2 implementation `70304b8`; prior baseline
 roadmap synchronization remains recorded through Slice 30B1A3B1 implementation
 `26b32b8`, Slice 29B implementation
 `441d05d`, test follow-up `86e696c`, and evidence sync `86f046b`.
@@ -35,8 +35,9 @@ independently observable sub-slices; `30B1A3A2` is committed at `9390601`,
 as the RTL evidence/documentation closure, Slice 30B2 is committed at
 `728f4c2`, Gate 30B3 is committed as the Home-environment evidence and
 documentation closure, and Slice 30C1 is committed at `4ffc507` as the
-deterministic official-alert summary accessibility boundary. Slice 30C2 is the
-next candidate:
+deterministic official-alert summary accessibility boundary. Slice 30C2 is
+committed at `70304b8` as the deterministic official-alert detail accessibility
+boundary. Gate 30C3 is the next candidate:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -676,7 +677,7 @@ work, notifications, additional national providers, and TalkBack traversal.
 
 ### Slice 30C2: Official-Alert Detail Accessibility
 
-Status: specified; next candidate after Slice 30C1
+Status: committed at `70304b8`
 
 Prerequisite: Slice 30C1.
 
@@ -698,6 +699,12 @@ Must prove:
 Focused evidence: no more than six named deterministic connected cases using
 official fixtures plus one installed navigation/return journey only when a real
 alert is available. Do not make live NWS calls part of deterministic tests.
+
+Implemented as a test-only boundary: three named connected cases passed on one
+API-37 emulator, including the new RTL/font-scale-2.0/High-contrast long-content
+case. The installed Chicago attempt returned truthful no-alert Home, so live
+detail evidence is unavailable. Artifacts are under
+`.codex/test-artifacts/2026-09-13-slice-30c2-official-alert-detail-accessibility/`.
 
 Out of scope: summary behavior already owned by 30C1, alert persistence,
 background polling, notifications, provider transport, and release readiness.
