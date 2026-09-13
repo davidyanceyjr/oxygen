@@ -2,7 +2,6 @@ package com.oxygen.weather.app.ui.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -255,7 +255,10 @@ private fun AppearanceSummary(
         )
         AppearanceValue(stringResource(R.string.settings_theme), themeId.displayName)
         if (themePreference.isManaged) {
-            Text(stringResource(R.string.settings_theme))
+            PreferenceHeading(
+                text = stringResource(R.string.settings_theme),
+                modifier = Modifier.testTag("settings-theme-heading"),
+            )
             val themeChoicesEnabled = themePreference.readState == ThemePreferenceReadState.Loaded &&
                 themePreference.pending == null &&
                 !themePreference.writeError
@@ -336,7 +339,10 @@ private fun AppearanceSummary(
         }
         AppearanceValue(stringResource(R.string.settings_contrast), contrast.displayName())
         if (contrastPreference.isManaged) {
-            Text(stringResource(R.string.settings_contrast))
+            PreferenceHeading(
+                text = stringResource(R.string.settings_contrast),
+                modifier = Modifier.testTag("settings-contrast-heading"),
+            )
             val contrastChoicesEnabled = contrastPreference.readState == ContrastPreferenceReadState.Loaded &&
                 contrastPreference.pending == null &&
                 !contrastPreference.writeError
@@ -410,7 +416,13 @@ private fun AppearanceSummary(
         }
         AppearanceValue(stringResource(R.string.settings_layout), stringResource(R.string.settings_layout_summary, layout.displayName()))
         AppearanceValue(stringResource(R.string.settings_effects), effects.displayName())
-        Text(stringResource(R.string.settings_layout_mode))
+        PreferenceHeading(
+            text = stringResource(R.string.settings_layout_mode),
+            modifier = Modifier.testTag("settings-layout-heading"),
+        )
+        val layoutChoicesEnabled = layoutPreference.readState == LayoutPreferenceReadState.Loaded &&
+            layoutPreference.pending == null &&
+            !layoutPreference.writeError
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -419,7 +431,7 @@ private fun AppearanceSummary(
                 label = stringResource(R.string.layout_simple),
                 preset = LayoutPreset.SIMPLE,
                 selected = layout == LayoutPreset.SIMPLE,
-                enabled = layoutPreference.pending == null,
+                enabled = layoutChoicesEnabled,
                 onClick = { onLayoutSelected(LayoutPreset.SIMPLE) },
                 modifier = Modifier.weight(1f),
             )
@@ -427,7 +439,7 @@ private fun AppearanceSummary(
                 label = stringResource(R.string.layout_standard),
                 preset = LayoutPreset.STANDARD,
                 selected = layout == LayoutPreset.STANDARD,
-                enabled = layoutPreference.pending == null,
+                enabled = layoutChoicesEnabled,
                 onClick = { onLayoutSelected(LayoutPreset.STANDARD) },
                 modifier = Modifier.weight(1f),
             )
@@ -485,7 +497,12 @@ private fun AppearanceSummary(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
             )
         }
-        Text(stringResource(R.string.settings_effects_mode))
+        PreferenceHeading(
+            text = stringResource(R.string.settings_effects_mode),
+            modifier = Modifier.testTag("settings-effects-heading"),
+        )
+        val effectsChoicesEnabled = preference.readState == EffectsPreferenceReadState.Loaded &&
+            preference.pending == null
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -493,25 +510,31 @@ private fun AppearanceSummary(
             EffectsChoice(
                 label = stringResource(R.string.effects_off),
                 level = EffectsLevel.OFF,
-                selected = preference.selectedForUi == EffectsLevel.OFF,
-                enabled = preference.pending == null,
+                selected = preference.confirmed == EffectsLevel.OFF,
+                enabled = effectsChoicesEnabled,
                 onClick = { onEffectsSelected(EffectsLevel.OFF) },
                 modifier = Modifier.weight(1f),
             )
             EffectsChoice(
                 label = stringResource(R.string.effects_subtle),
                 level = EffectsLevel.SUBTLE,
-                selected = preference.selectedForUi == EffectsLevel.SUBTLE,
-                enabled = preference.pending == null,
+                selected = preference.confirmed == EffectsLevel.SUBTLE,
+                enabled = effectsChoicesEnabled,
                 onClick = { onEffectsSelected(EffectsLevel.SUBTLE) },
                 modifier = Modifier.weight(1f),
             )
         }
         when {
             preference.readState == EffectsPreferenceReadState.Loading ->
-                Text(stringResource(R.string.effects_restoring))
+                Text(
+                    text = stringResource(R.string.effects_restoring),
+                    modifier = Modifier.testTag("effects_preference_loading"),
+                )
             preference.readState == EffectsPreferenceReadState.Failed -> {
-                Text(stringResource(R.string.effects_read_failed))
+                Text(
+                    text = stringResource(R.string.effects_read_failed),
+                    modifier = Modifier.testTag("effects_preference_error"),
+                )
                 OutlinedButton(
                     onClick = onRetry,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("settings-effects-retry"),
@@ -519,13 +542,35 @@ private fun AppearanceSummary(
                     Text(stringResource(R.string.preference_retry))
                 }
             }
-            preference.pending != null -> Text(stringResource(R.string.preference_saving, preference.pending.displayName()))
-            preference.writeError -> Text(stringResource(R.string.effects_save_failed))
+            preference.pending != null -> Text(
+                text = stringResource(R.string.preference_saving, preference.pending.displayName()),
+                modifier = Modifier.testTag("effects_preference_loading"),
+            )
+            preference.writeError -> Text(
+                text = stringResource(R.string.effects_save_failed),
+                modifier = Modifier.testTag("effects_preference_error"),
+            )
             !animationsEnabled && preference.confirmed != null && preference.confirmed != EffectsLevel.OFF ->
                 Text(stringResource(R.string.effects_android_disabled))
-            else -> Text(stringResource(R.string.effects_saved))
+            else -> Text(
+                text = stringResource(R.string.effects_saved),
+                modifier = Modifier.testTag("effects_preference_saved"),
+            )
         }
     }
+}
+
+@Composable
+private fun PreferenceHeading(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { heading() },
+    )
 }
 
 @Composable
@@ -545,6 +590,7 @@ private fun ThemeChoice(
             .fillMaxWidth()
             .requiredHeight(48.dp)
             .semantics {
+                role = Role.RadioButton
                 this.selected = selected
                 if (!enabled) disabled()
             }
@@ -569,6 +615,7 @@ private fun ContrastChoice(
             .fillMaxWidth()
             .requiredHeight(48.dp)
             .semantics {
+                role = Role.RadioButton
                 this.selected = selected
                 if (!enabled) disabled()
             }
@@ -593,6 +640,7 @@ private fun LayoutChoice(
         modifier = modifier
             .requiredHeight(48.dp)
             .semantics {
+                role = Role.RadioButton
                 this.selected = selected
                 if (!enabled) disabled()
             }
@@ -609,20 +657,20 @@ private fun EffectsChoice(
     onClick: () -> Unit,
     modifier: Modifier,
 ) {
-    Box(
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        enabled = enabled,
+        label = { Text(label) },
         modifier = modifier
-            .height(48.dp)
-            .semantics { this.selected = selected }
+            .requiredHeight(48.dp)
+            .semantics {
+                role = Role.RadioButton
+                this.selected = selected
+                if (!enabled) disabled()
+            }
             .testTag("settings-effects-${level.name.lowercase()}"),
-    ) {
-        FilterChip(
-            selected = selected,
-            onClick = onClick,
-            enabled = enabled,
-            label = { Text(label) },
-            modifier = Modifier.requiredHeight(48.dp),
-        )
-    }
+    )
 }
 
 @Composable

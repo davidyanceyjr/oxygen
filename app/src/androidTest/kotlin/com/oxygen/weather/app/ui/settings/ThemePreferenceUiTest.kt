@@ -50,7 +50,7 @@ class ThemePreferenceUiTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun choicesCommitWithoutForecastRefetchAndUseConfirmedSelection() {
+    fun themePreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry() {
         val location = themeUiFixtureLocation("commit")
         val repository = ThemeUiRecordingRepository(location)
         val executor = ThemeUiControlledExecutor()
