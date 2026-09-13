@@ -63,6 +63,12 @@ import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.app.OxygenApp
 import com.oxygen.weather.app.OxygenAppScreen
 import com.oxygen.weather.app.OxygenAppStateHolder
+import com.oxygen.weather.app.EffectsPreferenceStorage
+import com.oxygen.weather.app.ThemePreferenceStorage
+import com.oxygen.weather.app.ThemePreferenceReadResult
+import com.oxygen.weather.app.ContrastPreferenceStorage
+import com.oxygen.weather.app.ContrastPreferenceReadResult
+import com.oxygen.weather.app.MotionPreferenceSource
 import com.oxygen.weather.app.DeviceLocationProgress
 import com.oxygen.weather.app.DeviceLocationSource
 import com.oxygen.weather.app.DeviceLocationResult
@@ -221,9 +227,7 @@ class HomeDashboardUiTest {
         val repository = RecordingWeatherRepository(
             listOf(
                 WeatherRepositoryResult.Success(
-                    weather = fullWeatherBundle(location).copy(
-                        alerts = listOf(fullWeatherBundle(location).alerts.single().copy(severity = AlertSeverity.SEVERE)),
-                    ),
+                    weather = fullWeatherBundle(location),
                     freshness = ForecastFreshness.StaleAfterFailedRefresh(
                         staleAge = Duration.ofMinutes(45),
                         refreshFailure = ForecastError.NetworkUnavailable,
@@ -461,7 +465,9 @@ class HomeDashboardUiTest {
         val repository = RecordingWeatherRepository(
             listOf(
                 WeatherRepositoryResult.Success(
-                    weather = fullWeatherBundle(location),
+                    weather = fullWeatherBundle(location).copy(
+                        alerts = listOf(fullWeatherBundle(location).alerts.single().copy(severity = AlertSeverity.SEVERE)),
+                    ),
                     freshness = ForecastFreshness.StaleAfterFailedRefresh(
                         staleAge = Duration.ofMinutes(45),
                         refreshFailure = ForecastError.NetworkUnavailable,
@@ -1274,6 +1280,103 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
         composeRule.writeSemanticsArtifact("terminal-standard-effects-off-semantics.txt")
         composeRule.writeScreenshotArtifact("terminal-standard-effects-off.png")
+    }
+
+    @Test
+    fun paperHighContrastDisabledMotionPreservesHomeMeaning() {
+        disabledMotionManagedHomePreservesMeaning(OxygenThemeId.PAPER, ContrastLevel.HIGH)
+    }
+
+    @Test
+    fun terminalHighContrastDisabledMotionPreservesHomeMeaning() {
+        disabledMotionManagedHomePreservesMeaning(OxygenThemeId.TERMINAL, ContrastLevel.HIGH)
+    }
+
+    private fun disabledMotionManagedHomePreservesMeaning(
+        theme: OxygenThemeId,
+        contrast: ContrastLevel,
+    ) {
+        val location = weatherLocation(
+            name = "A Very Long Managed $theme High Contrast Location Name Near The Lakefront, Wisconsin, United States",
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location).copy(
+                        alerts = listOf(
+                            fullWeatherBundle(location).alerts.single().copy(severity = AlertSeverity.SEVERE),
+                        ),
+                    ),
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(
+                            requestPoint = location.point,
+                            providerId = "nws",
+                            fetchedAt = Instant.parse("2026-08-22T15:05:00Z"),
+                        ),
+                    ),
+                    freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                        staleAge = Duration.ofMinutes(45),
+                        refreshFailure = ForecastError.NetworkUnavailable,
+                    ),
+                ),
+            ),
+        )
+        val effectsWrites = mutableListOf<EffectsLevel>()
+        val themeWrites = mutableListOf<OxygenThemeId>()
+        val contrastWrites = mutableListOf<ContrastLevel>()
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            effectsPreferenceStorage = object : EffectsPreferenceStorage {
+                override fun readEffectsPreference() = EffectsLevel.SUBTLE
+                override fun writeEffectsPreference(effects: EffectsLevel) { effectsWrites += effects }
+            },
+            themePreferenceStorage = object : ThemePreferenceStorage {
+                override fun readThemePreference() = ThemePreferenceReadResult.Supported(theme)
+                override fun writeThemePreference(value: OxygenThemeId) { themeWrites += value }
+            },
+            contrastPreferenceStorage = object : ContrastPreferenceStorage {
+                override fun readContrastPreference() = ContrastPreferenceReadResult.Supported(contrast)
+                override fun writeContrastPreference(value: ContrastLevel) { contrastWrites += value }
+            },
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1.3f)) {
+                Box(Modifier.width(360.dp).height(640.dp)) {
+                    OxygenApp(
+                        stateHolder = holder,
+                        appearance = OxygenAppearance(theme = theme, contrast = contrast),
+                        motionPreferenceSource = MotionPreferenceSource { false },
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val requests = repository.locations.toList()
+        assertEquals(listOf(location), requests)
+        assertEquals(theme, holder.presentationState.theme)
+        assertEquals(contrast, holder.presentationState.contrast)
+        assertEquals(EffectsLevel.SUBTLE, holder.presentationState.effectsPreference.confirmed)
+        assertEquals(emptyList<EffectsLevel>(), effectsWrites)
+        assertEquals(emptyList<OxygenThemeId>(), themeWrites)
+        assertEquals(emptyList<ContrastLevel>(), contrastWrites)
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithText("65 deg F").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Severity: Severe").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.")
+            .performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
+        assertEquals(requests, repository.locations)
+        composeRule.writeSemanticsArtifact("${theme.name.lowercase()}-high-disabled-motion-semantics.txt")
     }
 
     @Test

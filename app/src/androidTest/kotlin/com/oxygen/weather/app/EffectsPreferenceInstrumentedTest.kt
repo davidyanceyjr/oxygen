@@ -50,10 +50,12 @@ class EffectsPreferenceInstrumentedTest {
         instrumentation.uiAutomation.executeShellCommand("settings put global animator_duration_scale 0").close()
 
         val location = fixtureLocation()
+        val repository = ImmediateRepository(location)
+        val effectsStorage = StoredEffectsPreferenceStorage(EffectsLevel.SUBTLE)
         val holder = OxygenAppStateHolder(
             selectedLocation = location,
-            weatherRepository = ImmediateRepository(location),
-            effectsPreferenceStorage = StoredEffectsPreferenceStorage(EffectsLevel.SUBTLE),
+            weatherRepository = repository,
+            effectsPreferenceStorage = effectsStorage,
             forecastExecutor = InstrumentedDirectExecutor,
         )
         composeRule.setContent {
@@ -65,11 +67,17 @@ class EffectsPreferenceInstrumentedTest {
         composeRule.waitForIdle()
 
         assertEquals(false, AndroidMotionPreferenceSource.areAnimationsEnabled())
+        assertEquals(EffectsLevel.SUBTLE, holder.presentationState.effectsPreference.confirmed)
+        assertEquals(emptyList<EffectsLevel>(), effectsStorage.writes)
+        val requests = repository.locations.toList()
+        assertEquals(listOf(location), requests)
         composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
         composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        assertEquals(requests, repository.locations)
+        assertEquals(emptyList<EffectsLevel>(), effectsStorage.writes)
     }
 }
 
@@ -80,9 +88,12 @@ private object InstrumentedDirectExecutor : Executor {
 private class StoredEffectsPreferenceStorage(
     private var stored: EffectsLevel,
 ) : EffectsPreferenceStorage {
+    val writes = mutableListOf<EffectsLevel>()
+
     override fun readEffectsPreference(): EffectsLevel = stored
 
     override fun writeEffectsPreference(effects: EffectsLevel) {
+        writes += effects
         stored = effects
     }
 }
@@ -90,10 +101,12 @@ private class StoredEffectsPreferenceStorage(
 private class ImmediateRepository(
     private val location: WeatherLocation,
 ) : WeatherRepository {
+    val locations = mutableListOf<WeatherLocation>()
+
     override fun refresh(location: WeatherLocation): Sequence<WeatherRepositoryResult> = sequenceOf(
         WeatherRepositoryResult.Success(
             WeatherBundle(location = this.location, fetchedAt = Instant.parse("2026-08-22T12:00:00Z")),
-        ),
+        ).also { locations += location },
     )
 }
 
