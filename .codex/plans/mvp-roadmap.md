@@ -6,7 +6,8 @@ Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
 Revised: 2026-09-13
 Reconciled against local `origin/main` ref: `82cf281`
-Synchronized through Slice 30C2 implementation `70304b8`; prior baseline
+Synchronized through Gate 30C3 alert evidence/documentation closure after Slice
+30C2 implementation `70304b8`; prior baseline
 roadmap synchronization remains recorded through Slice 30B1A3B1 implementation
 `26b32b8`, Slice 29B implementation
 `441d05d`, test follow-up `86e696c`, and evidence sync `86f046b`.
@@ -37,7 +38,8 @@ as the RTL evidence/documentation closure, Slice 30B2 is committed at
 documentation closure, and Slice 30C1 is committed at `4ffc507` as the
 deterministic official-alert summary accessibility boundary. Slice 30C2 is
 committed at `70304b8` as the deterministic official-alert detail accessibility
-boundary. Gate 30C3 is the next candidate:
+boundary. Gate 30C3 is committed as the deterministic alert evidence and
+documentation closure. Slice 30D1 is the next specified candidate:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -711,19 +713,19 @@ background polling, notifications, provider transport, and release readiness.
 
 ### Gate 30C3: Alert Accessibility Evidence and Document Sync
 
-Status: specified
+Status: committed
 
 Prerequisites: Slices 30C1 and 30C2.
 
 Mode: required third-cycle test-only and documentation-sync session; no
 production behavior changes.
 
-Must prove the selected summary/detail cases together within budget; reconcile
-long-content, LTR/RTL, large-font, Effects-Off/high-contrast, action, navigation,
-and no-refetch evidence; record honest installed real-alert availability; and
-sync README, specification, roadmap, current plan, and live history without
-claiming TalkBack or notification/background-alert completion. A production
-failure creates a separately named alert repair slice.
+The seven retained deterministic connected results and both installed manual
+Chicago no-alert attempts were reconciled in the documentation closure. The
+combined claim is limited to the exercised summary/detail Compose/Android
+boundary; TalkBack service traversal, localization, alert persistence,
+background polling, notifications, and release readiness remain unverified. A
+production failure would create a separately named alert repair slice.
 
 ### Slice 30D1: Appearance Control Semantics
 

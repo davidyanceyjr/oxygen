@@ -40,15 +40,18 @@ and `docs/data-sources/`.
   explicit alert lookup status and forecast-only cache composition.
 - Foreground selected-point NOAA/National Weather Service active-alert lookup,
   with a Home Now summary, detail navigation, total count, attribution,
-  source-check time, and working external source link. Slice 30C1's
-  deterministic summary boundary verifies required fields, non-color severity,
-  action semantics, safe-source fallback, no-alert truthfulness, and compact
-  LTR/RTL overflow behavior. Slice 30C2's deterministic detail boundary
-  verifies complete verbatim detail reading, selection, source action, return
-  state, target sizes, and RTL/font-scale-2.0 high-contrast reachability. The
-  installed manual Chicago attempt returned no active alert, so live-alert
-  summary/detail-entry evidence remains unavailable; TalkBack, localization,
-  and release work remain unverified.
+  source-check time, and working external source link. Four named Slice 30C1
+  deterministic connected cases verify required summary fields, non-color
+  severity, action semantics and 48dp targets, truthful no-alert behavior,
+  detail round-trip with state/request retention, and compact LTR/RTL
+  high-contrast long-text reachability. Three named Slice 30C2 deterministic
+  connected cases verify complete verbatim detail reading, alert selection and
+  return behavior, high-contrast non-color selection semantics, and RTL/
+  font-scale-2.0 Effects-Off long-content reachability. The installed manual
+  Chicago attempts returned no active alert, so live-alert summary/detail-entry
+  evidence remains unavailable; TalkBack service traversal, localization,
+  alert persistence/background behavior, notifications, and release work
+  remain unverified.
 - Persisted Oxygen default, Metric, US, and UK unit selection through the
   installed Settings / Units surface, with immediate Home remapping.
 - Persisted Off and Subtle effects selection through the installed Settings /

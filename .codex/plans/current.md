@@ -1,61 +1,42 @@
-# Gate 30C3 — Alert Accessibility Evidence and Documentation Sync
+# Slice 30D1 — Appearance Control Semantics
 
 **Status:** planned
-**Cycle ID:** `2026-09-13-gate-30c3-alert-accessibility-evidence-doc-sync`
-**Prerequisites:** Slice 30C1 at `4ffc507` and Slice 30C2 at `70304b8`.
+**Cycle ID:** `2026-09-13-slice-30d1-appearance-control-semantics`
+**Prerequisite:** Gate 30C3 — Alert Accessibility Evidence and Documentation Sync
 
-## Selected behavior and acceptance boundary
+## Slice objective
 
-Close the alert accessibility evidence gate as a test-only and documentation-
-sync session. Reconcile the committed deterministic Home summary and detail
-boundaries: required non-color semantics, validated actions, 48dp targets,
-selection and return state, no-refetch behavior, compact/large-font LTR/RTL,
-Effects Off, and High contrast. Record the installed real-alert availability
-truthfully. No production behavior changes are authorized in this gate.
+Give the existing Settings / Appearance Theme, Layout, Effects, and Contrast
+controls deliberate group and choice semantics through the real `OxygenApp`
+path. Preserve the existing preference transaction state, confirmed-write
+behavior, failed-write retry behavior, preference independence, and no-refetch
+contracts.
 
-## Evidence to reuse and verify
+This is the next specified candidate selected after Gate 30C3 closure; no 30D1
+production or test work has started in this plan.
 
-- Slice 30C1's four passing named summary cases and its installed Chicago
-  no-alert result under `.codex/test-artifacts/2026-09-12-slice-30c1-official-alert-summary-accessibility/`.
-- Slice 30C2's three passing named detail cases and its installed Chicago
-  no-alert result under `.codex/test-artifacts/2026-09-13-slice-30c2-official-alert-detail-accessibility/`.
+## Acceptance boundary
 
-Do not rerun passing connected cases unless source or execution environment
-changes. If a retained artifact is incomplete or a focused production failure
-is found, stop documentation sync and select a separately named repair slice.
+The slice is ready only when each existing Appearance group and choice exposes
+meaningful label, role, selected/disabled, pending, success, and read/write
+failure semantics without color-only meaning; retry and Back actions are named,
+operable, and at least 48dp; and confirmed-write, failed-target retention,
+retry, preference independence, and no-refetch behavior remain observable.
 
-## Required documentation updates
+## Intended files and evidence
 
-Review the committed behavior and synchronize only factual status in:
+- Review and, if required, edit the existing Appearance preference state and
+  control components under `app/src/main/kotlin/`.
+- Extend the existing preference transaction JVM tests and add no more than five
+  named connected semantic/action cases through `OxygenApp`.
+- Run the focused JVM/connected evidence selected for the changed boundary,
+  then applicable Android compile, unit, assembly, and `git diff --check` checks.
 
-- `README.md` — summary and detail deterministic coverage, installed no-alert
-  limit, and remaining TalkBack/localization/release limits;
-- `docs/OXYGEN_FULL_SPECIFICATION.md` — Gate 30 implementation-status narrative;
-- `.codex/plans/mvp-roadmap.md` — 30C1/30C2 committed references and Gate 30C3
-  completion state;
-- `.codex/cycles/history.md` — one self-contained gate entry with reused
-  evidence, artifacts, limits, and commit state;
-- this file — select the next specified candidate only after review.
+## Out of scope
 
-Do not modify provider contracts, production source, alert transport/cache,
-notifications, or release claims.
+Large-font/RTL layout matrix, new preferences, automatic system contrast, Full
+effects, icon packs, persistence formats, Home/alert behavior, and TalkBack
+service traversal.
 
-## Verification and review
-
-Run only checks affected by the documentation changes, plus a final repository
-consistency check:
-
-```text
-git diff --check
-git status --short
-```
-
-Confirm every cited command and artifact exists, no status claims exceed the
-retained evidence, the prior untracked archive remains untouched, and the
-documentation commit has a descriptive subject and evidence/limits body.
-
-## Next action
-
-Audit the 30C1 and 30C2 artifact ledgers and the four synchronized documents,
-then commit this gate's documentation-only reconciliation after `git diff
---check` passes.
+**Next action:** discover the existing Appearance preference state and control
+semantics, then establish the focused red/baseline evidence boundary.

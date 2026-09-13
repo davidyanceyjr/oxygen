@@ -440,3 +440,53 @@ Installed result and limits:
 
 Commit state: committed; the post-commit README, specification, roadmap, and
 active-plan synchronization is pending in the following documentation commit.
+
+### 2026-09-13-gate-30c3-alert-accessibility-evidence-doc-sync
+
+Status: committed
+Mode: bounded alert accessibility evidence reconciliation and documentation sync
+Slice: Gate 30C3, Alert Accessibility Evidence and Documentation Sync
+
+Result:
+
+- Audited Slice 30C1 at `4ffc507` and Slice 30C2 at `70304b8` against their
+  retained result ledgers and production alert path. The seven accepted named
+  deterministic connected cases are:
+  `officialAlertSummaryExposesRequiredFieldsAndActionSemanticsAtCompactFont`,
+  `noAlertStatusDoesNotRenderSummaryCardCountOrActions`,
+  `oxygenAppAlertDetailRoundTripPreservesHomeAndDoesNotRefresh`,
+  `officialAlertSummaryLongTextRemainsScrollableInRtlHighContrast`,
+  `officialAlertDetailFlowSelectsSecondAlertPreservesVerbatimTextAndReturnsHome`,
+  `highContrastAlertDetailKeepsHazardMeaningAndSelectionNonColorCues`, and
+  `officialAlertDetailLongContentRemainsReachableInRtlLargeFont`.
+- Retained result artifacts show one completed, zero skipped, zero failed for
+  each accepted method. Superseded failed/ambiguous attempts remain recorded
+  but were not counted as acceptance evidence.
+
+Evidence and limits:
+
+- Summary artifacts: `.codex/test-artifacts/2026-09-12-slice-30c1-official-alert-summary-accessibility/`.
+  Detail artifacts: `.codex/test-artifacts/2026-09-13-slice-30c2-official-alert-detail-accessibility/`.
+  Together they cover the exercised deterministic Compose/Android boundary:
+  alert meaning, non-color semantics, validated actions, 48dp targets,
+  selection and Back state, no-refetch behavior, long-content reachability,
+  LTR/RTL, large-font, Effects Off, and High contrast.
+- Each retained installed manual Chicago attempt used the production selected
+  location path and ended in a truthful no-alert Home. No live-alert summary or
+  detail-entry journey is claimed.
+- TalkBack service traversal, localization, alert persistence/cache, background
+  polling, notifications, additional alert regions, and release readiness
+  remain unverified.
+
+Checks:
+
+- Read-only commit/source/artifact inspection and production-path review passed.
+- `git diff --check` passed, and `git status --short` confirmed only the five
+  intended Markdown files plus the protected archive. Android compilation,
+  unit tests, assembly, emulator startup, connected tests, and installed
+  retries were intentionally skipped because this gate changed Markdown only
+  and the retained evidence/environment were unchanged.
+
+Commit state: committed by this documentation-sync entry; the unrelated
+untracked archive `.codex/cycles/archive/2026-09-12-before-slice-30b2-runner-finalization-repair.md`
+was preserved unchanged. Slice 30D1 remains the next specified candidate.

@@ -1707,6 +1707,25 @@ the original scales and saved appearance before the emulator stopped. This is
 not service-level TalkBack evidence, a live-alert success claim, Simple
 installed RTL evidence, localization, or a complete font/theme cross-product.
 
+Slice 30C1 then passed four named deterministic connected cases for the
+official-alert summary boundary: required fields, severity meaning, actions and
+48dp targets; truthful `NoAlerts`; detail round-trip with Home state and
+request-count retention; and compact LTR/RTL high-contrast long-text
+reachability. Slice 30C2 then passed three named deterministic connected cases
+for complete verbatim detail reading and multi-alert return behavior,
+high-contrast non-color selection semantics, and RTL/font-scale-2.0 Effects-Off
+long-content reachability. Together these cases cover only the exercised
+Compose/Android boundary and do not establish service-level TalkBack traversal,
+pronunciation, localization, alert persistence/cache, background polling,
+notifications, or release readiness.
+
+Gate 30C3 reconciled the retained seven-case result set and both installed
+manual Chicago attempts. Each installed attempt ended in a truthful no-alert
+Home after the production selected-location path, so no live-alert summary or
+detail-entry journey is claimed. The retained evidence paths are
+`.codex/test-artifacts/2026-09-12-slice-30c1-official-alert-summary-accessibility/`
+and `.codex/test-artifacts/2026-09-13-slice-30c2-official-alert-detail-accessibility/`.
+
 ### Contract fixtures
 
 Store provider samples under:
@@ -2154,6 +2173,13 @@ content at RTL/font scale 2.0 with High contrast and Effects Off. The installed
 manual Chicago selection again returned a truthful no-alert Home, so no live
 detail journey is claimed. Alert persistence/background work, TalkBack service
 traversal, localization, and release readiness remain unverified.
+
+Gate 30C3 is the committed evidence and documentation closure for the 30C1
+summary and 30C2 detail boundaries. Its seven retained deterministic connected
+results and two truthful installed no-alert attempts are recorded without
+upgrading the claim to service-level TalkBack, localization, alert persistence,
+background polling, notifications, or release readiness. Slice 30D1,
+Appearance Control Semantics, remains the next specified candidate.
 
 ---
 
