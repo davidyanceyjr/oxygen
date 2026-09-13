@@ -2136,6 +2136,16 @@ system scales and saved appearance. Gate 30B3 records the combined RTL and
 Home-environment evidence without upgrading TalkBack, live-alert, Simple
 installed RTL, localization, or release claims.
 
+Slice 30C1, Official-Alert Summary Accessibility, is committed at `4ffc507`.
+Its deterministic Compose boundary covers the Home summary's event, explicit
+severity, issuer, expiry, source-check time, attribution, count behavior,
+meaningful action semantics, safe-source fallback, truthful NoAlerts state,
+detail round-trip without refetch, and compact long-text LTR/RTL/high-contrast
+overflow. The installed manual Chicago attempt returned a truthful no-alert
+Home, so live-alert summary/detail-entry evidence is unavailable. Full alert
+detail reading accessibility, TalkBack service traversal, localization, and
+release readiness remain unverified and are not implied by this slice.
+
 ---
 
 ## 54. Source Documentation Starting Points

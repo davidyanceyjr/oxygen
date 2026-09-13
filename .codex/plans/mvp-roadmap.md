@@ -4,10 +4,11 @@ Status: specified
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-11
+Revised: 2026-09-13
 Reconciled against local `origin/main` ref: `82cf281`
-Synchronized through Slice 30B1A3B1 implementation `26b32b8`; prior baseline
-roadmap synchronization remains recorded through Slice 29B implementation
+Synchronized through Slice 30C1 implementation `4ffc507`; prior baseline
+roadmap synchronization remains recorded through Slice 30B1A3B1 implementation
+`26b32b8`, Slice 29B implementation
 `441d05d`, test follow-up `86e696c`, and evidence sync `86f046b`.
 
 Repository audit cleanup and live-history compression were completed in commit
@@ -32,8 +33,10 @@ independently observable sub-slices; `30B1A3A2` is committed at `9390601`,
 `30B1A3A3` is committed at `91974b2`, `30B1A3B1` is committed at `26b32b8`,
 `30B1A4` has verified Standard and Simple boundaries, Gate 30B1B1 is committed
 as the RTL evidence/documentation closure, Slice 30B2 is committed at
-`728f4c2`, and Gate 30B3 is committed as the Home-environment evidence and
-documentation closure:
+`728f4c2`, Gate 30B3 is committed as the Home-environment evidence and
+documentation closure, and Slice 30C1 is committed at `4ffc507` as the
+deterministic official-alert summary accessibility boundary. Slice 30C2 is the
+next candidate:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -580,7 +583,7 @@ localization changes, provider/state changes, and TalkBack service traversal.
 
 ### Slice 30B2: Home Reduced-Motion and Appearance Invariance
 
-Status: specified
+Status: committed at `728f4c2`
 
 Prerequisites: Slice 30A3B2 and Gate 30B1B1.
 
@@ -637,7 +640,7 @@ privacy/license/disclosure, or release status.
 
 ### Slice 30C1: Official-Alert Summary Accessibility
 
-Status: specified
+Status: committed at `4ffc507`
 
 Prerequisite: Gate 30B3.
 
@@ -660,12 +663,20 @@ no more than five named connected summary cases, and one installed real-alert
 summary/detail-entry attempt. Live alert availability may be absent and must not
 be replaced by seeded installed success.
 
+The existing mapper/state-holder production path required no correction. Four
+new named connected cases passed on one API-37 emulator: required summary fields
+and action semantics/touch targets, truthful NoAlerts rendering, detail
+round-trip request/state retention, and RTL high-contrast long-text overflow.
+The installed manual Chicago attempt returned truthful no-alert Home, so no live
+alert summary or detail-entry claim is made. Evidence is retained under
+`.codex/test-artifacts/2026-09-12-slice-30c1-official-alert-summary-accessibility/`.
+
 Out of scope: detail-document reading layout, alert transport/cache/background
 work, notifications, additional national providers, and TalkBack traversal.
 
 ### Slice 30C2: Official-Alert Detail Accessibility
 
-Status: specified
+Status: specified; next candidate after Slice 30C1
 
 Prerequisite: Slice 30C1.
 

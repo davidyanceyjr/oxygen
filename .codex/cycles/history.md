@@ -352,3 +352,53 @@ Evidence and limits:
   was rerun after runner repair.
 - TalkBack service traversal, Simple installed RTL, localization, live-alert
   success, alert accessibility, and release checks remain outside this gate.
+
+### 2026-09-12-slice-30c1-official-alert-summary-accessibility
+
+Status: committed
+Mode: bounded official-alert summary accessibility acceptance coverage
+Slice: Slice 30C1, Official-Alert Summary Accessibility
+Commit: `4ffc507`
+
+Result:
+
+- Added four named connected acceptance cases in
+  `HomeDashboardUiTest`: required summary fields plus meaningful action
+  semantics and 48dp targets, truthful `NoAlerts` rendering, Home-to-detail-
+  to-Home request/state retention, and long-text RTL/high-contrast overflow.
+  No production correction was needed; the existing mapper, state-holder, and
+  Home route satisfied the demonstrated boundary.
+- The first summary case attempt failed only because the test asserted a
+  below-viewport severity line without scrolling to it. The one permitted
+  focused test correction scrolled each required field/action; the rerun passed.
+
+Evidence:
+
+- Focused unit command passed:
+  `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests 'com.oxygen.weather.app.HomeForecastPresentationMapperTest' --tests 'com.oxygen.weather.app.HomeForecastStateHolderTest'`.
+- `sh -n scripts/run-connected-method.sh` and
+  `:app:compileDebugAndroidTestKotlin` passed. The four connected methods each
+  completed with 1 test, 0 skipped, and 0 failed on the sole `emulator-5554`
+  API-37 `oxygen_starter` session; the summary method passed on its reserved
+  rerun after the test-only correction.
+- Broad checks passed:
+  `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :core:testDebugUnitTest`,
+  `. scripts/android-env.sh && ./gradlew :app:assembleDebug`, and
+  `git diff --check`.
+- Evidence is retained under
+  `.codex/test-artifacts/2026-09-12-slice-30c1-official-alert-summary-accessibility/`,
+  including connected result/log/XML artifacts, the baseline method result,
+  installed screenshots/UI hierarchies, and the verification ledger.
+
+Installed result and limits:
+
+- The debug APK was installed once after focused green. Manual Chicago,
+  Illinois selection completed through the production Open-Meteo path. The
+  live result was a truthful no-alert Home with weather/source/update content;
+  no alert data was seeded or fabricated, so live-alert summary/detail-entry
+  evidence is unavailable.
+- Alert-detail reading layout, TalkBack service traversal, localization,
+  background alert behavior, and release readiness remain outside this slice.
+
+Commit state: committed; the post-commit README, specification section 53,
+roadmap, active plan, and this history entry are synchronized to the evidence.
