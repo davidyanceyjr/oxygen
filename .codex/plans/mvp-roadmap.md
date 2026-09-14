@@ -40,7 +40,8 @@ deterministic official-alert summary accessibility boundary. Slice 30C2 is
 committed at `70304b8` as the deterministic official-alert detail accessibility
 boundary. Gate 30C3 is committed as the deterministic alert evidence and
 documentation closure. Slice 30D1 is committed at `78ecb84`; Slice 30D2 is
-the next specified candidate:
+committed at `2955aa5` as the Appearance layout and environment resilience
+repair; Gate 30D3 is the next specified candidate:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -761,7 +762,7 @@ contrast, Full effects, icon packs, persistence formats, Home/alert behavior.
 
 ### Slice 30D2: Appearance Layout and Environment Resilience
 
-Status: specified
+Status: committed at `2955aa5`
 
 Prerequisite: Slice 30D1.
 
@@ -778,9 +779,13 @@ Must prove:
 - Effects Off/disabled animation does not hide state or rewrite the saved
   preference; selection/restoration and no-refetch remain unchanged.
 
-Focused evidence: no more than six named pairwise connected cases plus installed
-LTR/RTL and representative font-scale-2.0 hierarchies/screenshots. Production
-repairs remain presentation-only and begin from a failing boundary assertion.
+Focused evidence: six named connected cases plus installed LTR/RTL and
+representative font-scale-2.0 hierarchies/screenshots. The presentation-only
+repair adds scroll-content bottom separation from the fixed Back action and a
+stable disabled-motion status node. All six cases passed on API-37
+`oxygen_starter`; installed evidence also covers Effects Off with disabled
+animations and a Terminal/High pair. Production repairs began from the compact
+baseline overlap assertion. Gate 30D3 is next.
 
 Out of scope: semantics already owned by 30D1, new preference/state/storage
 behavior, Home/alert changes, visual redesign, and TalkBack traversal.
@@ -1263,15 +1268,17 @@ Immediate planning boundary:
 -> Slice 30B1A3A3 Simple Home RTL forecast chronology committed at `91974b2`
 -> Slice 30B1A3B1 RTL/LTR spoken-meaning equivalence committed at `26b32b8`
 -> Slice 30B1A4 Standard and Simple RTL compact boundaries verified; Gate 30B1B1 committed as RTL evidence/documentation closure
+-> Slice 30D1 Appearance Control Semantics committed at `78ecb84`
+-> Slice 30D2 Appearance Layout and Environment Resilience planned in `.codex/plans/current.md`
 ```
 
 Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,
 Slice 29B, Slice 30A1, Slice 30A2, and the 30A3B2 documentation sync are
 complete. Gate 30 is split into the bounded 30A1–30E queue at the head of this
 roadmap; 30A3A1 evidence is complete, Slices 30B1A1 through 30B1A3B1 are
-committed, and only the Simple boundary of Slice 30B1A4 is the active planned
-candidate. Release
-work and release-candidate claims remain outside this boundary.
+committed, Slice 30D1 is committed, and Slice 30D2 is the active planned
+candidate in `.codex/plans/current.md`. Release work and release-candidate
+claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

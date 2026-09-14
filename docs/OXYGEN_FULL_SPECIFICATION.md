@@ -808,8 +808,10 @@ the confirmed selection while naming the operation; saved and failure states
 are readable, with named Retry actions where the existing transaction supports
 them. Effects preserves its same-choice retry behavior after a failed write.
 This contract is covered at the OxygenApp Compose/Android boundary; TalkBack
-service traversal, localization, and the large-font/RTL environment matrix are
-separate verification work.
+service traversal and localization remain separate verification work. Slice
+30D2 verified the installed Appearance layout boundary at compact size, font
+scale 2.0, RTL, disabled animations with Effects Off, and a Terminal/High
+pair; automatic contrast and release checks remain unverified.
 
 ---
 
@@ -2197,9 +2199,14 @@ single-choice roles, selected/disabled/action semantics, pending/confirmed
 selection, status/retry behavior, 48dp controls, preference independence, and
 no-refetch behavior. One installed Chicago/Open-Meteo journey confirms loaded
 Appearance controls, a saved Paper choice, and return to the same Home
-provenance/update presentation. Large-font/RTL resilience, TalkBack service
-traversal, localization, and release checks remain unverified. Slice 30D2,
-Appearance Layout and Environment Resilience, is the next specified candidate.
+provenance/update presentation. Slice 30D2, Appearance Layout and Environment
+Resilience, is committed at `2955aa5`. Its six focused connected cases cover
+compact and large-font reachability, RTL ordering, disabled-animation Effects
+Off meaning, and the Oxygen/Paper/Terminal with Standard/High contrast matrix.
+Installed evidence covers LTR, font scale 2.0, RTL, Effects Off, and
+Terminal/High while preserving the fixed Back action and saved-status meaning.
+TalkBack service traversal, localization, automatic contrast, and release
+checks remain unverified. Gate 30D3 is the next specified candidate.
 
 ---
 

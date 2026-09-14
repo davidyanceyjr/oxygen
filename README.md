@@ -74,9 +74,11 @@ and `docs/data-sources/`.
 - The installed Settings / Appearance surface exposes Theme, Contrast, Layout,
   and Effects as labeled single-choice controls with selected/disabled/action
   semantics, readable pending/saved/failure status, and named 48dp Retry and
-  Back actions. Five focused connected cases and one installed Chicago journey
-  verify this boundary; TalkBack service traversal, localization, and the
-  large-font/RTL matrix remain unverified.
+  Back actions. Six focused connected cases verify compact, large-font, RTL,
+  reduced-motion, and theme/contrast resilience; installed API-37 evidence
+  covers LTR, font scale 2.0, RTL, Effects Off with disabled animations, and a
+  Terminal/High pair. TalkBack service traversal, localization, automatic
+  contrast, and release checks remain unverified.
 - Installed Home current, hourly, and daily weather exposes concise
   mapper-owned accessibility descriptions with resolved temperature units and
   honest missing-value/precipitation semantics. Retained evidence covers

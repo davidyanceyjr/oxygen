@@ -538,3 +538,43 @@ Commit state: committed; post-commit README, specification, roadmap, active
 plan, and this history entry are synchronized to the retained evidence. The
 untracked archive `.codex/cycles/archive/2026-09-12-before-slice-30b2-runner-finalization-repair.md`
 was preserved unchanged.
+
+### 2026-09-13-slice-30d2-appearance-layout-environment-resilience
+
+Status: committed at `2955aa5`; post-commit documentation sync completed.
+
+Result:
+
+- `SettingsScreen` now gives the existing Appearance scroll content bottom
+  separation from the fixed Back action, and exposes a stable disabled-motion
+  status node. No preference, state, provider, navigation, or weather behavior
+  changed.
+- `AppearanceSemanticsUiTest` adds the six bounded cases
+  `appearanceCompactControlsRemainScrollReachable`,
+  `appearanceFontScale13ControlsRemainReadableAndReachable`,
+  `appearanceFontScale20ControlsRemainReadableAndReachable`,
+  `appearanceRtlPreservesLogicalLabelControlOrder`,
+  `appearanceReducedMotionOffPreservesEffectsMeaning`, and
+  `appearanceThemeContrastPairsPreserveMeaning`.
+
+Evidence:
+
+- All six named cases passed once on API-37 `oxygen_starter` /
+  `emulator-5554`, with zero skipped or failed. Focused state-holder JVM tests,
+  app/core unit tests, debug compilation, debug assembly,
+  `scripts/install-debug.sh`, and `git diff --check` passed.
+- Installed evidence is retained under
+  `.codex/test-artifacts/2026-09-13-slice-30d2-appearance-layout-environment-resilience/`
+  for compact LTR, font scale 2.0, RTL, disabled-animation Effects Off, and a
+  Terminal/High pair. The temporary compact display override and environment
+  settings were restored; the first emulator recovery attempt is recorded in
+  the verification ledger because its artifact parent did not yet exist.
+
+Limits:
+
+- Installed evidence does not prove numeric request counts or injected storage
+  failures; those remain fixture-backed. TalkBack service traversal,
+  localization, automatic contrast, and release checks remain unverified or
+  out of scope. The unrelated untracked archive
+  `.codex/cycles/archive/2026-09-12-before-slice-30b2-runner-finalization-repair.md`
+  was preserved unchanged.

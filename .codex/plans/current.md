@@ -1,243 +1,229 @@
-# Slice 30D1 — Appearance Control Semantics
+# Slice 30D2 — Appearance Layout and Environment Resilience
 
-**Status:** committed
-**Cycle ID:** `2026-09-13-slice-30d1-appearance-control-semantics`
-**Prerequisite:** Gate 30C3 — Alert Accessibility Evidence and Documentation Sync
+**Status:** committed at `2955aa5`
+**Cycle ID:** `2026-09-13-slice-30d2-appearance-layout-environment-resilience`
+**Prerequisite:** Slice 30D1, committed at `78ecb84`; documentation sync committed at `021d58e`
 
 ## Selected behavior
 
-Make the existing Settings / Appearance surface semantically usable through the
-production `OxygenApp` path. Theme, Layout, Effects, and Contrast must each
-identify their group, choices, current selection, interaction availability, and
-preference transaction status without relying on color or decoration.
+Keep the production Settings / Appearance surface readable and reachable when
+the environment changes. The four existing groups—Theme, Contrast, Layout, and
+Effects—must remain usable at compact size, large accessibility font scales,
+RTL direction, reduced motion, and supported theme/contrast combinations.
 
-The supported choices remain exactly those already implemented:
+This is a presentation and environment-resilience slice. The existing choice
+set, preference transactions, state holders, storage formats, callbacks,
+selected location, weather presentation, provider behavior, and forecast
+request behavior remain unchanged.
 
-- Theme: Oxygen, Paper, Terminal.
-- Layout: Simple, Standard.
-- Effects: Off, Subtle. Full remains unavailable.
-- Contrast: Standard, High.
+## Acceptance boundary
 
-This is a presentation/accessibility slice. The existing DataStore formats,
-preference interfaces, state holders, callbacks, weather data, and forecast
-request behavior are not being redesigned.
+The installed `OxygenApp` Appearance path must prove:
 
-## Baseline findings and contract
+1. At 360x640dp, every group, supported choice, loading/error/saved status,
+   Retry action, and Back action is reachable by scrolling. No visible text,
+   control, status, or action is clipped, overlapped, or hidden behind a fixed
+   sibling.
+2. At font scales 1.3 and 2.0, the same controls remain scroll-reachable and
+   their labels/statuses remain readable. Fixed-format controls retain usable
+   bounds; dynamic text may wrap or require scrolling but must not overlap
+   neighboring content.
+3. RTL preserves logical label/control order and keeps the semantic meaning of
+   selected, pending, disabled, error, saved, Retry, and Back states intact.
+   No directional icon or alignment reverses in a way that contradicts the
+   active layout direction.
+4. With Effects Off and system animation scale disabled, the screen still
+   exposes the same visible and semantic preference state. Disabling animation
+   does not rewrite the saved Effects preference, hide status, or alter
+   selection/restoration behavior.
+5. Oxygen, Paper, and Terminal paired with Standard and High Contrast retain
+   readable group/choice/status meaning and visible selected/disabled/action
+   affordances. Contrast or theme changes do not alter the four preference
+   values, selected location, weather data, or forecast request count.
 
-Existing JVM and Settings UI tests already cover most persistence transactions:
-confirmed values, conservative read failure, failed-write retention, retry, and
-no forecast refetch. The implementation gap is the rendered contract in
-`SettingsScreen`: group headings and status nodes are inconsistently exposed,
-Effects uses a wrapper semantics node, and choice enabled/selected semantics are
-not expressed consistently across all four groups. Establish a red/baseline
-semantics dump before editing so any correction is tied to an observed gap.
+The D1 semantics contract remains the invariant: headings, visible choice
+labels, RadioButton roles, selected state, actions, disabled state, statuses,
+Retry, and Back must remain present without relying on color or decoration.
 
-The production contract after this slice is:
+## Baseline and red phase
 
-1. Each managed group has one readable group heading and every supported choice
-   has its visible label, a single-choice/control role, selected state, and
-   click action in the merged semantics tree. Selected meaning must not depend
-   on chip color, icon, or position.
-2. While a preference read is Loading, all choices in that group are
-   non-actionable and the conservative effective/current value remains visible.
-   A read failure states that the saved value could not be read, identifies the
-   value being used when one is known, and exposes a named Retry action.
-3. While a write is pending, the confirmed/effective presentation and its
-   selected semantics remain unchanged; the pending target is stated in a
-   readable Saving status and duplicate/competing writes are blocked. Existing
-   Effects behavior that retries a failed write by selecting the same choice is
-   preserved unless the baseline proves it is unreachable; Theme, Layout, and
-   Contrast retain their existing explicit Retry path.
-4. After a successful write, the new choice becomes effective and selected, the
-   group exposes saved/confirmed status, and the other preference values,
-   selected location, forecast presentation, and repository request count are
-   unchanged. A write failure retains the confirmed value, states the failure,
-   and leaves the existing retry behavior operable.
-5. Retry and Back controls have readable labels, button/action semantics, and
-   measured targets of at least 48dp. Status text is supplementary evidence,
-   not color-only or an unlabeled test tag. Do not use `clearAndSetSemantics`
-   in a way that hides visible labels or actions.
+Before changing production code:
 
-## Production implementation boundary
+- Confirm one API-37 `oxygen_starter` emulator and record serial, resolution,
+  density, locale/layout direction, font scale, animation scale, and focused
+  package in the cycle artifact directory.
+- Install the current committed APK once if needed, open Settings / Appearance
+  through the real app path, and capture baseline screenshots and UI
+  hierarchies for default LTR, font scale 1.3, font scale 2.0, and RTL.
+- Capture the current Effects-Off / animation-disabled state and one
+  representative theme/contrast pair. Record any missing, clipped, overlapped,
+  or incorrectly ordered node as a failing boundary assertion.
+- Add or extend only the focused connected assertions below. Run the failing
+  assertion against the baseline before implementing a repair. If the
+  baseline is already green for a case, retain it as a regression guard and do
+  not invent a production change.
 
-Inspect and change only the existing Settings presentation path unless a
-focused test demonstrates that a state-holder correction is necessary.
+All baseline and final artifacts belong under:
+
+`.codex/test-artifacts/2026-09-13-slice-30d2-appearance-layout-environment-resilience/`
+
+## Production boundary
+
+Inspect and change the existing Appearance presentation path only:
 
 - `app/src/main/kotlin/com/oxygen/weather/app/ui/settings/SettingsScreen.kt`
-  should provide the group-heading, choice, status, Retry, and Back semantics;
-  preserve existing visible copy and stable test tags where possible; add
-  localized resources only when the current copy cannot express the required
-  state.
-- `app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt` remains the real
-  callback/state wiring boundary. Change it only if the rendered semantic
-  state is not receiving the already-existing holder state.
-- `app/src/main/kotlin/com/oxygen/weather/app/OxygenAppStateHolder.kt` is
-  changed only to repair an evidenced transaction/state mismatch. Preserve the
-  four existing preference state types, confirmed-write timing, failed-target
-  retention, retry behavior, preference independence, and no-refetch behavior.
-- Do not modify the four preference storage files, add a second state model or
-  persistence format, enable Full effects, add automatic system contrast, or
-  change Home/provider behavior.
+  is the primary implementation boundary for scroll containers, spacing,
+  wrapping, ordering, fixed control dimensions, and environment-safe layout.
+- `app/src/main/kotlin/com/oxygen/weather/app/ui/theme/OxygenTheme.kt` and
+  `app/src/main/kotlin/com/oxygen/weather/app/ui/theme/OxygenAppearance.kt`
+  may change only if a failing theme/contrast boundary proves a presentation
+  token or palette issue. Preserve the existing theme identities and contrast
+  behavior.
+- `app/src/main/kotlin/com/oxygen/weather/app/OxygenApp.kt` may change only if
+  a failing installed or connected boundary proves that environment state is
+  not reaching the existing presentation path.
+- `OxygenAppStateHolder.kt` and preference storage remain out of scope unless
+  a test demonstrates an existing transaction/state regression caused by the
+  presentation change. No new state model or persistence format is allowed.
 
-## Focused tests and evidence
+Promote any repeated successful spacing, control, or surface values into the
+existing design-token approach rather than duplicating magic numbers. Do not
+change weather semantics, provider behavior, navigation, accessibility meaning,
+or preference transaction timing to make a screenshot pass.
 
-First run a baseline semantics dump from the existing managed `OxygenApp`
-Appearance path. Then make the smallest production correction and keep the
-focused connected set to these five named cases (one case per existing
-preference group plus the cross-group semantics case):
+## Focused connected evidence
 
-1. `appearanceGroupsAndChoicesExposeMeaningfulSemantics` — all four headings
-   and all supported choices expose labels, choice/control roles, selected and
-   unselected states, click actions, and non-color meaning; Back is named.
-2. `themePreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry` —
-   loading, pending, successful write, read failure, write failure, exact-target
-   Retry, target sizes, and no forecast refetch for Theme.
-3. `layoutPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry` —
-   the same boundary for Simple/Standard Layout, including the existing
-   session/persistence distinction.
-4. `effectsPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry` —
-   the existing Off/Subtle transaction, conservative read failure, same-choice
-   write retry, Android disabled-motion message, and no forecast refetch.
-5. `contrastPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry` —
-   Standard/High transaction, independent theme/layout/effects values, retry,
-   target sizes, and no forecast refetch.
+Keep the connected set to no more than six named cases. Extend
+`app/src/androidTest/kotlin/com/oxygen/weather/app/ui/settings/AppearanceSemanticsUiTest.kt`
+and the existing settings fixtures where possible; every case must render
+through real `OxygenApp` wiring and use bounds/semantics assertions in addition
+to screenshots or text checks.
 
-These can extend the existing methods in
-`app/src/androidTest/kotlin/com/oxygen/weather/app/ui/settings/` rather than
-creating duplicate fixtures. The first case may live in a focused settings
-test file; it must still render through `OxygenApp`, not a test-only control.
-Use semantics configuration and bounds assertions, not only text or test-tag
-existence. Keep the connected run at five cases; do not run full historical
-classes merely because they contain related coverage.
+1. `appearanceCompactControlsRemainScrollReachable` — at 360x640dp and
+   default font scale, scroll to each group and prove every choice, status,
+   Retry, and Back node is displayed, non-overlapping, and within usable
+   bounds.
+2. `appearanceFontScale13ControlsRemainReadableAndReachable` — at font scale
+   1.3, prove wrapped labels/statuses, control bounds, scroll reachability, and
+   no sibling overlap for all four groups.
+3. `appearanceFontScale20ControlsRemainReadableAndReachable` — repeat the
+   boundary at font scale 2.0, including the lowest status and Back action.
+4. `appearanceRtlPreservesLogicalLabelControlOrder` — force RTL through the
+   supported emulator/test mechanism, capture hierarchy and screenshot, and
+   assert logical label/control ordering plus unchanged D1 semantics.
+5. `appearanceReducedMotionOffPreservesEffectsMeaning` — set animation scale
+   to zero, exercise Effects Off and restoration through the real callback
+   path, and prove the saved preference, selected state, status, and forecast
+   request count remain unchanged.
+6. `appearanceThemeContrastPairsPreserveMeaning` — exercise a compact pairwise
+   matrix covering Oxygen/Paper/Terminal with Standard/High Contrast, proving
+   readable labels/statuses and selected/disabled/action meaning without
+   changing other preference values or weather requests.
 
-Retain and extend the existing focused JVM coverage in:
+Use existing preference state-holder tests only when a failing presentation
+boundary exposes a real state regression. Do not turn these tests into source,
+constructor, or screenshot-only checks. Do not run full historical connected
+classes merely because they contain related tests.
 
-- `app/src/test/kotlin/com/oxygen/weather/app/ThemePreferenceStateHolderTest.kt`
-- `app/src/test/kotlin/com/oxygen/weather/app/LayoutPreferenceStateHolderTest.kt`
-- `app/src/test/kotlin/com/oxygen/weather/app/EffectsPreferenceStateHolderTest.kt`
-- `app/src/test/kotlin/com/oxygen/weather/app/ContrastPreferenceStateHolderTest.kt`
+## Real-path exercise
 
-Add assertions only for a state transition exposed by the implementation or
-for a regression guard needed by the connected contract. These tests must
-continue to prove canonical forecast/state preservation and zero additional
-weather requests; they must not become source-shape or constructor tests.
+Use one emulator session for the task and install once per changed APK. After
+focused green:
 
-## Real-path and broad verification
+- Exercise the installed Settings / Appearance path in default LTR at 360x640dp
+  and font scale 2.0; capture final screenshots and UI hierarchies after
+  scrolling to the bottom.
+- Exercise the installed RTL path and retain one screenshot plus hierarchy.
+- Exercise one representative reduced-motion Effects-Off state and one
+  representative theme/contrast pair. Confirm the four choices, saved state,
+  selected location, Home weather presentation, source/update/provenance, and
+  navigation remain unchanged.
+- Treat installed screenshots and hierarchies as presentation evidence. They
+  do not by themselves prove request counts or injected storage failures;
+  those remain connected-fixture evidence unless the platform exposes them.
 
-Use one emulator session for the task. Before source changes, capture the
-installed Appearance baseline screenshot and UI hierarchy if the existing APK
-and emulator are available. After focused green, compile/install once for the
-changed APK and exercise the installed production path: open Settings /
-Appearance, inspect the loaded groups, make one supported choice, verify the
-saved state and return to Home without a forecast refetch, then capture the
-resulting Appearance screenshot and hierarchy. This installed journey does not
-claim storage-failure behavior; read/write failures are injected only at the
-bounded `OxygenApp` connected boundary unless a real platform failure is
-observed.
+If a platform timeout occurs, retain the exact command/result and stop repeating
+that same attempt. If an installed failure is production behavior rather than
+an environment limitation, stop and split a repair slice instead of weakening
+the assertion.
 
-Record commands, results, reruns, and limits in a short ledger under:
-`.codex/test-artifacts/2026-09-13-slice-30d1-appearance-control-semantics/`.
+## Verification commands
 
-Selected checks, in order:
+Maintain a short ledger in the cycle artifact directory with each command,
+result, rerun reason, and limitation. Use the repository Android environment
+wrapper for Gradle commands.
+
+Baseline and environment setup:
+
+```sh
+scripts/list-avds.sh
+scripts/start-emulator.sh --recover --artifact-dir .codex/test-artifacts/2026-09-13-slice-30d2-appearance-layout-environment-resilience/emulator
+```
+
+Focused checks after the red phase:
 
 ```sh
 . scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests 'com.oxygen.weather.app.ThemePreferenceStateHolderTest' --tests 'com.oxygen.weather.app.LayoutPreferenceStateHolderTest' --tests 'com.oxygen.weather.app.EffectsPreferenceStateHolderTest' --tests 'com.oxygen.weather.app.ContrastPreferenceStateHolderTest'
-. scripts/android-env.sh && ./gradlew :app:compileDebugAndroidTestKotlin
-scripts/list-avds.sh
-scripts/start-emulator.sh --recover --artifact-dir .codex/test-artifacts/2026-09-13-slice-30d1-appearance-control-semantics/emulator
-scripts/run-connected-method.sh --serial <recovery-serial> <fully-qualified-class>#<method> .codex/test-artifacts/2026-09-13-slice-30d1-appearance-control-semantics/<case>
+. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin
+scripts/run-connected-method.sh --serial <recorded-serial> <fully-qualified-class>#<method> .codex/test-artifacts/2026-09-13-slice-30d2-appearance-layout-environment-resilience/<case>
+```
+
+Run the connected command once for each of the six named cases, using the same
+emulator session and recorded serial. Then run the applicable broad checks:
+
+```sh
 . scripts/android-env.sh && ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :core:testDebugUnitTest
 . scripts/android-env.sh && ./gradlew :app:assembleDebug
 scripts/install-debug.sh
 git diff --check
 ```
 
-Run the connected-method command once per the five named cases, using the
-single recorded recovery serial. If a bounded platform timeout occurs, retain
-the exact result and stop repeating that same attempt; do not convert a
-timeout into acceptance. Stop and split a repair slice if a production defect
-is found rather than weakening the assertion.
+Compilation and assembly are broad checks, not functional proof. Do not rerun
+a passing command unless source, test inputs, or the environment changed in a
+way that can affect it.
 
-## Required documentation closure after implementation
+## Documentation closure after verification
 
-Documentation changes are part of the post-implementation handoff, not a
-substitute for the connected evidence. After the slice is actually verified
-and committed, reconcile only claims supported by the retained artifacts in:
-
-- `README.md`: add or adjust the installed Appearance accessibility/status
-  claim, without claiming TalkBack service traversal, localization, Full
-  effects, automatic contrast, or release readiness.
-- `docs/OXYGEN_FULL_SPECIFICATION.md`: update the Appearance/accessibility
-  contract and section 53 status to describe the four supported groups,
-  confirmed-write semantics, non-color choice/status semantics, and the exact
-  verification limits.
-- `.codex/plans/mvp-roadmap.md`: mark Slice 30D1 only at the evidence-supported
-  state, retain Slice 30D2 as the next specified candidate, and correct the
-  active handoff if needed.
-- `.codex/plans/current.md`: record final status, changed files, artifacts,
-  commands actually run, skipped checks, and the next bounded slice.
-- `.codex/cycles/history.md`: append one self-contained D1 entry with result,
-  five accepted connected cases, JVM/broad checks, installed evidence,
-  artifacts, limits, and commit state. Append only; archive is required only
-  if the live-history reading contract is later compressed or rewritten.
-
-No provider contract, data-source disclosure, privacy, dependency, license, or
-release claim changes in this slice. Do not modify `AGENTS.md`, Gradle
-configuration, provider contracts, or archived history for routine D1 closure.
+After production work is verified and committed, synchronize only evidence-
+supported claims in `README.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`,
+`.codex/plans/mvp-roadmap.md`, `.codex/plans/current.md`, and append one
+self-contained entry to `.codex/cycles/history.md`. Record final artifact paths,
+the exact connected cases, installed LTR/RTL/font-scale evidence, broad checks,
+and all unverified limits. Do not claim TalkBack service traversal, automatic
+contrast, localization, release readiness, or a numeric installed request count
+unless separately evidenced.
 
 ## Out of scope
 
-Large-font/RTL layout resilience (Slice 30D2), installed accessibility-service
-TalkBack traversal (Gate 30E), new preferences, automatic system contrast,
-Full effects, icon packs, persistence formats, Home/alert/provider behavior,
-visual redesign, localization, notifications, and release readiness.
+D1 semantic contract changes, new preferences, state/storage redesign, Full
+effects, automatic system contrast, Home/alert/provider behavior, navigation
+redesign, visual redesign, localization, notifications, TalkBack service
+traversal, release readiness, and broad device-matrix certification.
 
 ## Completion evidence
 
-Commit `78ecb84` records production changed only in
-`app/src/main/kotlin/com/oxygen/weather/app/ui/settings/SettingsScreen.kt`:
-managed Theme, Contrast, Layout, and Effects headings now expose heading
-semantics; every supported choice exposes a visible label, RadioButton role,
-selected state, click action, and disabled state when unavailable; Effects no
-longer hides its action behind a wrapper; pending Effects retains the confirmed
-selection; and Effects status nodes are named. Existing preference state,
-storage, callbacks, weather data, and forecast behavior were preserved.
+Production repair: `SettingsScreen.kt` keeps the existing Appearance content
+scrollable with bottom separation from the fixed Back action and names the
+disabled-motion status for stable verification. `AppearanceSemanticsUiTest.kt`
+adds six real-`OxygenApp` connected cases:
 
-Focused connected evidence is retained under
-`.codex/test-artifacts/2026-09-13-slice-30d1-appearance-control-semantics/`.
-The five accepted named cases, each completed once with zero skipped and zero
-failed on API-37 `oxygen_starter` / `emulator-5554`, are:
+- `appearanceCompactControlsRemainScrollReachable`
+- `appearanceFontScale13ControlsRemainReadableAndReachable`
+- `appearanceFontScale20ControlsRemainReadableAndReachable`
+- `appearanceRtlPreservesLogicalLabelControlOrder`
+- `appearanceReducedMotionOffPreservesEffectsMeaning`
+- `appearanceThemeContrastPairsPreserveMeaning`
 
-- `appearanceGroupsAndChoicesExposeMeaningfulSemantics`
-- `themePreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry`
-- `layoutPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry`
-- `effectsPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry`
-- `contrastPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry`
+All six passed once on API-37 `oxygen_starter` / `emulator-5554`. Installed
+evidence is retained under
+`.codex/test-artifacts/2026-09-13-slice-30d2-appearance-layout-environment-resilience/`
+for compact LTR, font scale 2.0, RTL, disabled-animation Effects Off, and a
+Terminal/High pair. Focused state-holder tests, app/core unit tests, debug
+compile, debug assembly, `scripts/install-debug.sh`, and `git diff --check`
+passed. The temporary compact display override was restored. Numeric installed
+request counts, injected storage failures, TalkBack service traversal,
+localization, automatic contrast, and release checks remain unverified or out
+of scope.
 
-The Layout case needed one test-only viewport repair after the added headings
-moved status nodes below the initial viewport; its final rerun passed. The
-pre-change Effects read-failure semantics dump is retained at
-`baseline-effects-read-failure/appearance-read-failure-semantics.txt`.
-
-Checks passed:
-
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests 'com.oxygen.weather.app.ThemePreferenceStateHolderTest' --tests 'com.oxygen.weather.app.LayoutPreferenceStateHolderTest' --tests 'com.oxygen.weather.app.EffectsPreferenceStateHolderTest' --tests 'com.oxygen.weather.app.ContrastPreferenceStateHolderTest'`
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin`
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :core:testDebugUnitTest`
-- `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
-- `git diff --check`
-
-Installed production evidence used one APK install and one API-37 emulator
-session: Chicago was selected through the real Open-Meteo manual path without
-location permission; Appearance loaded all four groups; Paper became selected
-and reported `Theme saved`; Back returned to Home retaining Chicago, Now/Page
-1 of 4, source, update, and provenance text. Final screenshots and Android UI
-hierarchies are retained as `installed-appearance-saved.png`,
-`installed-appearance-saved.xml`, and `installed-home-return.xml`.
-
-The installed journey does not prove a numeric request count; fixture-backed
-connected tests prove no forecast refetch. Post-commit authority
-synchronization is complete. TalkBack service traversal,
-large-font/RTL resilience, localization, and release checks remain out of
-scope. The next bounded slice is Slice 30D2 — Appearance Layout and Environment
-Resilience.
+Commit: `2955aa5` (`Repair Appearance overflow resilience`). Gate 30D3 is the
+next bounded documentation/evidence candidate.
