@@ -24,14 +24,13 @@ class PrivacyManifestInstrumentedTest {
     fun productionManifestRetainsOnlyOptionalLocationNetworkPermissions() {
         val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
 
-        assertTrue(
-            packageInfo.requestedPermissions.orEmpty().toSet().containsAll(
-                setOf(
-                    "android.permission.INTERNET",
-                    "android.permission.ACCESS_NETWORK_STATE",
-                    "android.permission.ACCESS_COARSE_LOCATION",
-                ),
+        assertEquals(
+            setOf(
+                "android.permission.INTERNET",
+                "android.permission.ACCESS_NETWORK_STATE",
+                "android.permission.ACCESS_COARSE_LOCATION",
             ),
+            packageInfo.requestedPermissions.orEmpty().toSet(),
         )
     }
 
@@ -62,7 +61,7 @@ class PrivacyManifestInstrumentedTest {
         assertTrue(
             activities
                 .filter { it.name != launcher.name }
-                .none { it.exported && it.name != "androidx.activity.ComponentActivity" },
+                .none { it.exported },
         )
     }
 
