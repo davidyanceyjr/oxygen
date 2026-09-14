@@ -4,7 +4,7 @@ Status: specified
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-13
+Revised: 2026-09-14
 Reconciled against local `origin/main` ref: `82cf281`
 Synchronized through Gate 30C3 alert evidence/documentation closure after Slice
 30C2 implementation `70304b8`; prior baseline
@@ -41,7 +41,9 @@ committed at `70304b8` as the deterministic official-alert detail accessibility
 boundary. Gate 30C3 is committed as the deterministic alert evidence and
 documentation closure. Slice 30D1 is committed at `78ecb84`; Slice 30D2 is
 committed at `2955aa5` as the Appearance layout and environment resilience
-repair; Gate 30D3 is the next specified candidate:
+repair; Gate 30D3 is committed. Gate 30E is deferred as optional first-release
+follow-up per the 2026-09-14 user decision; Slice 33A is the next specified
+candidate. The completed/deferred accessibility sequence is retained below:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -63,7 +65,7 @@ repair; Gate 30D3 is the next specified candidate:
 18. Slice 30D1 — Appearance Control Semantics
 19. Slice 30D2 — Appearance Layout and Environment Resilience
 20. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
-21. Gate 30E — Installed TalkBack and Accessibility Closure
+21. Gate 30E — Installed TalkBack and Accessibility Closure (deferred; optional for first release)
 
 Do not start a later entry merely because it appears here. Each entry remains
 `specified` until selected in `.codex/plans/current.md`. A production defect
@@ -785,14 +787,14 @@ repair adds scroll-content bottom separation from the fixed Back action and a
 stable disabled-motion status node. All six cases passed on API-37
 `oxygen_starter`; installed evidence also covers Effects Off with disabled
 animations and a Terminal/High pair. Production repairs began from the compact
-baseline overlap assertion. Gate 30D3 is next.
+baseline overlap assertion. Gate 30D3 subsequently completed its evidence sync.
 
 Out of scope: semantics already owned by 30D1, new preference/state/storage
 behavior, Home/alert changes, visual redesign, and TalkBack traversal.
 
 ### Gate 30D3: Appearance Accessibility Evidence and Document Sync
 
-Status: specified
+Status: committed
 
 Prerequisites: Slices 30D1 and 30D2.
 
@@ -810,15 +812,20 @@ six accepted D2 connected cases on API-37 `oxygen_starter`, with installed LTR,
 font-scale-2.0, RTL, disabled-animation Effects Off, and Terminal/High evidence.
 TalkBack service traversal, localization, automatic contrast, injected storage
 failures, numeric installed request counts, and release checks remain
-unverified. Gate 30E is the next specified candidate.
+unverified. Gate 30E is deferred; Slice 33A is the next specified candidate.
 
 ### Gate 30E: Installed TalkBack and Accessibility Closure
 
-Status: specified
+Status: specified — deferred, optional for the first release; service traversal unverified
+
+User release decision (2026-09-14): this audit and the host audio prerequisite
+are non-blocking for the first version and for Slice 33A onward. Preserve the
+existing evidence and manual handoff; do not claim successful audit closure.
+The acceptance criteria below apply when this optional follow-up is resumed.
 
 Prerequisites: Gates 30A3, 30B3, 30C3, and 30D3.
 
-Release intent: exercise the completed production surfaces with Android
+Follow-up intent: exercise the completed production surfaces with Android
 accessibility services and close Gate 30 using retained cross-slice evidence.
 
 Must prove where the emulator supports it:
@@ -835,8 +842,8 @@ Must prove where the emulator supports it:
 
 Attempt one bounded TalkBack setup/traversal on the pinned emulator. If the
 service is absent or cannot be enabled safely, retain exact package/service/
-settings evidence and mark only service traversal blocked; never convert it to
-mock success. A production defect creates a bounded repair slice ahead of 30E.
+settings evidence and retain service traversal as unverified, without blocking
+the first release; never convert it to mock success. A production defect creates a bounded repair slice ahead of 30E.
 
 Gate 30E is test/evidence/documentation work, not a refactor. On success,
 reconcile README, specification sections 25/31/33/34/37/46/53, this roadmap,
@@ -1183,7 +1190,7 @@ Use this as sequencing guidance, not permission to work multiple slices at once.
 50. Slice 30D1 — Appearance Control Semantics
 51. Slice 30D2 — Appearance Layout and Environment Resilience
 52. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
-53. Gate 30E — Installed TalkBack and Accessibility Closure
+53. Gate 30E — Installed TalkBack and Accessibility Closure (optional follow-up; not a first-release prerequisite)
 51. Slice 33A — Dependency and Manifest Privacy Audit
 52. Slice 33B — Provider Disclosure and Local Data Privacy Audit
 53. Gate 34A — Settings and About Release Check
@@ -1278,7 +1285,8 @@ Immediate planning boundary:
 -> Slice 30D1 Appearance Control Semantics committed at `78ecb84`
 -> Slice 30D2 Appearance Layout and Environment Resilience committed at `2955aa5`
 -> Gate 30D3 Appearance Accessibility Evidence and Documentation Sync committed
--> Gate 30E Installed TalkBack and Accessibility Closure is next specified
+-> Gate 30E Installed TalkBack and Accessibility Closure deferred; optional for first release
+-> Slice 33A Dependency and Manifest Privacy Audit is next specified
 ```
 
 Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,
@@ -1286,8 +1294,10 @@ Slice 29B, Slice 30A1, Slice 30A2, and the 30A3B2 documentation sync are
 complete. Gate 30 is split into the bounded 30A1–30E queue at the head of this
 roadmap; 30A3A1 evidence is complete, Slices 30B1A1 through 30B1A3B1 are
 committed, Slice 30D1, Slice 30D2, and Gate 30D3 are committed, and Gate 30E
-is the next specified candidate in `.codex/plans/current.md`. Release work and
-release-candidate claims remain outside this boundary.
+is deferred as optional first-release follow-up. `.codex/plans/current.md`
+records Slice 33A as the next candidate to plan. Service-level TalkBack remains
+unverified; this exception does not imply release readiness or waive other
+release checks.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

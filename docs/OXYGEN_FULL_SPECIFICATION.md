@@ -1452,6 +1452,12 @@ All important UI must:
 - preserve logical TalkBack order;
 - honor reduced motion.
 
+First-version release decision (2026-09-14): the Gate 30E installed TalkBack
+speech/focus audit and its host audio prerequisite are optional follow-up work.
+Their missing evidence does not block the first release or subsequent roadmap
+slices. Service-level TalkBack traversal remains unverified; this decision does
+not mark the audit passed or waive the UI accessibility obligations above.
+
 Good spoken output:
 
 > Partly cloudy, 74 degrees. High 81, low 66. 40 percent chance of rain.
@@ -2210,7 +2216,10 @@ Off meaning, and the Oxygen/Paper/Terminal with Standard/High contrast matrix.
 Installed evidence covers LTR, font scale 2.0, RTL, Effects Off, and
 Terminal/High while preserving the fixed Back action and saved-status meaning.
 TalkBack service traversal, localization, automatic contrast, and release
-checks remain unverified. Gate 30D3 is the next specified candidate.
+checks remain unverified. Gate 30D3 is committed. Per the 2026-09-14 user
+release decision, Gate 30E is deferred and does not block the first version;
+its installed TalkBack audit remains unverified. Slice 33A is the next specified
+candidate in the roadmap.
 
 ---
 

@@ -1,92 +1,161 @@
-# Gate 30D3 — Appearance Accessibility Evidence and Documentation Sync
+# Slice 33A — Dependency and Manifest Privacy Audit
 
-**Status:** committed
-**Cycle ID:** `2026-09-14-gate-30d3-appearance-accessibility-evidence-doc-sync`
-**Prerequisite:** Slice 30D2, committed at `2955aa5`
+**Status:** implemented; installed acceptance blocked by dependency-owned manifest findings
+**Difficulty:** 1/10
+**Cycle ID:** `2026-09-14-slice-33a-dependency-manifest-privacy-audit`
 
-## Selected behavior
+## Slice outcome
 
-Reconcile and publish the evidence-supported accessibility status of the
-production Settings / Appearance path after Slice 30D2. This is a
-documentation-only closure gate. It does not add behavior, tests, UI, or
-platform integration.
+Establish and test the Android app’s privacy baseline at the dependency and
+manifest boundary. The slice includes one safe production hardening change:
+the application manifest explicitly disables cleartext traffic. Current
+production endpoints are HTTPS, so this does not change the existing weather,
+geocoding, alert, or external-link paths.
+
+This slice does not change backup behavior. `allowBackup="true"` currently
+exists, and the app stores selected location, saved locations, forecast cache,
+and preferences locally. Changing backup or data-extraction policy would alter
+device migration behavior and requires a separate product decision and repair
+slice; 33A records the current behavior and its privacy implication.
+
+## Implementation
+
+1. In `app/src/main/AndroidManifest.xml`, add
+   `android:usesCleartextTraffic="false"` to the application declaration.
+2. Add `app/src/androidTest/kotlin/com/oxygen/weather/PrivacyManifestInstrumentedTest.kt`
+   with focused installed-package checks for:
+   - exactly the three currently declared permissions:
+     `INTERNET`, `ACCESS_NETWORK_STATE`, and
+     `ACCESS_COARSE_LOCATION`;
+   - `usesCleartextTraffic == false`;
+   - the launcher `MainActivity` being exported; and
+   - no exported service, receiver, or provider being introduced.
+3. Do not add a dependency, service, receiver, provider, permission, network
+   security XML file, analytics SDK, or backup rule.
+4. Use dependency output and the merged debug manifest to audit transitive
+   dependencies, manifest merging, and component exposure. A prohibited SDK,
+   unnecessary Play Services dependency, unused permission, background
+   location path, or unexpected exported component is a finding. Do not fix a
+   finding inside this slice unless it is the explicit cleartext hardening
+   above; create a separately named repair slice.
 
 ## Acceptance boundary
 
-The gate is ready when:
+The slice passes when all of these are true:
 
-1. The retained 30D1 and 30D2 artifacts and cycle entries are audited against
-   the committed production and test changes.
-2. README, `docs/OXYGEN_FULL_SPECIFICATION.md`,
-   `.codex/plans/mvp-roadmap.md`, this plan, and
-   `.codex/cycles/history.md` agree on the committed Appearance semantics and
-   layout/environment evidence.
-3. Documentation distinguishes deterministic Compose/Android semantics and
-   installed evidence from unverified TalkBack service traversal, localization,
-   automatic contrast, storage-failure injection, numeric installed request
-   counts, and release readiness.
-4. No claim is upgraded beyond evidence actually retained for 30D1 and 30D2,
-   and Gate 30E remains the next candidate.
+- the installed manifest test passes;
+- the resolved `:app` and `:core` dependency trees contain no advertising,
+  analytics, telemetry, account, cloud-sync, or unnecessary Play Services
+  dependency;
+- permission declarations match current production use, with location still
+  optional and requested only after the user action;
+- only the launcher activity is exported;
+- no cleartext traffic is permitted and no custom network-security file is
+  present;
+- backup behavior is recorded as `allowBackup=true`, with its migration/privacy
+  implication explicitly left for a separate decision; and
+- no finding is silently downgraded to documentation work.
 
-## Evidence to audit
+The result is an implementation and audit of this boundary, not a release
+claim. Provider disclosures, provider terms, Settings navigation, and release-
+candidate verification remain outside 33A.
 
-Review, without rerunning unchanged checks:
+## Files
 
-- `.codex/test-artifacts/2026-09-13-slice-30d1-appearance-control-semantics/`
-- `.codex/test-artifacts/2026-09-13-slice-30d2-appearance-layout-environment-resilience/`
-- the 30D1 and 30D2 entries in `.codex/cycles/history.md`
-- commits `78ecb84` and `2955aa5`, including their changed-file boundaries
+Expected production/test changes:
 
-Confirm the six accepted 30D2 connected cases, the five accepted 30D1 cases,
-the API-37 emulator identity, installed LTR/font-scale/RTL/reduced-motion and
-theme/contrast evidence, and all recorded limitations.
+- `app/src/main/AndroidManifest.xml`
+- `app/src/androidTest/kotlin/com/oxygen/weather/PrivacyManifestInstrumentedTest.kt`
 
-## Intended files
+Inspection inputs:
 
-- `README.md` — correct only evidence-supported maturity/accessibility claims.
-- `docs/OXYGEN_FULL_SPECIFICATION.md` — synchronize Appearance evidence and
-  remaining accessibility limits if stale.
-- `.codex/plans/mvp-roadmap.md` — mark 30D3 committed only after this gate's
-  documentation commit; leave Gate 30E as the next specified candidate.
-- `.codex/plans/current.md` — retain this plan until closure, then record the
-  final commit and evidence.
-- `.codex/cycles/history.md` — append one self-contained closure entry.
+- `app/build.gradle.kts`
+- `core/build.gradle.kts`
+- `gradle/libs.versions.toml`
+- production location, provider, cache, and persistence code as needed to
+  justify permission and backup findings
 
-Do not modify production code, tests, provider behavior, preference/state
-models, artifacts, or the unrelated untracked archive.
+## Verification and evidence
 
-## Workflow and checks
+Save command output, the merged manifest, the dependency audit, screenshots or
+UI hierarchy only if an installed check needs them, and a short findings report
+under:
 
-Use the documentation-only workflow:
+`.codex/test-artifacts/2026-09-14-slice-33a-dependency-manifest-privacy-audit/`
 
-`discover -> contract/document -> review -> ready`
+Run once per unchanged environment:
 
-Planned checks:
+```text
+. scripts/android-env.sh && ./gradlew :app:dependencies :core:dependencies
+. scripts/android-env.sh && ./gradlew :app:processDebugMainManifest
+. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.PrivacyManifestInstrumentedTest
+. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
+. scripts/android-env.sh && ./gradlew :app:assembleDebug
+. scripts/android-env.sh && ./gradlew :app:lintDebug
+git diff --check
+```
 
-- inspect retained artifacts, commit diffs, and current documentation;
-- review the Markdown diff for factual status, scope, and limit consistency;
-- run `git diff --check` after editing;
-- run `git status --short` and preserve unrelated changes.
+The connected run is four or fewer focused test cases on one existing API-37
+emulator session. Install once after the APK changes. If the emulator or
+runner reaches a bounded timeout, record it and do not convert source review
+into installed-test success.
 
-Android compilation, unit tests, connected tests, emulator startup/install, and
-assembly are intentionally skipped because this gate changes Markdown only and
-relies on unchanged retained evidence. If the audit finds an evidence
-contradiction or production defect, stop the documentation gate and create a
-separately named repair slice rather than rewriting the claim.
+## Required document updates after evidence
 
-## Completion record
+- `.codex/plans/current.md`: record the actual result, commands, artifact path,
+  findings, and next action.
+- `.codex/plans/mvp-roadmap.md`: mark 33A committed only after the change and
+  evidence are committed; then identify 33B as the next specified candidate.
+- `README.md`: add only verified privacy-boundary claims that are currently
+  absent, including explicit cleartext blocking if the product-status section
+  needs it; retain the backup limitation accurately.
+- `docs/OXYGEN_FULL_SPECIFICATION.md`: update only if the audit exposes a
+  specification mismatch or if the explicit HTTPS/backup policy is adopted by
+  the project; do not silently turn an audit result into a new product rule.
+- `.codex/cycles/history.md`: append a concise self-contained 33A result with
+  changed files, tests, artifact path, limits, and commit state.
 
-Documentation commit: completed in the current commit.
+No document may claim that backup is disabled, TalkBack is verified, provider
+disclosure is complete, or the app is release-ready.
 
-Changed files: `README.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`,
-`.codex/plans/mvp-roadmap.md`, `.codex/plans/current.md`, and
-`.codex/cycles/history.md`.
+## Next action
 
-Retained evidence audited: `.codex/test-artifacts/2026-09-13-slice-30d1-appearance-control-semantics/`
-and `.codex/test-artifacts/2026-09-13-slice-30d2-appearance-layout-environment-resilience/`.
-Five D1 and six D2 accepted connected cases, API-37 `oxygen_starter` identity,
-and installed LTR/font-scale-2.0/RTL/Effects-Off/Terminal-High evidence are
-reconciled. TalkBack service traversal, localization, automatic contrast,
-injected storage failures, numeric installed request counts, and release
-checks remain unverified. Gate 30E remains out of scope and is the next
-specified roadmap candidate.
+Select a separately named dependency/manifest exposure repair slice for the
+injected permission and exported AndroidX components before claiming 33A
+verified or committing this slice. Do not change backup policy or repair the
+lint API-level finding under 33A.
+
+## Execution result
+
+Implemented the planned production hardening and test boundary:
+
+- `app/src/main/AndroidManifest.xml` now explicitly sets
+  `android:usesCleartextTraffic="false"`.
+- Added `app/src/androidTest/kotlin/com/oxygen/weather/PrivacyManifestInstrumentedTest.kt`
+  with four installed-package checks.
+- Cleartext enforcement passed on API 37. The permission, exported-activity,
+  and exported-component checks failed against the actual merged/package
+  manifest; these are retained as concrete findings, not downgraded to docs.
+
+## Evidence
+
+Artifacts: `.codex/test-artifacts/2026-09-14-slice-33a-dependency-manifest-privacy-audit/`
+
+- Dependency resolution and debug manifest processing passed.
+- Debug assembly/install passed; one `oxygen_starter` API-37 emulator session
+  was used and stopped cleanly.
+- Connected result: 4 tests completed, 1 passed and 3 failed. The failures
+  found `com.oxygen.weather.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, exported
+  `androidx.activity.ComponentActivity`, and exported
+  `androidx.profileinstaller.ProfileInstallReceiver` (protected by `DUMP`).
+- App/core debug unit tests passed.
+- `git diff --check` passed.
+- `:app:lintDebug` failed on the pre-existing min-SDK/API-30
+  `LocationManager.getCurrentLocation` call in
+  `AndroidDeviceLocationSource.kt:46`, plus 13 warnings; no lint repair was
+  performed.
+
+No production/test change is committed. README, specification, and roadmap
+remain unchanged by this execution because the slice acceptance boundary is
+red; backup remains `allowBackup=true`, and no release or privacy-complete
+claim is made.

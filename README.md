@@ -8,6 +8,11 @@ subscriptions, mandatory accounts, or a single locked-in weather vendor.
 This repository is an early Android app, not an MVP, beta, release candidate,
 or finished weather product.
 
+The installed TalkBack speech/focus audit (Gate 30E) is deferred and optional
+for the first release, per the 2026-09-14 release decision. Its host audio issue
+does not block release or further development. TalkBack traversal remains
+unverified; existing accessibility requirements and other release checks apply.
+
 Oxygen source code is licensed under GPL-3.0-or-later. Weather data,
 geocoding data, third-party dependency licenses, and provider attribution are
 tracked separately in `DATA_SOURCES.md`, `THIRD_PARTY_LICENSES.md`, `NOTICE`,
