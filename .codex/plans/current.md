@@ -1,6 +1,6 @@
 # Gate 34A — Settings and About Release Check
 
-**Status:** verified; ready for commit
+**Status:** committed at `64d4908`; next action is to plan Gate 34B
 **Cycle ID:** `2026-09-14-gate-34a-settings-about-release-check`
 **Difficulty:** 3/10
 
@@ -165,5 +165,5 @@ README/specification status where affected, and cycle history after the commit.
 
 Limits: no live provider call, release-candidate verification, TalkBack service
 traversal, localization, automatic contrast audit, or deferred Gate 30E work.
-No commit was made in this execution; the verified changes are ready for the
-user's normal commit decision.
+Commit state: committed as `64d4908`; post-commit documentation
+synchronization follows in the documentation-sync commit.

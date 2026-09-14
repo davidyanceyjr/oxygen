@@ -769,7 +769,7 @@ synchronization completed.
 
 ### 2026-09-14-gate-34a-settings-about-release-check
 
-Status: verified; ready for commit
+Status: committed at `64d4908`
 Mode: bounded installed Settings/About release check
 Slice: Gate 34A — Settings and About Release Check
 
@@ -800,4 +800,5 @@ Evidence:
 Limits: no live provider call, release-candidate verification, TalkBack service
 traversal, localization, automatic contrast audit, or deferred Gate 30E work.
 
-Commit state: uncommitted; verified changes are ready for commit.
+Commit state: committed at `64d4908`; post-commit documentation
+synchronization follows in the documentation-sync commit.

@@ -45,7 +45,7 @@ repair; Gate 30D3 is committed. Gate 30E is deferred as optional first-release
 follow-up per the 2026-09-14 user decision; Slice 33A's audit, Slice 33B's
 manifest repair, and the provider-disclosure privacy audit are committed at
 `da3a9a3`.
-Gate 34A is the next candidate to plan. The
+Gate 34A was committed at `64d4908`; Gate 34B is the next candidate to plan. The
 completed/deferred accessibility sequence is retained below:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
@@ -968,7 +968,7 @@ No provider is active/current in disclosures unless its production path can fetc
 
 ## Gate 34A: Settings and About Release Check
 
-Status: specified
+Status: committed at `64d4908`
 
 Must prove:
 
