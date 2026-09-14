@@ -581,7 +581,7 @@ Limits:
 
 ### 2026-09-14-gate-30d3-appearance-accessibility-evidence-doc-sync
 
-Status: ready; documentation commit pending
+Status: committed
 Mode: bounded Appearance accessibility evidence reconciliation and documentation sync
 Slice: Gate 30D3, Appearance Accessibility Evidence and Documentation Sync
 
@@ -606,6 +606,6 @@ Evidence and limits:
 
 Checks: `git diff --check` and `git status --short` passed before commit.
 
-Commit state: ready for documentation commit; the unrelated untracked archive
+Commit state: committed; the unrelated untracked archive
 `.codex/cycles/archive/2026-09-12-before-slice-30b2-runner-finalization-repair.md`
 was preserved unchanged.

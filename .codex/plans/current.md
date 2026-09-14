@@ -76,7 +76,7 @@ separately named repair slice rather than rewriting the claim.
 
 ## Completion record
 
-Documentation commit: to be filled after the documentation commit.
+Documentation commit: completed in the current commit.
 
 Changed files: `README.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`,
 `.codex/plans/mvp-roadmap.md`, `.codex/plans/current.md`, and
