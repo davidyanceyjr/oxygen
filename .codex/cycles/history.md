@@ -764,4 +764,5 @@ Limits:
   conditional requests, backup-policy changes, and deferred Gate 30E work
   remain unverified/out of scope.
 
-Commit state: implementation and documentation sync pending commit.
+Commit state: committed in `da3a9a3`; post-commit plan, roadmap, and history
+synchronization completed.

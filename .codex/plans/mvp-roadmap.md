@@ -43,7 +43,8 @@ documentation closure. Slice 30D1 is committed at `78ecb84`; Slice 30D2 is
 committed at `2955aa5` as the Appearance layout and environment resilience
 repair; Gate 30D3 is committed. Gate 30E is deferred as optional first-release
 follow-up per the 2026-09-14 user decision; Slice 33A's audit, Slice 33B's
-manifest repair, and the provider-disclosure privacy audit are committed.
+manifest repair, and the provider-disclosure privacy audit are committed at
+`da3a9a3`.
 Gate 34A is the next candidate to plan. The
 completed/deferred accessibility sequence is retained below:
 
