@@ -13,14 +13,15 @@ file before replacing or compressing it.
 
 ## Recent State Summary
 
-- Gate 30D3 is committed after the Appearance semantics and layout slices.
-- Gate 30E's visible emulator startup was recovered with `DISPLAY=:0`;
-  installed TalkBack was confirmed, but host audio prevented the speech audit.
-- User decision on 2026-09-14: Gate 30E and its remaining audio prerequisite
-  are deferred, optional, and non-blocking for the first release. TalkBack
-  service traversal remains unverified. Slice 33A is the next candidate to plan.
-- Earlier summary and entries are preserved in
-  `archive/2026-09-14-before-talkback-first-release-deferral.md`.
+- Slice 30B1A3B1, RTL/LTR Spoken-Meaning Equivalence, is committed at
+  `26b32b8`.
+- Slice 30B1A4's two RTL compact/no-refetch boundaries are verified: the
+  Standard fixture alignment is committed at `8b5647b`, and the one-method
+  Simple result passed with 1 completed, 0 skipped, and 0 failed.
+- Gate 30B1B1 is committed as the installed device-wide RTL Home evidence and
+  documentation closure. Slice 30B2 is committed at `728f4c2`; Gate 30B3 is
+  the combined Home-environment evidence/documentation closure, leaving Slice
+  30C1 as the next specified candidate.
 
 ## Recent Cycles
 
@@ -633,56 +634,3 @@ Status: diagnostic handoff complete, uncommitted; Gate 30E planned and unverifie
   Original failed-attempt artifacts and unrelated untracked archive preserved.
 - Active plan updated with the narrower audio blocker. No commit or successful
   gate authority sync; broader accessibility claims remain unchanged.
-
-
-### 2026-09-14-gate-30e-first-release-deferral
-
-Status: specified — Gate 30E deferred; documentation decision uncommitted.
-
-- User explicitly made the remaining emulator/TalkBack audit non-blocking and
-  not imperative for the first version. The host audio prerequisite and manual
-  service traversal are optional follow-up; no successful audit is claimed.
-- Updated specification section 37 and current status, README, roadmap, active
-  plan, and recent history. Slice 33A is the next specified candidate to plan.
-- Existing accessibility obligations and all other release checks remain in
-  effect. Original diagnostic logs/manual handoff are retained under
-  `.codex/test-artifacts/2026-09-14-gate-30e-emulator-blocker-recovery/`.
-- Documentation-only review: no production/test changes, Android checks, or
-  emulator session. The prior live ledger was archived before summary edits;
-  unrelated user changes and the earlier untracked archive were preserved.
-
-
-### 2026-09-14-slice-33a-dependency-manifest-privacy-audit
-
-Status: implemented; installed acceptance blocked; uncommitted diagnostic handoff
-Mode: bounded Android dependency and manifest privacy audit
-Slice: Slice 33A, Dependency and Manifest Privacy Audit
-
-Result:
-
-- Added `android:usesCleartextTraffic="false"` to the production application
-  manifest and added four installed-package privacy/component checks.
-- The cleartext check passed on API 37. Three checks failed against actual
-  merged/package behavior: generated
-  `com.oxygen.weather.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, exported
-  `androidx.activity.ComponentActivity`, and exported
-  `androidx.profileinstaller.ProfileInstallReceiver` protected by `DUMP`.
-- The findings are dependency/manifest repair work and remain in scope for a
-  separately named follow-up; no finding was silently treated as documentation.
-
-Evidence and limits:
-
-- Artifacts: `.codex/test-artifacts/2026-09-14-slice-33a-dependency-manifest-privacy-audit/`.
-- Dependency resolution, merged manifest processing, debug assembly/install,
-  app/core unit tests, and `git diff --check` passed. The one planned API-37
-  emulator session was stopped cleanly.
-- Connected result: 4 tests completed, 1 passed, 3 failed. `:app:lintDebug`
-  failed on the pre-existing API-30 `LocationManager.getCurrentLocation` min
-  SDK finding plus 13 warnings. No repair slice, backup-policy change, or
-  release claim was made.
-
-Changed files: `app/src/main/AndroidManifest.xml` and
-`app/src/androidTest/kotlin/com/oxygen/weather/PrivacyManifestInstrumentedTest.kt`.
-
-Commit state: uncommitted; current plan records the repair handoff. Existing
-uncommitted documentation and archive changes were preserved.

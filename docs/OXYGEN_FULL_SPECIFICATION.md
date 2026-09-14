@@ -799,6 +799,24 @@ Failed reads and writes retain conservative confirmed presentation and expose
 retry. Contrast selection does not change theme, layout, effects, forecast
 data, or provider requests.
 
+The installed Appearance surface presents the four supported preference groups
+with readable group headings and visible single-choice controls: Oxygen/Paper/
+Terminal Theme, Standard/High Contrast, Simple/Standard Layout, and Off/Subtle
+Effects. Each control exposes its label, selected state, action, and disabled
+state independently of color or decoration. Loading and pending writes retain
+the confirmed selection while naming the operation; saved and failure states
+are readable, with named Retry actions where the existing transaction supports
+them. Effects preserves its same-choice retry behavior after a failed write.
+This contract is covered by five named D1 connected cases at the OxygenApp
+Compose/Android boundary. Slice 30D2 adds six named connected cases for the
+installed Appearance layout boundary at compact size, font scales 1.3 and
+2.0, RTL, disabled animations with Effects Off, and the Oxygen/Paper/Terminal
+with Standard/High contrast matrix. Installed API-37 evidence covers LTR, font
+scale 2.0, RTL, Effects Off, and a Terminal/High pair. TalkBack service
+traversal and localization remain separate verification work; numeric
+installed request counts and injected storage failures remain fixture-backed,
+and automatic contrast and release checks remain unverified.
+
 ---
 
 ## 24. Layout Presets
@@ -1434,6 +1452,12 @@ All important UI must:
 - preserve logical TalkBack order;
 - honor reduced motion.
 
+First-version release decision (2026-09-14): the Gate 30E installed TalkBack
+speech/focus audit and its host audio prerequisite are optional follow-up work.
+Their missing evidence does not block the first release or subsequent roadmap
+slices. Service-level TalkBack traversal remains unverified; this decision does
+not mark the audit passed or waive the UI accessibility obligations above.
+
 Good spoken output:
 
 > Partly cloudy, 74 degrees. High 81, low 66. 40 percent chance of rain.
@@ -1694,6 +1718,37 @@ service-level TalkBack traversal or pronunciation evidence and does not cover
 RTL, reduced-motion invariance, theme/contrast invariance, alerts,
 localization, a complete large-font matrix, release readiness, or MVP
 completion.
+
+Slice 30B2 then retained six selected one-method Android results spanning all
+implemented Oxygen/Paper/Terminal and Standard/High theme/contrast pairs at
+the 360x640 dp, font-scale-1.3 full-weather fixture boundary. They prove
+Effects-Off/effective-Off Home meaning, navigation, and the selected
+no-preference-write/no-refetch contracts. The API-37 installed production
+Chicago journey set Android animation scales to zero, force-stopped/relaunched,
+and retained Standard Now, Hourly, Daily, and Details plus visible live weather
+and source/update/provenance while Appearance was effectively Off. It restored
+the original scales and saved appearance before the emulator stopped. This is
+not service-level TalkBack evidence, a live-alert success claim, Simple
+installed RTL evidence, localization, or a complete font/theme cross-product.
+
+Slice 30C1 then passed four named deterministic connected cases for the
+official-alert summary boundary: required fields, severity meaning, actions and
+48dp targets; truthful `NoAlerts`; detail round-trip with Home state and
+request-count retention; and compact LTR/RTL high-contrast long-text
+reachability. Slice 30C2 then passed three named deterministic connected cases
+for complete verbatim detail reading and multi-alert return behavior,
+high-contrast non-color selection semantics, and RTL/font-scale-2.0 Effects-Off
+long-content reachability. Together these cases cover only the exercised
+Compose/Android boundary and do not establish service-level TalkBack traversal,
+pronunciation, localization, alert persistence/cache, background polling,
+notifications, or release readiness.
+
+Gate 30C3 reconciled the retained seven-case result set and both installed
+manual Chicago attempts. Each installed attempt ended in a truthful no-alert
+Home after the production selected-location path, so no live-alert summary or
+detail-entry journey is claimed. The retained evidence paths are
+`.codex/test-artifacts/2026-09-12-slice-30c1-official-alert-summary-accessibility/`
+and `.codex/test-artifacts/2026-09-13-slice-30c2-official-alert-detail-accessibility/`.
 
 ### Contract fixtures
 
@@ -2081,9 +2136,90 @@ implemented, verified, and committed at `1a8e14f`; and Slice 30A3A1 Home
 Speech/Layout Evidence is complete as evidence on 2026-09-10. Slice 30A3B2 is
 the documentation-sync boundary for that evidence. Slice 30B1A1 RTL semantic
 page navigation is committed at `63ed25a`, and Slice 30B1A2 RTL directional
-affordances and gesture behavior is committed at `20b6ddc`. Slice 30B1A3 is
-the next planned boundary. No later Gate 30 condition, including complete RTL
-support or TalkBack service traversal, is claimed complete.
+affordances and gesture behavior is committed at `20b6ddc`. Slice 30B1A3A1
+Standard Home RTL Hourly chronology is committed at `74675e2`; its focused
+Compose-local RTL chronology evidence and broad checks are retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a1-rtl-standard-hourly-chronology/`.
+The former Slice 30B1A3 draft is decomposed in the roadmap into
+30B1A3A1–30B1A3B1. Slice 30B1A3A2 Standard Home RTL Daily chronology is
+committed at `9390601`; its focused Compose-local RTL chronology evidence and
+broad checks are retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology/`.
+Slice 30B1A3A3 Simple Home RTL forecast chronology is committed at `91974b2`;
+its focused Compose-local RTL evidence for both Simple Forecast choices and
+broad checks are retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology/`.
+Slice 30B1A3B1 RTL/LTR spoken-meaning equivalence is committed at `26b32b8`.
+Its two named Compose-local connected cases compare complete unmerged Hourly
+and Daily semantics for Standard and Simple Home under LTR and RTL; paired
+semantics, result/log output, emulator metadata, and the verification ledger
+are retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence/`.
+Slice 30B1A4 RTL compact layout and no-refetch evidence has verified Standard
+and Simple boundaries. The Daily container interaction and stale Details status
+fixture are committed at `8b5647b`; the separate Simple method completed once
+with one test, zero skipped, and zero failed. Evidence is retained under
+`.codex/test-artifacts/2026-09-12-slice-30b1a4-a6-details-status-fixture-alignment/`
+and `.codex/test-artifacts/2026-09-12-slice-30b1a4-a7-simple-rtl-compact-completion/`.
+Gate 30B1B1 then exercised the installed Standard Home path with a device-wide
+`ldrtl` configuration and a real manual selected-location flow, retaining Now,
+Hourly, Daily, and Details navigation plus screenshots and UI hierarchies under
+`.codex/test-artifacts/2026-09-12-gate-30b1b1-rtl-installed-evidence-doc-sync/`.
+Device direction was restored and verified after the journey. This does not
+claim TalkBack service traversal, Simple installed RTL evidence, reduced
+motion, theme/contrast invariance, alert accessibility, localization, or later
+Gate 30 conditions.
+
+Slice 30B2, Home Reduced-Motion and Appearance Invariance, is committed at
+`728f4c2`. Its six retained focused Android results cover the implemented
+theme/contrast pairs under explicit or effective Effects Off. The installed
+manual Chicago journey exercised Android disabled-animation effective Off
+through Standard Now, Hourly, Daily, and Details and restored the original
+system scales and saved appearance. Gate 30B3 records the combined RTL and
+Home-environment evidence without upgrading TalkBack, live-alert, Simple
+installed RTL, localization, or release claims.
+
+Slice 30C1, Official-Alert Summary Accessibility, is committed at `4ffc507`.
+Its deterministic Compose boundary covers the Home summary's event, explicit
+severity, issuer, expiry, source-check time, attribution, count behavior,
+meaningful action semantics, safe-source fallback, truthful NoAlerts state,
+detail round-trip without refetch, and compact long-text LTR/RTL/high-contrast
+overflow. The installed manual Chicago attempt returned a truthful no-alert
+Home, so live-alert summary/detail-entry evidence is unavailable. Full alert
+detail reading accessibility, TalkBack service traversal, localization, and
+release readiness remain unverified and are not implied by this slice.
+
+Slice 30C2, Official-Alert Detail Accessibility, is committed at `70304b8`.
+Its deterministic Compose boundary covers complete verbatim detail content,
+logical reading reachability, meaningful selected/unselected alert semantics,
+validated source action, 48dp controls, Home return without refetch, and long
+content at RTL/font scale 2.0 with High contrast and Effects Off. The installed
+manual Chicago selection again returned a truthful no-alert Home, so no live
+detail journey is claimed. Alert persistence/background work, TalkBack service
+traversal, localization, and release readiness remain unverified.
+
+Gate 30C3 is the committed evidence and documentation closure for the 30C1
+summary and 30C2 detail boundaries. Its seven retained deterministic connected
+results and two truthful installed no-alert attempts are recorded without
+upgrading the claim to service-level TalkBack, localization, alert persistence,
+background polling, notifications, or release readiness. Slice 30D1,
+Appearance Control Semantics, is committed at `78ecb84`. Its five retained
+focused connected cases cover the four managed groups' headings, labels,
+single-choice roles, selected/disabled/action semantics, pending/confirmed
+selection, status/retry behavior, 48dp controls, preference independence, and
+no-refetch behavior. One installed Chicago/Open-Meteo journey confirms loaded
+Appearance controls, a saved Paper choice, and return to the same Home
+provenance/update presentation. Slice 30D2, Appearance Layout and Environment
+Resilience, is committed at `2955aa5`. Its six focused connected cases cover
+compact and large-font reachability, RTL ordering, disabled-animation Effects
+Off meaning, and the Oxygen/Paper/Terminal with Standard/High contrast matrix.
+Installed evidence covers LTR, font scale 2.0, RTL, Effects Off, and
+Terminal/High while preserving the fixed Back action and saved-status meaning.
+TalkBack service traversal, localization, automatic contrast, and release
+checks remain unverified. Gate 30D3 is committed. Per the 2026-09-14 user
+release decision, Gate 30E is deferred and does not block the first version;
+its installed TalkBack audit remains unverified. Slice 33A is the next specified
+candidate in the roadmap.
 
 ---
 

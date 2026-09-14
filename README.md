@@ -8,6 +8,11 @@ subscriptions, mandatory accounts, or a single locked-in weather vendor.
 This repository is an early Android app, not an MVP, beta, release candidate,
 or finished weather product.
 
+The installed TalkBack speech/focus audit (Gate 30E) is deferred and optional
+for the first release, per the 2026-09-14 release decision. Its host audio issue
+does not block release or further development. TalkBack traversal remains
+unverified; existing accessibility requirements and other release checks apply.
+
 Oxygen source code is licensed under GPL-3.0-or-later. Weather data,
 geocoding data, third-party dependency licenses, and provider attribution are
 tracked separately in `DATA_SOURCES.md`, `THIRD_PARTY_LICENSES.md`, `NOTICE`,
@@ -40,7 +45,18 @@ and `docs/data-sources/`.
   explicit alert lookup status and forecast-only cache composition.
 - Foreground selected-point NOAA/National Weather Service active-alert lookup,
   with a Home Now summary, detail navigation, total count, attribution,
-  source-check time, and working external source link.
+  source-check time, and working external source link. Four named Slice 30C1
+  deterministic connected cases verify required summary fields, non-color
+  severity, action semantics and 48dp targets, truthful no-alert behavior,
+  detail round-trip with state/request retention, and compact LTR/RTL
+  high-contrast long-text reachability. Three named Slice 30C2 deterministic
+  connected cases verify complete verbatim detail reading, alert selection and
+  return behavior, high-contrast non-color selection semantics, and RTL/
+  font-scale-2.0 Effects-Off long-content reachability. The installed manual
+  Chicago attempts returned no active alert, so live-alert summary/detail-entry
+  evidence remains unavailable; TalkBack service traversal, localization,
+  alert persistence/background behavior, notifications, and release work
+  remain unverified.
 - Persisted Oxygen default, Metric, US, and UK unit selection through the
   installed Settings / Units surface, with immediate Home remapping.
 - Persisted Off and Subtle effects selection through the installed Settings /
@@ -60,12 +76,27 @@ and `docs/data-sources/`.
   recreation and force-stop/relaunch, remains independent of theme, layout,
   effects, and forecast requests, and failed writes retain the confirmed choice
   with retry.
+- The installed Settings / Appearance surface exposes Theme, Contrast, Layout,
+  and Effects as labeled single-choice controls with selected/disabled/action
+  semantics, readable pending/saved/failure status, and named 48dp Retry and
+  Back actions. Five D1 and six D2 focused connected cases verify the semantic,
+  compact, large-font, RTL, reduced-motion, and theme/contrast boundaries;
+  installed API-37 evidence covers LTR, font scale 2.0, RTL, Effects Off with
+  disabled animations, and a Terminal/High pair. TalkBack service traversal,
+  localization, automatic contrast, and release checks remain unverified.
 - Installed Home current, hourly, and daily weather exposes concise
   mapper-owned accessibility descriptions with resolved temperature units and
-  honest missing-value/precipitation semantics. Retained installed evidence
-  covers Standard Now, Hourly, Daily, and Details plus Simple Forecast choices
-  at 360x640 dp and font scale 1.3 with Effects Off; TalkBack traversal is not
-  yet verified.
+  honest missing-value/precipitation semantics. Retained evidence covers
+  Standard Now, Hourly, Daily, and Details plus Simple Forecast choices at
+  360x640 dp and font scale 1.3 with Effects Off. An installed device-wide RTL
+  Standard Home journey retains Now through Details and mirrored controls. The
+  retained six-case 30B2 fixture matrix covers every implemented
+  theme/contrast pair with explicit or effective Effects Off; its installed
+  production Chicago journey confirms Android disabled-animation effective Off
+  through Standard Now, Hourly, Daily, and Details while retaining live
+  weather and source/update/provenance. TalkBack traversal, Simple installed
+  RTL evidence, localization, and full alert-detail accessibility remain
+  unverified.
 - Home presentation conversion for provider-neutral unit preferences at the
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
@@ -172,6 +203,18 @@ OXYGEN_EMULATOR_WINDOW=1 scripts/start-emulator.sh
 
 Existing local scripts using the former variable remain compatible for now;
 new scripts should use `OXYGEN_EMULATOR_WINDOW`.
+
+For a bounded connected-test recovery run, use an artifact directory below
+`.codex/test-artifacts/`:
+
+```bash
+scripts/start-emulator.sh --recover \
+  --artifact-dir .codex/test-artifacts/<cycle-id>/emulator
+serial=$(tr -d '\r\n' < .codex/test-artifacts/<cycle-id>/emulator/serial.txt)
+scripts/run-connected-method.sh --serial "$serial" \
+  com.oxygen.weather.app.ui.home.HomeDashboardUiTest#methodName \
+  .codex/test-artifacts/<cycle-id>/method
+```
 
 ## Important
 

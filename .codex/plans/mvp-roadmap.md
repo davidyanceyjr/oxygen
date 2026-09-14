@@ -4,10 +4,13 @@ Status: specified
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-10
+Revised: 2026-09-14
 Reconciled against local `origin/main` ref: `82cf281`
-Synchronized through Slice 29B implementation `441d05d`, test follow-up
-`86e696c`, and evidence sync `86f046b`
+Synchronized through Gate 30C3 alert evidence/documentation closure after Slice
+30C2 implementation `70304b8`; prior baseline
+roadmap synchronization remains recorded through Slice 30B1A3B1 implementation
+`26b32b8`, Slice 29B implementation
+`441d05d`, test follow-up `86e696c`, and evidence sync `86f046b`.
 
 Repository audit cleanup and live-history compression were completed in commit
 6cab109; the active queue remains unchanged.
@@ -24,10 +27,23 @@ contracts needed for normal discovery.
 Gate 30's first draft combined independent surfaces and Android conditions.
 Implement these bounded candidates in order; 30A1 and 30A2 are committed,
 30A3A1 evidence is complete, 30A3B2 is committed at `fb51f7b` as the
-documentation sync,
-and 30B1A1 is committed at `63ed25a` as the RTL semantic page navigation
-contract; 30B1A2 is committed at `20b6ddc`; 30B1A3 is the current candidate
-selected by `.codex/plans/current.md`:
+documentation sync, 30B1A1 is committed at `63ed25a` as the RTL semantic page
+navigation contract, 30B1A2 is committed at `20b6ddc`, and 30B1A3A1 is
+committed at `74675e2`. The former 30B1A3 draft is decomposed into
+independently observable sub-slices; `30B1A3A2` is committed at `9390601`,
+`30B1A3A3` is committed at `91974b2`, `30B1A3B1` is committed at `26b32b8`,
+`30B1A4` has verified Standard and Simple boundaries, Gate 30B1B1 is committed
+as the RTL evidence/documentation closure, Slice 30B2 is committed at
+`728f4c2`, Gate 30B3 is committed as the Home-environment evidence and
+documentation closure, and Slice 30C1 is committed at `4ffc507` as the
+deterministic official-alert summary accessibility boundary. Slice 30C2 is
+committed at `70304b8` as the deterministic official-alert detail accessibility
+boundary. Gate 30C3 is committed as the deterministic alert evidence and
+documentation closure. Slice 30D1 is committed at `78ecb84`; Slice 30D2 is
+committed at `2955aa5` as the Appearance layout and environment resilience
+repair; Gate 30D3 is committed. Gate 30E is deferred as optional first-release
+follow-up per the 2026-09-14 user decision; Slice 33A is the next specified
+candidate. The completed/deferred accessibility sequence is retained below:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -35,18 +51,21 @@ selected by `.codex/plans/current.md`:
 4. Slice 30A3B2 — Home Accessibility Evidence Document Sync
 5. Slice 30B1A1 — RTL Semantic Page Navigation Contract
 6. Slice 30B1A2 — RTL Directional Affordances and Gesture Behavior
-7. Slice 30B1A3 — RTL Chronology and Spoken-Meaning Preservation
-8. Slice 30B1A4 — RTL Compact Layout and No-Refetch Evidence
-9. Gate 30B1B1 — RTL Installed Evidence and Documentation Sync
-10. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
-11. Gate 30B3 — Home Environment Evidence and Document Sync
-12. Slice 30C1 — Official-Alert Summary Accessibility
-13. Slice 30C2 — Official-Alert Detail Accessibility
-14. Gate 30C3 — Alert Accessibility Evidence and Document Sync
-15. Slice 30D1 — Appearance Control Semantics
-16. Slice 30D2 — Appearance Layout and Environment Resilience
-17. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
-18. Gate 30E — Installed TalkBack and Accessibility Closure
+7. Slice 30B1A3A1 — Standard Home RTL Hourly Chronology
+8. Slice 30B1A3A2 — Standard Home RTL Daily Chronology
+9. Slice 30B1A3A3 — Simple Home RTL Forecast Chronology
+10. Slice 30B1A3B1 — RTL/LTR Spoken-Meaning Equivalence
+11. Slice 30B1A4 — RTL Compact Layout and No-Refetch Evidence
+12. Gate 30B1B1 — RTL Installed Evidence and Documentation Sync
+13. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
+14. Gate 30B3 — Home Environment Evidence and Document Sync
+15. Slice 30C1 — Official-Alert Summary Accessibility
+16. Slice 30C2 — Official-Alert Detail Accessibility
+17. Gate 30C3 — Alert Accessibility Evidence and Document Sync
+18. Slice 30D1 — Appearance Control Semantics
+19. Slice 30D2 — Appearance Layout and Environment Resilience
+20. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
+21. Gate 30E — Installed TalkBack and Accessibility Closure (deferred; optional for first release)
 
 Do not start a later entry merely because it appears here. Each entry remains
 `specified` until selected in `.codex/plans/current.md`. A production defect
@@ -391,25 +410,142 @@ the roadmap/active-plan/history document sync. Review README and the
 specification without claiming complete RTL or TalkBack coverage before Gate
 30B1B1/30E.
 
-#### Slice 30B1A3: RTL Chronology and Spoken-Meaning Preservation
+#### Slice 30B1A3A1: Standard Home RTL Hourly Chronology
 
-Status: specified
+Status: committed at `74675e2`
 
 Prerequisite: Slice 30B1A2.
 
-Prove hourly and daily entries remain earliest-to-latest and that spoken
-time/date meaning and mapper-owned weather descriptions are unchanged under
-RTL. Use existing deterministic fixtures and presentation semantics; do not
-rewrite provider data or localized strings.
+Prove the Standard Home Hourly page preserves the logical earliest-to-latest
+order and mapper-produced time labels under Compose-local RTL. The rendered
+RTL sequence must equal the rendered LTR sequence for the same deterministic
+fixture. Physical left-to-right placement is not the chronology oracle because
+RTL mirroring is owned by 30B1A2. Use the production `HomeLoadingScreen`
+composition. Do not sort rendered output in the assertion, rewrite provider
+data, or change localized strings.
 
-Focused boundary: one or two named connected cases covering hourly/daily order,
-visible labels, and semantic descriptions in both layouts.
+Focused boundary: one named connected case,
+`rtlStandardHomeHourlyPreservesChronologicalRenderedOrder`, observing all six
+rendered Hourly entries and their logical semantics/traversal order. Require
+exact `6 AM` through `11 AM` labels, no omission/duplication, and the first
+rendered payload `6 AM`, `Rain`, `64 deg F` plus the last payload `11 AM`,
+`Rain showers`, `71 deg F`. Effects are Off and RTL is Compose-local;
+no device-level RTL, installed journey, screenshot, TalkBack, or refetch
+evidence is claimed.
+
+Production scope, only after a red rendered boundary, is limited to the
+smallest Hourly rendering correction in `HomeLoadingScreen.kt`. If the
+baseline passes, this is a test-only implementation slice.
+
+The focused connected case passed with exactly 1 completed, 0 skipped, and 0
+failed on `oxygen_starter` / `emulator-5554` using Compose-local RTL. Debug
+compile, app/core unit tests, debug assembly, and `git diff --check` passed.
+No production correction was needed. Evidence is retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a1-rtl-standard-hourly-chronology/`.
+Device-wide RTL, installed/manual RTL, screenshots, TalkBack service
+traversal, and later chronology/spoken-meaning boundaries remain out of scope.
+
+#### Slice 30B1A3A2: Standard Home RTL Daily Chronology
+
+Status: committed at `9390601`
+
+Prerequisite: Slice 30B1A3A1.
+
+Prove the Standard Home Daily page preserves the logical earliest-to-latest
+order and mapper-produced date labels under Compose-local RTL. Physical
+mirroring remains separate from chronology. Use the existing deterministic
+fixture and production Home composition, and assert the six rendered dates
+(`Sat, Aug 22` through `Thu, Aug 27`) in logical semantics/traversal order
+without sorting the result or changing provider data/localization.
+
+Focused boundary: one named connected case,
+`rtlStandardHomeDailyPreservesChronologicalRenderedOrder`, with every Daily
+entry present exactly once and first/last condition and low/high availability
+still attached to the corresponding rendered rows. Effects are Off; no device
+RTL, installed journey, screenshots, TalkBack, provider, or refetch evidence.
+Any production correction is limited to the Daily rendering boundary in
+`HomeLoadingScreen.kt` and is allowed only after a failing rendered assertion.
+
+The focused connected case passed with exactly 1 completed, 0 skipped, and 0
+failed on `oxygen_starter` / `emulator-5554` using Compose-local RTL. Debug
+compile, app/core unit tests, debug assembly, and `git diff --check` passed.
+No production correction was needed. Evidence is retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a2-rtl-standard-daily-chronology/`.
+Device-wide RTL, installed/manual RTL, screenshots, TalkBack service traversal,
+and later chronology/spoken-meaning boundaries remain out of scope.
+
+#### Slice 30B1A3A3: Simple Home RTL Forecast Chronology
+
+Status: committed at `91974b2`
+
+Prerequisite: Slice 30B1A3A2.
+
+Prove the Simple Home Forecast page retains logical earliest-to-latest order
+when the user selects either Hourly or Daily under Compose-local RTL. The
+existing visible Hourly/Daily choice controls remain the selection mechanism;
+their placement and gesture semantics are already covered by 30B1A2. The
+selected Hourly view must expose `6 AM` through `11 AM`; the selected Daily view
+must expose `Sat, Aug 22` through `Thu, Aug 27`, each in logical
+semantics/traversal order and exactly once.
+
+Focused boundary: one named connected case,
+`rtlSimpleHomeForecastChoicesPreserveChronologicalRenderedOrder`, which
+selects both choices and asserts the rendered labels and representative
+condition/value association for each. It must not assert repository request
+counts; that belongs to 30B1A4. Any production correction is limited to the
+existing Simple Forecast/Hourly/Daily rendering boundary in
+`HomeLoadingScreen.kt`, only after a red assertion.
+
+The focused connected case passed with exactly 1 completed, 0 skipped, and 0
+failed on `oxygen_starter` / `emulator-5554`, API 37, 420 dpi, font scale 1.0.
+It exercised both Simple Forecast choices through the production Home
+composition with Compose-local RTL, and retained exact rendered chronology,
+first/last visible payloads, and mapper-owned descriptions. Debug compile,
+app/core unit tests, debug assembly, and `git diff --check` passed. No
+production correction was needed. Evidence is retained under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3a3-simple-rtl-forecast-chronology/`.
+Device-wide or installed/manual RTL, screenshots, UI hierarchies, TalkBack
+service traversal, spoken-meaning equivalence, compact/refetch, provider, and
+release evidence remain out of scope.
+
+#### Slice 30B1A3B1: RTL/LTR Spoken-Meaning Equivalence
+
+Status: committed at `26b32b8`
+
+Prerequisite: Slices 30B1A3A1–30B1A3A3.
+
+Prove that RTL does not alter mapper-owned spoken weather meaning. Compare the
+complete rendered Hourly and Daily item descriptions under Compose-local RTL
+with the corresponding LTR rendering of the same deterministic fixture. Cover
+Standard Hourly and Daily and both Simple Forecast choices through the
+production Home composition. Compare exact content descriptions and visible
+time/date labels; do not reconstruct descriptions from visible text and do not
+test only mapper objects.
+
+Focused boundary: exactly two named connected cases,
+`rtlStandardForecastSpokenMeaningMatchesLtr` and
+`rtlSimpleForecastSpokenMeaningMatchesLtr`, with all six Hourly and all six
+Daily items captured. Missing-value and precipitation semantics remain
+unchanged because the complete unmerged rendered semantics are compared, not
+regenerated. No production correction was needed; mapper, provider, and
+localized resource changes were out of scope.
+
+The final focused cases passed with exactly 1 completed, 0 skipped, and 0
+failed each on `oxygen_starter` / `emulator-5554`, API 37, 420 dpi, font scale
+1.0, using Compose-local RTL. Debug compile, app/core unit tests, debug
+assembly, and `git diff --check` passed. Retained paired LTR/RTL semantics,
+result/log output, emulator metadata, and the verification ledger are under
+`.codex/test-artifacts/2026-09-10-slice-30b1a3b1-rtl-ltr-spoken-meaning-equivalence/`.
+
+The four 30B1A3 sub-slices deliberately separate three chronology surfaces
+from the cross-layout spoken-meaning contract. Each gets its own focused
+evidence, artifact directory, result ledger, commit, and next-plan handoff.
 
 #### Slice 30B1A4: RTL Compact Layout and No-Refetch Evidence
 
-Status: specified
+Status: verified
 
-Prerequisite: Slice 30B1A3.
+Prerequisite: Slices 30B1A3A1–30B1A3B1.
 
 Prove the 360x640 dp, font-scale-1.3, long-location path retains usable page
 controls, 48dp targets, no horizontal overlap, overflow reachability, and no
@@ -417,30 +553,44 @@ unrelated persistence or forecast refetch when changing page/layout in RTL.
 
 Focused boundary: up to two named connected cases, using canonical request
 counts and bounds/overlap assertions. Preserve the existing production
-selected-location path.
+selected-location path. The two cases and RTL test-composition helper are
+implemented. The corrected Standard case passed at its one-method connected
+boundary after the stale status fixture alignment in `8b5647b`; the Simple
+method then passed once with one completed, zero skipped, and zero failed.
+Evidence is retained under
+`.codex/test-artifacts/2026-09-11-slice-30b1a4-rtl-compact-layout-no-refetch/`,
+`.codex/test-artifacts/2026-09-12-slice-30b1a4-a6-details-status-fixture-alignment/`,
+and `.codex/test-artifacts/2026-09-12-slice-30b1a4-a7-simple-rtl-compact-completion/`.
 
 #### Gate 30B1B1: RTL Installed Evidence and Documentation Sync
 
-Status: specified
+Status: committed
 
-Prerequisites: Slices 30B1A1–30B1A4.
+Prerequisites: Slices 30B1A1, 30B1A2, 30B1A3A1–30B1A3B1, and 30B1A4.
 
-This is the documentation-only third-cycle closure gate. Run the minimum
-combined focused filter and one installed RTL Home journey with screenshots and
-UI hierarchies, restoring device direction afterward. Reconcile the active
-plan, this roadmap, `README.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`, and the
-live cycle history only to the evidence actually retained. Record skipped
-checks and limits. No Kotlin, Compose, provider, persistence, resource,
-manifest, dependency, or production behavior changes.
+This documentation-only third-cycle closure gate reused the retained focused
+30B1A4 filter and completed one installed RTL Standard Home journey with
+screenshots and UI hierarchies. The device direction was restored and verified.
+The active plan, this roadmap, `README.md`,
+`docs/OXYGEN_FULL_SPECIFICATION.md`, and live cycle history were reconciled
+only to the retained evidence. No Kotlin, Compose, provider, persistence,
+resource, manifest, dependency, or production behavior changed.
 
-All five sub-slices remain out of scope for font-scale-2.0 work owned by 30A2,
-reduced motion, theme/contrast matrix, alerts, Settings, localization changes,
-provider/state changes, and TalkBack service traversal. 30B2 now depends on
-Gate 30B1B1.
+The installed evidence is under
+`.codex/test-artifacts/2026-09-12-gate-30b1b1-rtl-installed-evidence-doc-sync/`.
+It covers a real manual selected-location Standard Home path through Now,
+Hourly, Daily, and Details while the activity configuration was `ldrtl`.
+TalkBack service traversal and all later environment conditions remain outside
+this gate.
+
+All 30B1 implementation sub-slices remain out of scope for font-scale-2.0 work
+owned by 30A2, reduced motion, theme/contrast matrix, alerts, Settings,
+localization changes, provider/state changes, and TalkBack service traversal.
+30B2 now depends on Gate 30B1B1.
 
 ### Slice 30B2: Home Reduced-Motion and Appearance Invariance
 
-Status: specified
+Status: committed at `728f4c2`
 
 Prerequisites: Slice 30A3B2 and Gate 30B1B1.
 
@@ -471,7 +621,7 @@ Out of scope:
 
 ### Gate 30B3: Home Environment Evidence and Document Sync
 
-Status: specified
+Status: committed
 
 Prerequisites: Gate 30B1B1 and Slice 30B2.
 
@@ -497,7 +647,7 @@ privacy/license/disclosure, or release status.
 
 ### Slice 30C1: Official-Alert Summary Accessibility
 
-Status: specified
+Status: committed at `4ffc507`
 
 Prerequisite: Gate 30B3.
 
@@ -520,12 +670,20 @@ no more than five named connected summary cases, and one installed real-alert
 summary/detail-entry attempt. Live alert availability may be absent and must not
 be replaced by seeded installed success.
 
+The existing mapper/state-holder production path required no correction. Four
+new named connected cases passed on one API-37 emulator: required summary fields
+and action semantics/touch targets, truthful NoAlerts rendering, detail
+round-trip request/state retention, and RTL high-contrast long-text overflow.
+The installed manual Chicago attempt returned truthful no-alert Home, so no live
+alert summary or detail-entry claim is made. Evidence is retained under
+`.codex/test-artifacts/2026-09-12-slice-30c1-official-alert-summary-accessibility/`.
+
 Out of scope: detail-document reading layout, alert transport/cache/background
 work, notifications, additional national providers, and TalkBack traversal.
 
 ### Slice 30C2: Official-Alert Detail Accessibility
 
-Status: specified
+Status: committed at `70304b8`
 
 Prerequisite: Slice 30C1.
 
@@ -548,28 +706,34 @@ Focused evidence: no more than six named deterministic connected cases using
 official fixtures plus one installed navigation/return journey only when a real
 alert is available. Do not make live NWS calls part of deterministic tests.
 
+Implemented as a test-only boundary: three named connected cases passed on one
+API-37 emulator, including the new RTL/font-scale-2.0/High-contrast long-content
+case. The installed Chicago attempt returned truthful no-alert Home, so live
+detail evidence is unavailable. Artifacts are under
+`.codex/test-artifacts/2026-09-13-slice-30c2-official-alert-detail-accessibility/`.
+
 Out of scope: summary behavior already owned by 30C1, alert persistence,
 background polling, notifications, provider transport, and release readiness.
 
 ### Gate 30C3: Alert Accessibility Evidence and Document Sync
 
-Status: specified
+Status: committed
 
 Prerequisites: Slices 30C1 and 30C2.
 
 Mode: required third-cycle test-only and documentation-sync session; no
 production behavior changes.
 
-Must prove the selected summary/detail cases together within budget; reconcile
-long-content, LTR/RTL, large-font, Effects-Off/high-contrast, action, navigation,
-and no-refetch evidence; record honest installed real-alert availability; and
-sync README, specification, roadmap, current plan, and live history without
-claiming TalkBack or notification/background-alert completion. A production
-failure creates a separately named alert repair slice.
+The seven retained deterministic connected results and both installed manual
+Chicago no-alert attempts were reconciled in the documentation closure. The
+combined claim is limited to the exercised summary/detail Compose/Android
+boundary; TalkBack service traversal, localization, alert persistence,
+background polling, notifications, and release readiness remain unverified. A
+production failure would create a separately named alert repair slice.
 
 ### Slice 30D1: Appearance Control Semantics
 
-Status: specified
+Status: committed at `78ecb84`
 
 Prerequisite: Gate 30C3.
 
@@ -589,12 +753,18 @@ Must prove:
 Focused evidence: existing preference transaction JVM tests plus no more than
 five named connected semantic/action cases through `OxygenApp`.
 
+Evidence: five named connected cases completed with zero skipped and zero
+failed on API-37 `oxygen_starter`, plus an installed Chicago/Open-Meteo
+Appearance journey with saved Paper selection and Home return retaining source,
+update, and provenance. Large-font/RTL, TalkBack, localization, and release
+checks remain outside this slice.
+
 Out of scope: large-font/RTL layout matrix, new preferences, automatic system
 contrast, Full effects, icon packs, persistence formats, Home/alert behavior.
 
 ### Slice 30D2: Appearance Layout and Environment Resilience
 
-Status: specified
+Status: committed at `2955aa5`
 
 Prerequisite: Slice 30D1.
 
@@ -611,16 +781,20 @@ Must prove:
 - Effects Off/disabled animation does not hide state or rewrite the saved
   preference; selection/restoration and no-refetch remain unchanged.
 
-Focused evidence: no more than six named pairwise connected cases plus installed
-LTR/RTL and representative font-scale-2.0 hierarchies/screenshots. Production
-repairs remain presentation-only and begin from a failing boundary assertion.
+Focused evidence: six named connected cases plus installed LTR/RTL and
+representative font-scale-2.0 hierarchies/screenshots. The presentation-only
+repair adds scroll-content bottom separation from the fixed Back action and a
+stable disabled-motion status node. All six cases passed on API-37
+`oxygen_starter`; installed evidence also covers Effects Off with disabled
+animations and a Terminal/High pair. Production repairs began from the compact
+baseline overlap assertion. Gate 30D3 subsequently completed its evidence sync.
 
 Out of scope: semantics already owned by 30D1, new preference/state/storage
 behavior, Home/alert changes, visual redesign, and TalkBack traversal.
 
 ### Gate 30D3: Appearance Accessibility Evidence and Document Sync
 
-Status: specified
+Status: committed
 
 Prerequisites: Slices 30D1 and 30D2.
 
@@ -633,13 +807,25 @@ pairwise coverage; and sync README, specification, roadmap, current plan, and
 live history without claiming automatic contrast or TalkBack. A production
 failure creates a separately named Appearance repair slice.
 
+The gate is complete. The audit retained five accepted D1 connected cases and
+six accepted D2 connected cases on API-37 `oxygen_starter`, with installed LTR,
+font-scale-2.0, RTL, disabled-animation Effects Off, and Terminal/High evidence.
+TalkBack service traversal, localization, automatic contrast, injected storage
+failures, numeric installed request counts, and release checks remain
+unverified. Gate 30E is deferred; Slice 33A is the next specified candidate.
+
 ### Gate 30E: Installed TalkBack and Accessibility Closure
 
-Status: specified
+Status: specified — deferred, optional for the first release; service traversal unverified
+
+User release decision (2026-09-14): this audit and the host audio prerequisite
+are non-blocking for the first version and for Slice 33A onward. Preserve the
+existing evidence and manual handoff; do not claim successful audit closure.
+The acceptance criteria below apply when this optional follow-up is resumed.
 
 Prerequisites: Gates 30A3, 30B3, 30C3, and 30D3.
 
-Release intent: exercise the completed production surfaces with Android
+Follow-up intent: exercise the completed production surfaces with Android
 accessibility services and close Gate 30 using retained cross-slice evidence.
 
 Must prove where the emulator supports it:
@@ -656,8 +842,8 @@ Must prove where the emulator supports it:
 
 Attempt one bounded TalkBack setup/traversal on the pinned emulator. If the
 service is absent or cannot be enabled safely, retain exact package/service/
-settings evidence and mark only service traversal blocked; never convert it to
-mock success. A production defect creates a bounded repair slice ahead of 30E.
+settings evidence and retain service traversal as unverified, without blocking
+the first release; never convert it to mock success. A production defect creates a bounded repair slice ahead of 30E.
 
 Gate 30E is test/evidence/documentation work, not a refactor. On success,
 reconcile README, specification sections 25/31/33/34/37/46/53, this roadmap,
@@ -990,18 +1176,21 @@ Use this as sequencing guidance, not permission to work multiple slices at once.
 36. Slice 30A3B2 — Home Accessibility Evidence Document Sync
 37. Slice 30B1A1 — RTL Semantic Page Navigation Contract
 38. Slice 30B1A2 — RTL Directional Affordances and Gesture Behavior
-39. Slice 30B1A3 — RTL Chronology and Spoken-Meaning Preservation
-40. Slice 30B1A4 — RTL Compact Layout and No-Refetch Evidence
-41. Gate 30B1B1 — RTL Installed Evidence and Documentation Sync
-42. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
-43. Gate 30B3 — Home Environment Evidence and Document Sync
-44. Slice 30C1 — Official-Alert Summary Accessibility
-45. Slice 30C2 — Official-Alert Detail Accessibility
-46. Gate 30C3 — Alert Accessibility Evidence and Document Sync
-47. Slice 30D1 — Appearance Control Semantics
-48. Slice 30D2 — Appearance Layout and Environment Resilience
-49. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
-50. Gate 30E — Installed TalkBack and Accessibility Closure
+39. Slice 30B1A3A1 — Standard Home RTL Hourly Chronology
+40. Slice 30B1A3A2 — Standard Home RTL Daily Chronology
+41. Slice 30B1A3A3 — Simple Home RTL Forecast Chronology
+42. Slice 30B1A3B1 — RTL/LTR Spoken-Meaning Equivalence
+43. Slice 30B1A4 — RTL Compact Layout and No-Refetch Evidence
+44. Gate 30B1B1 — RTL Installed Evidence and Documentation Sync
+45. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
+46. Gate 30B3 — Home Environment Evidence and Document Sync
+47. Slice 30C1 — Official-Alert Summary Accessibility
+48. Slice 30C2 — Official-Alert Detail Accessibility
+49. Gate 30C3 — Alert Accessibility Evidence and Document Sync
+50. Slice 30D1 — Appearance Control Semantics
+51. Slice 30D2 — Appearance Layout and Environment Resilience
+52. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
+53. Gate 30E — Installed TalkBack and Accessibility Closure (optional follow-up; not a first-release prerequisite)
 51. Slice 33A — Dependency and Manifest Privacy Audit
 52. Slice 33B — Provider Disclosure and Local Data Privacy Audit
 53. Gate 34A — Settings and About Release Check
@@ -1030,8 +1219,12 @@ Sequencing rationale:
 Slice 30A1: Home Spoken-Weather Semantics is committed at `da7b886`; Slice 30A2
 is committed at `1a8e14f`; 30A3A1's evidence is complete; and 30A3B2 is the
 committed documentation-sync boundary at `fb51f7b`. Slice 30B1A1 is committed
-at `63ed25a`; Slice 30B1A2 is the current candidate in
-`.codex/plans/current.md`. It is the next bounded slice of the split Gate 30
+at `63ed25a`; Slice 30B1A2 is committed at `20b6ddc`; and Slice 30B1A3A1 is
+committed at `74675e2`. Slice 30B1A3A2 is committed at `9390601`, Slice
+30B1A3A3 is committed at `91974b2`, and Slice 30B1A3B1 is committed at
+`26b32b8`. Slice 30B1A4's Standard boundary is committed at `8b5647b`; its
+Simple boundary is the current candidate in `.codex/plans/current.md`. It is
+the next bounded slice of the split Gate 30
 accessibility boundary. Slice 29B is committed at `441d05d` with test
 coverage follow-up `86e696c` and evidence sync `86f046b`. Slice 28A1 is
 committed at `06c987b`, Slice 28A2 is committed at `80dd961`, and Slice 28B1 is
@@ -1083,15 +1276,28 @@ Immediate planning boundary:
 -> Slice 30A3A1 Home speech/layout evidence verified on 2026-09-10
 -> Slice 30A3B2 Home accessibility evidence document sync committed at `fb51f7b`
 -> Slice 30B1A1 RTL semantic page navigation contract committed at `63ed25a`
--> Slice 30B1A2 RTL directional affordances and gesture behavior planned
+-> Slice 30B1A2 RTL directional affordances and gesture behavior committed at `20b6ddc`
+-> Slice 30B1A3A1 Standard Home RTL Hourly chronology committed at `74675e2`
+-> Slice 30B1A3A2 Standard Home RTL Daily chronology committed at `9390601`
+-> Slice 30B1A3A3 Simple Home RTL forecast chronology committed at `91974b2`
+-> Slice 30B1A3B1 RTL/LTR spoken-meaning equivalence committed at `26b32b8`
+-> Slice 30B1A4 Standard and Simple RTL compact boundaries verified; Gate 30B1B1 committed as RTL evidence/documentation closure
+-> Slice 30D1 Appearance Control Semantics committed at `78ecb84`
+-> Slice 30D2 Appearance Layout and Environment Resilience committed at `2955aa5`
+-> Gate 30D3 Appearance Accessibility Evidence and Documentation Sync committed
+-> Gate 30E Installed TalkBack and Accessibility Closure deferred; optional for first release
+-> Slice 33A Dependency and Manifest Privacy Audit is next specified
 ```
 
 Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,
 Slice 29B, Slice 30A1, Slice 30A2, and the 30A3B2 documentation sync are
 complete. Gate 30 is split into the bounded 30A1–30E queue at the head of this
-roadmap; 30A3A1 evidence is complete, Slice 30B1A1 is committed, and Slice
-30B1A2 is the active planned candidate after 30A3B2 closure. Release
-work and release-candidate claims remain outside this boundary.
+roadmap; 30A3A1 evidence is complete, Slices 30B1A1 through 30B1A3B1 are
+committed, Slice 30D1, Slice 30D2, and Gate 30D3 are committed, and Gate 30E
+is deferred as optional first-release follow-up. `.codex/plans/current.md`
+records Slice 33A as the next candidate to plan. Service-level TalkBack remains
+unverified; this exception does not imply release readiness or waive other
+release checks.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

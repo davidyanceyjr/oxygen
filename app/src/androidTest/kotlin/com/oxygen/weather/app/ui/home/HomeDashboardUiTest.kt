@@ -21,6 +21,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
@@ -36,6 +38,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -45,6 +48,7 @@ import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -60,6 +64,12 @@ import com.oxygen.weather.app.ManualLocationSearchState
 import com.oxygen.weather.app.OxygenApp
 import com.oxygen.weather.app.OxygenAppScreen
 import com.oxygen.weather.app.OxygenAppStateHolder
+import com.oxygen.weather.app.EffectsPreferenceStorage
+import com.oxygen.weather.app.ThemePreferenceStorage
+import com.oxygen.weather.app.ThemePreferenceReadResult
+import com.oxygen.weather.app.ContrastPreferenceStorage
+import com.oxygen.weather.app.ContrastPreferenceReadResult
+import com.oxygen.weather.app.MotionPreferenceSource
 import com.oxygen.weather.app.DeviceLocationProgress
 import com.oxygen.weather.app.DeviceLocationSource
 import com.oxygen.weather.app.DeviceLocationResult
@@ -218,9 +228,7 @@ class HomeDashboardUiTest {
         val repository = RecordingWeatherRepository(
             listOf(
                 WeatherRepositoryResult.Success(
-                    weather = fullWeatherBundle(location).copy(
-                        alerts = listOf(fullWeatherBundle(location).alerts.single().copy(severity = AlertSeverity.SEVERE)),
-                    ),
+                    weather = fullWeatherBundle(location),
                     freshness = ForecastFreshness.StaleAfterFailedRefresh(
                         staleAge = Duration.ofMinutes(45),
                         refreshFailure = ForecastError.NetworkUnavailable,
@@ -458,7 +466,9 @@ class HomeDashboardUiTest {
         val repository = RecordingWeatherRepository(
             listOf(
                 WeatherRepositoryResult.Success(
-                    weather = fullWeatherBundle(location),
+                    weather = fullWeatherBundle(location).copy(
+                        alerts = listOf(fullWeatherBundle(location).alerts.single().copy(severity = AlertSeverity.SEVERE)),
+                    ),
                     freshness = ForecastFreshness.StaleAfterFailedRefresh(
                         staleAge = Duration.ofMinutes(45),
                         refreshFailure = ForecastError.NetworkUnavailable,
@@ -882,6 +892,178 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun officialAlertSummaryExposesRequiredFieldsAndActionSemanticsAtCompactFont() {
+        val location = weatherLocation(name = "Alert Contract City")
+        val alert = fullWeatherBundle(location).alerts.single().copy(
+            event = "Flash Flood Warning",
+            severity = AlertSeverity.SEVERE,
+            issuer = "National Weather Service",
+            expires = Instant.parse("2026-08-22T18:00:00Z"),
+            web = "https://alerts.weather.gov/contract",
+        )
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = listOf(alert)),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+        val openedUris = mutableListOf<String>()
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(1f, 1.3f),
+                LocalUriHandler provides object : UriHandler {
+                    override fun openUri(uri: String) {
+                        openedUris += uri
+                    }
+                },
+            ) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        HomeLoadingScreen(
+                            state = state,
+                            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.assertSemanticsTreeOrder(
+            "home-section-alert",
+            "home-alert-details",
+            "home-alert-source-link",
+        )
+        composeRule.onNodeWithText("Flash Flood Warning").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Severity: Severe").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Issuer: National Weather Service").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Expires 1:00 PM").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Alert source checked Aug 22, 10:05 AM CDT").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Official alerts from NOAA/National Weather Service").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("View alert details").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("View official alert details").assertExists()
+        composeRule.onNodeWithContentDescription("Open official NOAA/National Weather Service alert source")
+            .assertExists()
+        composeRule.assertMinimumTouchTarget("home-alert-details", "home-alert-source-link")
+        composeRule.onNodeWithTag("home-alert-source-link").performClick()
+        assertEquals(listOf("https://alerts.weather.gov/contract"), openedUris)
+        composeRule.onAllNodesWithTag("home-alert-count").assertCountEquals(0)
+    }
+
+    @Test
+    fun noAlertStatusDoesNotRenderSummaryCardCountOrActions() {
+        val location = weatherLocation(name = "No Alert Contract City")
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = emptyList()),
+            alertStatus = AlertLookupStatus.NoAlerts(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 640,
+            fontScale = 1.3f,
+            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+        )
+
+        composeRule.onNodeWithText("No Alert Contract City").assertIsDisplayed()
+        composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-section-alert").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-alert-details").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-alert-source-link").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-alert-count").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Official alert").assertCountEquals(0)
+    }
+
+    @Test
+    fun oxygenAppAlertDetailRoundTripPreservesHomeAndDoesNotRefresh() {
+        val location = weatherLocation(name = "Alert Round Trip City")
+        val alert = fullWeatherBundle(location).alerts.single().copy(
+            event = "Flash Flood Warning",
+            severity = AlertSeverity.SEVERE,
+            web = "https://alerts.weather.gov/round-trip",
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location).copy(alerts = listOf(alert)),
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+                    ),
+                ),
+            ),
+        )
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactOxygenAppContent(
+            stateHolder = holder,
+            appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+        )
+        composeRule.waitForIdle()
+        val requestsBefore = repository.locations.toList()
+        val homeBefore = holder.presentationState.screen as OxygenAppScreen.Home
+        val summaryBefore = (homeBefore.forecast as HomeForecastPresentationState.ForecastReady).dashboard.alertSummary
+
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("alert-detail-title").assertIsDisplayed()
+        composeRule.onNodeWithText("Flash Flood Warning").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("alert-detail-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithText("Flash Flood Warning").performScrollTo().assertIsDisplayed()
+        val homeAfter = holder.presentationState.screen as OxygenAppScreen.Home
+        assertEquals(requestsBefore, repository.locations)
+        assertEquals(homeBefore.forecast, homeAfter.forecast)
+        assertEquals(summaryBefore, (homeAfter.forecast as HomeForecastPresentationState.ForecastReady).dashboard.alertSummary)
+    }
+
+    @Test
+    fun officialAlertSummaryLongTextRemainsScrollableInRtlHighContrast() {
+        val location = weatherLocation(name = "RTL Alert Contract City")
+        val alert = fullWeatherBundle(location).alerts.single().copy(
+            event = "Extremely Long Flash Flood Warning Event Name For A Narrow Display",
+            severity = AlertSeverity.SEVERE,
+            issuer = "National Weather Service Central Wisconsin Emergency Coordination Office",
+            web = "https://alerts.weather.gov/rtl-overflow",
+        )
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = listOf(alert)),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 640,
+            fontScale = 2f,
+            appearance = OxygenAppearance(effects = EffectsLevel.OFF, contrast = ContrastLevel.HIGH),
+            layoutDirection = LayoutDirection.Rtl,
+        )
+
+        composeRule.assertTextWithinRootBoundsAfterScroll(alert.event)
+        composeRule.assertTextWithinRootBoundsAfterScroll("Issuer: ${alert.issuer}")
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-alert-source-link").performScrollTo().assertIsDisplayed()
+        composeRule.assertMinimumTouchTargetAfterScroll("home-alert-details", "home-alert-source-link")
+        composeRule.onNodeWithContentDescription("View official alert details").assertExists()
+        composeRule.onNodeWithContentDescription("Open official NOAA/National Weather Service alert source")
+            .assertExists()
+    }
+
+    @Test
     fun highContrastStandardHomePreservesMeaningAcrossPagesEffectsOff() {
         val location = weatherLocation(name = "High Contrast Home City")
         val baseAlert = fullWeatherBundle(location).alerts.single()
@@ -1157,6 +1339,17 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-alert-details").performClick()
         composeRule.onNodeWithTag("alert-detail-title").assertIsDisplayed()
         composeRule.onNodeWithTag("alert-detail-selector-0").assertIsSelected()
+        composeRule.assertSemanticsTreeOrder(
+            "alert-detail-back",
+            "alert-detail-title",
+            "alert-detail-selector",
+            "alert-detail-content",
+        )
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "alert-detail-back",
+            "alert-detail-selector-0",
+            "alert-detail-selector-1",
+        )
         composeRule.onNodeWithText("Issuer: Madison Warning Office").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Urgency: Immediate").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Certainty: Likely").performScrollTo().assertIsDisplayed()
@@ -1175,6 +1368,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("Drink water.\nTake breaks.").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("alert-detail-source-link").performScrollTo().performClick()
         assertEquals(listOf("https://alerts.weather.gov/detail-two"), openedUris)
+        composeRule.assertMinimumTouchTargetAfterScroll("alert-detail-source-link")
 
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         context.filesDir.resolve("alert-detail-effects-off-360x640-font-1.3-semantics.txt")
@@ -1187,6 +1381,108 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("alert-detail-back").performScrollTo().performClick()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
         composeRule.onNodeWithTag("home-section-alert").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun officialAlertDetailLongContentRemainsReachableInRtlLargeFont() {
+        val location = weatherLocation(name = "RTL Detail Accessibility City")
+        val baseAlert = fullWeatherBundle(location).alerts.single()
+        val alerts = listOf(
+            baseAlert.copy(
+                id = "rtl-detail-alert-1",
+                event = "Extremely Long Flash Flood Warning Event Name For A Narrow Display",
+                severity = AlertSeverity.SEVERE,
+                issuer = "National Weather Service Central Wisconsin Emergency Coordination Office",
+                affectedArea = com.oxygen.weather.core.model.AlertAffectedArea(
+                    areaDescription = "Dane County river corridors, low-lying roads, and nearby communities",
+                ),
+                description = "First official description paragraph with a long line that must wrap safely.\n" +
+                    "Second official description paragraph remains verbatim and reachable.",
+                instruction = "Move to higher ground immediately.\n" +
+                    "Do not drive through flooded roads or barricades.\n" +
+                    "Monitor official updates for changes.",
+                web = "https://alerts.weather.gov/rtl-detail-one",
+            ),
+            baseAlert.copy(
+                id = "rtl-detail-alert-2",
+                event = "Heat Advisory",
+                issuer = "Central Forecast Office",
+                description = "Second alert description",
+                instruction = "Drink water and take breaks.",
+                web = "https://alerts.weather.gov/rtl-detail-two",
+            ),
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location).copy(alerts = alerts),
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+                    ),
+                ),
+            ),
+        )
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+        val openedUris = mutableListOf<String>()
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 2f),
+                LocalLayoutDirection provides LayoutDirection.Rtl,
+                LocalUriHandler provides object : UriHandler {
+                    override fun openUri(uri: String) {
+                        openedUris += uri
+                    }
+                },
+            ) {
+                Box(Modifier.width(360.dp).height(640.dp)) {
+                    OxygenApp(
+                        stateHolder = holder,
+                        appearance = OxygenAppearance(
+                            effects = EffectsLevel.OFF,
+                            contrast = ContrastLevel.HIGH,
+                        ),
+                    )
+                }
+            }
+        }
+
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().performClick()
+        composeRule.onNodeWithTag("alert-detail-selector-0").assertIsSelected()
+        composeRule.assertMinimumTouchTargetAfterScroll(
+            "alert-detail-back",
+            "alert-detail-selector-0",
+            "alert-detail-selector-1",
+        )
+        composeRule.assertLastTextWithinRootBoundsAfterScroll(alerts[0].event)
+        composeRule.assertTextWithinRootBoundsAfterScroll("Severity: Severe")
+        composeRule.assertTextWithinRootBoundsAfterScroll("Issuer: ${alerts[0].issuer}")
+        composeRule.assertTextWithinRootBoundsAfterScroll("Affected area: ${alerts[0].affectedArea?.areaDescription}")
+        composeRule.assertTextWithinRootBoundsAfterScroll(alerts[0].description!!)
+        composeRule.assertTextWithinRootBoundsAfterScroll(alerts[0].instruction!!)
+        composeRule.onNodeWithContentDescription(
+            "Open official NOAA/National Weather Service alert source for ${alerts[0].event}",
+        ).assertExists()
+        composeRule.assertMinimumTouchTargetAfterScroll("alert-detail-source-link")
+
+        composeRule.onNodeWithTag("alert-detail-selector-1").performScrollTo().performClick()
+        composeRule.onNodeWithTag("alert-detail-selector-1").assertIsSelected()
+        composeRule.onNodeWithText("Second alert description").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("alert-detail-source-link").performScrollTo().performClick()
+        assertEquals(listOf("https://alerts.weather.gov/rtl-detail-two"), openedUris)
+
+        InstrumentationRegistry.getInstrumentation().targetContext.filesDir
+            .resolve("alert-detail-rtl-font-2-high-semantics.txt")
+            .writeText(composeRule.onRoot(useUnmergedTree = true).printToString(maxDepth = 120))
+        composeRule.writeScreenshotArtifact("alert-detail-rtl-font-2-high.png")
+        composeRule.onNodeWithTag("alert-detail-back").performScrollTo().performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        assertEquals(listOf(location), repository.locations)
     }
 
     @Test
@@ -1271,6 +1567,103 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
         composeRule.writeSemanticsArtifact("terminal-standard-effects-off-semantics.txt")
         composeRule.writeScreenshotArtifact("terminal-standard-effects-off.png")
+    }
+
+    @Test
+    fun paperHighContrastDisabledMotionPreservesHomeMeaning() {
+        disabledMotionManagedHomePreservesMeaning(OxygenThemeId.PAPER, ContrastLevel.HIGH)
+    }
+
+    @Test
+    fun terminalHighContrastDisabledMotionPreservesHomeMeaning() {
+        disabledMotionManagedHomePreservesMeaning(OxygenThemeId.TERMINAL, ContrastLevel.HIGH)
+    }
+
+    private fun disabledMotionManagedHomePreservesMeaning(
+        theme: OxygenThemeId,
+        contrast: ContrastLevel,
+    ) {
+        val location = weatherLocation(
+            name = "A Very Long Managed $theme High Contrast Location Name Near The Lakefront, Wisconsin, United States",
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(location).copy(
+                        alerts = listOf(
+                            fullWeatherBundle(location).alerts.single().copy(severity = AlertSeverity.SEVERE),
+                        ),
+                    ),
+                    alertStatus = AlertLookupStatus.Available(
+                        AlertSuccessMetadata(
+                            requestPoint = location.point,
+                            providerId = "nws",
+                            fetchedAt = Instant.parse("2026-08-22T15:05:00Z"),
+                        ),
+                    ),
+                    freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                        staleAge = Duration.ofMinutes(45),
+                        refreshFailure = ForecastError.NetworkUnavailable,
+                    ),
+                ),
+            ),
+        )
+        val effectsWrites = mutableListOf<EffectsLevel>()
+        val themeWrites = mutableListOf<OxygenThemeId>()
+        val contrastWrites = mutableListOf<ContrastLevel>()
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            effectsPreferenceStorage = object : EffectsPreferenceStorage {
+                override fun readEffectsPreference() = EffectsLevel.SUBTLE
+                override fun writeEffectsPreference(effects: EffectsLevel) { effectsWrites += effects }
+            },
+            themePreferenceStorage = object : ThemePreferenceStorage {
+                override fun readThemePreference() = ThemePreferenceReadResult.Supported(theme)
+                override fun writeThemePreference(value: OxygenThemeId) { themeWrites += value }
+            },
+            contrastPreferenceStorage = object : ContrastPreferenceStorage {
+                override fun readContrastPreference() = ContrastPreferenceReadResult.Supported(contrast)
+                override fun writeContrastPreference(value: ContrastLevel) { contrastWrites += value }
+            },
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1.3f)) {
+                Box(Modifier.width(360.dp).height(640.dp)) {
+                    OxygenApp(
+                        stateHolder = holder,
+                        appearance = OxygenAppearance(theme = theme, contrast = contrast),
+                        motionPreferenceSource = MotionPreferenceSource { false },
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val requests = repository.locations.toList()
+        assertEquals(listOf(location), requests)
+        assertEquals(theme, holder.presentationState.theme)
+        assertEquals(contrast, holder.presentationState.contrast)
+        assertEquals(EffectsLevel.SUBTLE, holder.presentationState.effectsPreference.confirmed)
+        assertEquals(emptyList<EffectsLevel>(), effectsWrites)
+        assertEquals(emptyList<OxygenThemeId>(), themeWrites)
+        assertEquals(emptyList<ContrastLevel>(), contrastWrites)
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithText("65 deg F").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Severity: Severe").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh failed: Refresh could not reach the weather service or network.")
+            .performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
+        assertEquals(requests, repository.locations)
+        composeRule.writeSemanticsArtifact("${theme.name.lowercase()}-high-disabled-motion-semantics.txt")
     }
 
     @Test
@@ -2323,6 +2716,355 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun rtlStandardHomeHourlyPreservesChronologicalRenderedOrder() {
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = weatherLocation(),
+            weather = fullWeatherBundle(weatherLocation()),
+        )
+        val layoutDirection = mutableStateOf(LayoutDirection.Ltr)
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1f),
+                LocalLayoutDirection provides layoutDirection.value,
+            ) {
+                OxygenTheme {
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        val ltrEntries = composeRule.renderedHourlyEntriesInSemanticsOrder()
+
+        composeRule.runOnIdle { layoutDirection.value = LayoutDirection.Rtl }
+        composeRule.waitForIdle()
+        val rtlEntries = composeRule.renderedHourlyEntriesInSemanticsOrder()
+
+        val expectedLabels = listOf("6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM")
+        assertEquals(
+            (0..5).map { "home-hourly-entry-$it" },
+            ltrEntries.map { it.hourlyTag() },
+        )
+        assertEquals(
+            (0..5).map { "home-hourly-entry-$it" },
+            rtlEntries.map { it.hourlyTag() },
+        )
+        assertEquals(expectedLabels, ltrEntries.map { it.hourlyTimeLabel() })
+        assertEquals(expectedLabels, rtlEntries.map { it.hourlyTimeLabel() })
+        assertEquals(
+            ltrEntries.map { it.hourlyTimeLabel() },
+            rtlEntries.map { it.hourlyTimeLabel() },
+        )
+        assertEquals(
+            "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+            rtlEntries.first().config
+                .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                .singleOrNull(),
+        )
+        assertEquals(
+            "11 AM. Rain showers. 71 degrees Fahrenheit. 40 percent chance of precipitation.",
+            rtlEntries.last().config
+                .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                .singleOrNull(),
+        )
+        assertEquals(
+            listOf("6 AM", "Rain", "64 deg F", "Precip 60%"),
+            rtlEntries.first().hourlyRenderedText(),
+        )
+        assertEquals(
+            listOf("11 AM", "Rain showers", "71 deg F", "Precip 40%"),
+            rtlEntries.last().hourlyRenderedText(),
+        )
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 4")
+        composeRule.writeSemanticsArtifact("rtl-standard-hourly-chronology-semantics.txt")
+    }
+
+    @Test
+    fun rtlStandardHomeDailyPreservesChronologicalRenderedOrder() {
+        val location = weatherLocation()
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+        )
+        val layoutDirection = mutableStateOf(LayoutDirection.Ltr)
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1f),
+                LocalLayoutDirection provides layoutDirection.value,
+            ) {
+                OxygenTheme {
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+        val ltrEntries = composeRule.renderedDailyEntriesInSemanticsOrder()
+
+        composeRule.runOnIdle { layoutDirection.value = LayoutDirection.Rtl }
+        composeRule.waitForIdle()
+        val rtlEntries = composeRule.renderedDailyEntriesInSemanticsOrder()
+
+        val expectedLabels = listOf(
+            "Sat, Aug 22",
+            "Sun, Aug 23",
+            "Mon, Aug 24",
+            "Tue, Aug 25",
+            "Wed, Aug 26",
+            "Thu, Aug 27",
+        )
+        assertEquals((0..5).map { "home-daily-entry-$it" }, ltrEntries.map { it.dailyTag() })
+        assertEquals((0..5).map { "home-daily-entry-$it" }, rtlEntries.map { it.dailyTag() })
+        assertEquals(expectedLabels, ltrEntries.map { it.dailyDateLabel() })
+        assertEquals(expectedLabels, rtlEntries.map { it.dailyDateLabel() })
+        assertEquals(
+            ltrEntries.map { it.dailyDateLabel() },
+            rtlEntries.map { it.dailyDateLabel() },
+        )
+        assertEquals(
+            "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
+            rtlEntries.first().dailyDescription(),
+        )
+        assertEquals(
+            "Thu, Aug 27. Rain. High 67 degrees Fahrenheit.",
+            rtlEntries.last().dailyDescription(),
+        )
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 3 of 4")
+        composeRule.onNodeWithText("67 deg F", useUnmergedTree = true).assertExists()
+        composeRule.writeSemanticsArtifact("rtl-standard-daily-chronology-semantics.txt")
+    }
+
+    @Test
+    fun rtlSimpleHomeForecastChoicesPreserveChronologicalRenderedOrder() {
+        val location = weatherLocation()
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+        )
+        val layoutDirection = mutableStateOf(LayoutDirection.Ltr)
+        val expectedHourlyTags = (0..5).map { "home-hourly-entry-$it" }
+        val expectedHourlyLabels = listOf("6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM")
+        val expectedDailyTags = (0..5).map { "home-daily-entry-$it" }
+        val expectedDailyLabels = listOf(
+            "Sat, Aug 22",
+            "Sun, Aug 23",
+            "Mon, Aug 24",
+            "Tue, Aug 25",
+            "Wed, Aug 26",
+            "Thu, Aug 27",
+        )
+
+        fun assertHourlyEntries(entries: List<SemanticsNode>) {
+            assertEquals(6, entries.size)
+            assertEquals(expectedHourlyTags, entries.map { it.hourlyTag() })
+            assertEquals(expectedHourlyTags.size, entries.map { it.hourlyTag() }.toSet().size)
+            assertEquals(expectedHourlyLabels, entries.map { it.hourlyTimeLabel() })
+            assertEquals(
+                "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+                entries.first().config
+                    .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                    .singleOrNull(),
+            )
+            assertEquals(
+                "11 AM. Rain showers. 71 degrees Fahrenheit. 40 percent chance of precipitation.",
+                entries.last().config
+                    .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                    .singleOrNull(),
+            )
+            assertEquals(
+                listOf("6 AM", "Rain", "64 deg F", "Precip 60%"),
+                entries.first().hourlyRenderedText(),
+            )
+            assertEquals(
+                listOf("11 AM", "Rain showers", "71 deg F", "Precip 40%"),
+                entries.last().hourlyRenderedText(),
+            )
+        }
+
+        fun assertDailyEntries(entries: List<SemanticsNode>) {
+            assertEquals(6, entries.size)
+            assertEquals(expectedDailyTags, entries.map { it.dailyTag() })
+            assertEquals(expectedDailyTags.size, entries.map { it.dailyTag() }.toSet().size)
+            assertEquals(expectedDailyLabels, entries.map { it.dailyDateLabel() })
+            assertEquals(
+                "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
+                entries.first().dailyDescription(),
+            )
+            assertEquals(
+                "Thu, Aug 27. Rain. High 67 degrees Fahrenheit.",
+                entries.last().dailyDescription(),
+            )
+            assertEquals(
+                listOf("Sat, Aug 22", "Rain showers", "Precip 40%", "Low", "54 deg F", "High", "73 deg F"),
+                entries.first().dailyRenderedText(),
+            )
+            assertEquals(
+                listOf("Thu, Aug 27", "Rain", "Precip n/a", "Low", "unavailable", "High", "67 deg F"),
+                entries.last().dailyRenderedText(),
+            )
+        }
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1f),
+                LocalLayoutDirection provides layoutDirection.value,
+            ) {
+                OxygenTheme {
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = OxygenAppearance(layout = LayoutPreset.SIMPLE, effects = EffectsLevel.OFF),
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 2")
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
+
+        val ltrHourlyEntries = composeRule.renderedHourlyEntriesInSemanticsOrder()
+        assertHourlyEntries(ltrHourlyEntries)
+        val ltrHourlyLabels = ltrHourlyEntries.map { it.hourlyTimeLabel() }
+
+        composeRule.onNodeWithTag("home-simple-forecast-daily").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-simple-forecast-daily").assertIsSelected()
+        val ltrDailyEntries = composeRule.renderedDailyEntriesInSemanticsOrder()
+        assertDailyEntries(ltrDailyEntries)
+        val ltrDailyLabels = ltrDailyEntries.map { it.dailyDateLabel() }
+
+        composeRule.runOnIdle { layoutDirection.value = LayoutDirection.Rtl }
+        composeRule.waitForIdle()
+        val rtlDailyEntries = composeRule.renderedDailyEntriesInSemanticsOrder()
+        assertDailyEntries(rtlDailyEntries)
+        assertEquals(
+            ltrDailyLabels,
+            rtlDailyEntries.map { it.dailyDateLabel() },
+        )
+        composeRule.writeSemanticsArtifact("rtl-simple-daily-chronology-semantics.txt")
+
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
+        val rtlHourlyEntries = composeRule.renderedHourlyEntriesInSemanticsOrder()
+        assertHourlyEntries(rtlHourlyEntries)
+        assertEquals(
+            ltrHourlyLabels,
+            rtlHourlyEntries.map { it.hourlyTimeLabel() },
+        )
+        composeRule.writeSemanticsArtifact("rtl-simple-hourly-chronology-semantics.txt")
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 2")
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
+    }
+
+    @Test
+    fun rtlStandardForecastSpokenMeaningMatchesLtr() {
+        val location = weatherLocation()
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+        )
+        val layoutDirection = mutableStateOf(LayoutDirection.Ltr)
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1f),
+                LocalLayoutDirection provides layoutDirection.value,
+            ) {
+                OxygenTheme {
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = OxygenAppearance(effects = EffectsLevel.OFF),
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        val ltrHourly = composeRule.renderedWeatherEntrySemantics("home-hourly-entry")
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+        val ltrDaily = composeRule.renderedWeatherEntrySemantics("home-daily-entry")
+
+        composeRule.runOnIdle { layoutDirection.value = LayoutDirection.Rtl }
+        composeRule.waitForIdle()
+        val rtlDaily = composeRule.renderedWeatherEntrySemantics("home-daily-entry")
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        val rtlHourly = composeRule.renderedWeatherEntrySemantics("home-hourly-entry")
+
+        assertEquals(ltrHourly, rtlHourly)
+        assertEquals(ltrDaily, rtlDaily)
+        composeRule.writeTextArtifact(
+            "rtl-standard-spoken-meaning-semantics.txt",
+            "LTR HOURLY\n${ltrHourly.format()}\n\nLTR DAILY\n${ltrDaily.format()}\n\n" +
+                "RTL HOURLY\n${rtlHourly.format()}\n\nRTL DAILY\n${rtlDaily.format()}\n",
+        )
+    }
+
+    @Test
+    fun rtlSimpleForecastSpokenMeaningMatchesLtr() {
+        val location = weatherLocation()
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+        )
+        val layoutDirection = mutableStateOf(LayoutDirection.Ltr)
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = 1f, fontScale = 1f),
+                LocalLayoutDirection provides layoutDirection.value,
+            ) {
+                OxygenTheme {
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = OxygenAppearance(
+                            layout = LayoutPreset.SIMPLE,
+                            effects = EffectsLevel.OFF,
+                        ),
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
+        composeRule.waitForIdle()
+        val ltrHourly = composeRule.renderedWeatherEntrySemantics("home-hourly-entry")
+        composeRule.onNodeWithTag("home-simple-forecast-daily").performClick()
+        composeRule.waitForIdle()
+        val ltrDaily = composeRule.renderedWeatherEntrySemantics("home-daily-entry")
+
+        composeRule.runOnIdle { layoutDirection.value = LayoutDirection.Rtl }
+        composeRule.waitForIdle()
+        val rtlDaily = composeRule.renderedWeatherEntrySemantics("home-daily-entry")
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").performClick()
+        composeRule.waitForIdle()
+        val rtlHourly = composeRule.renderedWeatherEntrySemantics("home-hourly-entry")
+
+        assertEquals(ltrHourly, rtlHourly)
+        assertEquals(ltrDaily, rtlDaily)
+        composeRule.writeTextArtifact(
+            "rtl-simple-spoken-meaning-semantics.txt",
+            "LTR HOURLY\n${ltrHourly.format()}\n\nLTR DAILY\n${ltrDaily.format()}\n\n" +
+                "RTL HOURLY\n${rtlHourly.format()}\n\nRTL DAILY\n${rtlDaily.format()}\n",
+        )
+    }
+
+    @Test
     fun homeInteractiveControlsExposeMinimumTouchTargetsAndDoNotPageAccidentally() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(),
@@ -2950,6 +3692,185 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun rtlStandardHomeCompactLongContentKeepsControlsReachableWithoutRefetch() {
+        val location = weatherLocation(
+            name = "A Very Long Selected Location Name Near The Lakefront, Wisconsin, United States",
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(
+                        location = location,
+                        provenance = forecastProvenance(
+                            sourceName = "Open-Meteo Long Provider Attribution Name",
+                            licenseId = "Creative Commons Attribution 4.0 International",
+                        ),
+                    ),
+                    freshness = ForecastFreshness.StaleAfterFailedRefresh(
+                        staleAge = Duration.ofMinutes(95),
+                        refreshFailure = ForecastError.ProviderUnavailable("open-meteo"),
+                    ),
+                ),
+            ),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactOxygenAppContent(
+            stateHolder = stateHolder,
+            appearance = OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+            layoutDirection = LayoutDirection.Rtl,
+        )
+        composeRule.waitForIdle()
+        val requestLocationsAfterReady = repository.locations.toList()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertWithinRootBounds(
+            "home-page-tab-now", "home-page-tab-hourly", "home-page-tab-daily",
+            "home-page-tab-details", "home-change-location", "home-refresh", "home-about-entry",
+        )
+        composeRule.assertMinimumTouchTarget(
+            "home-page-tab-now", "home-page-tab-hourly", "home-page-tab-daily",
+            "home-page-tab-details", "home-change-location", "home-refresh", "home-about-entry",
+        )
+        composeRule.assertNoSiblingOverlap(
+            "home-page-tab-now", "home-page-tab-hourly", "home-page-tab-daily", "home-page-tab-details",
+        )
+        composeRule.assertNoSiblingOverlap("home-change-location", "home-refresh", "home-about-entry")
+        composeRule.assertTextWithinRootBoundsAfterScroll(location.displayName)
+        composeRule.assertTextWithinRootBoundsAfterScroll(
+            "Open-Meteo Long Provider Attribution Name | Fetched Aug 22, 7:00 AM CDT",
+        )
+
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithContentDescription(
+            "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+        ).performScrollTo().assertIsDisplayed()
+        composeRule.assertReadableBoundsAfterScroll("home-hourly-entry-0")
+        composeRule.onNodeWithTag("home-hourly-entry-0").performScrollTo()
+        composeRule.assertNoSiblingOverlap("home-hourly-entry-0", "home-hourly-entry-1")
+        assertEquals(requestLocationsAfterReady, repository.locations)
+
+        composeRule.onNodeWithTag("home-page-tab-daily").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithContentDescription(
+            "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
+        ).assertIsDisplayed()
+        composeRule.assertWithinRootBounds("home-daily-entry-0")
+        composeRule.onNodeWithTag("home-page-daily").performTouchInput { swipeUp() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription(
+            "Wed, Aug 26. Thunderstorm. Low 59 degrees Fahrenheit. 50 percent chance of precipitation.",
+        ).assertIsDisplayed()
+        composeRule.assertWithinRootBounds("home-daily-entry-4")
+        composeRule.assertCheckedSiblingSpacing("home-daily-entry-4", "home-daily-entry-5")
+        assertEquals(requestLocationsAfterReady, repository.locations)
+
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.assertReadableBoundsAfterScroll(
+            "home-section-comfort", "home-section-wind", "home-section-atmosphere",
+            "home-section-source", "home-section-status", "home-section-sun",
+            "home-section-provenance-footer",
+        )
+        composeRule.onNodeWithText("Weather data by Open-Meteo Long Provider Attribution Name.")
+            .performScrollTo().assertIsDisplayed()
+        assertEquals(requestLocationsAfterReady, repository.locations)
+    }
+
+    @Test
+    fun rtlSimpleHomeCompactLayoutAndForecastChoicesDoNotRefetch() {
+        val location = weatherLocation(
+            name = "A Very Long Selected Location Name Near The Lakefront, Wisconsin, United States",
+        )
+        val repository = RecordingWeatherRepository(
+            listOf(
+                WeatherRepositoryResult.Success(
+                    weather = fullWeatherBundle(
+                        location = location,
+                        provenance = forecastProvenance(
+                            sourceName = "Open-Meteo Long Provider Attribution Name",
+                            licenseId = "Creative Commons Attribution 4.0 International",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactOxygenAppContent(
+            stateHolder = stateHolder,
+            appearance = OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+            layoutDirection = LayoutDirection.Rtl,
+        )
+        composeRule.waitForIdle()
+        val requestLocationsAfterReady = repository.locations.toList()
+        composeRule.onNodeWithTag("home-about-entry").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings-destination-appearance").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings-layout-simple").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        assertEquals(requestLocationsAfterReady, repository.locations)
+        composeRule.onNodeWithTag("settings-back").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings-back").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertWithinRootBounds(
+            "home-page-tab-now", "home-page-tab-forecast", "home-change-location", "home-refresh", "home-about-entry",
+        )
+        composeRule.assertMinimumTouchTarget(
+            "home-page-tab-now", "home-page-tab-forecast", "home-change-location", "home-refresh", "home-about-entry",
+        )
+        composeRule.assertNoSiblingOverlap("home-page-tab-now", "home-page-tab-forecast")
+        composeRule.assertNoSiblingOverlap("home-change-location", "home-refresh", "home-about-entry")
+        composeRule.assertTextWithinRootBoundsAfterScroll(location.displayName)
+        composeRule.assertTextWithinRootBoundsAfterScroll(
+            "Open-Meteo Long Provider Attribution Name | Fetched Aug 22, 7:00 AM CDT",
+        )
+        assertEquals(requestLocationsAfterReady, repository.locations)
+
+        composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
+        composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
+        composeRule.assertMinimumTouchTargetAfterScroll("home-simple-forecast-hourly", "home-simple-forecast-daily")
+        composeRule.onNodeWithContentDescription(
+            "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+        ).performScrollTo().assertIsDisplayed()
+        composeRule.assertReadableBoundsAfterScroll("home-hourly-entry-0")
+        composeRule.onNodeWithTag("home-hourly-entry-0").performScrollTo()
+        composeRule.assertNoSiblingOverlap("home-hourly-entry-0", "home-hourly-entry-1")
+        assertEquals(requestLocationsAfterReady, repository.locations)
+
+        composeRule.onNodeWithTag("home-simple-forecast-daily").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-simple-forecast-daily").assertIsSelected()
+        composeRule.onNodeWithContentDescription(
+            "Sat, Aug 22. Rain showers. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit. 40 percent chance of precipitation.",
+        ).performScrollTo().assertIsDisplayed()
+        composeRule.assertWithinRootBounds("home-daily-entry-0")
+        composeRule.assertCheckedSiblingSpacing("home-daily-entry-0", "home-daily-entry-1")
+        assertEquals(requestLocationsAfterReady, repository.locations)
+    }
+
+    @Test
     fun standardDetailsAtFontScale20KeepsLongProviderContentScrollReachable() {
         val location = weatherLocation(
             name = "A Very Long Selected Location Name Near The Lakefront, Wisconsin, United States",
@@ -3263,9 +4184,13 @@ private fun ComposeContentTestRule.setCompactOxygenAppContent(
     widthDp: Int = 360,
     heightDp: Int = 640,
     fontScale: Float = 1.3f,
+    layoutDirection: LayoutDirection = LayoutDirection.Ltr,
 ) {
     setContent {
-        CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = fontScale)) {
+        CompositionLocalProvider(
+            LocalDensity provides Density(density = 1f, fontScale = fontScale),
+            LocalLayoutDirection provides layoutDirection,
+        ) {
             androidx.compose.foundation.layout.Box(
                 Modifier
                     .width(widthDp.dp)
@@ -3597,6 +4522,15 @@ private fun ComposeTestRule.assertTextWithinRootBoundsAfterScroll(text: String) 
     assertTrue("$text should stay inside compact root width", rect.left >= 0f && rect.right <= 360f)
 }
 
+private fun ComposeTestRule.assertLastTextWithinRootBoundsAfterScroll(text: String) {
+    val node = onAllNodesWithText(text).onLast()
+    node.performScrollTo().assertIsDisplayed()
+    val rect = node.fetchSemanticsNode().boundsInRoot
+    assertTrue("$text should have positive width", rect.width > 0f)
+    assertTrue("$text should have positive height", rect.height > 0f)
+    assertTrue("$text should stay inside compact root width", rect.left >= 0f && rect.right <= 360f)
+}
+
 private fun ComposeTestRule.assertCheckedSiblingSpacing(vararg tags: String) {
     val bounds = tags.associateWith { tag ->
         onAllNodesWithTag(tag).fetchSemanticsNodes().single().boundsInRoot
@@ -3653,6 +4587,100 @@ private fun ComposeTestRule.assertMirroredPageSelector(vararg tagsInLeftToRightO
         )
     }
 }
+
+private fun ComposeTestRule.renderedHourlyEntriesInSemanticsOrder(): List<SemanticsNode> =
+    onRoot(useUnmergedTree = true)
+        .fetchSemanticsNode()
+        .flattenSemantics()
+        .filter { node ->
+            node.config.getOrElse(SemanticsProperties.TestTag) { "" }
+                .matches(Regex("home-hourly-entry-[0-5]"))
+        }
+
+private fun ComposeTestRule.renderedDailyEntriesInSemanticsOrder(): List<SemanticsNode> =
+    onRoot(useUnmergedTree = true)
+        .fetchSemanticsNode()
+        .flattenSemantics()
+        .filter { node ->
+            node.config.getOrElse(SemanticsProperties.TestTag) { "" }
+                .matches(Regex("home-daily-entry-[0-5]"))
+        }
+
+private data class RenderedWeatherEntrySemantics(
+    val entryTag: String,
+    val nodes: List<String>,
+) {
+    fun format(): String = buildString {
+        appendLine(entryTag)
+        nodes.forEach { appendLine(it) }
+    }
+}
+
+private fun List<RenderedWeatherEntrySemantics>.format(): String =
+    joinToString(separator = "\n") { it.format() }
+
+private fun ComposeTestRule.renderedWeatherEntrySemantics(
+    tagPrefix: String,
+): List<RenderedWeatherEntrySemantics> =
+    onRoot(useUnmergedTree = true)
+        .fetchSemanticsNode()
+        .flattenSemantics()
+        .filter { node ->
+            node.config.getOrElse(SemanticsProperties.TestTag) { "" }
+                .matches(Regex("$tagPrefix-[0-5]"))
+        }
+        .map { entry ->
+            RenderedWeatherEntrySemantics(
+                entryTag = entry.config.getOrElse(SemanticsProperties.TestTag) { "" },
+                nodes = entry.flattenSemantics().map { node ->
+                    node.config.toString().replace(Regex("@[0-9a-f]+"), "@<stable>")
+                },
+            )
+        }
+
+private fun ComposeTestRule.writeTextArtifact(fileName: String, content: String) {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val artifact = File(context.filesDir, fileName)
+    artifact.writeText(content)
+    assertTrue("$fileName should contain rendered semantics", artifact.readText().contains("LTR"))
+}
+
+private fun SemanticsNode.dailyTag(): String =
+    config.getOrElse(SemanticsProperties.TestTag) { "" }
+
+private fun SemanticsNode.dailyRenderedText(): List<String> =
+    flattenSemantics()
+        .asSequence()
+        .flatMap { node ->
+            node.config.getOrElse(SemanticsProperties.Text) { emptyList() }.asSequence()
+        }
+        .map { it.text }
+        .toList()
+
+private fun SemanticsNode.dailyDateLabel(): String =
+    dailyRenderedText().first { it.matches(Regex("[A-Z][a-z]{2}, Aug \\d{2}")) }
+
+private fun SemanticsNode.dailyDescription(): String =
+    config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }.single()
+
+private fun SemanticsNode.flattenSemantics(): List<SemanticsNode> =
+    listOf(this) + children.flatMap { it.flattenSemantics() }
+
+private fun SemanticsNode.hourlyTag(): String =
+    config.getOrElse(SemanticsProperties.TestTag) { "" }
+
+private fun SemanticsNode.hourlyRenderedText(): List<String> =
+    flattenSemantics()
+        .asSequence()
+        .flatMap { node ->
+            node.config.getOrElse(SemanticsProperties.Text) { emptyList() }.asSequence()
+        }
+        .map { it.text }
+        .toList()
+
+private fun SemanticsNode.hourlyTimeLabel(): String =
+    hourlyRenderedText()
+        .first { it.matches(Regex("\\d{1,2} AM")) }
 
 private fun ComposeTestRule.assertHomePage(
     title: String,

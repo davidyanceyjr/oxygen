@@ -41,7 +41,7 @@ class EffectsPreferenceUiTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun selectionPreservesWeatherAndDoesNotRequestAnotherForecast() {
+    fun effectsPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry() {
         val location = fixtureLocation()
         val repository = CountingRepository(location)
         val storage = TestEffectsStorage(stored = EffectsLevel.SUBTLE)

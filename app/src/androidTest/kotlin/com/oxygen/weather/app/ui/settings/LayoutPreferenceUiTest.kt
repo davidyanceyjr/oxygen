@@ -56,7 +56,7 @@ class LayoutPreferenceUiTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun selectionCommitsWithoutForecastRefetchAndRemainsIndependent() {
+    fun layoutPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry() {
         val location = fixtureLocation("ui-commit")
         val repository = RecordingWeatherRepository(location)
         val executor = ControlledExecutor()
@@ -79,18 +79,18 @@ class LayoutPreferenceUiTest {
         composeRule.onNodeWithTag("settings-destination-appearance").performClick()
         drainUi(executor)
         composeRule.onNodeWithTag("settings-layout-simple").assertIsSelected()
-        composeRule.onNodeWithTag("layout_preference_saved").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_saved").performScrollTo().assertIsDisplayed()
         assertEquals(1, repository.refreshCount)
         assertEquals(UnitPreference.Preset(UnitPreferencePreset.METRIC), holder.presentationState.unitPreference)
         assertEquals(EffectsLevel.SUBTLE, holder.presentationState.effectsPreference.confirmed)
 
         composeRule.onNodeWithTag("settings-layout-standard").performClick()
-        composeRule.onNodeWithTag("layout_preference_loading").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_loading").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("settings-layout-simple").assertIsNotEnabled()
         composeRule.onNodeWithTag("settings-layout-standard").assertIsNotEnabled()
         drainUi(executor)
 
-        composeRule.onNodeWithTag("layout_preference_saved").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_saved").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("settings-layout-standard").assertIsSelected()
         assertEquals(LayoutPreset.STANDARD, holder.presentationState.layout)
         assertEquals(1, repository.refreshCount)
@@ -112,10 +112,10 @@ class LayoutPreferenceUiTest {
         drainUi(executor)
         composeRule.onNodeWithTag("settings-layout-standard").assertIsSelected()
         composeRule.onNodeWithTag("settings-layout-simple").performClick()
-        composeRule.onNodeWithTag("layout_preference_loading").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_loading").performScrollTo().assertIsDisplayed()
         drainUi(executor)
 
-        composeRule.onNodeWithTag("layout_preference_saved").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_saved").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("settings-layout-simple").assertIsSelected()
         composeRule.onNodeWithTag("settings-back").performClick()
         drainUi(executor)
@@ -164,11 +164,11 @@ class LayoutPreferenceUiTest {
 
         storage.readFails = false
         composeRule.onNodeWithTag("layout_preference_retry").performClick()
-        composeRule.onNodeWithTag("layout_preference_loading").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_loading").performScrollTo().assertIsDisplayed()
         drainUi(executor)
 
         composeRule.onNodeWithTag("settings-layout-simple").assertIsSelected()
-        composeRule.onNodeWithTag("layout_preference_saved").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_saved").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("settings-back").performClick()
         drainUi(executor)
         composeRule.onNodeWithTag("settings-back").performClick()
@@ -181,7 +181,7 @@ class LayoutPreferenceUiTest {
         drainUi(executor)
         storage.readFails = true
         holder.onLayoutPreferenceRetry()
-        composeRule.onNodeWithTag("layout_preference_loading").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_loading").performScrollTo().assertIsDisplayed()
         drainUi(executor)
 
         composeRule.onNodeWithTag("settings-layout-simple").assertIsSelected()
@@ -202,10 +202,10 @@ class LayoutPreferenceUiTest {
         drainUi(executor)
 
         composeRule.onNodeWithTag("settings-layout-simple").assertIsSelected()
-        composeRule.onNodeWithTag("layout_preference_saved").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_saved").performScrollTo().assertIsDisplayed()
         storage.writeFails = true
         composeRule.onNodeWithTag("settings-layout-standard").performClick()
-        composeRule.onNodeWithTag("layout_preference_loading").assertTextContains("Saving Standard...")
+        composeRule.onNodeWithTag("layout_preference_loading").performScrollTo().assertTextContains("Saving Standard...")
         composeRule.onNodeWithTag("settings-layout-simple").assertIsNotEnabled()
         composeRule.onNodeWithTag("settings-layout-standard").assertIsNotEnabled()
         drainUi(executor)
@@ -216,11 +216,11 @@ class LayoutPreferenceUiTest {
 
         storage.writeFails = false
         composeRule.onNodeWithTag("layout_preference_retry").performClick()
-        composeRule.onNodeWithTag("layout_preference_loading").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_loading").performScrollTo().assertIsDisplayed()
         drainUi(executor)
 
         composeRule.onNodeWithTag("settings-layout-standard").assertIsSelected()
-        composeRule.onNodeWithTag("layout_preference_saved").assertIsDisplayed()
+        composeRule.onNodeWithTag("layout_preference_saved").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("settings-back").performClick()
         drainUi(executor)
         composeRule.onNodeWithTag("settings-back").performClick()

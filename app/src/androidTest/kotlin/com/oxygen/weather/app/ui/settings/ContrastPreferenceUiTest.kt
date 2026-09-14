@@ -54,7 +54,7 @@ class ContrastPreferenceUiTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun selectionCommitsConfirmedContrastAndPreservesAppearanceWithoutRefetch() {
+    fun contrastPreferenceSemanticsRetainConfirmedChoiceThroughPendingAndRetry() {
         val location = contrastUiLocation("selection")
         val executor = ContrastUiControlledExecutor()
         val repository = ContrastUiRepository(location)
