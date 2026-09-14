@@ -90,6 +90,7 @@ fun SettingsScreen(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
+                    .padding(bottom = 16.dp)
                     .testTag("settings-content"),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -551,7 +552,10 @@ private fun AppearanceSummary(
                 modifier = Modifier.testTag("effects_preference_error"),
             )
             !animationsEnabled && preference.confirmed != null && preference.confirmed != EffectsLevel.OFF ->
-                Text(stringResource(R.string.effects_android_disabled))
+                Text(
+                    text = stringResource(R.string.effects_android_disabled),
+                    modifier = Modifier.testTag("effects_preference_disabled_motion"),
+                )
             else -> Text(
                 text = stringResource(R.string.effects_saved),
                 modifier = Modifier.testTag("effects_preference_saved"),
