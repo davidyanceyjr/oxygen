@@ -2218,8 +2218,13 @@ Terminal/High while preserving the fixed Back action and saved-status meaning.
 TalkBack service traversal, localization, automatic contrast, and release
 checks remain unverified. Gate 30D3 is committed. Per the 2026-09-14 user
 release decision, Gate 30E is deferred and does not block the first version;
-its installed TalkBack audit remains unverified. Slice 33A is the next specified
-candidate in the roadmap.
+its installed TalkBack audit remains unverified. Slice 33A's dependency and
+manifest audit and Slice 33B's installed manifest-exposure repair are
+committed. The installed package retains only the three user-facing
+permissions, exposes only MainActivity as an exported activity, and keeps
+retained AndroidX components non-exported. Backup remains `allowBackup=true`;
+this slice does not resolve the separate migration/privacy decision. No later
+implementation candidate is selected yet.
 
 ---
 

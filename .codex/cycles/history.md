@@ -686,3 +686,42 @@ Changed files: `app/src/main/AndroidManifest.xml` and
 
 Commit state: uncommitted; current plan records the repair handoff. Existing
 uncommitted documentation and archive changes were preserved.
+
+### 2026-09-14-slice-33b-dependency-manifest-exposure-repair
+
+Status: committed; installed acceptance verified
+Mode: bounded Android dependency-owned manifest exposure repair
+Slice: Slice 33B, Dependency-Owned Manifest Exposure Repair
+Commit: `02f668f`
+
+Result:
+
+- Removed AndroidX Core's generated dynamic-receiver permission and Compose
+  `ui-test-manifest`'s exported `androidx.activity.ComponentActivity` from the
+  production merge with narrow manifest-merger directives.
+- Retained ProfileInstaller startup while forcing
+  `androidx.profileinstaller.ProfileInstallReceiver` non-exported.
+- Restored strict installed assertions for the exact three requested
+  permissions and launcher-only exported activity policy.
+
+Evidence:
+
+- Artifacts are retained under
+  `.codex/test-artifacts/2026-09-14-slice-33b-dependency-manifest-exposure-repair/`.
+- Manifest ownership/dependency processing and Android-test compilation passed.
+- API-37 installed privacy instrumentation passed 4/4 cases. Selected-cache
+  and manual-location production instrumentation each passed 1/1 case.
+- App/core unit tests, debug assembly, and `git diff --check` passed. Fresh APK
+  installation succeeded, and package output confirmed exact permissions and
+  component exposure.
+
+Limits:
+
+- A direct headless Home launch reached the emulator's system “Process system
+  isn't responding” dialog before app UI inspection; it was recorded once and
+  not repeated. This slice makes no visual-launch claim.
+- Backup policy, TalkBack, provider disclosure, release readiness, and the
+  pre-existing API-30 location lint finding remain unverified/out of scope.
+
+Commit state: committed; post-commit plan, roadmap, README, specification, and
+history synchronization completed.

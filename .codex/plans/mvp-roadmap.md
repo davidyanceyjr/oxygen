@@ -7,7 +7,7 @@ Created: 2026-08-18
 Revised: 2026-09-14
 Reconciled against local `origin/main` ref: `82cf281`
 Synchronized through Gate 30C3 alert evidence/documentation closure after Slice
-30C2 implementation `70304b8`; prior baseline
+30C2 implementation `70304b8`, and Slice 33B manifest repair `02f668f`; prior baseline
 roadmap synchronization remains recorded through Slice 30B1A3B1 implementation
 `26b32b8`, Slice 29B implementation
 `441d05d`, test follow-up `86e696c`, and evidence sync `86f046b`.
@@ -42,8 +42,9 @@ boundary. Gate 30C3 is committed as the deterministic alert evidence and
 documentation closure. Slice 30D1 is committed at `78ecb84`; Slice 30D2 is
 committed at `2955aa5` as the Appearance layout and environment resilience
 repair; Gate 30D3 is committed. Gate 30E is deferred as optional first-release
-follow-up per the 2026-09-14 user decision; Slice 33A is the next specified
-candidate. The completed/deferred accessibility sequence is retained below:
+follow-up per the 2026-09-14 user decision; Slice 33A's audit and Slice 33B's
+manifest repair are committed. No later candidate is selected yet. The
+completed/deferred accessibility sequence is retained below:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -812,7 +813,8 @@ six accepted D2 connected cases on API-37 `oxygen_starter`, with installed LTR,
 font-scale-2.0, RTL, disabled-animation Effects Off, and Terminal/High evidence.
 TalkBack service traversal, localization, automatic contrast, injected storage
 failures, numeric installed request counts, and release checks remain
-unverified. Gate 30E is deferred; Slice 33A is the next specified candidate.
+unverified. Gate 30E is deferred; Slice 33A's audit and Slice 33B's manifest
+repair are committed, with no later candidate selected yet.
 
 ### Gate 30E: Installed TalkBack and Accessibility Closure
 

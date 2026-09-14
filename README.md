@@ -26,6 +26,10 @@ and `docs/data-sources/`.
   Open-Meteo IANA timezone lookup, and selection through the same forecast/cache
   path. The selected approximate position is stored locally; no automatic
   relocation or background acquisition occurs. Manual search needs no grant.
+- The installed production package requests only Internet, network-state, and
+  optional coarse-location permissions. Its only exported component is the
+  user-facing launcher activity; dependency-owned AndroidX components remain
+  non-exported where retained. Cleartext traffic is disabled.
 - Explicit selected-location Open-Meteo forecast retrieval.
 - Last selected location persistence through the local DataStore path.
 - Saved-location storage, saved-location list display, current-location marking,
