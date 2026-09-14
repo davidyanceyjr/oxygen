@@ -2,8 +2,8 @@
 
 **Status:** planned
 **Cycle ID:** `2026-09-14-gate-35b-connected-evidence-repair`
-**Prerequisite:** Gate 35A's core acceptance records are verified; Gate 35C
-remains specified and blocked on this repair.
+**Prerequisite:** Gate 35A's core acceptance repair is committed at `f84e7d4`;
+Gate 35C remains specified and blocked on this repair.
 
 ## Selected slice
 

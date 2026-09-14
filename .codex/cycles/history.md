@@ -873,7 +873,7 @@ complete.
 
 ### 2026-09-14-gate-35a-connected-evidence-repair
 
-Status: verified; ready for commit
+Status: committed at `f84e7d4`
 Mode: bounded runner-evidence repair with no product or test-source change
 Slice: Gate 35A, MVP Core Behavior Verification
 
@@ -901,4 +901,5 @@ Evidence and limits:
   completion output. Gate 35C and release readiness remain blocked on that
   separate repair.
 
-Commit state: ready for commit; post-commit authority synchronization pending.
+Commit state: committed at `f84e7d4`; post-commit authority synchronization is
+complete.
