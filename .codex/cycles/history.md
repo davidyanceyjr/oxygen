@@ -802,3 +802,32 @@ traversal, localization, automatic contrast audit, or deferred Gate 30E work.
 
 Commit state: committed at `64d4908`; post-commit documentation
 synchronization follows in the documentation-sync commit.
+
+### 2026-09-14-gates-34b-35a-data-source-mvp-core-verification
+
+Status: verified; Gate 34B and Gate 35A passed in one shared verification
+session.
+
+- Gate 34B installed Data Sources evidence passed 1/1. Active provider,
+  attribution, privacy, and license claims matched production wiring; all five
+  configured disclosure links opened through the injected URI boundary, with
+  no forecast refetch and no permission request.
+- Gate 35A connected evidence passed 9/9 on API-37 `oxygen_starter`: manual
+  location, three MET Norway/Open-Meteo fallback and provenance cases, Room
+  offline/stale restoration, units, saved-location selection/removal, and the
+  truthful no-alert Home boundary. The ninth case was required by the gate's
+  explicit official-alert acceptance clause and is the documented exception to
+  the eight-case default.
+- Focused app/core debug unit tests passed. Compile, debug/release assembly,
+  and `git diff --check` passed. No production or authority-content correction
+  was needed.
+- Artifacts: `.codex/test-artifacts/2026-09-14-gates-34b-35a-data-source-mvp-core-verification/`.
+  The wrapper's initial nested-artifact invocation was rejected before test
+  execution; the corrected direct sibling artifact layout passed and is the
+  retained evidence layout.
+
+Limits: no live-provider/manual network journey, release-candidate decision,
+TalkBack traversal, localization, automatic contrast audit, alert persistence,
+background polling, or deferred Gate 30E work. README and specification claims
+remain unchanged and accurate. Commit state: documentation/status updates are
+uncommitted; no product files changed.

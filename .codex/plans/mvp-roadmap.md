@@ -1,6 +1,6 @@
 # Oxygen MVP Release Map
 
-Status: specified
+Status: verified through Gate 35A
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
@@ -45,7 +45,8 @@ repair; Gate 30D3 is committed. Gate 30E is deferred as optional first-release
 follow-up per the 2026-09-14 user decision; Slice 33A's audit, Slice 33B's
 manifest repair, and the provider-disclosure privacy audit are committed at
 `da3a9a3`.
-Gate 34A was committed at `64d4908`; Gate 34B is the next candidate to plan. The
+Gate 34A was committed at `64d4908`; Gate 34B and Gate 35A passed in one
+verification session, with separate acceptance boundaries and evidence. The
 completed/deferred accessibility sequence is retained below:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
@@ -979,7 +980,7 @@ Must prove:
 
 ## Gate 34B: Data-Source Release Check
 
-Status: specified
+Status: verified in `2026-09-14-gates-34b-35a-data-source-mvp-core-verification`
 
 Prerequisite:
 
@@ -997,7 +998,7 @@ Must prove:
 
 ## Gate 35A: MVP Core Behavior Verification
 
-Status: specified
+Status: verified in `2026-09-14-gates-34b-35a-data-source-mvp-core-verification`
 
 Release intent: Verify core weather and local-state MVP behavior against the
 repository completion standard before presentation/release evidence is bundled.
@@ -1144,68 +1145,16 @@ implemented at `441d05d` with test follow-up `86e696c` and evidence sync
 `86f046b`; retained evidence is under
 `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
 
-Use this as sequencing guidance, not permission to work multiple slices at once.
+Use this as sequencing guidance. Gate 34B and Gate 35A may share one execution
+session and emulator, but remain separate gates with separate evidence and
+status decisions.
 
-1. Slice 19A — Saved Location Storage Model
-2. Slice 19B — Saved Location Selection and Concurrency
-3. Slice 19C — Saved Locations UI
-4. Slice 31A — Installed-App Fallback Wiring
-5. Slice 31B — Fallback Cache and Provenance
-6. Slice 32 — Fallback Real-Path Verification
-7. Slice 19D — Save Search Result UI
-8. Slice 19E — Remove Saved Location UI
-9. Gate 19F — Saved Locations Documentation Sync
-10. Slice 20A — Unit Preference Contract
-11. Gate 20-0 — Presentation Semantics and Localization Safety
-12. Slice 20B — Unit Conversion Presentation Boundary
-13. Slice 25A — Settings Information Architecture
-14. Slice 20C — Persisted Units UI
-15. Slice 21 — Optional Device Location
-16. Slice 22 — NWS Alert Provider Contract
-17. Slice 23A — NWS Fixtures/Parsing/Mapping
-18. Slice 23B — NWS Client/Error Classification
-19. Slice 23C — Alert Repository Merge
-20. Slice 24A — Alert Summary/Banner UI
-21. Slice 24B — Alert Detail UI
-22. Gate 25 — Disclosure Baseline Check
-23. Slice 26 — Effects Preference
-24. Slice 27B1 — Layout Preference Storage and State
-25. Slice 27B2 — Layout Settings Transaction UI
-26. Slice 27B3 — Installed Layout Restoration Verification
-27. Slice 28A1 — Paper Theme Rendering Baseline
-28. Slice 28A2 — Terminal Theme Rendering Baseline, or explicitly defer it
-29. Slice 28B1 — Theme Preference Storage and State
-30. Slice 28B2 — Persisted Theme Settings UI
-31. Slice 29A — High-Contrast Rendering Contract
-32. Slice 29B — High-Contrast Preference UI
-33. Slice 30A1 — Home Spoken-Weather Semantics
-34. Slice 30A2 — Home Compact and Large-Font Resilience
-35. Slice 30A3A1 — Home Speech/Layout Evidence
-36. Slice 30A3B2 — Home Accessibility Evidence Document Sync
-37. Slice 30B1A1 — RTL Semantic Page Navigation Contract
-38. Slice 30B1A2 — RTL Directional Affordances and Gesture Behavior
-39. Slice 30B1A3A1 — Standard Home RTL Hourly Chronology
-40. Slice 30B1A3A2 — Standard Home RTL Daily Chronology
-41. Slice 30B1A3A3 — Simple Home RTL Forecast Chronology
-42. Slice 30B1A3B1 — RTL/LTR Spoken-Meaning Equivalence
-43. Slice 30B1A4 — RTL Compact Layout and No-Refetch Evidence
-44. Gate 30B1B1 — RTL Installed Evidence and Documentation Sync
-45. Slice 30B2 — Home Reduced-Motion and Appearance Invariance
-46. Gate 30B3 — Home Environment Evidence and Document Sync
-47. Slice 30C1 — Official-Alert Summary Accessibility
-48. Slice 30C2 — Official-Alert Detail Accessibility
-49. Gate 30C3 — Alert Accessibility Evidence and Document Sync
-50. Slice 30D1 — Appearance Control Semantics
-51. Slice 30D2 — Appearance Layout and Environment Resilience
-52. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
-53. Gate 30E — Installed TalkBack and Accessibility Closure (optional follow-up; not a first-release prerequisite)
-51. Slice 33A — Dependency and Manifest Privacy Audit
-52. Slice 33B — Provider Disclosure and Local Data Privacy Audit
-53. Gate 34A — Settings and About Release Check
-54. Gate 34B — Data-Source Release Check
-55. Gate 35A — MVP Core Behavior Verification
-56. Gate 35B — MVP Presentation and Accessibility Verification
-57. Gate 35C — Release Candidate Decision
+1. Gate 34B — Data-Source Release Check
+2. Gate 35A — MVP Core Behavior Verification
+3. Gate 35B — MVP Presentation and Accessibility Verification
+4. Gate 35C — Release Candidate Decision
+5. Gate 30E — Installed TalkBack and Accessibility Closure (optional follow-up;
+   not a first-release prerequisite)
 
 Run recurring documentation-sync gates at the defined cadence.
 
@@ -1224,6 +1173,11 @@ Sequencing rationale:
 
 ## Active Slice
 
+Gate 34B and Gate 35A are verified in
+`2026-09-14-gates-34b-35a-data-source-mvp-core-verification`. Gate 35B is the
+next specified candidate; it must be selected in `.codex/plans/current.md`
+before implementation or verification begins.
+
 Slice 30A1: Home Spoken-Weather Semantics is committed at `da7b886`; Slice 30A2
 is committed at `1a8e14f`; 30A3A1's evidence is complete; and 30A3B2 is the
 committed documentation-sync boundary at `fb51f7b`. Slice 30B1A1 is committed
@@ -1231,9 +1185,8 @@ at `63ed25a`; Slice 30B1A2 is committed at `20b6ddc`; and Slice 30B1A3A1 is
 committed at `74675e2`. Slice 30B1A3A2 is committed at `9390601`, Slice
 30B1A3A3 is committed at `91974b2`, and Slice 30B1A3B1 is committed at
 `26b32b8`. Slice 30B1A4's Standard boundary is committed at `8b5647b`; its
-Simple boundary is the current candidate in `.codex/plans/current.md`. It is
-the next bounded slice of the split Gate 30
-accessibility boundary. Slice 29B is committed at `441d05d` with test
+Simple boundary is complete as part of the split Gate 30 accessibility
+boundary. Slice 29B is committed at `441d05d` with test
 coverage follow-up `86e696c` and evidence sync `86f046b`. Slice 28A1 is
 committed at `06c987b`, Slice 28A2 is committed at `80dd961`, and Slice 28B1 is
 committed at `708172f` (merged by `82cf281`), with retained evidence under their
@@ -1294,18 +1247,17 @@ Immediate planning boundary:
 -> Slice 30D2 Appearance Layout and Environment Resilience committed at `2955aa5`
 -> Gate 30D3 Appearance Accessibility Evidence and Documentation Sync committed
 -> Gate 30E Installed TalkBack and Accessibility Closure deferred; optional for first release
--> Slice 33A Dependency and Manifest Privacy Audit is next specified
+-> Gate 34A Settings and About release check committed at `64d4908`
+-> Gate 34B Data-Source Release Check verified on 2026-09-14
+-> Gate 35A MVP Core Behavior Verification verified on 2026-09-14
+-> Gate 35B MVP Presentation and Accessibility Verification is next specified
 ```
 
-Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,
-Slice 29B, Slice 30A1, Slice 30A2, and the 30A3B2 documentation sync are
-complete. Gate 30 is split into the bounded 30A1–30E queue at the head of this
-roadmap; 30A3A1 evidence is complete, Slices 30B1A1 through 30B1A3B1 are
-committed, Slice 30D1, Slice 30D2, and Gate 30D3 are committed, and Gate 30E
-is deferred as optional first-release follow-up. `.codex/plans/current.md`
-records Slice 33A as the next candidate to plan. Service-level TalkBack remains
-unverified; this exception does not imply release readiness or waive other
-release checks.
+The earlier accessibility, appearance, privacy-audit, and Settings/About
+boundaries are complete or deferred as recorded above. Gate 34B and Gate 35A
+are verified; `.codex/plans/current.md` records Gate 35B as the next candidate
+to plan. Service-level TalkBack remains unverified; this exception does not
+imply release readiness or waive other release checks.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

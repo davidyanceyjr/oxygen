@@ -1,169 +1,154 @@
-# Gate 34A — Settings and About Release Check
+# Gates 34B + 35A — Data-Source and MVP Core Verification Draft
 
-**Status:** committed at `64d4908`; next action is to plan Gate 34B
-**Cycle ID:** `2026-09-14-gate-34a-settings-about-release-check`
-**Difficulty:** 3/10
+**Status:** verified; combined execution session with separate acceptance gates
+**Cycle ID:** `2026-09-14-gates-34b-35a-data-source-mvp-core-verification`
+**Difficulty:** 7/10
 
-## Selected behavior
+## Schedule
 
-The installed Settings/About surface must present the implemented preference
-information architecture and release-facing disclosures truthfully: supported
-Settings destinations match the current app behavior, Privacy and Open Source
-Licenses remain reachable, source-code licensing is distinct from weather-data
-attribution/licensing, and unfinished appearance modes are not exposed as
-implemented choices.
+Run Gate 34B and Gate 35A in one emulator/build session to reuse the installed
+APK, provider disclosures, provenance observations, and core weather journey.
+Keep separate evidence folders, acceptance results, and status entries because
+34B verifies release-facing data-source claims while 35A verifies user-visible
+MVP behavior.
 
-This is a bounded release-check slice. Existing behavior is presumed correct
-only after the Settings boundary and its disclosure state are exercised.
+Order:
 
-## Contract and acceptance boundary
+1. Gate 34B — Data-Source Release Check.
+2. Gate 35A — MVP Core Behavior Verification.
+3. Stop and record any production defect as a separately named repair slice;
+   do not silently widen either gate.
 
-Pass only when all of the following are demonstrated:
+## Gate 34B selected behavior and acceptance boundary
 
-- The installed Settings root exposes exactly the implemented destinations:
-  Appearance, Units, Locations, Data Sources, Privacy, Open Source Licenses,
-  and About, grouped under the current Settings IA.
-- Appearance exposes only implemented persisted choices: Oxygen, Paper, and
-  Terminal themes; Standard and High contrast; Simple and Standard layout;
-  and Off and Subtle effects. The unfinished Full effects mode is not exposed
-  as a selectable option or described as implemented.
-- Privacy and Open Source Licenses are reachable from the installed Settings
-  root and remain readable at the bounded compact/large-font test surface.
-- Open Source Licenses explicitly separates Oxygen's GPL-3.0-or-later source
-  license from weather-data attribution/licensing and upstream dependency
-  licenses; no unsupported complete-inventory claim is made.
-- Returning from each tested disclosure/settings destination preserves the
-  Settings surface without changing forecast semantics or causing a refetch.
-- No provider, persistence, permission, manifest, navigation destination, or
-  unfinished appearance behavior is added or changed merely to pass this gate.
+The installed Data Sources surface must truthfully identify active providers
+and expose the matching attribution, privacy, and licensing information.
 
-## Discovery findings
+Pass only when:
 
-- `SettingsDestination.entries` currently defines the seven implemented
-  destinations and `SettingsScreen.kt` groups them as Appearance, Weather,
-  Places, and Information.
-- `SettingsScreen.kt` renders three theme choices, two contrast choices, two
-  layout choices, and two effects choices. `EffectsLevel.FULL` exists as a
-  domain/display value but is not rendered as a choice; this must be asserted
-  at the boundary.
-- `AboutDisclosureContent.kt` already contains Privacy, Open Source Licenses,
-  and About state, including the source-code/weather-data distinction.
-- Existing unit coverage verifies destination ordering and disclosure text;
-  existing connected coverage reaches every Settings destination and checks
-  disclosure reachability, links, no refetch, and no permission request.
-- README and specification describe the same implemented Settings destinations
-  and identify full effects behavior as unfinished. No authority conflict was
-  found during planning.
+- active providers are limited to Open-Meteo forecast, Open-Meteo/GeoNames
+  geocoding, MET Norway fallback forecast, and NWS official alerts;
+- forecast, geocoding, alert, fallback, attribution, privacy, and license
+  claims match the provider contracts and installed production wiring;
+- required provider and attribution/privacy links are reachable through the
+  installed URI boundary;
+- provider disclosure navigation preserves the selected forecast, alert
+  semantics, and request counts; and
+- no inactive, sample, or unsupported provider is described as active.
 
-## Intended files
+## Gate 35A selected behavior and acceptance boundary
 
-Inspect first; modify only if focused evidence exposes a real mismatch:
+The installed app must support the MVP core journey without permission,
+provider, cache, or provenance shortcuts.
 
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/settings/SettingsScreen.kt`
+Pass only when the bounded installed and focused evidence demonstrates:
+
+- manual first-run location search without location permission;
+- current, hourly, and daily weather from the Open-Meteo default path;
+- explicit refresh and truthful source/update/provenance state;
+- eligible Open-Meteo failure serving MET Norway fallback data;
+- offline restoration and stale-after-refresh-failure behavior;
+- saved-location add, select, and remove;
+- unit selection/remapping without mutating canonical forecast data;
+- official-alert lookup remains independent of forecast fallback and retains
+  truthful no-alert or available-alert state; and
+- no sample data, fabricated values, provider DTOs, or provider-specific
+  errors enter the production Home presentation path.
+
+## Intended files and evidence
+
+Inspect first; modify only for a demonstrated production mismatch:
+
 - `app/src/main/kotlin/com/oxygen/weather/app/AboutDisclosureContent.kt`
-- `app/src/test/kotlin/com/oxygen/weather/app/AboutDisclosureStateHolderTest.kt`
 - `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
-- `README.md`
-- `docs/OXYGEN_FULL_SPECIFICATION.md`
+- `app/src/androidTest/kotlin/com/oxygen/weather/app/InstalledFallbackRepositoryInstrumentedTest.kt`
+- `app/src/androidTest/kotlin/com/oxygen/weather/PrivacyManifestInstrumentedTest.kt`
+- focused repository/state-holder tests under `app/src/test/`
+- `docs/data-sources/*.md`, `README.md`, and
+  `docs/OXYGEN_FULL_SPECIFICATION.md` only if an observed claim is wrong
 
-Expected implementation is test-only if the existing production boundary is
-confirmed. Documentation changes are allowed only to correct an observed
-Settings/About status mismatch; do not rewrite unrelated release material.
+Artifacts:
 
-## Execution sequence
+`.codex/test-artifacts/2026-09-14-gates-34b-35a-data-source-mvp-core-verification/`
 
-1. Confirm the clean worktree and record the unchanged baseline. Run the
-   focused disclosure unit test before changing tests.
-2. Trace Settings destination construction, preference storage/presentation,
-   appearance choice rendering, About disclosure state, and existing README/
-   specification claims. Mark each as implemented, unfinished, or unsupported.
-3. Add the smallest meaningful boundary assertion for the identified gap:
-   connected Settings coverage should assert supported appearance choices and
-   absence of the unfinished Full effects choice; reuse existing disclosure
-   reachability and no-refetch coverage where it already proves the contract.
-4. If a boundary test fails because production behavior or documentation is
-   inconsistent, make the smallest scoped correction and keep all unrelated
-   provider, persistence, permission, and navigation behavior unchanged.
-5. Run focused unit evidence, then one bounded connected Settings journey on
-   the existing API-37 emulator session if available. Save semantics/screenshots
-   only for the Settings/About acceptance boundary under the cycle artifact
-   directory.
-6. Run applicable broad checks, review the diff for semantic drift/slop, and
-   report any platform timeout or skipped release-candidate checks explicitly.
+Keep `gate-34b/` and `gate-35a/` evidence separate, with one verification
+ledger for the shared emulator session.
 
-## Planned evidence and commands
+## Execution and verification budget
 
-Create artifacts under:
+1. Inspect the clean worktree, current provider wiring, disclosure content,
+   and existing focused tests.
+2. Run only the focused unit tests needed for disclosure, repository fallback,
+   cache/provenance, saved locations, units, alerts, and Home state behavior.
+3. Build/install once on the existing API-37 emulator session if the APK
+   changes. Run the smallest relevant connected cases, capped at eight test
+   cases per implementation slice unless a gate requires more and the ledger
+   explains why.
+4. Exercise the installed Data Sources journey, then the core Home journey;
+   capture screenshots or semantic dumps only where they prove the two gates.
+5. Run applicable compile, app/core unit, debug/release assembly, and
+   `git diff --check` commands once after focused evidence is green.
 
-`.codex/test-artifacts/2026-09-14-gate-34a-settings-about-release-check/`
+Planned baseline/broad commands:
 
-Focused baseline and tests:
+```sh
+. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
+. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
+. scripts/android-env.sh && ./gradlew :app:assembleDebug :app:assembleRelease
+git diff --check
+```
 
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest --tests '*AboutDisclosureStateHolderTest*'`
-- `. scripts/android-env.sh && ./gradlew :app:assembleDebug`
-- Install the resulting debug APK once if it changed, then run the smallest
-  relevant connected cases from `HomeDashboardUiTest`:
-  `settingsRootReachesAllDestinationsAndLocationsBackWorksWithAndroidBack` and
-  `settingsDisclosuresShowActiveProviderLicenseAndPrivacyBaseline` (two test
-  cases; within the eight-case default).
-- Capture the Settings root, Appearance, Privacy, and Open Source Licenses
-  semantics or screenshots needed to prove reachability, implemented choices,
-  license separation, and absence of Full effects.
+## Out of scope and limits
 
-Broad checks after focused green:
-
-- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin`
-- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
-- `. scripts/android-env.sh && ./gradlew :app:assembleDebug :app:assembleRelease`
-- `git diff --check`
-
-Do not rerun unchanged passing checks. Do not claim release-candidate status;
-Gate 34B, Gate 35A, Gate 35B, and Gate 35C remain later work.
-
-## Real-path limits and out of scope
-
-- No live provider call, fallback verification, alert persistence, background
-  polling, new provider, storage format, permission change, manifest change,
-  or provider/network behavior change.
+- No new provider, provider contract, persistence format, permission, backup
+  policy, alert persistence, background polling, notification, or UI feature.
+- No release-candidate claim; Gate 35B and Gate 35C remain later gates.
 - No TalkBack service traversal, localization, automatic contrast audit, or
-  release-candidate verification; Gate 30E remains deferred.
-- If the emulator reaches a bounded platform timeout, retain the exact result
-  in the verification ledger and stop repeating the same attempt.
+  deferred Gate 30E work.
+- If the emulator reaches a bounded platform timeout, record the exact result
+  and stop repeating that attempt.
 
-## Completion handoff
+## Handoff
 
-When the acceptance boundary is verified, record changed files, exact focused
-and broad commands, connected test-case results, artifact paths, skipped checks,
-and any limits in this plan and append a concise self-contained entry to
-`.codex/cycles/history.md`. If committed, synchronize this plan, roadmap,
-README/specification status where affected, and cycle history after the commit.
+Record each gate's status independently. If both pass, append self-contained
+history entries and synchronize the roadmap, README/specification claims, and
+this plan with the evidence before selecting Gate 35B.
 
 ## Result and evidence
 
-- Existing production Settings/About behavior matched the planned contract; no
-  production or disclosure-content correction was needed.
-- Added connected boundary coverage for all nine supported Appearance controls
-  and asserted that the unfinished `settings-effects-full` choice is absent.
-  The fixture now supplies in-memory supported preference stores so the test
-  exercises the managed persisted-choice surface.
-- Focused unit baseline passed: `. scripts/android-env.sh && ./gradlew
-  :app:testDebugUnitTest --tests '*AboutDisclosureStateHolderTest*'`.
-- Connected API-37 `oxygen_starter` evidence passed: the Settings root and
-  locations-back journey, plus the disclosure/provider-license/privacy
-  journey, each completed 1/1 with no refetch and no permission request.
-- Broad checks passed in one Gradle invocation:
-  `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin
-  :app:testDebugUnitTest :core:testDebugUnitTest :app:assembleDebug
-  :app:assembleRelease`, plus `git diff --check`.
-- Artifacts: `.codex/test-artifacts/2026-09-14-gate-34a-settings-about-release-check/`;
-  accepted connected results are under `settings-root-accepted/` and
-  `settings-disclosures/`, with emulator preflight/logs under `emulator/`.
-- The initial connected attempt exposed and fixed only test-fixture/query
-  issues: ambiguous generic `Standard`/`Oxygen` text assertions and missing
-  managed preference stores. Failed attempts remain retained under `settings-root/`,
-  `settings-root-rerun/`, and `settings-root-final/`.
+Gate 34B passed. The installed Data Sources journey reached the active provider,
+privacy, and Open Source Licenses disclosures, opened all five configured URI
+links through the injected URI boundary, preserved the forecast request count,
+and made no permission request. The disclosure claims matched the active
+Open-Meteo forecast/timezone and geocoding, GeoNames, MET Norway fallback, and
+NWS alert contracts. No production or disclosure-content change was needed.
 
-Limits: no live provider call, release-candidate verification, TalkBack service
-traversal, localization, automatic contrast audit, or deferred Gate 30E work.
-Commit state: committed as `64d4908`; post-commit documentation
-synchronization follows in the documentation-sync commit.
+Gate 35A passed. The eight planned connected cases passed 1/1 on API-37
+`oxygen_starter`, covering manual location search, eligible MET Norway fallback,
+Room fallback restoration and stale refresh failure, later Open-Meteo
+replacement, offline launch restoration, units, and saved-location selection
+and removal. The gate-specific no-alert case also passed 1/1 to prove the
+truthful no-alert Home boundary; this was the documented ninth case because
+the gate explicitly requires official-alert behavior. Fallback cases retained
+provider provenance and no-alert state; no sample data entered Home.
+
+Focused evidence passed:
+
+- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`
+
+Broad checks passed:
+
+- `. scripts/android-env.sh && ./gradlew :app:compileDebugKotlin :app:assembleDebug :app:assembleRelease`
+- `git diff --check`
+
+Connected artifacts are retained under
+`.codex/test-artifacts/2026-09-14-gates-34b-35a-data-source-mvp-core-verification/`,
+with the shared emulator session under `emulator/`, Gate 34B under `gate-34b/`,
+and Gate 35A cases under the `gate-35a-*` directories. The debug APK was
+installed once after emulator recovery. No provider, persistence, manifest,
+or product files changed; README and specification claims remain accurate.
+
+Limits: no live-provider/manual network journey, release-candidate decision,
+TalkBack service traversal, localization, automatic contrast audit, alert
+persistence/background polling, or deferred Gate 30E work. The next planned
+candidate is Gate 35B.
