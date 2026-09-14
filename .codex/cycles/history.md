@@ -870,3 +870,35 @@ alert persistence/background behavior, and release readiness remain
 unverified. Gate 35C remains the next specified release-candidate decision.
 Commit state: committed at `19347d9`; post-commit authority synchronization is
 complete.
+
+### 2026-09-14-gate-35a-connected-evidence-repair
+
+Status: verified; ready for commit
+Mode: bounded runner-evidence repair with no product or test-source change
+Slice: Gate 35A, MVP Core Behavior Verification
+
+Result:
+
+- Replaced the four unusable original records, whose Gradle logs reported
+  `Tests 0/1 completed`, with one API-37 `oxygen_starter` session of exact
+  filtered methods. Manual location, no-alert, offline Room-cache restoration,
+  and units/Home reachability each completed `1/1`, with zero skipped and zero
+  failed; the Gradle exit status was 0 for every invocation.
+- The five other Gate 35A runner-backed records remain retained. Together, the
+  nine selected core boundaries are verified. No production, test, manifest,
+  provider, persistence, or workflow behavior changed.
+
+Evidence and limits:
+
+- Raw Gradle logs, fresh JUnit XML, `test-results.log`, `test-result.textproto`,
+  device preflight, outcome files, and ledger are under
+  `.codex/test-artifacts/2026-09-14-gate-35a-connected-evidence-repair/`.
+- The emulator was stopped after the four-case session. Unit tests, Kotlin
+  compilation, assembly, and manual/installed journeys were deliberately not
+  rerun because this repair changed no build inputs; their prior retained
+  evidence is not presented as fresh verification.
+- Gate 35B remains planned: five original focused records have zero or missing
+  completion output. Gate 35C and release readiness remain blocked on that
+  separate repair.
+
+Commit state: ready for commit; post-commit authority synchronization pending.

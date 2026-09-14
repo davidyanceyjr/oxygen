@@ -1,6 +1,6 @@
 # Oxygen MVP Release Map
 
-Status: verified through Gate 35A
+Status: Gate 35A verified; Gate 35B evidence repair planned
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
@@ -46,8 +46,11 @@ follow-up per the 2026-09-14 user decision; Slice 33A's audit, Slice 33B's
 manifest repair, and the provider-disclosure privacy audit are committed at
 `da3a9a3`.
 Gate 34A was committed at `64d4908`; Gate 34B and Gate 35A passed in one
-verification session, with separate acceptance boundaries and evidence. The
-completed/deferred accessibility sequence is retained below:
+verification session, with separate acceptance boundaries and evidence. Gate
+35A's four zero-completion records were repaired on API-37 before its status
+was retained. Gate 35B has five zero or missing completion records and requires
+a separate evidence repair before Gate 35C. The completed/deferred accessibility
+sequence is retained below:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
 2. Slice 30A2 — Home Compact and Large-Font Resilience
@@ -1020,7 +1023,9 @@ Must prove:
 
 ## Gate 35B: MVP Presentation and Accessibility Verification
 
-Status: committed at `19347d9`
+Status: planned — five focused runner records require evidence repair before
+this gate can be verified. The prior `19347d9` documentation claim is
+superseded by the retained zero/missing-completion records.
 
 Prerequisite:
 
@@ -1173,11 +1178,12 @@ Sequencing rationale:
 
 ## Active Slice
 
-Gate 34B and Gate 35A are verified in
-`2026-09-14-gates-34b-35a-data-source-mvp-core-verification`. Gate 35B is
-committed at `19347d9`, with evidence in
-`.codex/test-artifacts/2026-09-14-gate-35b-mvp-presentation-accessibility-verification`; Gate 35C is
-the next specified candidate and is not a release decision in this cycle.
+Gate 34B and Gate 35A are verified; the latter's repaired evidence is in
+`.codex/test-artifacts/2026-09-14-gate-35a-connected-evidence-repair/`.
+Gate 35B is planned for a five-case runner-evidence repair before Gate 35C;
+its original artifacts remain under
+`.codex/test-artifacts/2026-09-14-gate-35b-mvp-presentation-accessibility-verification/`.
+Gate 35C is specified and is not a release decision in this cycle.
 
 Slice 30A1: Home Spoken-Weather Semantics is committed at `da7b886`; Slice 30A2
 is committed at `1a8e14f`; 30A3A1's evidence is complete; and 30A3B2 is the
@@ -1250,15 +1256,17 @@ Immediate planning boundary:
 -> Gate 30E Installed TalkBack and Accessibility Closure deferred; optional for first release
 -> Gate 34A Settings and About release check committed at `64d4908`
 -> Gate 34B Data-Source Release Check verified on 2026-09-14
--> Gate 35A MVP Core Behavior Verification verified on 2026-09-14
--> Gate 35B MVP Presentation and Accessibility Verification committed at `19347d9`
+-> Gate 35A MVP Core Behavior Verification verified on 2026-09-14 (four
+   zero-completion records repaired)
+-> Gate 35B MVP Presentation and Accessibility Verification planned for
+   five-case evidence repair
 ```
 
 The earlier accessibility, appearance, privacy-audit, and Settings/About
-boundaries are complete or deferred as recorded above. Gate 34B, Gate 35A,
-and Gate 35B are committed; Gate 35C remains the next specified candidate.
-Service-level TalkBack remains unverified; this exception does not imply
-release readiness or waive other release checks.
+boundaries are complete or deferred as recorded above. Gate 34B and Gate 35A
+are verified; Gate 35B evidence repair is the next planned slice, and Gate 35C
+remains specified. Service-level TalkBack remains unverified; this exception
+does not imply release readiness or waive other release checks.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice
