@@ -766,3 +766,38 @@ Limits:
 
 Commit state: committed in `da3a9a3`; post-commit plan, roadmap, and history
 synchronization completed.
+
+### 2026-09-14-gate-34a-settings-about-release-check
+
+Status: verified; ready for commit
+Mode: bounded installed Settings/About release check
+Slice: Gate 34A — Settings and About Release Check
+
+Result:
+
+- Existing production Settings/About behavior matched the contract. No
+  production, provider, persistence, permission, manifest, README, or
+  specification change was needed.
+- Added connected boundary coverage for the nine supported Appearance choices
+  and absence of the unfinished Full effects choice. The fixture now supplies
+  in-memory supported preference stores so the managed persisted-choice surface
+  is exercised.
+- Settings root/location-back and disclosure/provider-license/privacy journeys
+  passed 1/1 each on API-37 `oxygen_starter`, retaining forecast semantics,
+  no-refetch behavior, disclosure links, and no permission request.
+
+Evidence:
+
+- Focused `AboutDisclosureStateHolderTest` passed.
+- Broad compile, app/core debug unit tests, debug/release assembly, and
+  `git diff --check` passed.
+- Artifacts: `.codex/test-artifacts/2026-09-14-gate-34a-settings-about-release-check/`;
+  accepted connected results are under `settings-root-accepted/` and
+  `settings-disclosures/`, with emulator evidence under `emulator/`.
+- Initial connected failures were limited to test-fixture/query issues and
+  remain retained under the corresponding `settings-root*` artifact folders.
+
+Limits: no live provider call, release-candidate verification, TalkBack service
+traversal, localization, automatic contrast audit, or deferred Gate 30E work.
+
+Commit state: uncommitted; verified changes are ready for commit.
