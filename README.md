@@ -114,6 +114,15 @@ and `docs/data-sources/`.
   Sources, Privacy, Open Source Licenses, and About.
 - Oxygen package/application identity, theme foundation, and Compose Home UI.
 
+Gate 35B presentation/accessibility verification passed on API-37
+`oxygen_starter` with eight focused connected cases and installed evidence for
+Chicago Standard Home pages, compact and large-font layouts, RTL, alternate
+appearance, disabled motion, Settings, Units, saved locations, and provider
+disclosures. The installed Chicago lookup returned no active alert, so live
+alert-detail entry remains unverified. TalkBack service traversal, localization,
+automatic contrast, and release checks remain unverified; Gate 35C is the next
+specified release-candidate decision and has not been performed.
+
 ## Implemented but not active in the installed app
 
 - File-backed forecast cache storage retained as a core repository boundary

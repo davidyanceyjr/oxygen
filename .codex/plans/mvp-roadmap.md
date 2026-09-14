@@ -1020,7 +1020,7 @@ Must prove:
 
 ## Gate 35B: MVP Presentation and Accessibility Verification
 
-Status: specified
+Status: verified on 2026-09-14
 
 Prerequisite:
 
@@ -1174,9 +1174,10 @@ Sequencing rationale:
 ## Active Slice
 
 Gate 34B and Gate 35A are verified in
-`2026-09-14-gates-34b-35a-data-source-mvp-core-verification`. Gate 35B is the
-next specified candidate; it must be selected in `.codex/plans/current.md`
-before implementation or verification begins.
+`2026-09-14-gates-34b-35a-data-source-mvp-core-verification`. Gate 35B is
+verified in
+`2026-09-14-gate-35b-mvp-presentation-accessibility-verification`; Gate 35C is
+the next specified candidate and is not a release decision in this cycle.
 
 Slice 30A1: Home Spoken-Weather Semantics is committed at `da7b886`; Slice 30A2
 is committed at `1a8e14f`; 30A3A1's evidence is complete; and 30A3B2 is the
@@ -1250,14 +1251,14 @@ Immediate planning boundary:
 -> Gate 34A Settings and About release check committed at `64d4908`
 -> Gate 34B Data-Source Release Check verified on 2026-09-14
 -> Gate 35A MVP Core Behavior Verification verified on 2026-09-14
--> Gate 35B MVP Presentation and Accessibility Verification is next specified
+-> Gate 35B MVP Presentation and Accessibility Verification verified on 2026-09-14
 ```
 
 The earlier accessibility, appearance, privacy-audit, and Settings/About
-boundaries are complete or deferred as recorded above. Gate 34B and Gate 35A
-are verified; `.codex/plans/current.md` records Gate 35B as the next candidate
-to plan. Service-level TalkBack remains unverified; this exception does not
-imply release readiness or waive other release checks.
+boundaries are complete or deferred as recorded above. Gate 34B, Gate 35A,
+and Gate 35B are verified; Gate 35C remains the next specified candidate.
+Service-level TalkBack remains unverified; this exception does not imply
+release readiness or waive other release checks.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

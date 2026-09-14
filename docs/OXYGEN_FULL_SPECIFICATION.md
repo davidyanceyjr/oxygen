@@ -2223,8 +2223,14 @@ manifest audit and Slice 33B's installed manifest-exposure repair are
 committed. The installed package retains only the three user-facing
 permissions, exposes only MainActivity as an exported activity, and keeps
 retained AndroidX components non-exported. Backup remains `allowBackup=true`;
-this slice does not resolve the separate migration/privacy decision. No later
-implementation candidate is selected yet.
+this slice does not resolve the separate migration/privacy decision. Gate 35B
+then verified the installed presentation/accessibility boundary with eight
+focused connected cases and API-37 Chicago captures for Standard Home pages,
+compact and large-font layouts, RTL, Paper/High, Effects Off, Settings, Units,
+saved locations, and disclosures. The installed alert result was truthfully
+no active alert, so live alert-detail entry remains unverified. Gate 35C is the
+next specified release-candidate decision; TalkBack service traversal,
+localization, automatic contrast, and release checks remain unverified.
 
 ---
 

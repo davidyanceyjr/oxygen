@@ -831,3 +831,41 @@ TalkBack traversal, localization, automatic contrast audit, alert persistence,
 background polling, or deferred Gate 30E work. README and specification claims
 remain unchanged and accurate. Commit state: documentation/status updates are
 uncommitted; no product files changed.
+
+### 2026-09-14-gate-35b-mvp-presentation-accessibility-verification
+
+Status: verified; tracking/documentation sync ready for commit
+Mode: bounded installed presentation and accessibility evidence gate
+Slice: Gate 35B, MVP Presentation and Accessibility Verification
+
+Result:
+
+- All eight planned focused connected cases passed on API-37
+  `oxygen_starter`, each with 1 completed, 0 skipped, and 0 failed. The cases
+  covered Standard compact/large-font Home reachability, RTL Home controls,
+  deterministic alert-detail long content, Paper/High disabled-motion Home
+  meaning, and Appearance compact/font-scale-2.0/RTL semantics.
+- One installed session fetched real Chicago weather through manual selection
+  and retained readable Standard Now, Hourly, Daily, and Details pages. It
+  reached saved locations with current marking, Settings, Appearance, Units,
+  Data Sources, Privacy, and About; selected Paper/High and restored
+  Oxygen/Standard/Subtle; and captured compact, font-scale 1.3/2.0, RTL, and
+  Effects Off with Android animation scales disabled.
+- The installed Chicago alert lookup returned no active alert. This verifies
+  truthful no-alert behavior only; it does not claim live alert-detail entry.
+
+Evidence:
+
+- Artifacts and verification ledger:
+  `.codex/test-artifacts/2026-09-14-gate-35b-mvp-presentation-accessibility-verification/`.
+- Broad checks passed: app/core debug unit tests, debug Kotlin compilation,
+  debug/release assembly, and `git diff --check`.
+- No production or test source changed. Active plan, roadmap, README,
+  specification, and this history entry were synchronized to the verified
+  evidence.
+
+Limits: TalkBack service traversal, localization, automatic contrast, live
+alert-detail entry, operational stale/error reproduction in this session,
+alert persistence/background behavior, and release readiness remain
+unverified. Gate 35C remains the next specified release-candidate decision.
+Commit state: uncommitted.
