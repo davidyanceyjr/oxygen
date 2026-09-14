@@ -1,6 +1,6 @@
 # Gate 35B — MVP Presentation and Accessibility Verification
 
-**Status:** verified
+**Status:** committed
 **Cycle ID:** `2026-09-14-gate-35b-mvp-presentation-accessibility-verification`
 **Prerequisite:** Gate 35A and Gate 34B are verified in
 `2026-09-14-gates-34b-35a-data-source-mvp-core-verification`.
@@ -198,3 +198,6 @@ Focused artifacts and installed captures are under
 Broad checks passed: app/core debug unit tests, debug Kotlin compilation,
 debug/release assembly, and `git diff --check`. No production or test source
 changed; only tracking documentation was synchronized after verification.
+
+Commit state: committed at `19347d9`; post-commit authority synchronization is
+complete.

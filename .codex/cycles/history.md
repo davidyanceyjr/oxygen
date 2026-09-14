@@ -834,7 +834,7 @@ uncommitted; no product files changed.
 
 ### 2026-09-14-gate-35b-mvp-presentation-accessibility-verification
 
-Status: verified; tracking/documentation sync ready for commit
+Status: committed at `19347d9`
 Mode: bounded installed presentation and accessibility evidence gate
 Slice: Gate 35B, MVP Presentation and Accessibility Verification
 
@@ -868,4 +868,5 @@ Limits: TalkBack service traversal, localization, automatic contrast, live
 alert-detail entry, operational stale/error reproduction in this session,
 alert persistence/background behavior, and release readiness remain
 unverified. Gate 35C remains the next specified release-candidate decision.
-Commit state: uncommitted.
+Commit state: committed at `19347d9`; post-commit authority synchronization is
+complete.
