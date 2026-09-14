@@ -805,6 +805,13 @@ pairwise coverage; and sync README, specification, roadmap, current plan, and
 live history without claiming automatic contrast or TalkBack. A production
 failure creates a separately named Appearance repair slice.
 
+The gate is complete. The audit retained five accepted D1 connected cases and
+six accepted D2 connected cases on API-37 `oxygen_starter`, with installed LTR,
+font-scale-2.0, RTL, disabled-animation Effects Off, and Terminal/High evidence.
+TalkBack service traversal, localization, automatic contrast, injected storage
+failures, numeric installed request counts, and release checks remain
+unverified. Gate 30E is the next specified candidate.
+
 ### Gate 30E: Installed TalkBack and Accessibility Closure
 
 Status: specified
@@ -1269,16 +1276,18 @@ Immediate planning boundary:
 -> Slice 30B1A3B1 RTL/LTR spoken-meaning equivalence committed at `26b32b8`
 -> Slice 30B1A4 Standard and Simple RTL compact boundaries verified; Gate 30B1B1 committed as RTL evidence/documentation closure
 -> Slice 30D1 Appearance Control Semantics committed at `78ecb84`
--> Slice 30D2 Appearance Layout and Environment Resilience planned in `.codex/plans/current.md`
+-> Slice 30D2 Appearance Layout and Environment Resilience committed at `2955aa5`
+-> Gate 30D3 Appearance Accessibility Evidence and Documentation Sync committed
+-> Gate 30E Installed TalkBack and Accessibility Closure is next specified
 ```
 
 Gate 25, Slice 27A, committed 27B1/27B2, Slice 28B1, Slice 28B2, Slice 29A,
 Slice 29B, Slice 30A1, Slice 30A2, and the 30A3B2 documentation sync are
 complete. Gate 30 is split into the bounded 30A1–30E queue at the head of this
 roadmap; 30A3A1 evidence is complete, Slices 30B1A1 through 30B1A3B1 are
-committed, Slice 30D1 is committed, and Slice 30D2 is the active planned
-candidate in `.codex/plans/current.md`. Release work and release-candidate
-claims remain outside this boundary.
+committed, Slice 30D1, Slice 30D2, and Gate 30D3 are committed, and Gate 30E
+is the next specified candidate in `.codex/plans/current.md`. Release work and
+release-candidate claims remain outside this boundary.
 
 Do not reopen 18F, insert new 18F.x slices, or create a new pre-18G visual gate.
 Those implementation boundaries are historical and already committed. Slice

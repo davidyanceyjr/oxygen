@@ -807,11 +807,15 @@ state independently of color or decoration. Loading and pending writes retain
 the confirmed selection while naming the operation; saved and failure states
 are readable, with named Retry actions where the existing transaction supports
 them. Effects preserves its same-choice retry behavior after a failed write.
-This contract is covered at the OxygenApp Compose/Android boundary; TalkBack
-service traversal and localization remain separate verification work. Slice
-30D2 verified the installed Appearance layout boundary at compact size, font
-scale 2.0, RTL, disabled animations with Effects Off, and a Terminal/High
-pair; automatic contrast and release checks remain unverified.
+This contract is covered by five named D1 connected cases at the OxygenApp
+Compose/Android boundary. Slice 30D2 adds six named connected cases for the
+installed Appearance layout boundary at compact size, font scales 1.3 and
+2.0, RTL, disabled animations with Effects Off, and the Oxygen/Paper/Terminal
+with Standard/High contrast matrix. Installed API-37 evidence covers LTR, font
+scale 2.0, RTL, Effects Off, and a Terminal/High pair. TalkBack service
+traversal and localization remain separate verification work; numeric
+installed request counts and injected storage failures remain fixture-backed,
+and automatic contrast and release checks remain unverified.
 
 ---
 

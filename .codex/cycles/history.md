@@ -578,3 +578,34 @@ Limits:
   out of scope. The unrelated untracked archive
   `.codex/cycles/archive/2026-09-12-before-slice-30b2-runner-finalization-repair.md`
   was preserved unchanged.
+
+### 2026-09-14-gate-30d3-appearance-accessibility-evidence-doc-sync
+
+Status: ready; documentation commit pending
+Mode: bounded Appearance accessibility evidence reconciliation and documentation sync
+Slice: Gate 30D3, Appearance Accessibility Evidence and Documentation Sync
+
+Result:
+
+- Audited Slice 30D1 at `78ecb84` and Slice 30D2 at `2955aa5` against their
+  retained artifacts, verification ledgers, and changed-file boundaries.
+- Confirmed five accepted D1 connected cases and six accepted D2 connected
+  cases on API-37 `oxygen_starter`, plus installed LTR, font-scale-2.0, RTL,
+  disabled-animation Effects Off, and Terminal/High evidence.
+- Synchronized README, specification, roadmap, active plan, and this history
+  entry. The next specified candidate is Gate 30E.
+
+Evidence and limits:
+
+- D1 artifacts: `.codex/test-artifacts/2026-09-13-slice-30d1-appearance-control-semantics/`.
+  D2 artifacts: `.codex/test-artifacts/2026-09-13-slice-30d2-appearance-layout-environment-resilience/`.
+- TalkBack service traversal, localization, automatic contrast, injected
+  storage failures, numeric installed request counts, and release checks remain
+  unverified. Android checks and emulator work were intentionally skipped
+  because this gate changed Markdown only and relied on unchanged evidence.
+
+Checks: `git diff --check` and `git status --short` passed before commit.
+
+Commit state: ready for documentation commit; the unrelated untracked archive
+`.codex/cycles/archive/2026-09-12-before-slice-30b2-runner-finalization-repair.md`
+was preserved unchanged.
