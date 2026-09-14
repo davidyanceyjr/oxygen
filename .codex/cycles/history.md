@@ -725,3 +725,43 @@ Limits:
 
 Commit state: committed; post-commit plan, roadmap, README, specification, and
 history synchronization completed.
+
+### 2026-09-14-slice-33b-provider-disclosure-local-privacy-audit
+
+Status: verified; ready for commit
+Mode: bounded provider disclosure and local data privacy audit
+Slice: Slice 33B, Provider Disclosure and Local Data Privacy Audit
+
+Result:
+
+- Existing production wiring and provider contracts agree with the active
+  disclosures for Open-Meteo forecast/timezone, Open-Meteo/GeoNames geocoding,
+  MET Norway fallback forecast, and foreground NOAA/NWS alerts. No provider or
+  disclosure-content change was needed.
+- The installed Settings journey reached Data Sources, Privacy, and Open
+  Source Licenses, verified required text and links, opened all five configured
+  disclosure URLs through the injected URI boundary, preserved forecast
+  request count, and made no permission request: 1 completed, 0 skipped,
+  0 failed.
+- Repaired a regression from the previous manifest slice by scoping Compose's
+  test helper `ComponentActivity` to the debug app manifest as non-exported.
+  It is absent from the release APK; `MainActivity` remains the only exported
+  activity.
+
+Evidence:
+
+- Focused `AboutDisclosureStateHolderTest` passed.
+- Connected `HomeDashboardUiTest#settingsDisclosuresShowActiveProviderLicenseAndPrivacyBaseline`
+  passed once on API-37 `oxygen_starter`.
+- `:app:compileDebugKotlin`, app/core debug unit tests, `:app:assembleDebug`,
+  `:app:assembleRelease`, and `git diff --check` passed.
+- Artifacts: `.codex/test-artifacts/2026-09-14-slice-33b-provider-disclosure-local-privacy-audit/`.
+
+Limits:
+
+- No live provider call or release-candidate verification was added. TalkBack
+  service traversal, localization, new providers, alert persistence,
+  conditional requests, backup-policy changes, and deferred Gate 30E work
+  remain unverified/out of scope.
+
+Commit state: implementation and documentation sync pending commit.

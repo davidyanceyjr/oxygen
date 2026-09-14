@@ -42,8 +42,9 @@ boundary. Gate 30C3 is committed as the deterministic alert evidence and
 documentation closure. Slice 30D1 is committed at `78ecb84`; Slice 30D2 is
 committed at `2955aa5` as the Appearance layout and environment resilience
 repair; Gate 30D3 is committed. Gate 30E is deferred as optional first-release
-follow-up per the 2026-09-14 user decision; Slice 33A's audit and Slice 33B's
-manifest repair are committed. No later candidate is selected yet. The
+follow-up per the 2026-09-14 user decision; Slice 33A's audit, Slice 33B's
+manifest repair, and the provider-disclosure privacy audit are committed.
+Gate 34A is the next candidate to plan. The
 completed/deferred accessibility sequence is retained below:
 
 1. Slice 30A1 — Home Spoken-Weather Semantics
@@ -945,7 +946,11 @@ Out of scope:
 
 ## Slice 33B: Provider Disclosure and Local Data Privacy Audit
 
-Status: specified
+Status: committed
+
+Implementation and installed disclosure evidence are recorded in
+`.codex/cycles/history.md` under
+`2026-09-14-slice-33b-provider-disclosure-local-privacy-audit`.
 
 Prerequisite:
 

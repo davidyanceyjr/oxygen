@@ -26,9 +26,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name="androidx.activity.ComponentActivity"
-            tools:node="remove" />
         <receiver
             android:name="androidx.profileinstaller.ProfileInstallReceiver"
             android:exported="false"
