@@ -1,6 +1,6 @@
 # Oxygen MVP Release Map
 
-Status: Gate 35A committed; Gate 35B verified, ready for commit
+Status: Gate 35A committed; Gate 35B committed at `6ab7977`
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
@@ -1024,7 +1024,7 @@ Must prove:
 
 ## Gate 35B: MVP Presentation and Accessibility Verification
 
-Status: verified — five focused runner records were repaired in a fresh
+Status: committed at `6ab7977` — five focused runner records were repaired in a fresh
 API-37 `oxygen_starter` session; three accepted records remain retained from
 the original evidence. The original evidence is under
 `.codex/test-artifacts/2026-09-14-gate-35b-mvp-presentation-accessibility-verification/`
@@ -1184,11 +1184,12 @@ Sequencing rationale:
 
 Gate 34B is verified and Gate 35A is committed at `f84e7d4`; the latter's
 repaired evidence is in `.codex/test-artifacts/2026-09-14-gate-35a-connected-evidence-repair/`.
-Gate 35B is verified with its original artifacts under
+Gate 35B is committed at `6ab7977` with its original artifacts under
 `.codex/test-artifacts/2026-09-14-gate-35b-mvp-presentation-accessibility-verification/`
 and five-case repair artifacts under
 `.codex/test-artifacts/2026-09-14-gate-35b-connected-evidence-repair/`.
-Gate 35C is specified and is not a release decision in this cycle.
+Gate 35C is the next specified candidate and is not a release decision in this
+cycle.
 
 Slice 30A1: Home Spoken-Weather Semantics is committed at `da7b886`; Slice 30A2
 is committed at `1a8e14f`; 30A3A1's evidence is complete; and 30A3B2 is the
@@ -1263,14 +1264,14 @@ Immediate planning boundary:
 -> Gate 34B Data-Source Release Check verified on 2026-09-14
 -> Gate 35A MVP Core Behavior Verification committed at `f84e7d4` (four
    zero-completion records repaired)
--> Gate 35B MVP Presentation and Accessibility Verification verified with
-   five-case evidence repair; Gate 35C remains specified
+-> Gate 35B MVP Presentation and Accessibility Verification committed at
+   `6ab7977`; Gate 35C is the next specified candidate
 ```
 
 The earlier accessibility, appearance, privacy-audit, and Settings/About
 boundaries are complete or deferred as recorded above. Gate 34B is verified,
-Gate 35A is committed, and Gate 35B is verified; Gate 35C is the next specified
-decision and remains outside this cycle. Service-level TalkBack remains
+Gate 35A is committed, and Gate 35B is committed at `6ab7977`; Gate 35C is the
+next specified candidate and remains outside this cycle. Service-level TalkBack remains
 unverified; this exception does not imply release readiness or waive other
 release checks.
 

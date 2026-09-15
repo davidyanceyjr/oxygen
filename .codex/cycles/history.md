@@ -906,7 +906,7 @@ complete.
 
 ### 2026-09-14-gate-35b-connected-evidence-repair
 
-Status: verified; ready for commit
+Status: committed at `6ab7977`
 Mode: bounded runner-evidence repair with no product or test-source change
 Slice: Gate 35B, MVP Presentation and Accessibility Verification
 
@@ -942,4 +942,6 @@ Evidence and limits:
   alert persistence/background behavior, and release readiness remain
   unverified.
 
-Commit state: documentation/status updates are ready for commit.
+Commit state: committed at `6ab7977`; post-commit authority synchronization is
+complete. Gate 35C is the next specified candidate; no release decision was
+made.

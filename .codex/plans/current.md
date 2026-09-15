@@ -1,9 +1,10 @@
 # Gate 35B — Connected Evidence Repair
 
-**Status:** verified; ready for commit
+**Status:** committed
+**Commit:** `6ab7977`
 **Cycle ID:** `2026-09-14-gate-35b-connected-evidence-repair`
 **Prerequisite:** Gate 35A's core acceptance repair is committed at `f84e7d4`;
-Gate 35C remains specified and blocked on this repair.
+Gate 35C is the next specified candidate and has no result in this cycle.
 
 ## Selected behavior and acceptance boundary
 
