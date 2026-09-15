@@ -69,6 +69,8 @@ import com.oxygen.weather.app.ThemePreferenceStorage
 import com.oxygen.weather.app.ThemePreferenceReadResult
 import com.oxygen.weather.app.ContrastPreferenceStorage
 import com.oxygen.weather.app.ContrastPreferenceReadResult
+import com.oxygen.weather.app.LayoutPreferenceStorage
+import com.oxygen.weather.app.LayoutPreferenceReadResult
 import com.oxygen.weather.app.MotionPreferenceSource
 import com.oxygen.weather.app.DeviceLocationProgress
 import com.oxygen.weather.app.DeviceLocationSource
@@ -2266,6 +2268,22 @@ class HomeDashboardUiTest {
             selectedLocation = location,
             weatherRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location)))),
             savedLocationStorage = RecordingSavedLocationStorage(listOf(saved)),
+            layoutPreferenceStorage = object : LayoutPreferenceStorage {
+                override fun readLayoutPreference() = LayoutPreferenceReadResult.Supported(LayoutPreset.STANDARD)
+                override fun writeLayoutPreference(layout: LayoutPreset) = Unit
+            },
+            effectsPreferenceStorage = object : EffectsPreferenceStorage {
+                override fun readEffectsPreference() = EffectsLevel.OFF
+                override fun writeEffectsPreference(effects: EffectsLevel) = Unit
+            },
+            themePreferenceStorage = object : ThemePreferenceStorage {
+                override fun readThemePreference() = ThemePreferenceReadResult.Supported(OxygenThemeId.OXYGEN)
+                override fun writeThemePreference(theme: OxygenThemeId) = Unit
+            },
+            contrastPreferenceStorage = object : ContrastPreferenceStorage {
+                override fun readContrastPreference() = ContrastPreferenceReadResult.Supported(ContrastLevel.STANDARD)
+                override fun writeContrastPreference(contrast: ContrastLevel) = Unit
+            },
             forecastExecutor = DirectExecutor,
         )
 
@@ -2298,9 +2316,21 @@ class HomeDashboardUiTest {
                 .performClick()
             composeRule.onNodeWithText(destination.title).performScrollTo().assertIsDisplayed()
             if (destination == SettingsDestination.Appearance) {
-                composeRule.onNodeWithText("Oxygen").assertIsDisplayed()
-                composeRule.onNodeWithText("Standard").assertIsDisplayed()
+                listOf(
+                    "settings-theme-oxygen",
+                    "settings-theme-paper",
+                    "settings-theme-terminal",
+                    "settings-contrast-standard",
+                    "settings-contrast-high",
+                    "settings-layout-simple",
+                    "settings-layout-standard",
+                    "settings-effects-off",
+                    "settings-effects-subtle",
+                ).forEach { tag ->
+                    composeRule.onNodeWithTag(tag).performScrollTo().assertIsDisplayed()
+                }
                 composeRule.onNodeWithTag("settings-effects-off").assertIsDisplayed()
+                composeRule.onAllNodesWithTag("settings-effects-full").assertCountEquals(0)
                 composeRule.onAllNodesWithTag("unit-preferences").assertCountEquals(0)
             }
             composeRule.onNodeWithTag("settings-back").performClick()
@@ -2370,6 +2400,13 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("NWS information is public information; requested credits apply and third-party page content may have separate terms.")
             .performScrollTo()
             .assertIsDisplayed()
+        composeRule.onNodeWithText("Conditional GET requests, 304 not-modified handling, and provider health/backoff", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Alert persistence/cache, background polling, notifications, custom unit editing, air quality, and radar", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onAllNodesWithText("release-candidate", substring = true).assertCountEquals(0)
         val disclosureLinks = listOf(
             "Open-Meteo forecast and timezone documentation" to "https://open-meteo.com/en/docs",
             "MET Norway licensing and attribution" to "https://api.met.no/doc/License",

@@ -2028,8 +2028,9 @@ fall back to MET Norway after eligible Open-Meteo terminal forecast failures,
 preserves truthful MET Norway source/provenance through Room cache restoration,
 and can replace fallback-served cached data with a later successful Open-Meteo
 refresh through the normal selected-location path. Conditional GET requests,
-304 not-modified handling, provider health/backoff behavior, and
-release-candidate fallback verification remain unimplemented.
+304 not-modified handling, and provider health/backoff behavior remain
+unimplemented; the retained Slice 32 evidence covers installed fallback
+verification for the current provider path.
 
 NWS alert provider contract, parser/mapper fixtures, transport boundary, and
 forecast/alert repository merge are implemented through Slices 22, 23A, 23B,
@@ -2218,8 +2219,26 @@ Terminal/High while preserving the fixed Back action and saved-status meaning.
 TalkBack service traversal, localization, automatic contrast, and release
 checks remain unverified. Gate 30D3 is committed. Per the 2026-09-14 user
 release decision, Gate 30E is deferred and does not block the first version;
-its installed TalkBack audit remains unverified. Slice 33A is the next specified
-candidate in the roadmap.
+its installed TalkBack audit remains unverified. Slice 33A's dependency and
+manifest audit and Slice 33B's installed manifest-exposure repair are
+committed. The installed package retains only the three user-facing
+permissions, exposes only MainActivity as an exported activity, and keeps
+retained AndroidX components non-exported. Backup remains `allowBackup=true`;
+this slice does not resolve the separate migration/privacy decision. Gate 35A
+core acceptance is verified with five retained runner-backed cases and four
+repaired API-37 `oxygen_starter` records. Gate 35B presentation/accessibility
+evidence is verified: all eight focused cases have runner-backed `1/1
+completed`, zero skipped, zero failed records, with five repaired in a fresh
+API-37 `oxygen_starter` session and three retained from the original evidence.
+Gate 35C's clean-state installed evidence then passed in one wiped API-37
+`oxygen_starter` session: manual Chicago selection without a location grant,
+live Open-Meteo current/hourly/daily weather, source/update/provenance,
+corrected Data Sources disclosure, and return to Home. Qualifying hosted CI
+run `34918387599` also passed. The Gate 35C evidence decision is verified
+locally, but this does not claim release-candidate status or release readiness.
+TalkBack service traversal, localization, automatic contrast, live alert-detail
+entry, operational stale/error reproduction in this session, alert
+persistence/background behavior, signing, and publication remain unverified.
 
 ---
 

@@ -26,6 +26,10 @@ and `docs/data-sources/`.
   Open-Meteo IANA timezone lookup, and selection through the same forecast/cache
   path. The selected approximate position is stored locally; no automatic
   relocation or background acquisition occurs. Manual search needs no grant.
+- The installed production package requests only Internet, network-state, and
+  optional coarse-location permissions. Its only exported component is the
+  user-facing launcher activity; dependency-owned AndroidX components remain
+  non-exported where retained. Cleartext traffic is disabled.
 - Explicit selected-location Open-Meteo forecast retrieval.
 - Last selected location persistence through the local DataStore path.
 - Saved-location storage, saved-location list display, current-location marking,
@@ -110,6 +114,23 @@ and `docs/data-sources/`.
   Sources, Privacy, Open Source Licenses, and About.
 - Oxygen package/application identity, theme foundation, and Compose Home UI.
 
+Gate 35A core acceptance evidence is verified: five retained runner-backed
+cases plus four repaired API-37 `oxygen_starter` records establish all nine
+selected core boundaries. Gate 35B presentation/accessibility evidence is
+verified: all eight focused cases have runner-backed `1/1 completed`, zero
+skipped, zero failed records, with five repaired in a fresh API-37
+`oxygen_starter` session and three retained from the original evidence. Gate
+35C clean-state installed evidence also passed: one wiped API-37
+`oxygen_starter` session manually selected Chicago without a location grant,
+served live Open-Meteo current/hourly/daily weather, exposed source/update/
+provenance and corrected Data Sources disclosure, and returned to Home. The
+qualifying hosted CI run is `34918387599`. The Gate 35C evidence decision is
+verified locally; this does not claim release-candidate status or release
+readiness.
+TalkBack service traversal, localization, automatic contrast, live
+alert-detail entry, operational stale/error reproduction in this session,
+alert persistence/background behavior, and release checks remain unverified.
+
 ## Implemented but not active in the installed app
 
 - File-backed forecast cache storage retained as a core repository boundary
@@ -122,7 +143,7 @@ and `docs/data-sources/`.
 - Custom unit editing UI.
 - Alert persistence/cache, background polling, and notifications.
 - Full effects behavior and icon-pack settings.
-- Release-candidate verification.
+- Release packaging, signing, and publication.
 
 ## Repository structure
 
@@ -237,12 +258,13 @@ refresh-failed metadata. If a live provider refresh succeeds while local
 forecast-cache persistence fails, the live provider forecast remains
 displayable. Provider-specific MET Norway cache headers are persisted with
 cached fallback forecasts, and cached/stale MET Norway forecasts retain
-MET Norway provenance. Conditional GET requests, 304 not-modified handling, and
-release-candidate fallback verification remain later work.
+MET Norway provenance. Conditional GET requests and 304 not-modified handling
+remain later work. Gate 35C's evidence decision is verified locally, but
+release-candidate status and release readiness are not claimed.
 
 Custom unit editing, alert persistence/cache, background alert polling,
-notifications, air quality, radar, and release-candidate verification are not
-implemented yet.
+notifications, air quality, radar, release packaging, signing, and publication
+are not complete.
 
 ## Specification
 

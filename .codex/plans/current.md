@@ -1,161 +1,194 @@
-# Slice 33A — Dependency and Manifest Privacy Audit
+# Gate 30E — Installed TalkBack and Accessibility Closure
 
-**Status:** implemented; installed acceptance blocked by dependency-owned manifest findings
-**Difficulty:** 1/10
-**Cycle ID:** `2026-09-14-slice-33a-dependency-manifest-privacy-audit`
+**Status:** blocked after partial installed run; Gate 30E remains unverified
+**Cycle ID:** `2026-09-15-gate-30e-installed-talkback-accessibility-closure`
+**Baseline:** `fe09078`; Gates 30A3, 30B3, 30C3, and 30D3 are complete.
+The prior visible-emulator investigation confirmed TalkBack and Google TTS on
+API-37 `oxygen_starter`, but host PulseAudio was unavailable, so no audible
+speech or service traversal was verified.
+**Next action:** if Gate 30E is resumed, preselect one genuine active NWS
+location before one fresh bounded session and obtain human-confirmed speech
+transcript evidence; do not repeat the completed Chicago journey.
 
-## Slice outcome
+## Initial preflight result
 
-Establish and test the Android app’s privacy baseline at the dependency and
-manifest boundary. The slice includes one safe production hardening change:
-the application manifest explicitly disables cleartext traffic. Current
-production endpoints are HTTPS, so this does not change the existing weather,
-geocoding, alert, or external-link paths.
+- `timeout 5 xdpyinfo` failed because `DISPLAY` was unset; the explicit
+  fallback `timeout 5 env DISPLAY=:0 xdpyinfo` passed.
+- `timeout 5 pactl info` failed with no `/run/user/1000/pulse` directory and
+  `Connection refused`. This is the exact platform blocker required to stop
+  before emulator startup.
+- `. scripts/android-env.sh && adb devices` passed with no online device. No
+  emulator was started, no APK was built or installed, and no TalkBack state
+  was changed.
+- The command ledger is retained at
+  `.codex/test-artifacts/2026-09-15-gate-30e-installed-talkback-accessibility-closure/verification-ledger.md`.
 
-This slice does not change backup behavior. `allowBackup="true"` currently
-exists, and the app stores selected location, saved locations, forecast cache,
-and preferences locally. Changing backup or data-extraction policy would alter
-device migration behavior and requires a separate product decision and repair
-slice; 33A records the current behavior and its privacy implication.
+Gate 30E remains unverified. No product defect or accessibility result was
+established.
 
-## Implementation
+## 2026-09-15 partial installed run
 
-1. In `app/src/main/AndroidManifest.xml`, add
-   `android:usesCleartextTraffic="false"` to the application declaration.
-2. Add `app/src/androidTest/kotlin/com/oxygen/weather/PrivacyManifestInstrumentedTest.kt`
-   with focused installed-package checks for:
-   - exactly the three currently declared permissions:
-     `INTERNET`, `ACCESS_NETWORK_STATE`, and
-     `ACCESS_COARSE_LOCATION`;
-   - `usesCleartextTraffic == false`;
-   - the launcher `MainActivity` being exported; and
-   - no exported service, receiver, or provider being introduced.
-3. Do not add a dependency, service, receiver, provider, permission, network
-   security XML file, analytics SDK, or backup rule.
-4. Use dependency output and the merged debug manifest to audit transitive
-   dependencies, manifest merging, and component exposure. A prohibited SDK,
-   unnecessary Play Services dependency, unused permission, background
-   location path, or unexpected exported component is a finding. Do not fix a
-   finding inside this slice unless it is the explicit cleartext hardening
-   above; create a separately named repair slice.
+- The previously blocked host prerequisite was recovered: this Codex session
+  saw `/run/user/1000/pulse/native` and `pactl info` passed against the real
+  PulseAudio 17.0 server. `oxygen_starter` started visibly on `:0`, reached
+  API-37 `emulator-5554` boot completion, and the debug APK built, installed,
+  and launched once.
+- TalkBack was enabled through Android Accessibility Settings, its service was
+  bound, and the Oxygen production Home showed real Chicago weather with
+  current/hourly/daily data, source/update/provenance, and mapper-owned spoken
+  descriptions. Focused activation verified Now to Hourly, Daily, and Details;
+  DPAD-left activation returned Details to Daily.
+- Settings / Appearance was entered. Paper was selected and `Theme saved` was
+  observed, Oxygen was restored, and Back returned through Settings to Home.
+- A PulseAudio monitor capture was non-silent (`mean_volume -34.6 dB`,
+  `max_volume -15.1 dB`) during TalkBack/Oxygen launch. This proves host audio
+  reached the sink monitor, not that a human-heard transcript was independently
+  confirmed.
+- Chicago exposed no active official alert summary, so live alert-detail
+  traversal was unavailable. TalkBack was restored to disabled, Oxygen was
+  force-stopped, the emulator was stopped, and ADB ended with no online device.
+
+The detailed evidence and limits are in the cycle artifact ledger below.
+
+## Selected behavior
+
+Resolve Gate 30E by exercising the installed production app with Android
+TalkBack and proving that focus order, spoken weather and alert meaning, named
+actions, and Appearance controls remain usable. This is one installed
+test/evidence/documentation gate. It does not change app behavior.
+
+The primary acceptance boundary is observable TalkBack speech and operation on
+the installed app. Compose tests, source inspection, compilation, screenshots,
+and UI hierarchies may corroborate the result but cannot replace that boundary.
 
 ## Acceptance boundary
 
-The slice passes when all of these are true:
+Gate 30E is verified only when all of the following are recorded from one
+bounded API-37 `oxygen_starter` session:
 
-- the installed manifest test passes;
-- the resolved `:app` and `:core` dependency trees contain no advertising,
-  analytics, telemetry, account, cloud-sync, or unnecessary Play Services
-  dependency;
-- permission declarations match current production use, with location still
-  optional and requested only after the user action;
-- only the launcher activity is exported;
-- no cleartext traffic is permitted and no custom network-security file is
-  present;
-- backup behavior is recorded as `allowBackup=true`, with its migration/privacy
-  implication explicitly left for a separate decision; and
-- no finding is silently downgraded to documentation work.
+1. Host display and audio preflight pass before emulator startup. TalkBack and
+   the TTS engine are positively identified, TalkBack is enabled and bound, and
+   audible speech is confirmed before Oxygen is installed.
+2. Device, APK, locale, layout direction, display/font/animation settings,
+   accessibility settings, and saved Appearance values are captured before any
+   temporary change. The current debug APK is installed once after ADB and the
+   package manager are ready.
+3. Oxygen reaches a real ready, cached, or truthfully stale Home through the
+   production selected-location path. `SampleWeather`, seeded alerts, test-only
+   routes, and fabricated values are prohibited.
+4. TalkBack traverses Standard Home Now, Hourly, Daily, and Details in logical
+   order. It announces page identity, current conditions once, chronological
+   hourly/daily meaning, measurements, and source/update/provenance without
+   duplicate decorative announcements. Named forward and backward movement is
+   focused and activated successfully.
+5. A genuine production official-alert outcome is recorded. For full closure,
+   an active alert is traversed from Home summary through detail, including
+   event, severity, issuer, timing, affected area, instructions, Back, and the
+   official-source action. One currently active NWS location may be identified
+   before the emulator session and selected through Oxygen's normal location
+   search; no fixture, production seeding, or repeated location hunt is allowed.
+   If no genuine active alert can be exercised, Gate 30E remains unverified.
+6. Settings / Appearance is traversed with TalkBack. Theme, Contrast, Layout,
+   and Effects group and selected-state meaning are announced without relying
+   on color. One reversible non-current choice is activated, its saved state is
+   observed, Back returns to Home, and the original value is restored. Retry
+   behavior remains supported by its retained deterministic evidence unless a
+   real write failure occurs; no failure is injected into production.
+7. A focus-by-focus transcript records speech actually heard, visible meaning,
+   activation result, order, and any duplicate or omitted announcement.
+   Screenshots, UI hierarchies, service state, and an execution ledger accompany
+   the transcript. Retained compact/large-font, RTL, long-content, unit,
+   touch-target, reduced-motion, Effects-Off, theme, contrast, and retry
+   evidence is mapped by exact condition without claiming an untested
+   cross-product.
+8. TalkBack, touch exploration, selected location, Appearance choice, and every
+   temporary emulator/display setting are restored to their recorded pre-run
+   values. The emulator is stopped and ADB confirms no online device.
+9. README, specification, roadmap, active plan, and cycle history report only
+   the exercised result and retained limits. Passing this gate does not imply
+   localization, automatic contrast, release readiness, signing, publication,
+   or universal accessibility.
 
-The result is an implementation and audit of this boundary, not a release
-claim. Provider disclosures, provider terms, Settings navigation, and release-
-candidate verification remain outside 33A.
+## Execution plan
 
-## Files
+1. Audit the retained Gate 30A3/30B/30C/30D evidence and create an
+   artifact-local coverage map. Do not rerun unchanged passing tests.
+2. In the logged-in desktop environment, run bounded `xdpyinfo` and `pactl`
+   checks. Preserve that desktop session's display/audio environment; if
+   `DISPLAY` is unset, verify the previously working `DISPLAY=:0` explicitly.
+   Start one visible emulator only after both checks pass. Capture pre-change
+   device, package, service, TTS, accessibility, display, locale, and preference
+   state.
+3. Enable only the already installed TalkBack service through Android Settings,
+   verify its bound state with Android diagnostics, and confirm audible speech.
+   Build/install once, then perform the Home, live-alert, and Appearance journey
+   using TalkBack focus and activation rather than coordinate taps.
+4. Save the transcript, screenshots, hierarchies, diagnostics, alert provenance,
+   before/after state, and command/result ledger under
+   `.codex/test-artifacts/2026-09-15-gate-30e-installed-talkback-accessibility-closure/`.
+5. Restore all temporary state and stop the emulator. Review the evidence
+   against every acceptance item before changing status.
+6. On a clean pass, mark Gate 30E verified and synchronize `README.md`,
+   `docs/OXYGEN_FULL_SPECIFICATION.md`, `.codex/plans/mvp-roadmap.md`, this
+   plan, and an append-only `.codex/cycles/history.md` entry. Run the focused
+   documentation review and `git diff --check`. If the closure is committed,
+   use a descriptive subject/body and perform the required post-commit
+   authoritative document sync before calling the work closed.
 
-Expected production/test changes:
+## Defect and blocker rules
 
-- `app/src/main/AndroidManifest.xml`
-- `app/src/androidTest/kotlin/com/oxygen/weather/PrivacyManifestInstrumentedTest.kt`
+- An Oxygen crash, unreachable control, incorrect/duplicated/omitted speech,
+  illogical focus order, or inoperable action is a product defect. Preserve the
+  smallest reproduction, leave Gate 30E unverified, and select one separately
+  named repair slice with a meaningful failing boundary. Do not patch product
+  code opportunistically inside this gate.
+- Missing or inaudible audio, an unavailable service, unsafe service enablement,
+  or a bounded platform timeout is an environment blocker. Record it once and
+  stop; do not convert deterministic semantics evidence into TalkBack success.
+- Lack of a genuine active alert is an evidence gap, not app success or failure.
+  Record it and leave the gate unverified rather than fabricating alert data.
+- No partial result may be described as verified, committed, release-ready, or
+  complete.
 
-Inspection inputs:
+## Verification budget
 
-- `app/build.gradle.kts`
-- `core/build.gradle.kts`
-- `gradle/libs.versions.toml`
-- production location, provider, cache, and persistence code as needed to
-  justify permission and backup findings
+Use one visible emulator session, one APK install, one TalkBack enablement, one
+Home/alert/Appearance journey, and at most one preselected live-alert location.
+Stop after the first bounded platform timeout or repeated identical failure.
 
-## Verification and evidence
+Planned commands and evidence:
 
-Save command output, the merged manifest, the dependency audit, screenshots or
-UI hierarchy only if an installed check needs them, and a short findings report
-under:
-
-`.codex/test-artifacts/2026-09-14-slice-33a-dependency-manifest-privacy-audit/`
-
-Run once per unchanged environment:
-
-```text
-. scripts/android-env.sh && ./gradlew :app:dependencies :core:dependencies
-. scripts/android-env.sh && ./gradlew :app:processDebugMainManifest
-. scripts/android-env.sh && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.oxygen.weather.PrivacyManifestInstrumentedTest
-. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest
-. scripts/android-env.sh && ./gradlew :app:assembleDebug
-. scripts/android-env.sh && ./gradlew :app:lintDebug
+```sh
+timeout 5 xdpyinfo
+timeout 5 env DISPLAY=:0 xdpyinfo
+timeout 5 pactl info
+scripts/list-avds.sh
+DISPLAY=:0 OXYGEN_EMULATOR_WINDOW=1 OXYGEN_EMULATOR_NETWORK=0 scripts/start-emulator.sh
+scripts/install-debug.sh
 git diff --check
+git status --short
 ```
 
-The connected run is four or fewer focused test cases on one existing API-37
-emulator session. Install once after the APK changes. If the emulator or
-runner reaches a bounded timeout, record it and do not convert source review
-into installed-test success.
+The ledger must record the resolved display/audio environment and all bounded
+ADB/service/settings commands actually run. `scripts/install-debug.sh` supplies
+the required debug assembly. App/core unit tests and connected tests are not
+rerun when production/test inputs are unchanged because they cannot prove
+audible TalkBack traversal. If a repair changes production or test inputs, the
+repair slice owns focused red/green evidence and applicable compile, unit,
+connected, assembly, and whitespace checks.
 
-## Required document updates after evidence
+## Intended tracked files
 
-- `.codex/plans/current.md`: record the actual result, commands, artifact path,
-  findings, and next action.
-- `.codex/plans/mvp-roadmap.md`: mark 33A committed only after the change and
-  evidence are committed; then identify 33B as the next specified candidate.
-- `README.md`: add only verified privacy-boundary claims that are currently
-  absent, including explicit cleartext blocking if the product-status section
-  needs it; retain the backup limitation accurately.
-- `docs/OXYGEN_FULL_SPECIFICATION.md`: update only if the audit exposes a
-  specification mismatch or if the explicit HTTPS/backup policy is adopted by
-  the project; do not silently turn an audit result into a new product rule.
-- `.codex/cycles/history.md`: append a concise self-contained 33A result with
-  changed files, tests, artifact path, limits, and commit state.
+Successful gate closure is limited to documentation/status files:
 
-No document may claim that backup is disabled, TalkBack is verified, provider
-disclosure is complete, or the app is release-ready.
+- `.codex/plans/current.md`
+- `.codex/plans/mvp-roadmap.md`
+- `.codex/cycles/history.md`
+- `README.md`
+- `docs/OXYGEN_FULL_SPECIFICATION.md`
 
-## Next action
-
-Select a separately named dependency/manifest exposure repair slice for the
-injected permission and exported AndroidX components before claiming 33A
-verified or committing this slice. Do not change backup policy or repair the
-lint API-level finding under 33A.
-
-## Execution result
-
-Implemented the planned production hardening and test boundary:
-
-- `app/src/main/AndroidManifest.xml` now explicitly sets
-  `android:usesCleartextTraffic="false"`.
-- Added `app/src/androidTest/kotlin/com/oxygen/weather/PrivacyManifestInstrumentedTest.kt`
-  with four installed-package checks.
-- Cleartext enforcement passed on API 37. The permission, exported-activity,
-  and exported-component checks failed against the actual merged/package
-  manifest; these are retained as concrete findings, not downgraded to docs.
-
-## Evidence
-
-Artifacts: `.codex/test-artifacts/2026-09-14-slice-33a-dependency-manifest-privacy-audit/`
-
-- Dependency resolution and debug manifest processing passed.
-- Debug assembly/install passed; one `oxygen_starter` API-37 emulator session
-  was used and stopped cleanly.
-- Connected result: 4 tests completed, 1 passed and 3 failed. The failures
-  found `com.oxygen.weather.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, exported
-  `androidx.activity.ComponentActivity`, and exported
-  `androidx.profileinstaller.ProfileInstallReceiver` (protected by `DUMP`).
-- App/core debug unit tests passed.
-- `git diff --check` passed.
-- `:app:lintDebug` failed on the pre-existing min-SDK/API-30
-  `LocationManager.getCurrentLocation` call in
-  `AndroidDeviceLocationSource.kt:46`, plus 13 warnings; no lint repair was
-  performed.
-
-No production/test change is committed. README, specification, and roadmap
-remain unchanged by this execution because the slice acceptance boundary is
-red; backup remains `allowBackup=true`, and no release or privacy-complete
-claim is made.
+No Kotlin, Compose, provider, repository, persistence, preference, manifest,
+permission, dependency, Gradle, or emulator-script change belongs to this gate.
+Do not add an accessibility abstraction, placeholder implementation, test-only
+screen, mocked production success, seeded production alert, downloaded service,
+or broad cleanup. Leave all unrelated worktree changes untouched.

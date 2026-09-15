@@ -686,3 +686,525 @@ Changed files: `app/src/main/AndroidManifest.xml` and
 
 Commit state: uncommitted; current plan records the repair handoff. Existing
 uncommitted documentation and archive changes were preserved.
+
+### 2026-09-14-slice-33b-dependency-manifest-exposure-repair
+
+Status: committed; installed acceptance verified
+Mode: bounded Android dependency-owned manifest exposure repair
+Slice: Slice 33B, Dependency-Owned Manifest Exposure Repair
+Commit: `02f668f`
+
+Result:
+
+- Removed AndroidX Core's generated dynamic-receiver permission and Compose
+  `ui-test-manifest`'s exported `androidx.activity.ComponentActivity` from the
+  production merge with narrow manifest-merger directives.
+- Retained ProfileInstaller startup while forcing
+  `androidx.profileinstaller.ProfileInstallReceiver` non-exported.
+- Restored strict installed assertions for the exact three requested
+  permissions and launcher-only exported activity policy.
+
+Evidence:
+
+- Artifacts are retained under
+  `.codex/test-artifacts/2026-09-14-slice-33b-dependency-manifest-exposure-repair/`.
+- Manifest ownership/dependency processing and Android-test compilation passed.
+- API-37 installed privacy instrumentation passed 4/4 cases. Selected-cache
+  and manual-location production instrumentation each passed 1/1 case.
+- App/core unit tests, debug assembly, and `git diff --check` passed. Fresh APK
+  installation succeeded, and package output confirmed exact permissions and
+  component exposure.
+
+Limits:
+
+- A direct headless Home launch reached the emulator's system “Process system
+  isn't responding” dialog before app UI inspection; it was recorded once and
+  not repeated. This slice makes no visual-launch claim.
+- Backup policy, TalkBack, provider disclosure, release readiness, and the
+  pre-existing API-30 location lint finding remain unverified/out of scope.
+
+Commit state: committed; post-commit plan, roadmap, README, specification, and
+history synchronization completed.
+
+### 2026-09-14-slice-33b-provider-disclosure-local-privacy-audit
+
+Status: verified; ready for commit
+Mode: bounded provider disclosure and local data privacy audit
+Slice: Slice 33B, Provider Disclosure and Local Data Privacy Audit
+
+Result:
+
+- Existing production wiring and provider contracts agree with the active
+  disclosures for Open-Meteo forecast/timezone, Open-Meteo/GeoNames geocoding,
+  MET Norway fallback forecast, and foreground NOAA/NWS alerts. No provider or
+  disclosure-content change was needed.
+- The installed Settings journey reached Data Sources, Privacy, and Open
+  Source Licenses, verified required text and links, opened all five configured
+  disclosure URLs through the injected URI boundary, preserved forecast
+  request count, and made no permission request: 1 completed, 0 skipped,
+  0 failed.
+- Repaired a regression from the previous manifest slice by scoping Compose's
+  test helper `ComponentActivity` to the debug app manifest as non-exported.
+  It is absent from the release APK; `MainActivity` remains the only exported
+  activity.
+
+Evidence:
+
+- Focused `AboutDisclosureStateHolderTest` passed.
+- Connected `HomeDashboardUiTest#settingsDisclosuresShowActiveProviderLicenseAndPrivacyBaseline`
+  passed once on API-37 `oxygen_starter`.
+- `:app:compileDebugKotlin`, app/core debug unit tests, `:app:assembleDebug`,
+  `:app:assembleRelease`, and `git diff --check` passed.
+- Artifacts: `.codex/test-artifacts/2026-09-14-slice-33b-provider-disclosure-local-privacy-audit/`.
+
+Limits:
+
+- No live provider call or release-candidate verification was added. TalkBack
+  service traversal, localization, new providers, alert persistence,
+  conditional requests, backup-policy changes, and deferred Gate 30E work
+  remain unverified/out of scope.
+
+Commit state: committed in `da3a9a3`; post-commit plan, roadmap, and history
+synchronization completed.
+
+### 2026-09-14-gate-34a-settings-about-release-check
+
+Status: committed at `64d4908`
+Mode: bounded installed Settings/About release check
+Slice: Gate 34A — Settings and About Release Check
+
+Result:
+
+- Existing production Settings/About behavior matched the contract. No
+  production, provider, persistence, permission, manifest, README, or
+  specification change was needed.
+- Added connected boundary coverage for the nine supported Appearance choices
+  and absence of the unfinished Full effects choice. The fixture now supplies
+  in-memory supported preference stores so the managed persisted-choice surface
+  is exercised.
+- Settings root/location-back and disclosure/provider-license/privacy journeys
+  passed 1/1 each on API-37 `oxygen_starter`, retaining forecast semantics,
+  no-refetch behavior, disclosure links, and no permission request.
+
+Evidence:
+
+- Focused `AboutDisclosureStateHolderTest` passed.
+- Broad compile, app/core debug unit tests, debug/release assembly, and
+  `git diff --check` passed.
+- Artifacts: `.codex/test-artifacts/2026-09-14-gate-34a-settings-about-release-check/`;
+  accepted connected results are under `settings-root-accepted/` and
+  `settings-disclosures/`, with emulator evidence under `emulator/`.
+- Initial connected failures were limited to test-fixture/query issues and
+  remain retained under the corresponding `settings-root*` artifact folders.
+
+Limits: no live provider call, release-candidate verification, TalkBack service
+traversal, localization, automatic contrast audit, or deferred Gate 30E work.
+
+Commit state: committed at `64d4908`; post-commit documentation
+synchronization follows in the documentation-sync commit.
+
+### 2026-09-14-gates-34b-35a-data-source-mvp-core-verification
+
+Status: verified; Gate 34B and Gate 35A passed in one shared verification
+session.
+
+- Gate 34B installed Data Sources evidence passed 1/1. Active provider,
+  attribution, privacy, and license claims matched production wiring; all five
+  configured disclosure links opened through the injected URI boundary, with
+  no forecast refetch and no permission request.
+- Gate 35A connected evidence passed 9/9 on API-37 `oxygen_starter`: manual
+  location, three MET Norway/Open-Meteo fallback and provenance cases, Room
+  offline/stale restoration, units, saved-location selection/removal, and the
+  truthful no-alert Home boundary. The ninth case was required by the gate's
+  explicit official-alert acceptance clause and is the documented exception to
+  the eight-case default.
+- Focused app/core debug unit tests passed. Compile, debug/release assembly,
+  and `git diff --check` passed. No production or authority-content correction
+  was needed.
+- Artifacts: `.codex/test-artifacts/2026-09-14-gates-34b-35a-data-source-mvp-core-verification/`.
+  The wrapper's initial nested-artifact invocation was rejected before test
+  execution; the corrected direct sibling artifact layout passed and is the
+  retained evidence layout.
+
+Limits: no live-provider/manual network journey, release-candidate decision,
+TalkBack traversal, localization, automatic contrast audit, alert persistence,
+background polling, or deferred Gate 30E work. README and specification claims
+remain unchanged and accurate. Commit state: documentation/status updates are
+uncommitted; no product files changed.
+
+### 2026-09-14-gate-35b-mvp-presentation-accessibility-verification
+
+Status: committed at `19347d9`
+Mode: bounded installed presentation and accessibility evidence gate
+Slice: Gate 35B, MVP Presentation and Accessibility Verification
+
+Result:
+
+- All eight planned focused connected cases passed on API-37
+  `oxygen_starter`, each with 1 completed, 0 skipped, and 0 failed. The cases
+  covered Standard compact/large-font Home reachability, RTL Home controls,
+  deterministic alert-detail long content, Paper/High disabled-motion Home
+  meaning, and Appearance compact/font-scale-2.0/RTL semantics.
+- One installed session fetched real Chicago weather through manual selection
+  and retained readable Standard Now, Hourly, Daily, and Details pages. It
+  reached saved locations with current marking, Settings, Appearance, Units,
+  Data Sources, Privacy, and About; selected Paper/High and restored
+  Oxygen/Standard/Subtle; and captured compact, font-scale 1.3/2.0, RTL, and
+  Effects Off with Android animation scales disabled.
+- The installed Chicago alert lookup returned no active alert. This verifies
+  truthful no-alert behavior only; it does not claim live alert-detail entry.
+
+Evidence:
+
+- Artifacts and verification ledger:
+  `.codex/test-artifacts/2026-09-14-gate-35b-mvp-presentation-accessibility-verification/`.
+- Broad checks passed: app/core debug unit tests, debug Kotlin compilation,
+  debug/release assembly, and `git diff --check`.
+- No production or test source changed. Active plan, roadmap, README,
+  specification, and this history entry were synchronized to the verified
+  evidence.
+
+Limits: TalkBack service traversal, localization, automatic contrast, live
+alert-detail entry, operational stale/error reproduction in this session,
+alert persistence/background behavior, and release readiness remain
+unverified. Gate 35C remains the next specified release-candidate decision.
+Commit state: committed at `19347d9`; post-commit authority synchronization is
+complete.
+
+### 2026-09-14-gate-35a-connected-evidence-repair
+
+Status: committed at `f84e7d4`
+Mode: bounded runner-evidence repair with no product or test-source change
+Slice: Gate 35A, MVP Core Behavior Verification
+
+Result:
+
+- Replaced the four unusable original records, whose Gradle logs reported
+  `Tests 0/1 completed`, with one API-37 `oxygen_starter` session of exact
+  filtered methods. Manual location, no-alert, offline Room-cache restoration,
+  and units/Home reachability each completed `1/1`, with zero skipped and zero
+  failed; the Gradle exit status was 0 for every invocation.
+- The five other Gate 35A runner-backed records remain retained. Together, the
+  nine selected core boundaries are verified. No production, test, manifest,
+  provider, persistence, or workflow behavior changed.
+
+Evidence and limits:
+
+- Raw Gradle logs, fresh JUnit XML, `test-results.log`, `test-result.textproto`,
+  device preflight, outcome files, and ledger are under
+  `.codex/test-artifacts/2026-09-14-gate-35a-connected-evidence-repair/`.
+- The emulator was stopped after the four-case session. Unit tests, Kotlin
+  compilation, assembly, and manual/installed journeys were deliberately not
+  rerun because this repair changed no build inputs; their prior retained
+  evidence is not presented as fresh verification.
+- Gate 35B remains planned: five original focused records have zero or missing
+  completion output. Gate 35C and release readiness remain blocked on that
+  separate repair.
+
+Commit state: committed at `f84e7d4`; post-commit authority synchronization is
+complete.
+
+### 2026-09-14-gate-35b-connected-evidence-repair
+
+Status: committed at `6ab7977`
+Mode: bounded runner-evidence repair with no product or test-source change
+Slice: Gate 35B, MVP Presentation and Accessibility Verification
+
+Result:
+
+- One fresh recovered API-37 x86_64 `oxygen_starter` session accepted all five
+  previously unusable methods in order: `standardCompactHomeAtFontScale13KeepsLongContentAndAllPagesReachable`,
+  `rtlStandardHomeCompactLongContentKeepsControlsReachableWithoutRefetch`,
+  `officialAlertDetailLongContentRemainsReachableInRtlLargeFont`,
+  `paperHighContrastDisabledMotionPreservesHomeMeaning`, and
+  `appearanceCompactControlsRemainScrollReachable`.
+- Every method produced a fresh matching JUnit XML, `test-results.log`, and
+  `test-result.textproto`: exactly 1 selected/completed, 0 skipped, 0 failed,
+  and 0 errors. Every runner exited 0 without cleanup.
+- The retained original cases 2, 7, and 8 plus these five repaired records
+  restore all eight focused Gate 35B records. No production or test source
+  changed.
+
+Evidence and limits:
+
+- Preflight, raw Gradle logs, fresh result paths and copies, device captures,
+  outcomes, cleanup, and the verification ledger are under
+  `.codex/test-artifacts/2026-09-14-gate-35b-connected-evidence-repair/`.
+- Preconditions passed: `git diff --check`, `sh -n scripts/start-emulator.sh`,
+  and `sh -n scripts/run-connected-method.sh`. The recovered emulator was
+  stopped after case 5 and confirmed offline. No compile, unit, assembly,
+  additional connected, installed/manual, screenshot, TalkBack, or release
+  checks were run because this slice changed no build input and its five exact
+  methods were the complete connected-test budget.
+- Gate 35C remains specified and is not a release decision in this cycle.
+  TalkBack service traversal, localization, automatic contrast, live
+  alert-detail entry, operational stale/error reproduction in this session,
+  alert persistence/background behavior, and release readiness remain
+  unverified.
+
+Commit state: committed at `6ab7977`; post-commit authority synchronization is
+complete. Gate 35C is the next specified candidate; no release decision was
+made.
+
+### 2026-09-14-gate-35c-release-candidate-decision
+
+Status: implemented; Gate 35C not verified/release-ready
+Mode: bounded release-facing provider disclosure correction and release audit
+Commit: `001b7d5`
+
+Result:
+
+- Removed internal release-candidate milestone wording from the installed Data
+  Sources disclosure while retaining conditional GET/304 reuse and provider
+  health/backoff as unfinished, and retained the actual roadmap-only limits.
+- Added the planned JVM and connected assertions. The red JVM contract failed
+  for the expected missing old-production wording; the corrected JVM class and
+  the one planned connected disclosure case then passed. The connected result
+  triplet records exactly 1 selected/completed, 0 skipped, 0 failures, and 0
+  errors.
+- Debug compilation, app/core unit tests, debug/release assembly, source
+  audits, release APK/manifest inspection, and `git diff --check` passed. The
+  release APK is correctly unsigned and was not installed.
+
+Evidence and limits:
+
+- Artifacts: `.codex/test-artifacts/2026-09-14-gate-35c-release-candidate-decision/`.
+  Retained Gate 34B/35A/35B evidence was referenced and not rerun.
+- The single installed journey installed the debug APK and cleared only app
+  data, but Android showed a persistent “Process system isn’t responding”
+  dialog immediately after launch. One “Wait” action did not recover the
+  surface, so first-run entry, manual live provider weather, and installed
+  disclosure/Privacy capture remain unavailable. The emulator was stopped and
+  confirmed offline; no retry or second install was made.
+- No hosted CI run exists for candidate SHA `a33a5a3` (or the post-change
+  commit); the observed success run `34858709570` is for older SHA `a46cef9`.
+  No push or PR was authorized or attempted. TalkBack, localization, signing,
+  publication, and deferred features remain unverified/out of scope.
+
+Commit state: committed at `001b7d5`; active plan, roadmap, and this history
+entry were synchronized after commit. README, specification, provider, and
+privacy documents were not changed because Gate 35C did not pass its installed
+journey and qualifying-CI conditions.
+
+### 2026-09-15-gate-35c-authorized-ci-attempt
+
+Status: blocked before repository checks by hosted Android SDK setup
+Mode: authorized candidate CI attempt; emulator-platform follow-up kept separate
+Candidate: `fb4ab2319ce870ffec242b6b205187f12f3007cf`
+
+Result:
+
+- Protected `main` rejected the direct candidate push because changes must
+  arrive through a pull request and the `Android checks` status is required.
+  Candidate branch `candidate/gate-35c-ci-2026-09-14` and PR `#17` were then
+  created for the same candidate inputs.
+- Actions run `34917846117` started and failed in
+  `android-actions/setup-android@v3` before Gradle. The action attempted to
+  install the requested `tools` package and reported `Failed to find package
+  'tools'`; compile, unit-test, assemble, and whitespace steps were skipped.
+
+Evidence and limits:
+
+- Run: `https://github.com/davidyanceyjr/oxygen/actions/runs/34917846117`.
+- This is not qualifying hosted CI evidence and does not change the local
+  product verification state. The same setup failure was not retried.
+- The CI workflow repair/revalidation and the Android emulator “Process
+  system isn’t responding” investigation remain separate follow-ups. No
+  emulator was started or retried in this CI attempt.
+
+### 2026-09-15-gate-35c-ci-workflow-repair
+
+Status: committed; hosted revalidation passed
+Mode: bounded CI configuration repair
+Commit: `86db325`
+
+Result:
+
+- Updated `.github/workflows/android-ci.yml` from
+  `android-actions/setup-android@v3` to `@v4` and set `packages:
+  platform-tools`. The obsolete `tools` SDK package is no longer requested;
+  no product, test, or emulator behavior changed.
+- `git diff --check` passed. `actionlint` was not installed locally and was
+  skipped. Hosted CI revalidation passed subsequently as recorded below.
+
+Limits:
+
+- The emulator-platform “Process system isn’t responding” investigation
+  remains a separate follow-up and was not started or retried.
+
+### 2026-09-15-gate-35c-ci-workflow-revalidation
+
+Status: verified hosted CI; Gate 35C remains blocked by emulator platform
+Mode: qualifying candidate CI revalidation
+Candidate: `826faed89556b9d4cb0d2ec61762a70a2d2c26d5`
+
+Result:
+
+- Actions run `34918387599` passed in 1m29s after the workflow repair. SDK
+  setup, Gradle setup, debug Kotlin compilation, app/core debug unit tests,
+  debug APK assembly, and whitespace checks all completed successfully.
+- The prior setup failure was resolved without changing product behavior,
+  provider behavior, persistence, permissions, or emulator state.
+
+Evidence and limits:
+
+- Run: `https://github.com/davidyanceyjr/oxygen/actions/runs/34918387599`.
+- This satisfies the hosted-CI condition for the updated candidate inputs, but
+  Gate 35C is not release-ready because the clean-state installed journey is
+  still blocked by Android’s “Process system isn’t responding” dialog.
+- The emulator-platform follow-up remains separate and was not started in this
+  cycle.
+
+### 2026-09-15-gate-35c-emulator-platform-follow-up
+
+Status: verified locally; final release-candidate decision pending
+Mode: bounded recovered emulator and installed production journey
+Slice: Gate 35C-P1, Recovered Emulator Clean-State Journey
+
+Result:
+
+- Created the missing repo-local artifact parent after the launcher rejected
+  its first pre-execution invocation; no emulator or app state changed in that
+  invocation.
+- One wiped API-37 x86_64 `oxygen_starter` session reached `recovery_ready`
+  with ADB/device and boot complete, a responsive package manager, and 9.47 GB
+  free `/data`. The debug APK built and installed once.
+- On clean first run, coarse location remained `granted=false` and no system
+  ANR dialog or hidden default location appeared. Manual Chicago search returned
+  the real Open-Meteo result `41.8500, -87.6501 | America/Chicago`.
+- Selecting Chicago reached live Home Now weather, then Hourly and Daily pages,
+  with source/update/provenance text. Data Sources displayed the corrected
+  active-provider disclosure, and the journey returned to Home with Chicago
+  weather retained.
+- Final diagnostics showed no app `data_app_anr` record. The emulator was
+  stopped once and `adb devices` confirmed no online device.
+
+Evidence and verification:
+
+- Screenshots, UI hierarchies, package/permission state, logcat, ANR/dropbox
+  captures, emulator recovery records, and the command ledger are under
+  `.codex/test-artifacts/2026-09-14-gate-35c-emulator-platform-follow-up/`.
+- The build-input comparison from qualifying candidate
+  `826faed89556b9d4cb0d2ec61762a70a2d2c26d5` to `HEAD` was empty. `git diff
+  --check` passed. Existing local compile/unit/assembly and hosted CI evidence
+  remain applicable because no product or build input changed.
+
+Limits and next action:
+
+- Live alert-detail entry, operational stale/error reproduction in this
+  session, TalkBack service traversal, localization, automatic contrast, alert
+  persistence/background behavior, signing, publication, and deferred
+  provider/cache work remain unverified. No release or signed artifact was
+  made.
+- The next bounded action is the Gate 35C final release-candidate decision and
+  documentation sync; it must preserve these limits and must not claim
+  `released` without separate release evidence.
+
+Commit state: uncommitted documentation/status synchronization; no product
+source changed.
+
+### 2026-09-15-gate-35c-release-candidate-decision-sync
+
+Status: verified locally; release-candidate status not granted
+Mode: documentation-only release-candidate evidence decision and status sync
+Slice: Gate 35C, Release Candidate Decision and Documentation Sync
+
+Result:
+
+- Reviewed the retained Gate 34B, Gate 35A, Gate 35B, Gate 35C-P1, and
+  qualifying hosted-CI evidence against the Gate 35C acceptance boundary.
+- The clean-state installed journey passed in one wiped API-37
+  `oxygen_starter` session: manual Chicago selection without a location grant,
+  live Open-Meteo current/hourly/daily weather, source/update/provenance,
+  corrected Data Sources disclosure, and return to Home. Hosted CI run
+  `34918387599` passed for candidate `826faed89556b9d4cb0d2ec61762a70a2d2c26d5`.
+- Decision: the Gate 35C evidence boundary is verified locally. The repository
+  is not declared a release candidate, release-ready, MVP-complete, signed, or
+  published.
+- Reconciled `.codex/plans/current.md`, `.codex/plans/mvp-roadmap.md`,
+  `README.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`, and this history entry to
+  preserve the decision and named evidence.
+
+Evidence and limits:
+
+- Installed evidence, screenshots, hierarchies, diagnostics, and the command
+  ledger are under
+  `.codex/test-artifacts/2026-09-14-gate-35c-emulator-platform-follow-up/`.
+- No automated, hosted-CI, or installed-journey rerun was needed: this slice
+  changed only documentation, and the retained build-input comparison is
+  empty. `git diff --check` passed after the reconciliation.
+- Live alert-detail entry, operational stale/error reproduction in this
+  session, TalkBack service traversal, localization, automatic contrast,
+  alert persistence/background behavior, conditional GET/304 handling,
+  provider health/backoff, signing, and publication remain unverified or
+  unimplemented as recorded by the authorities.
+
+Commit state: uncommitted documentation-only synchronization; no product
+source changed and no commit was requested.
+
+### 2026-09-15-gate-30e-host-audio-preflight-blocker
+
+Status: blocked before emulator startup; Gate 30E remains unverified
+Mode: bounded installed TalkBack gate preflight
+Slice: Gate 30E, Installed TalkBack and Accessibility Closure
+
+Result:
+
+- The default `xdpyinfo` check failed because `DISPLAY` was unset, while the
+  required explicit `DISPLAY=:0` check passed and opened the logged-in X.Org
+  display.
+- `timeout 5 pactl info` failed with no `/run/user/1000/pulse` directory and
+  `Connection refused`. The plan's host-audio prerequisite therefore did not
+  pass, so emulator startup and the TalkBack journey were stopped.
+- ADB was checked and showed no online device. No emulator was started, APK was
+  built or installed, TalkBack state was changed, or product behavior was
+  exercised.
+
+Evidence and limits:
+
+- The command/result ledger is under
+  `.codex/test-artifacts/2026-09-15-gate-30e-installed-talkback-accessibility-closure/verification-ledger.md`.
+- No speech, focus traversal, alert-detail, Appearance, screenshot, hierarchy,
+  or real-path accessibility evidence was collected. Gate 30E is not verified.
+- No Kotlin, Compose, provider, persistence, manifest, or production behavior
+  changed. The next action is to restore host PulseAudio and select a fresh
+  bounded attempt.
+
+Commit state: uncommitted blocker documentation; no commit was requested.
+
+### 2026-09-15-gate-30e-partial-installed-run-after-audio-recovery
+
+Status: implemented; acceptance incomplete; Gate 30E remains unverified
+Mode: bounded installed TalkBack run after host-runtime recovery
+Slice: Gate 30E, Installed TalkBack and Accessibility Closure
+
+Result:
+
+- `/run/user/1000/pulse/native` and the session D-Bus socket became visible in
+  Codex. `pactl info` passed against PulseAudio 17.0. The visible API-37
+  `oxygen_starter` emulator booted on `emulator-5554`, the debug APK built and
+  installed once, and Oxygen launched through its production path.
+- TalkBack was enabled through Android Accessibility Settings and diagnostics
+  showed the Google TalkBack service enabled and bound. The run reached real
+  Chicago Home Now data with source/update/provenance, then focused activation
+  verified Now -> Hourly -> Daily -> Details and reverse Details -> Daily.
+- Appearance was entered, Paper was selected with `Theme saved`, Oxygen was
+  restored, and Back returned through Settings to Home. A PulseAudio monitor
+  capture was non-silent (`mean_volume -34.6 dB`, `max_volume -15.1 dB`).
+
+Evidence and limits:
+
+- Detailed screenshots, UI hierarchies, accessibility/TTS diagnostics, audio
+  capture statistics, restoration state, and the command ledger are under
+  `.codex/test-artifacts/2026-09-15-gate-30e-installed-talkback-accessibility-closure/`.
+- Chicago exposed no active official alert summary, so live alert-detail
+  traversal was unavailable. The audio capture demonstrates sink output but is
+  not a human-confirmed speech transcript. Gate 30E therefore remains
+  unverified; no product defect was established.
+- TalkBack was restored to disabled, the app was force-stopped, the emulator
+  was stopped, and ADB showed no online device. No Kotlin, Compose, provider,
+  persistence, manifest, or production behavior changed. Compile/unit/connected
+  suites were not rerun because this was an installed evidence gate with no
+  source changes.
+
+Commit state: uncommitted partial-gate documentation; no commit was requested.

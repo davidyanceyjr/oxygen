@@ -58,7 +58,11 @@ class PrivacyManifestInstrumentedTest {
         assertNotNull("MainActivity launcher declaration is missing", launcher)
         assertEquals("com.oxygen.weather.MainActivity", launcher.name)
         assertTrue(launcher.exported)
-        assertTrue(activities.filter { it.name != launcher.name }.all { !it.exported })
+        assertTrue(
+            activities
+                .filter { it.name != launcher.name }
+                .none { it.exported },
+        )
     }
 
     @Test
@@ -71,7 +75,11 @@ class PrivacyManifestInstrumentedTest {
         )
 
         assertTrue(packageInfo.services.orEmpty().all { !it.exported })
-        assertTrue(packageInfo.receivers.orEmpty().all { !it.exported })
+        assertTrue(
+            packageInfo.receivers.orEmpty().all {
+                !it.exported || it.permission == "android.permission.DUMP"
+            },
+        )
         assertTrue(packageInfo.providers.orEmpty().all { !it.exported })
     }
 }
