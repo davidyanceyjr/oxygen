@@ -903,3 +903,43 @@ Evidence and limits:
 
 Commit state: committed at `f84e7d4`; post-commit authority synchronization is
 complete.
+
+### 2026-09-14-gate-35b-connected-evidence-repair
+
+Status: verified; ready for commit
+Mode: bounded runner-evidence repair with no product or test-source change
+Slice: Gate 35B, MVP Presentation and Accessibility Verification
+
+Result:
+
+- One fresh recovered API-37 x86_64 `oxygen_starter` session accepted all five
+  previously unusable methods in order: `standardCompactHomeAtFontScale13KeepsLongContentAndAllPagesReachable`,
+  `rtlStandardHomeCompactLongContentKeepsControlsReachableWithoutRefetch`,
+  `officialAlertDetailLongContentRemainsReachableInRtlLargeFont`,
+  `paperHighContrastDisabledMotionPreservesHomeMeaning`, and
+  `appearanceCompactControlsRemainScrollReachable`.
+- Every method produced a fresh matching JUnit XML, `test-results.log`, and
+  `test-result.textproto`: exactly 1 selected/completed, 0 skipped, 0 failed,
+  and 0 errors. Every runner exited 0 without cleanup.
+- The retained original cases 2, 7, and 8 plus these five repaired records
+  restore all eight focused Gate 35B records. No production or test source
+  changed.
+
+Evidence and limits:
+
+- Preflight, raw Gradle logs, fresh result paths and copies, device captures,
+  outcomes, cleanup, and the verification ledger are under
+  `.codex/test-artifacts/2026-09-14-gate-35b-connected-evidence-repair/`.
+- Preconditions passed: `git diff --check`, `sh -n scripts/start-emulator.sh`,
+  and `sh -n scripts/run-connected-method.sh`. The recovered emulator was
+  stopped after case 5 and confirmed offline. No compile, unit, assembly,
+  additional connected, installed/manual, screenshot, TalkBack, or release
+  checks were run because this slice changed no build input and its five exact
+  methods were the complete connected-test budget.
+- Gate 35C remains specified and is not a release decision in this cycle.
+  TalkBack service traversal, localization, automatic contrast, live
+  alert-detail entry, operational stale/error reproduction in this session,
+  alert persistence/background behavior, and release readiness remain
+  unverified.
+
+Commit state: documentation/status updates are ready for commit.

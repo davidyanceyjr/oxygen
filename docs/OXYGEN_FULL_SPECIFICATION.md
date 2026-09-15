@@ -2226,11 +2226,13 @@ retained AndroidX components non-exported. Backup remains `allowBackup=true`;
 this slice does not resolve the separate migration/privacy decision. Gate 35A
 core acceptance is verified with five retained runner-backed cases and four
 repaired API-37 `oxygen_starter` records. Gate 35B presentation/accessibility
-evidence must be repaired before Gate 35C: five original focused records had
-zero or missing completed-test output, so its earlier pass claim and installed
-captures are not release evidence. TalkBack service traversal, localization,
-automatic contrast, live alert-detail entry, and release checks remain
-unverified.
+evidence is verified: all eight focused cases have runner-backed `1/1
+completed`, zero skipped, zero failed records, with five repaired in a fresh
+API-37 `oxygen_starter` session and three retained from the original evidence.
+The repair added no installed/manual journey and does not claim release
+readiness. TalkBack service traversal, localization, automatic contrast, live
+alert-detail entry, operational stale/error reproduction in this session,
+alert persistence/background behavior, and release checks remain unverified.
 
 ---
 
