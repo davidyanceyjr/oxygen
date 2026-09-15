@@ -2028,8 +2028,9 @@ fall back to MET Norway after eligible Open-Meteo terminal forecast failures,
 preserves truthful MET Norway source/provenance through Room cache restoration,
 and can replace fallback-served cached data with a later successful Open-Meteo
 refresh through the normal selected-location path. Conditional GET requests,
-304 not-modified handling, provider health/backoff behavior, and
-release-candidate fallback verification remain unimplemented.
+304 not-modified handling, and provider health/backoff behavior remain
+unimplemented; the retained Slice 32 evidence covers installed fallback
+verification for the current provider path.
 
 NWS alert provider contract, parser/mapper fixtures, transport boundary, and
 forecast/alert repository merge are implemented through Slices 22, 23A, 23B,
@@ -2229,10 +2230,15 @@ repaired API-37 `oxygen_starter` records. Gate 35B presentation/accessibility
 evidence is verified: all eight focused cases have runner-backed `1/1
 completed`, zero skipped, zero failed records, with five repaired in a fresh
 API-37 `oxygen_starter` session and three retained from the original evidence.
-The repair added no installed/manual journey and does not claim release
-readiness. TalkBack service traversal, localization, automatic contrast, live
-alert-detail entry, operational stale/error reproduction in this session,
-alert persistence/background behavior, and release checks remain unverified.
+Gate 35C's clean-state installed evidence then passed in one wiped API-37
+`oxygen_starter` session: manual Chicago selection without a location grant,
+live Open-Meteo current/hourly/daily weather, source/update/provenance,
+corrected Data Sources disclosure, and return to Home. Qualifying hosted CI
+run `34918387599` also passed. The Gate 35C evidence decision is verified
+locally, but this does not claim release-candidate status or release readiness.
+TalkBack service traversal, localization, automatic contrast, live alert-detail
+entry, operational stale/error reproduction in this session, alert
+persistence/background behavior, signing, and publication remain unverified.
 
 ---
 

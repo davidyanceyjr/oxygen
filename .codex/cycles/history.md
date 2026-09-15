@@ -1054,3 +1054,157 @@ Evidence and limits:
   still blocked by Android’s “Process system isn’t responding” dialog.
 - The emulator-platform follow-up remains separate and was not started in this
   cycle.
+
+### 2026-09-15-gate-35c-emulator-platform-follow-up
+
+Status: verified locally; final release-candidate decision pending
+Mode: bounded recovered emulator and installed production journey
+Slice: Gate 35C-P1, Recovered Emulator Clean-State Journey
+
+Result:
+
+- Created the missing repo-local artifact parent after the launcher rejected
+  its first pre-execution invocation; no emulator or app state changed in that
+  invocation.
+- One wiped API-37 x86_64 `oxygen_starter` session reached `recovery_ready`
+  with ADB/device and boot complete, a responsive package manager, and 9.47 GB
+  free `/data`. The debug APK built and installed once.
+- On clean first run, coarse location remained `granted=false` and no system
+  ANR dialog or hidden default location appeared. Manual Chicago search returned
+  the real Open-Meteo result `41.8500, -87.6501 | America/Chicago`.
+- Selecting Chicago reached live Home Now weather, then Hourly and Daily pages,
+  with source/update/provenance text. Data Sources displayed the corrected
+  active-provider disclosure, and the journey returned to Home with Chicago
+  weather retained.
+- Final diagnostics showed no app `data_app_anr` record. The emulator was
+  stopped once and `adb devices` confirmed no online device.
+
+Evidence and verification:
+
+- Screenshots, UI hierarchies, package/permission state, logcat, ANR/dropbox
+  captures, emulator recovery records, and the command ledger are under
+  `.codex/test-artifacts/2026-09-14-gate-35c-emulator-platform-follow-up/`.
+- The build-input comparison from qualifying candidate
+  `826faed89556b9d4cb0d2ec61762a70a2d2c26d5` to `HEAD` was empty. `git diff
+  --check` passed. Existing local compile/unit/assembly and hosted CI evidence
+  remain applicable because no product or build input changed.
+
+Limits and next action:
+
+- Live alert-detail entry, operational stale/error reproduction in this
+  session, TalkBack service traversal, localization, automatic contrast, alert
+  persistence/background behavior, signing, publication, and deferred
+  provider/cache work remain unverified. No release or signed artifact was
+  made.
+- The next bounded action is the Gate 35C final release-candidate decision and
+  documentation sync; it must preserve these limits and must not claim
+  `released` without separate release evidence.
+
+Commit state: uncommitted documentation/status synchronization; no product
+source changed.
+
+### 2026-09-15-gate-35c-release-candidate-decision-sync
+
+Status: verified locally; release-candidate status not granted
+Mode: documentation-only release-candidate evidence decision and status sync
+Slice: Gate 35C, Release Candidate Decision and Documentation Sync
+
+Result:
+
+- Reviewed the retained Gate 34B, Gate 35A, Gate 35B, Gate 35C-P1, and
+  qualifying hosted-CI evidence against the Gate 35C acceptance boundary.
+- The clean-state installed journey passed in one wiped API-37
+  `oxygen_starter` session: manual Chicago selection without a location grant,
+  live Open-Meteo current/hourly/daily weather, source/update/provenance,
+  corrected Data Sources disclosure, and return to Home. Hosted CI run
+  `34918387599` passed for candidate `826faed89556b9d4cb0d2ec61762a70a2d2c26d5`.
+- Decision: the Gate 35C evidence boundary is verified locally. The repository
+  is not declared a release candidate, release-ready, MVP-complete, signed, or
+  published.
+- Reconciled `.codex/plans/current.md`, `.codex/plans/mvp-roadmap.md`,
+  `README.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`, and this history entry to
+  preserve the decision and named evidence.
+
+Evidence and limits:
+
+- Installed evidence, screenshots, hierarchies, diagnostics, and the command
+  ledger are under
+  `.codex/test-artifacts/2026-09-14-gate-35c-emulator-platform-follow-up/`.
+- No automated, hosted-CI, or installed-journey rerun was needed: this slice
+  changed only documentation, and the retained build-input comparison is
+  empty. `git diff --check` passed after the reconciliation.
+- Live alert-detail entry, operational stale/error reproduction in this
+  session, TalkBack service traversal, localization, automatic contrast,
+  alert persistence/background behavior, conditional GET/304 handling,
+  provider health/backoff, signing, and publication remain unverified or
+  unimplemented as recorded by the authorities.
+
+Commit state: uncommitted documentation-only synchronization; no product
+source changed and no commit was requested.
+
+### 2026-09-15-gate-30e-host-audio-preflight-blocker
+
+Status: blocked before emulator startup; Gate 30E remains unverified
+Mode: bounded installed TalkBack gate preflight
+Slice: Gate 30E, Installed TalkBack and Accessibility Closure
+
+Result:
+
+- The default `xdpyinfo` check failed because `DISPLAY` was unset, while the
+  required explicit `DISPLAY=:0` check passed and opened the logged-in X.Org
+  display.
+- `timeout 5 pactl info` failed with no `/run/user/1000/pulse` directory and
+  `Connection refused`. The plan's host-audio prerequisite therefore did not
+  pass, so emulator startup and the TalkBack journey were stopped.
+- ADB was checked and showed no online device. No emulator was started, APK was
+  built or installed, TalkBack state was changed, or product behavior was
+  exercised.
+
+Evidence and limits:
+
+- The command/result ledger is under
+  `.codex/test-artifacts/2026-09-15-gate-30e-installed-talkback-accessibility-closure/verification-ledger.md`.
+- No speech, focus traversal, alert-detail, Appearance, screenshot, hierarchy,
+  or real-path accessibility evidence was collected. Gate 30E is not verified.
+- No Kotlin, Compose, provider, persistence, manifest, or production behavior
+  changed. The next action is to restore host PulseAudio and select a fresh
+  bounded attempt.
+
+Commit state: uncommitted blocker documentation; no commit was requested.
+
+### 2026-09-15-gate-30e-partial-installed-run-after-audio-recovery
+
+Status: implemented; acceptance incomplete; Gate 30E remains unverified
+Mode: bounded installed TalkBack run after host-runtime recovery
+Slice: Gate 30E, Installed TalkBack and Accessibility Closure
+
+Result:
+
+- `/run/user/1000/pulse/native` and the session D-Bus socket became visible in
+  Codex. `pactl info` passed against PulseAudio 17.0. The visible API-37
+  `oxygen_starter` emulator booted on `emulator-5554`, the debug APK built and
+  installed once, and Oxygen launched through its production path.
+- TalkBack was enabled through Android Accessibility Settings and diagnostics
+  showed the Google TalkBack service enabled and bound. The run reached real
+  Chicago Home Now data with source/update/provenance, then focused activation
+  verified Now -> Hourly -> Daily -> Details and reverse Details -> Daily.
+- Appearance was entered, Paper was selected with `Theme saved`, Oxygen was
+  restored, and Back returned through Settings to Home. A PulseAudio monitor
+  capture was non-silent (`mean_volume -34.6 dB`, `max_volume -15.1 dB`).
+
+Evidence and limits:
+
+- Detailed screenshots, UI hierarchies, accessibility/TTS diagnostics, audio
+  capture statistics, restoration state, and the command ledger are under
+  `.codex/test-artifacts/2026-09-15-gate-30e-installed-talkback-accessibility-closure/`.
+- Chicago exposed no active official alert summary, so live alert-detail
+  traversal was unavailable. The audio capture demonstrates sink output but is
+  not a human-confirmed speech transcript. Gate 30E therefore remains
+  unverified; no product defect was established.
+- TalkBack was restored to disabled, the app was force-stopped, the emulator
+  was stopped, and ADB showed no online device. No Kotlin, Compose, provider,
+  persistence, manifest, or production behavior changed. Compile/unit/connected
+  suites were not rerun because this was an installed evidence gate with no
+  source changes.
+
+Commit state: uncommitted partial-gate documentation; no commit was requested.

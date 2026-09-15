@@ -119,8 +119,14 @@ cases plus four repaired API-37 `oxygen_starter` records establish all nine
 selected core boundaries. Gate 35B presentation/accessibility evidence is
 verified: all eight focused cases have runner-backed `1/1 completed`, zero
 skipped, zero failed records, with five repaired in a fresh API-37
-`oxygen_starter` session and three retained from the original evidence. The
-repair added no installed/manual journey and does not claim release readiness.
+`oxygen_starter` session and three retained from the original evidence. Gate
+35C clean-state installed evidence also passed: one wiped API-37
+`oxygen_starter` session manually selected Chicago without a location grant,
+served live Open-Meteo current/hourly/daily weather, exposed source/update/
+provenance and corrected Data Sources disclosure, and returned to Home. The
+qualifying hosted CI run is `34918387599`. The Gate 35C evidence decision is
+verified locally; this does not claim release-candidate status or release
+readiness.
 TalkBack service traversal, localization, automatic contrast, live
 alert-detail entry, operational stale/error reproduction in this session,
 alert persistence/background behavior, and release checks remain unverified.
@@ -137,7 +143,7 @@ alert persistence/background behavior, and release checks remain unverified.
 - Custom unit editing UI.
 - Alert persistence/cache, background polling, and notifications.
 - Full effects behavior and icon-pack settings.
-- Release-candidate verification.
+- Release packaging, signing, and publication.
 
 ## Repository structure
 
@@ -252,12 +258,13 @@ refresh-failed metadata. If a live provider refresh succeeds while local
 forecast-cache persistence fails, the live provider forecast remains
 displayable. Provider-specific MET Norway cache headers are persisted with
 cached fallback forecasts, and cached/stale MET Norway forecasts retain
-MET Norway provenance. Conditional GET requests, 304 not-modified handling, and
-release-candidate fallback verification remain later work.
+MET Norway provenance. Conditional GET requests and 304 not-modified handling
+remain later work. Gate 35C's evidence decision is verified locally, but
+release-candidate status and release readiness are not claimed.
 
 Custom unit editing, alert persistence/cache, background alert polling,
-notifications, air quality, radar, and release-candidate verification are not
-implemented yet.
+notifications, air quality, radar, release packaging, signing, and publication
+are not complete.
 
 ## Specification
 

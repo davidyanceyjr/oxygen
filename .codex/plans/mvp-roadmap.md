@@ -1,11 +1,11 @@
 # Oxygen MVP Release Map
 
-Status: Gate 35A committed; Gate 35B committed at `6ab7977`; Gate 35C
-implemented locally but not release-ready
+Status: Gate 35A committed; Gate 35B committed at `6ab7977`; Gate 35C evidence
+verified locally; release-candidate status not granted
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-14
+Revised: 2026-09-15
 Reconciled against local `origin/main` ref: `82cf281`
 Synchronized through Gate 30C3 alert evidence/documentation closure after Slice
 30C2 implementation `70304b8`, and Slice 33B manifest repair `02f668f`; prior baseline
@@ -18,16 +18,24 @@ Repository audit cleanup and live-history compression were completed in commit
 
 Gate 35C execution at commit `001b7d5` corrected the installed Data Sources
 wording and passed focused JVM, one connected disclosure case, broad local
-checks, source audit, and release-APK inspection. It is not a release-candidate
-verification: the clean-state installed journey was blocked by an emulator
+checks, source audit, and release-APK inspection. That execution was not a
+release-candidate verification because the clean-state installed journey was blocked by an emulator
 “Process system isn’t responding” dialog, and the authorized hosted candidate
 run `34917846117` failed in `android-actions/setup-android@v3` before project
 checks because the requested `tools` SDK package was unavailable. The repair at
 `86db325` then passed qualifying hosted CI run `34918387599` for the updated
 candidate inputs. Evidence root:
 `.codex/test-artifacts/2026-09-14-gate-35c-release-candidate-decision/`.
-The next action is a separately bounded emulator-platform follow-up. PR `#17`
-remains the candidate CI record. No release or signed artifact was made.
+The clean-state installed journey then passed in one recovered, wiped API-37
+`oxygen_starter` session on 2026-09-15: manual Chicago selection without a
+location grant, live Open-Meteo current/hourly/daily weather, source/update/
+provenance, corrected Data Sources disclosure, and return to Home. The emulator
+was stopped and confirmed offline. Evidence is under
+`.codex/test-artifacts/2026-09-14-gate-35c-emulator-platform-follow-up/`.
+PR `#17` remains the candidate CI record. The Gate 35C evidence boundary is
+verified locally, but release-candidate status, release readiness, MVP
+completion, signing, and publication are not claimed. No release or signed
+artifact was made.
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
@@ -876,9 +884,12 @@ privacy, license, persistence, or release-readiness claims do not change.
 
 ## Slice 31: Installed-App Forecast Fallback Completion
 
-Status: specified
+Status: committed through Slices 31A and 31B; verified through Slice 32
 
-Planning note: split wiring from cache/provenance.
+Planning note: this parent scope was split into wiring, cache/provenance, and
+installed real-path verification. The three resulting boundaries are complete
+at Slices 31A, 31B, and 32; do not treat this parent heading as an additional
+unfinished slice.
 
 ### Slice 31A: Installed-App Fallback Wiring
 
@@ -1075,7 +1086,7 @@ Required installed-app UI evidence includes:
 
 ## Gate 35C: Release Candidate Decision
 
-Status: specified
+Status: verified locally; release-candidate status not granted
 
 Prerequisite:
 
@@ -1083,8 +1094,12 @@ Prerequisite:
 - Gate 35B.
 - Gate 34B.
 
-Release intent: Make the release-candidate status decision only after the broad
-verification evidence exists.
+Release intent: record the evidence decision without upgrading it to release,
+MVP-complete, signed, or published status.
+
+Decision: the clean installed journey and qualifying hosted CI passed for the
+candidate inputs. The retained limits below remain unresolved, so the
+repository is not declared a release candidate or release-ready.
 
 Release-candidate status is blocked if:
 
@@ -1202,8 +1217,10 @@ Gate 35B is committed at `6ab7977` with its original artifacts under
 `.codex/test-artifacts/2026-09-14-gate-35b-mvp-presentation-accessibility-verification/`
 and five-case repair artifacts under
 `.codex/test-artifacts/2026-09-14-gate-35b-connected-evidence-repair/`.
-Gate 35C is the next specified candidate and is not a release decision in this
-cycle.
+Gate 35C's hosted-CI and clean-state installed evidence are verified locally
+under `.codex/test-artifacts/2026-09-14-gate-35c-emulator-platform-follow-up/`;
+the evidence decision is complete locally, but release-candidate status is not
+granted.
 
 Slice 30A1: Home Spoken-Weather Semantics is committed at `da7b886`; Slice 30A2
 is committed at `1a8e14f`; 30A3A1's evidence is complete; and 30A3B2 is the
@@ -1279,13 +1296,14 @@ Immediate planning boundary:
 -> Gate 35A MVP Core Behavior Verification committed at `f84e7d4` (four
    zero-completion records repaired)
 -> Gate 35B MVP Presentation and Accessibility Verification committed at
-   `6ab7977`; Gate 35C is the next specified candidate
+   `6ab7977`; Gate 35C evidence verified locally; release-candidate status not
+   granted
 ```
 
 The earlier accessibility, appearance, privacy-audit, and Settings/About
 boundaries are complete or deferred as recorded above. Gate 34B is verified,
-Gate 35A is committed, and Gate 35B is committed at `6ab7977`; Gate 35C is the
-next specified candidate and remains outside this cycle. Service-level TalkBack remains
+Gate 35A is committed, Gate 35B is committed at `6ab7977`, and the Gate 35C
+evidence decision is verified locally. Service-level TalkBack remains
 unverified; this exception does not imply release readiness or waive other
 release checks.
 
