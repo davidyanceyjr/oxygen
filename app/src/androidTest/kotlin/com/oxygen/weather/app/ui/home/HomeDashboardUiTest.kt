@@ -2400,6 +2400,13 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithText("NWS information is public information; requested credits apply and third-party page content may have separate terms.")
             .performScrollTo()
             .assertIsDisplayed()
+        composeRule.onNodeWithText("Conditional GET requests, 304 not-modified handling, and provider health/backoff", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Alert persistence/cache, background polling, notifications, custom unit editing, air quality, and radar", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onAllNodesWithText("release-candidate", substring = true).assertCountEquals(0)
         val disclosureLinks = listOf(
             "Open-Meteo forecast and timezone documentation" to "https://open-meteo.com/en/docs",
             "MET Norway licensing and attribution" to "https://api.met.no/doc/License",

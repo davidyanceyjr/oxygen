@@ -98,14 +98,14 @@ private val dataSourceSections = listOf(
             "Installed-app durable Room cache wiring and offline cache launch behavior are implemented for the selected forecast path.",
             "Provider-specific MET Norway cache headers are persisted with cached fallback forecasts and cached fallback provenance remains provider-neutral.",
             "The Home Now page shows one official-alert summary, detail navigation, total count, NOAA/NWS attribution, source-check time, and an external source link.",
-            "Conditional GET requests, 304 not-modified handling, and release-candidate fallback verification are not implemented yet.",
+            "Conditional GET requests, 304 not-modified handling, and provider health/backoff state are not implemented yet.",
         ),
     ),
     AboutSection(
         heading = "Roadmap Only",
         body = listOf(
             "Environment and Climate Change Canada alerts and Open-Meteo/CAMS air quality are roadmap-only here.",
-            "Alert persistence/cache, background polling, notifications, custom unit editing, air quality, radar, and release-candidate fallback behavior are not implemented.",
+            "Alert persistence/cache, background polling, notifications, custom unit editing, air quality, and radar are not implemented.",
         ),
     ),
 )

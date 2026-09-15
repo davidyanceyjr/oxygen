@@ -140,6 +140,7 @@ class AboutDisclosureStateHolderTest {
         assertTrue(text.contains("Provider-specific MET Norway cache headers are persisted"))
         assertTrue(text.contains("cached fallback provenance remains provider-neutral"))
         assertTrue(text.contains("304 not-modified handling"))
+        assertTrue(text.contains("provider health/backoff"))
         assertTrue(text.contains("Official alerts: selected-point NOAA/National Weather Service active alerts are requested in the foreground after forecast success"))
         assertTrue(text.contains("Open-Meteo forecast and timezone data: CC BY 4.0"))
         assertTrue(text.contains("Open-Meteo geocoding data: CC BY 4.0"))
@@ -149,8 +150,10 @@ class AboutDisclosureStateHolderTest {
         assertTrue(text.contains("Environment and Climate Change Canada alerts"))
         assertTrue(text.contains("Open-Meteo/CAMS air quality"))
         assertTrue(text.contains("roadmap-only"))
+        assertTrue(text.contains("Alert persistence/cache"))
         assertFalse(text.contains("saved-location save/remove UI"))
         assertFalse(text.contains("unit settings are implemented"))
+        assertFalse(text.contains("release-candidate"))
         assertTrue(text.contains("Home Now page shows one official-alert summary"))
 
         assertEquals(
