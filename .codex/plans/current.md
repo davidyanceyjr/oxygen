@@ -70,6 +70,12 @@ Artifacts: `.codex/test-artifacts/2026-09-14-gate-35c-release-candidate-decision
   `2026-09-14-gates-34b-35a-data-source-mvp-core-verification/`; Gate 35A and
   35B repair records are under their named roots; Gate 35B presentation
   evidence is under `2026-09-14-gate-35b-mvp-presentation-accessibility-verification/`.
+- Authorized hosted candidate attempt: PR `#17` at candidate SHA
+  `fb4ab2319ce870ffec242b6b205187f12f3007cf` ran as Actions run
+  `34917846117` and failed before project execution in
+  `android-actions/setup-android@v3`; `sdkmanager` could not find the
+  requested `tools` package. No hosted compile, unit-test, assemble, or
+  whitespace result was produced.
 
 ## Gate blockers and limits
 
@@ -82,11 +88,17 @@ Artifacts: `.codex/test-artifacts/2026-09-14-gate-35c-release-candidate-decision
   Diagnostics are in `installed/platform-blocker-diagnostics.txt`; the
   emulator was stopped and confirmed offline. No retry or second install was
   made.
-- `gh run list --commit a33a5a3...` returned no run. The newest observed
-  success is Android CI run
-  `https://github.com/davidyanceyjr/oxygen/actions/runs/34858709570` for
-  older SHA `a46cef9`; it is not qualifying evidence for this candidate.
-  No push or PR was authorized or attempted.
+- The direct candidate push was rejected by protected `main`; the authorized
+  PR trigger is open as `#17` from `candidate/gate-35c-ci-2026-09-14`.
+  Hosted run `34917846117` is not qualifying evidence because setup failed
+  before any repository check. The newest observed successful run remains
+  `https://github.com/davidyanceyjr/oxygen/actions/runs/34858709570` for older
+  SHA `a46cef9`, which is not qualifying evidence for this candidate.
+- The hosted workflow's `packages: tools platform-tools` setup is now an
+  explicit CI follow-up blocker. It was repaired in commit `86db325` by
+  moving to `android-actions/setup-android@v4` and requesting only
+  `platform-tools`; hosted revalidation is pending. The emulator-platform
+  follow-up remains separate.
 - Gate 30E TalkBack traversal, localization, automatic contrast, live
   alert-detail availability, alert persistence/background behavior, signing,
   publication, and deferred provider/cache features remain unverified or out

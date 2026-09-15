@@ -985,3 +985,49 @@ Commit state: committed at `001b7d5`; active plan, roadmap, and this history
 entry were synchronized after commit. README, specification, provider, and
 privacy documents were not changed because Gate 35C did not pass its installed
 journey and qualifying-CI conditions.
+
+### 2026-09-15-gate-35c-authorized-ci-attempt
+
+Status: blocked before repository checks by hosted Android SDK setup
+Mode: authorized candidate CI attempt; emulator-platform follow-up kept separate
+Candidate: `fb4ab2319ce870ffec242b6b205187f12f3007cf`
+
+Result:
+
+- Protected `main` rejected the direct candidate push because changes must
+  arrive through a pull request and the `Android checks` status is required.
+  Candidate branch `candidate/gate-35c-ci-2026-09-14` and PR `#17` were then
+  created for the same candidate inputs.
+- Actions run `34917846117` started and failed in
+  `android-actions/setup-android@v3` before Gradle. The action attempted to
+  install the requested `tools` package and reported `Failed to find package
+  'tools'`; compile, unit-test, assemble, and whitespace steps were skipped.
+
+Evidence and limits:
+
+- Run: `https://github.com/davidyanceyjr/oxygen/actions/runs/34917846117`.
+- This is not qualifying hosted CI evidence and does not change the local
+  product verification state. The same setup failure was not retried.
+- The CI workflow repair/revalidation and the Android emulator “Process
+  system isn’t responding” investigation remain separate follow-ups. No
+  emulator was started or retried in this CI attempt.
+
+### 2026-09-15-gate-35c-ci-workflow-repair
+
+Status: committed; hosted revalidation pending
+Mode: bounded CI configuration repair
+Commit: `86db325`
+
+Result:
+
+- Updated `.github/workflows/android-ci.yml` from
+  `android-actions/setup-android@v3` to `@v4` and set `packages:
+  platform-tools`. The obsolete `tools` SDK package is no longer requested;
+  no product, test, or emulator behavior changed.
+- `git diff --check` passed. `actionlint` was not installed locally and was
+  skipped. Hosted CI revalidation has not yet run for this repair.
+
+Limits:
+
+- The emulator-platform “Process system isn’t responding” investigation
+  remains a separate follow-up and was not started or retried.
