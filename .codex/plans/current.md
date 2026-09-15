@@ -76,6 +76,10 @@ Artifacts: `.codex/test-artifacts/2026-09-14-gate-35c-release-candidate-decision
   `android-actions/setup-android@v3`; `sdkmanager` could not find the
   requested `tools` package. No hosted compile, unit-test, assemble, or
   whitespace result was produced.
+- Hosted revalidation passed for the repaired candidate at SHA
+  `826faed89556b9d4cb0d2ec61762a70a2d2c26d5` as Actions run
+  `34918387599`: SDK setup, Gradle setup, debug compilation, app/core debug
+  unit tests, debug APK assembly, and whitespace checks all passed in 1m29s.
 
 ## Gate blockers and limits
 
@@ -90,15 +94,10 @@ Artifacts: `.codex/test-artifacts/2026-09-14-gate-35c-release-candidate-decision
   made.
 - The direct candidate push was rejected by protected `main`; the authorized
   PR trigger is open as `#17` from `candidate/gate-35c-ci-2026-09-14`.
-  Hosted run `34917846117` is not qualifying evidence because setup failed
-  before any repository check. The newest observed successful run remains
-  `https://github.com/davidyanceyjr/oxygen/actions/runs/34858709570` for older
-  SHA `a46cef9`, which is not qualifying evidence for this candidate.
-- The hosted workflow's `packages: tools platform-tools` setup is now an
-  explicit CI follow-up blocker. It was repaired in commit `86db325` by
-  moving to `android-actions/setup-android@v4` and requesting only
-  `platform-tools`; hosted revalidation is pending. The emulator-platform
-  follow-up remains separate.
+- Hosted run `34917846117` remains a recorded setup failure for the original
+  workflow, but qualifying revalidation passed as run `34918387599` after
+  commit `86db325` moved to `android-actions/setup-android@v4` and requested
+  only `platform-tools`. The emulator-platform follow-up remains separate.
 - Gate 30E TalkBack traversal, localization, automatic contrast, live
   alert-detail availability, alert persistence/background behavior, signing,
   publication, and deferred provider/cache features remain unverified or out
@@ -107,7 +106,7 @@ Artifacts: `.codex/test-artifacts/2026-09-14-gate-35c-release-candidate-decision
 README, `docs/OXYGEN_FULL_SPECIFICATION.md`, `DATA_SOURCES.md`, `PRIVACY.md`,
 and `docs/data-sources/MET_NORWAY_FORECAST.md` were intentionally not changed:
 the release-facing limitation remains factually applicable until the missing
-installed journey and candidate CI evidence are resolved.
+installed journey is resolved.
 
 ## Post-commit synchronization
 

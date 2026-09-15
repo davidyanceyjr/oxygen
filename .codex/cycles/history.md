@@ -1014,7 +1014,7 @@ Evidence and limits:
 
 ### 2026-09-15-gate-35c-ci-workflow-repair
 
-Status: committed; hosted revalidation pending
+Status: committed; hosted revalidation passed
 Mode: bounded CI configuration repair
 Commit: `86db325`
 
@@ -1025,9 +1025,32 @@ Result:
   platform-tools`. The obsolete `tools` SDK package is no longer requested;
   no product, test, or emulator behavior changed.
 - `git diff --check` passed. `actionlint` was not installed locally and was
-  skipped. Hosted CI revalidation has not yet run for this repair.
+  skipped. Hosted CI revalidation passed subsequently as recorded below.
 
 Limits:
 
 - The emulator-platform “Process system isn’t responding” investigation
   remains a separate follow-up and was not started or retried.
+
+### 2026-09-15-gate-35c-ci-workflow-revalidation
+
+Status: verified hosted CI; Gate 35C remains blocked by emulator platform
+Mode: qualifying candidate CI revalidation
+Candidate: `826faed89556b9d4cb0d2ec61762a70a2d2c26d5`
+
+Result:
+
+- Actions run `34918387599` passed in 1m29s after the workflow repair. SDK
+  setup, Gradle setup, debug Kotlin compilation, app/core debug unit tests,
+  debug APK assembly, and whitespace checks all completed successfully.
+- The prior setup failure was resolved without changing product behavior,
+  provider behavior, persistence, permissions, or emulator state.
+
+Evidence and limits:
+
+- Run: `https://github.com/davidyanceyjr/oxygen/actions/runs/34918387599`.
+- This satisfies the hosted-CI condition for the updated candidate inputs, but
+  Gate 35C is not release-ready because the clean-state installed journey is
+  still blocked by Android’s “Process system isn’t responding” dialog.
+- The emulator-platform follow-up remains separate and was not started in this
+  cycle.

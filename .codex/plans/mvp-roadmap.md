@@ -22,11 +22,12 @@ checks, source audit, and release-APK inspection. It is not a release-candidate
 verification: the clean-state installed journey was blocked by an emulator
 “Process system isn’t responding” dialog, and the authorized hosted candidate
 run `34917846117` failed in `android-actions/setup-android@v3` before project
-checks because the requested `tools` SDK package was unavailable. Evidence root:
+checks because the requested `tools` SDK package was unavailable. The repair at
+`86db325` then passed qualifying hosted CI run `34918387599` for the updated
+candidate inputs. Evidence root:
 `.codex/test-artifacts/2026-09-14-gate-35c-release-candidate-decision/`.
-The CI-workflow repair is committed at `86db325`; the next action is hosted
-revalidation plus a separately bounded emulator-platform follow-up. PR `#17`
-is the candidate CI trigger. No release or signed artifact was made.
+The next action is a separately bounded emulator-platform follow-up. PR `#17`
+remains the candidate CI record. No release or signed artifact was made.
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
