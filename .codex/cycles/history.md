@@ -945,3 +945,43 @@ Evidence and limits:
 Commit state: committed at `6ab7977`; post-commit authority synchronization is
 complete. Gate 35C is the next specified candidate; no release decision was
 made.
+
+### 2026-09-14-gate-35c-release-candidate-decision
+
+Status: implemented; Gate 35C not verified/release-ready
+Mode: bounded release-facing provider disclosure correction and release audit
+Commit: `001b7d5`
+
+Result:
+
+- Removed internal release-candidate milestone wording from the installed Data
+  Sources disclosure while retaining conditional GET/304 reuse and provider
+  health/backoff as unfinished, and retained the actual roadmap-only limits.
+- Added the planned JVM and connected assertions. The red JVM contract failed
+  for the expected missing old-production wording; the corrected JVM class and
+  the one planned connected disclosure case then passed. The connected result
+  triplet records exactly 1 selected/completed, 0 skipped, 0 failures, and 0
+  errors.
+- Debug compilation, app/core unit tests, debug/release assembly, source
+  audits, release APK/manifest inspection, and `git diff --check` passed. The
+  release APK is correctly unsigned and was not installed.
+
+Evidence and limits:
+
+- Artifacts: `.codex/test-artifacts/2026-09-14-gate-35c-release-candidate-decision/`.
+  Retained Gate 34B/35A/35B evidence was referenced and not rerun.
+- The single installed journey installed the debug APK and cleared only app
+  data, but Android showed a persistent “Process system isn’t responding”
+  dialog immediately after launch. One “Wait” action did not recover the
+  surface, so first-run entry, manual live provider weather, and installed
+  disclosure/Privacy capture remain unavailable. The emulator was stopped and
+  confirmed offline; no retry or second install was made.
+- No hosted CI run exists for candidate SHA `a33a5a3` (or the post-change
+  commit); the observed success run `34858709570` is for older SHA `a46cef9`.
+  No push or PR was authorized or attempted. TalkBack, localization, signing,
+  publication, and deferred features remain unverified/out of scope.
+
+Commit state: committed at `001b7d5`; active plan, roadmap, and this history
+entry were synchronized after commit. README, specification, provider, and
+privacy documents were not changed because Gate 35C did not pass its installed
+journey and qualifying-CI conditions.

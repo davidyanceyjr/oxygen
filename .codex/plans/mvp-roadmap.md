@@ -1,6 +1,7 @@
 # Oxygen MVP Release Map
 
-Status: Gate 35A committed; Gate 35B committed at `6ab7977`
+Status: Gate 35A committed; Gate 35B committed at `6ab7977`; Gate 35C
+implemented locally but not release-ready
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
@@ -14,6 +15,17 @@ roadmap synchronization remains recorded through Slice 30B1A3B1 implementation
 
 Repository audit cleanup and live-history compression were completed in commit
 6cab109; the active queue remains unchanged.
+
+Gate 35C execution at commit `001b7d5` corrected the installed Data Sources
+wording and passed focused JVM, one connected disclosure case, broad local
+checks, source audit, and release-APK inspection. It is not a release-candidate
+verification: the clean-state installed journey was blocked by an emulator
+“Process system isn’t responding” dialog, and no qualifying hosted CI run exists
+for the candidate build inputs. Evidence root:
+`.codex/test-artifacts/2026-09-14-gate-35c-release-candidate-decision/`.
+The next action is an externally authorized qualifying CI run plus a separately
+bounded emulator-platform follow-up; no push, PR, release, or signed artifact
+was made.
 
 Planning note: This roadmap specifies candidate MVP slices. Only `.codex/plans/current.md` may mark one bounded implementation slice as planned.
 
