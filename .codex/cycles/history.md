@@ -1666,3 +1666,42 @@ Evidence and limits:
 
 Commit state: committed in the current documentation commit; roadmap creation
 and implementation are separate subsequent work.
+
+### 2026-09-16-ui-roadmap-first-draft
+
+Status: specified; first roadmap draft reviewed and revised; no implementation
+slice selected
+Mode: documentation-only roadmap review and sequencing
+
+Result:
+
+- Created and audited `.codex/plans/ui-roadmap.md` from UI Specification v0.3,
+  the full product specification, and the installed-app/documentation baseline.
+- Revised the title and scope to the Home UI v0.3 program rather than implying
+  complete 1.0 coverage, and recorded higher-authority custom-unit, missing-
+  metric, layout, and later-feature gaps without silently closing them.
+- Removed the duplicate four-page composition slice, split Hourly and Daily
+  window state machines, split navigation/Back, marks, scenes, Full effects,
+  Settings/disclosures, alert detail, and location entry at observable
+  boundaries, and assigned page state/accessibility acceptance to each owner.
+- Added recurring two-production-slice checkpoints and a minimal orthogonal
+  evidence policy requiring functional assertions plus installed rendering
+  without repeated cross-product journeys.
+- Kept every candidate `specified`; only the active plan may select UI-01 as
+  `planned`.
+
+Evidence and limits:
+
+- Reviewed the UI specification, full product specification, UI workflow,
+  README, provider template, inactive MVP roadmap, active plan, recent cycle
+  history, and current app/core production boundaries.
+- `git diff --check`, explicit trailing-whitespace review for the untracked
+  roadmap, and focused terminology, dependency, checkpoint-cadence, and status
+  review passed.
+- No Android build, unit test, connected test, emulator, install, or screenshot
+  checks ran because this is documentation-only roadmap work. No UI behavior is
+  implemented or verified by this draft.
+
+Commit state: committed in this documentation cycle; the next action is
+acceptance of the reviewed roadmap, then separate selection of UI-01 in the
+active plan.

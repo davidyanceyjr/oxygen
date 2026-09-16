@@ -1,92 +1,61 @@
-# Oxygen UI Specification — Version 0.3
+# Oxygen Home UI v0.3 Roadmap — Reviewed Draft
 
-**Status:** specified; roadmap-readiness correction committed; not
-implemented or visually verified
-**Mode:** documentation-only UI contract and authority alignment
-**Cycle ID:** `2026-09-16-ui-specification-review-resolution`
-**Active roadmap:** none during specification finalization. The intended next
-roadmap is `ui-roadmap.md` (not yet created); `mvp-roadmap.md` is inactive.
+**Status:** specified; reviewed UI roadmap draft created; no implementation
+slice selected
+**Mode:** documentation-only roadmap review and sequencing
+**Cycle ID:** `2026-09-16-ui-roadmap-first-draft`
+**Active roadmap:** `.codex/plans/ui-roadmap.md` (reviewed draft; candidates
+remain specified until selected here)
 **Implementation slices since UI checkpoint:** 0; this documentation cycle
 does not increment the count.
-**Baseline:** committed application state through `5c6ed6b`; UI Specification
-v0.3 is committed in `aafefe6` with post-commit sync at `c2d28a4`; Gate 30E
-remains deferred and unverified.
-**Next action:** derive `.codex/plans/ui-roadmap.md` from
-[`OXYGEN_UI_SPECIFICATION.md`](../../docs/OXYGEN_UI_SPECIFICATION.md), beginning
-with the bounded forecast-horizon data contract.
+**Baseline:** UI Specification v0.3 and the committed installed-app baseline;
+this cycle changes roadmap/tracking documentation only and does not implement
+or verify a roadmap delta.
+**Next action:** accept the reviewed roadmap, then select UI-01 here with exact
+fixtures, production-repository Android exercise, verification budget, and
+timeout limit before implementation.
 
 ## Selected work
 
-Finalize the UI specification with the minimum changes directed by its
-review/audit section:
-
-- align the higher-level product authority to a rolling 72-hour hourly and
-  ten-day daily target;
-- define truthful Open-Meteo and MET Norway horizon behavior without padding,
-  interpolation, or implementation claims;
-- make the exact Standard Home page/window, gesture, Back, card, appearance,
-  availability, accessibility, and evidence contracts internally consistent;
-- distinguish decisions required now from visual details delegated to later
-  bounded implementation slices;
-- keep global page names visible while making numeric page count and position
-  semantic-only rather than rendered page or card content;
-- clarify slice sizing, proportional evidence, checkpoint counting, commit
-  status, and documentation closure in `AGENTS.md`; leave implementation
-  sequencing to the future UI roadmap.
+Revise the first ordered candidate roadmap after audit so it names deltas from
+the installed baseline, removes overlapping/catch-all slices, assigns omitted
+UI obligations, bounds evidence cost, and preserves the full product
+specification as higher authority.
 
 ## Acceptance boundary
 
-This documentation cycle is ready when the UI specification and affected
-higher-level/provider authorities agree on forecast horizons and navigation,
-the fallback contract handles sparse/partial results truthfully, and the first
-implementation boundary is unambiguous. Named pages must remain visually clear
-without rendering numeric page ordinals, while accessibility semantics retain
-page identity, count, and position. It must not claim that the forecast horizon,
-Home redesign, theme architecture, Back behavior, or any new rendered result is
-implemented or verified.
-
-The slice rules must support independently observable prerequisites without
-scaffolding-only completion, include necessary verification in size estimates,
-and define a checkpoint after two production-changing slices. Commit identity
-must not imply verified behavior. This is a bounded documentation correction;
-no implementation slice is selected.
+`.codex/plans/ui-roadmap.md` must identify bounded, non-overlapping candidate
+deltas; distinguish the existing verified UI baseline from new work; distribute
+page-specific state/accessibility obligations into their owning slices; split
+navigation, forecast windows, marks, scenes, and supporting surfaces at
+meaningful acceptance boundaries; schedule every required two-slice checkpoint;
+and define minimal functional-plus-rendered evidence without cross-product
+matrices. It must state that this is not the complete 1.0 roadmap and recommend
+UI-01 without marking it `planned`.
 
 ## Intended tracked files
 
-- `AGENTS.md`
-- `docs/OXYGEN_UI_SPECIFICATION.md`
+- `.codex/plans/ui-roadmap.md`
 - `.codex/plans/current.md`
-- `.codex/cycles/history.md` after review
-
-Product/provider authority alignment remains in the committed v0.3 baseline.
+- `.codex/cycles/history.md`
 
 ## Evidence and checks
 
-Retained evidence for the committed v0.3 baseline:
-
-- Read the repository authorities, UI workflow, active roadmap sections, and
-  recent cycle state.
-- Inspected Base Art Sheet v0.2.
-- Checked the installed request/presentation limits and provider-neutral
-  mapping/cache paths without changing production code.
-- Rechecked official Open-Meteo forecast-hour parameters and MET Norway
-  short-/medium-range timestep behavior.
-- `git diff --check`, the untracked-new-file whitespace check, and the focused
-  terminology/authority search passed after the documentation edits.
-
-Current correction: reviewed `AGENTS.md`, UI specification sections 0.1, 0.2,
-0.7, 1, 7, 9, and 10, and this plan for consistent authority, sizing, evidence,
-cadence, and status wording. `git diff --check`, focused `rg` terminology review,
-and full documentation diff review passed, including the semantic-only
-page-ordinal correction. Recheck whitespace before commit.
-
-No Android build, unit test, connected test, emulator install, or screenshot
-acceptance is required because production and test source are unchanged.
+- Reviewed the UI Specification, full product specification, UI workflow,
+  README, provider template, recent cycle history, and current app/core
+  production boundaries.
+- Audited the first draft for specification gaps, blockers, existing-behavior
+  restatement, LLM slop, and verification/token waste, then revised its scope,
+  sequence, acceptance boundaries, and evidence policy.
+- `git diff --check`, explicit trailing-whitespace review for the untracked
+  roadmap, and focused roadmap terminology/dependency/checkpoint review passed.
+- No Android build, unit test, connected test, emulator, install, or screenshot
+  checks are applicable: this cycle changes documentation and planning files
+  only, so no UI behavior is implemented or verified.
 
 ## Out of scope
 
-- implementation-roadmap sequencing beyond naming the first bounded contract;
-- Kotlin, Compose, resource, test, theme-token, or asset changes;
-- installed forecast-horizon, Home, theme, effects, card, or Back behavior;
-- final token values, typefaces, component rendering, or screenshot matrices;
-- release, MVP, or Gate 30E status changes;
+- selecting or implementing UI-01 or any later candidate;
+- Kotlin, Compose, resource, provider, repository, cache, test, or asset changes;
+- changing the UI Specification, full product authority, or inactive MVP roadmap;
+- complete 1.0 scope, release, MVP, Gate 30E, or visual acceptance claims.
