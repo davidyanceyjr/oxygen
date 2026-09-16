@@ -3182,13 +3182,32 @@ class HomeDashboardUiTest {
         val description =
             "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit."
         composeRule.onAllNodesWithContentDescription(description).assertCountEquals(1)
+        val summaryBounds = composeRule.onNodeWithTag("home-current-summary")
+            .assertIsDisplayed()
+            .fetchSemanticsNode()
+            .boundsInRoot
+        assertTrue("Now summary should have non-empty bounds", summaryBounds.width > 0f && summaryBounds.height > 0f)
         composeRule.onAllNodesWithContentDescription("Rain showers").assertCountEquals(0)
         composeRule.onAllNodesWithContentDescription("65 deg F").assertCountEquals(0)
         composeRule.onNodeWithTag("home-current-mark", useUnmergedTree = true).assertExists()
+        composeRule.onAllNodesWithTag("home-current-mark").assertCountEquals(0)
         composeRule.onNodeWithText("Rain showers", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithText("65 deg F", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithText("H 73 deg F   L 54 deg F", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithTag("home-page-container").assertCustomActions("Show next page: Hourly")
+        composeRule.onNodeWithTag("home-current-summary").assertCustomActions()
+        composeRule.performPagerCustomAction("Show next page: Hourly")
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-hourly-entry-0")
+            .assertIsDisplayed()
+            .fetchSemanticsNode()
+            .also { node ->
+                assertTrue("First hourly card should have non-empty bounds", node.boundsInRoot.width > 0f && node.boundsInRoot.height > 0f)
+            }
+        composeRule.onNodeWithContentDescription(
+            "6 AM. Rain. 64 degrees Fahrenheit. 60 percent chance of precipitation.",
+        ).assertIsDisplayed()
         composeRule.writeSemanticsArtifact("current-summary-spoken-semantics.txt")
     }
 

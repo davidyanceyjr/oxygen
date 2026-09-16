@@ -1518,3 +1518,78 @@ accessibility closure, release readiness, or MVP completion.
 
 Post-commit checks: `git diff --check` passed before commit; no Gradle or
 connected checks were rerun because source and test inputs were unchanged.
+
+### 2026-09-16-slice-30e-p2-home-talkback-data-focus-semantics
+
+Status: implemented; focused boundary passed; installed speech observation
+pending
+Mode: bounded Compose semantics repair and installed production recheck
+Slice: 30E-P2, Home TalkBack Data-Focus Semantics
+
+Result:
+
+- Added the standalone full-width `home-current-summary` reading target and
+  removed the merged weather description from the decorative current mark.
+  Pager and Hourly semantics remain unchanged.
+- The focused connected case completed 1/1 with 0 skipped and 0 failed on API
+  37. It verifies the summary description/bounds, absence of a merged mark
+  node and summary actions, the Hourly action, and the first Hourly card.
+- The installed production path loaded real Chicago/Open-Meteo data. Native
+  hierarchy evidence exposed the corrected summary description at non-empty
+  bounds. Human TalkBack speech was not exercised in this session, so P2 is
+  not verified and Gate 30E remains deferred/unverified.
+
+Evidence and limits:
+
+- Artifacts: `.codex/test-artifacts/2026-09-16-slice-30e-p2-home-talkback-data-focus-semantics/`.
+- Semantics artifact retrieval was attempted after the test, but teardown had
+  removed the package (`run-as: unknown package`).
+- Passed `:app:compileDebugKotlin :app:compileDebugAndroidTestKotlin`,
+  `:app:testDebugUnitTest :core:testDebugUnitTest`, `:app:assembleDebug`, and
+  `git diff --check`. The app was cleared, the emulator stopped, and final
+  ADB state was captured.
+
+Commit state: uncommitted; source and documentation changes remain for review.
+
+### 2026-09-16-slice-30e-p2-home-talkback-data-focus-semantics-installed-blocker
+
+Status: implemented; focused summary and Hourly-card boundaries verified;
+installed TalkBack action traversal deferred for remote-control logistics
+Mode: bounded visible API-37 TalkBack production journey
+Slice: 30E-P2, Home TalkBack Data-Focus Semantics
+
+Result:
+
+- One candidate APK install used SHA-256
+  `1a41d5bff0fa2a738d67321d50c5dbe2f5267a7fb41030a931b28b1efa7344cd`.
+  Oxygen loaded real Chicago/Open-Meteo Home data, and the native hierarchy plus
+  green TalkBack focus outline exposed the new full-width Now summary.
+- The user heard the independent Android TTS sample. For Oxygen, the user
+  reported hearing `72 degrees` followed by the daily high and low and judged
+  it intended; no additional speech words were inferred.
+- A horizontal TalkBack gesture was intercepted by the pager and changed to
+  Hourly directly, so it did not verify the named `Show next page: Hourly`
+  custom action. The deterministic focused connected case had already verified
+  that named action and the first Hourly-card semantics; the Lead Project
+  Engineer concurred that the remaining installed traversal gap is logistical
+  remote control of the emulator, not a product failure. The direct installed
+  Hourly screen remains excluded from TalkBack acceptance evidence.
+
+Evidence and limits:
+
+- Artifacts and ledger: `.codex/test-artifacts/2026-09-16-slice-30e-p2-home-talkback-data-focus-semantics/installed-talkback-journey/`.
+- The platform control produced a 2,113,496-byte capture and the user heard
+  it. Real Home, native hierarchies, focus screenshots, logcat, package state,
+  and restoration records are retained.
+- A pre-existing Pixel Launcher ANR dialog was dismissed by force-stopping the
+  launcher before Settings setup. The first cleanup attempt rejected an empty
+  accessibility-service argument; a cleanup-only emulator boot then deleted
+  the service setting and verified `accessibility_enabled=0` and
+  `touch_exploration_enabled=0` before shutdown. The acceptance journey was not
+  retried.
+- Focused connected, compile, unit-test, assembly, and diff checks were not
+  rerun because source and test inputs were unchanged and prior passing results
+  remain valid.
+
+Commit state: uncommitted; the focused Hourly-card test is verified, while the
+installed TalkBack action traversal and Gate 30E remain unverified.

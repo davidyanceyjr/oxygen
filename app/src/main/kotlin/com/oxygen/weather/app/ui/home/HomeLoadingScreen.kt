@@ -572,17 +572,19 @@ private fun NowPage(
                 )
             }
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("home-current-summary")
+                    .clearAndSetSemantics {
+                        contentDescription = dashboard.current.spokenDescription
+                    },
                 horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 Box(
                     modifier = Modifier
                         .size(markSize)
                         .clip(RoundedCornerShape(8.dp))
-                        .testTag("home-current-mark")
-                        .semantics {
-                            contentDescription = dashboard.current.spokenDescription
-                        },
+                        .testTag("home-current-mark"),
                 ) {
                     WeatherConditionMark(
                         condition = dashboard.current.conditionIdentity,
