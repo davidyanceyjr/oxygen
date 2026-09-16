@@ -64,9 +64,31 @@ boundary. Gate 30C3 is committed as the deterministic alert evidence and
 documentation closure. Slice 30D1 is committed at `78ecb84`; Slice 30D2 is
 committed at `2955aa5` as the Appearance layout and environment resilience
 repair; Gate 30D3 is committed. Gate 30E is deferred as optional first-release
-follow-up per the 2026-09-14 user decision; Slice 33A's audit, Slice 33B's
-manifest repair, and the provider-disclosure privacy audit are committed at
-`da3a9a3`.
+follow-up per the 2026-09-14 user decision. Its resumed work is decomposed into
+Slice 30E-P1 for the installed Open-Meteo recovery and Slice 30E-P2 for
+TalkBack/TTS runtime readiness before any later closure attempt. Slice 30E-P1
+is verified without a product change: after one launcher/System UI-blocked
+attempt, a fresh bounded API-37 session completed normal Shallowater search and
+selection, real Open-Meteo current/hourly/daily presentation, production cache
+identity, restoration, and shutdown. The prior `NetworkUnavailable` did not
+reproduce, so no Oxygen defect or implementation change is claimed. Slice
+30E-P2 is selected as a planned slice in `.codex/plans/current.md` and its
+2026-09-16 bounded run initially appeared blocked at the independent platform
+speech boundary because the monitor was effectively silent, but the user later
+confirmed hearing the synthesized voice from the Android TTS Play control.
+Platform speech is therefore human-confirmed retrospectively. A fresh retry-2
+session then installed the unchanged APK once, reached the combined Now
+summary and named Hourly action through TalkBack focus, and visibly activated
+Hourly on real Chicago/Open-Meteo data. The final user observation corrected
+the semantic interpretation: TalkBack announced page-level `Oxygen` and page
+identity/page names, while the Now and Hourly weather-data nodes were not
+confirmed as active TalkBack focus. The user answered NO to both semantic
+blockers. P2 remains unverified, and this result does not yet distinguish a
+test-navigation error from an Oxygen semantics defect. No product defect or
+source change is claimed. Slice 33A's
+audit, Slice 33B's manifest repair, and the provider-disclosure privacy audit
+are committed
+at `da3a9a3`.
 Gate 34A was committed at `64d4908`; Gate 34B and Gate 35A passed in one
 verification session, with separate acceptance boundaries and evidence. Gate
 35A's four zero-completion records were repaired and committed at `f84e7d4`.
@@ -95,6 +117,10 @@ is retained below:
 19. Slice 30D2 — Appearance Layout and Environment Resilience
 20. Gate 30D3 — Appearance Accessibility Evidence and Document Sync
 21. Gate 30E — Installed TalkBack and Accessibility Closure (deferred; optional for first release)
+
+Resumed Gate 30E repair order: Slice 30E-P1 must verify the exact installed
+Shallowater Open-Meteo boundary before Slice 30E-P2 addresses TalkBack/TTS
+runtime readiness. Neither repair slice closes Gate 30E by itself.
 
 Do not start a later entry merely because it appears here. Each entry remains
 `specified` until selected in `.codex/plans/current.md`. A production defect

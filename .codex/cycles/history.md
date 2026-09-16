@@ -1208,3 +1208,296 @@ Evidence and limits:
   source changes.
 
 Commit state: uncommitted partial-gate documentation; no commit was requested.
+
+### 2026-09-15-gate-30e-closure-resolution
+
+Status: blocked during bounded installed attempt; Gate 30E remains unverified
+Mode: bounded installed TalkBack, live-alert, and production-path evidence
+attempt
+Slice: Gate 30E, Installed TalkBack and Accessibility Closure
+
+Result:
+
+- NWS validation found one current `status=actual` Severe Flash Flood Warning
+  for searchable Shallowater, Texas at `33.68897,-101.99823`, fetched at
+  19:33 CDT. The alert was issued by NWS Lubbock TX, affected Lubbock County,
+  and expired at 21:00 CDT.
+- `DISPLAY=:0 xdpyinfo` and `pactl info` passed. One visible API-37
+  `oxygen_starter` session booted, the current debug APK installed once, and
+  TalkBack bound with touch exploration enabled.
+- Oxygen's normal search selected Shallowater, but its production forecast path
+  remained in the truthful offline/no-cache state. The emulator reported
+  validated cellular and Wi-Fi networks and a successful ping; the cause of
+  the app/provider failure was not established. No alert summary or detail was
+  reached.
+- TalkBack focus and audio artifacts were captured, but Android logged `TTS is
+  not ready`; no human-confirmed speech transcript was obtained. The gate's
+  acceptance boundary therefore failed without a product correction.
+
+Evidence:
+
+- Alert validation, selected-location screens, production state, TalkBack
+  diagnostics/audio, restoration state, and the command outputs are under
+  `.codex/test-artifacts/2026-09-15-gate-30e-closure-resolution/`.
+- Restoration returned Chicago as the selected location, removed the temporary
+  Shallowater saved location, disabled TalkBack/touch exploration, preserved
+  permissions/display settings, stopped the emulator, and ended with no online
+  ADB device.
+- No Kotlin, Compose, provider, persistence, manifest, or production behavior
+  changed. No compile, unit, connected-test, or assembly rerun was needed after
+  the unchanged APK installation.
+
+Limits and next action:
+
+- Gate 30E remains unverified. Live alert summary/detail traversal, human
+  speech transcript, and TalkBack Appearance traversal were not completed in
+  this attempt. Do not claim release readiness or accessibility closure.
+- Select a separately named bounded investigation for the installed
+  Open-Meteo failure and TTS initialization before repeating this gate.
+
+Commit state: uncommitted documentation/evidence handoff; no commit was requested.
+
+### 2026-09-15-slice-30e-p1-installed-open-meteo-recovery-attempt
+
+Status: planned; blocked at the installed acceptance boundary
+Mode: bounded production Open-Meteo recovery investigation
+Slice: 30E-P1, Installed Open-Meteo Forecast Recovery
+
+Result:
+
+- Reflection against the compiled request/client contract generated the exact
+  Shallowater request. One host `curl --get --data-urlencode` control returned
+  HTTP 200 in 0.461988 seconds with a 9,002-byte JSON body, ruling out a
+  currently malformed or provider-rejected query at the host boundary.
+- One API-37 `oxygen_starter` session reached the recovery preflight. The
+  unchanged debug APK was installed once and Oxygen launched without an app
+  crash or ANR. Its production path refreshed the retained Chicago location
+  through Open-Meteo with current, 48 hourly, and 10 daily rows.
+- The first installed UI capture was blocked by a System UI not-responding
+  modal. One non-destructive Wait action was followed immediately by a Pixel
+  Launcher not-responding modal. Android recorded a 5,000 ms launcher focus
+  timeout plus launcher/System UI startup/service timeouts, so the bounded
+  attempt stopped without another launch, restart, retry, or Shallowater
+  selection.
+
+Evidence and limits:
+
+- Request manifest, host response/hash/headers, pre/final app state, screenshots,
+  hierarchies, platform ANR/logcat/window diagnostics, emulator recovery output,
+  and the verification ledger are under
+  `.codex/test-artifacts/2026-09-15-slice-30e-p1-installed-open-meteo-recovery/`.
+- The exact installed Shallowater request was not issued, so the prior
+  `NetworkUnavailable` result was neither reproduced nor closed. No Oxygen
+  defect, red test, production change, or verified recovery is claimed.
+- Selected-location and theme records remained byte-identical; Chicago stayed
+  the only saved/cache location; coarse location and accessibility stayed
+  disabled; emulator settings were unchanged; shutdown ended with no online
+  ADB device. Gradle checks were skipped because production/test inputs did not
+  change and the failure was the bounded platform timeout.
+
+Next action: recover the emulator launcher/System UI input path, then resume
+30E-P1 in one fresh bounded session. Do not select 30E-P2 yet.
+
+Commit state: uncommitted blocked-attempt documentation; no commit was made.
+
+### 2026-09-15-slice-30e-p1-installed-open-meteo-recovery
+
+Status: verified at the installed acceptance boundary; uncommitted
+Mode: resumed bounded production Open-Meteo recovery verification
+Slice: 30E-P1, Installed Open-Meteo Forecast Recovery
+
+Result:
+
+- After the user recovered the API-37 emulator to its main screen, preflight
+  found a responsive launcher and no ANR since boot. The unchanged debug APK,
+  SHA-256
+  `9c27f1c390b15e57f3fec9951a5e3fa82f001ba2d9c46120d0c65a7552c4757a`,
+  was installed exactly once in the fresh bounded session.
+- Normal Oxygen search returned Shallowater, Texas at
+  `33.68897,-101.99823`, `America/Chicago`. One `Use now` activation reached
+  ready Home through Open-Meteo with real current conditions and truthful
+  source/update/provenance. Hourly exposed six visible entries and Daily six
+  visible dates from the same loaded forecast.
+- The production Room cache keyed the result to Shallowater and contained
+  Open-Meteo current data plus 48 hourly and 10 daily rows. No sample data,
+  fixture, hidden route, another location's cache, or MET Norway fallback
+  satisfied the boundary. Android continued to report no ANR.
+- The compiled exact-request host control had already returned HTTP 200 in
+  0.461988 seconds with a 9,002-byte body. Because the exact normal installed
+  path now also passed without a source/test change, the prior
+  `NetworkUnavailable` did not reproduce and is classified as a
+  non-reproducible external runtime/transient. No Oxygen defect, red test, or
+  production repair is justified; this slice is verified, not `implemented`.
+
+Evidence and restoration:
+
+- Now, Hourly, Daily, hierarchy, logcat, request/cache identity, pre/final
+  state, and the complete command ledger are under
+  `.codex/test-artifacts/2026-09-15-slice-30e-p1-installed-open-meteo-recovery/`.
+- Chicago was restored as the selected and sole saved location; no Shallowater
+  saved row was created. Selected-location and theme files were byte-identical
+  to preflight. Coarse location and accessibility remained disabled;
+  network/display settings were preserved; the emulator was stopped; and ADB
+  ended with no online device.
+- No Kotlin, Compose, provider, persistence, manifest, APK, or test input
+  changed. Compile, unit, connected, and assembly checks were therefore not
+  rerun. `README.md`, `docs/OXYGEN_FULL_SPECIFICATION.md`, and
+  `docs/data-sources/OPEN_METEO_FORECAST.md` required no change because the
+  recovered result matches their existing contracts.
+
+Next action: select Slice 30E-P2 for separately bounded TalkBack/TTS runtime
+readiness. Do not treat either repair slice as Gate 30E closure.
+
+Commit state: uncommitted verified-evidence/documentation handoff; no commit
+was requested.
+
+### 2026-09-16-slice-30e-p2-talkback-tts-runtime-readiness
+
+Status: planned; platform speech retrospectively human-confirmed; Oxygen
+boundary pending
+Mode: bounded installed TalkBack/TTS runtime-readiness attempt
+Slice: 30E-P2, TalkBack/TTS Runtime Readiness
+
+Result:
+
+- Host display/PulseAudio preflight passed. One visible API-37
+  `oxygen_starter` session reached `emulator-5554`, boot completion, and
+  package-manager readiness. Device/package/settings/accessibility baseline
+  state was captured before changes; the attempted Oxygen app-data snapshots
+  were zero-byte files, so selected-location, saved-location, and Appearance
+  values were not independently retained in this session.
+- TalkBack was enabled through Android Accessibility Settings and was enabled,
+  bound, and touch-exploring. Google TTS initialized after startup
+  `TTS is not ready` messages; later synthesis and accessibility audio-focus
+  events were recorded.
+- The normal Android Text-to-speech Settings `Play` control generated Google
+  TTS synthesis, but the PulseAudio monitor captured 2,115,156 bytes over
+  11.99 seconds at `mean_volume=-91.0 dB` and `max_volume=-67.4 dB`. The user
+  later directly confirmed hearing the audio and synthesized voice, so the
+  platform speech requirement is satisfied retrospectively; the monitor is
+  retained as a non-authoritative diagnostic.
+- Oxygen was not installed or exercised after that failure. No Kotlin,
+  Compose, provider, persistence, manifest, dependency, test, or APK input
+  changed; no Oxygen defect is established.
+
+Evidence and restoration:
+
+- Preflight, Settings screenshots/hierarchies, TalkBack/TTS diagnostics,
+  synthesis/audio logcat, raw audio and analysis, APK identity, final state,
+  shutdown output, and the ledger are under
+  `.codex/test-artifacts/2026-09-15-slice-30e-p2-talkback-tts-runtime-readiness/`.
+- TalkBack, enabled/bound services, and touch exploration returned to disabled
+  baseline values. TTS/settings, locale, volumes, animation scales,
+  permissions, and Oxygen app data were unchanged. The emulator stopped and
+  final `adb devices -l` showed no online device.
+- `git diff --check` passed and `git status --short` recorded only the active
+  plan, roadmap, and history documentation changes. Gradle, unit, connected,
+  and assembly checks were skipped because no source, test, resource, manifest,
+  dependency, or APK input changed.
+
+Next action: run one fresh bounded session, repeat the independent Android TTS
+control, then install and exercise Oxygen's Now-to-Hourly boundary. Gate 30E
+remains deferred and unverified.
+
+Commit state: uncommitted blocked-attempt documentation; no commit was made.
+
+### 2026-09-16-slice-30e-p2-human-audio-correction
+
+Status: platform-control result corrected; P2 remains unverified
+Mode: user-supplied human observation correction
+Slice: 30E-P2, TalkBack/TTS Runtime Readiness
+
+The user reported hearing the Android Text-to-speech Settings `Play` control
+and hearing a synthesized voice during the prior bounded session. This
+supersedes the earlier missing-human-confirmation classification for the
+independent platform control. The low-level PulseAudio monitor remained nearly
+silent and is not used as the human oracle. Oxygen was not installed or
+exercised in that session, so P2 still requires one fresh session containing
+the platform control and the Oxygen Now-summary/Now-to-Hourly traversal.
+
+No production or test source changed. The prior session's restoration and
+shutdown evidence remain valid; the retained zero-byte Oxygen app-data
+snapshots remain an evidence limitation for that attempt.
+
+### 2026-09-16-slice-30e-p2-retry-2-oxygen-boundary
+
+Status: planned; platform speech and Oxygen semantic/action boundary passed;
+human Oxygen speech observation pending
+Mode: fresh bounded installed TalkBack/TTS retry
+Slice: 30E-P2, TalkBack/TTS Runtime Readiness
+
+Result:
+
+- One fresh visible API-37 `oxygen_starter` session passed host/device
+  preflight. TalkBack was enabled through Android Accessibility Settings,
+  bound, and touch-exploring. Google TTS initialized after startup messages.
+- The Android Text-to-speech Settings `Play` control was repeated, and the
+  user confirmed hearing the audio and synthesized voice. This satisfies the
+  independent platform speech boundary; the low-level monitor remains only
+  corroborating evidence.
+- The unchanged debug APK was installed exactly once. Oxygen launched through
+  the production path to real Chicago Home data: Cloudy, 70°F, feels like 74°F,
+  Open-Meteo provenance, and six visible hourly entries after navigation.
+- TalkBack focus reached the combined Now summary and named Hourly action.
+  Activating the focused action visibly reached `Hourly, Page 2 of 4`. Evidence
+  is under
+  `.codex/test-artifacts/2026-09-15-slice-30e-p2-talkback-tts-runtime-readiness/retry-2/`.
+- Preference contents were byte-identical before and after the run. TalkBack,
+  touch exploration, and bound/enabled services were restored; Oxygen was
+  force-stopped; the emulator stopped; and ADB ended with no online device.
+- The user has not separately recorded the words heard for the Oxygen Now
+  summary and Hourly action. No transcript is fabricated, so P2 remains
+  unverified although its production semantic/action boundary passed. No
+  product or test source changed.
+
+Next action: confirm from the human observation that Now included the visible
+current-condition meaning and Hourly named its destination, then close P2's
+evidence state without implying Gate 30E closure.
+
+Commit state: uncommitted blocked/pending-observation documentation; no commit
+was made.
+
+### 2026-09-16-slice-30e-p2-human-observation-detail
+
+Status: planned; human Oxygen semantic observation partial
+Mode: user-supplied non-verbatim speech observation
+Slice: 30E-P2, TalkBack/TTS Runtime Readiness
+
+The user reported that every TalkBack announcement began with the application
+name, followed by speech dependent on the focused card/page. This records the
+announcement structure and confirms audible app speech, but does not establish
+from memory that the Now announcement included the visible current-condition
+meaning or that the Hourly announcement named its destination. P2 remains
+unverified; no transcript or semantic match is fabricated.
+
+Next action: obtain those two semantic confirmations, then close the P2
+evidence state without implying Gate 30E closure.
+
+### 2026-09-16-slice-30e-p2-final-test-correction
+
+Status: planned; final semantic attempt invalid for the required data-focus boundary
+Mode: user-supplied correction to installed TalkBack test interpretation
+Slice: 30E-P2, TalkBack/TTS Runtime Readiness
+
+The user answered NO to both required blockers: Now did not announce the
+current-condition meaning, and Hourly did not announce the named destination.
+The user also clarified that each TalkBack activation announced the page-level
+application name `Oxygen` followed by the right-aligned page identity, and page
+changes announced `Now` or `Hourly`. The weather-data area was not focused while
+TalkBack remained active, so the prior run did not accurately exercise the
+semantic boundary.
+
+This is a test-procedure correction, not yet an Oxygen defect finding. The
+production semantics may have been supplied correctly but never reached, or
+the data nodes may be missing/incorrect; a corrected traversal must keep
+TalkBack active, visibly establish focus on the Now data node and Hourly
+destination/data node, and capture the human result before any repair slice is
+opened. Retry-3 artifacts are under
+`.codex/test-artifacts/2026-09-15-slice-30e-p2-talkback-tts-runtime-readiness/retry-3-final-confirmation/`.
+
+No production or test source changed. TalkBack and device state were restored,
+the emulator stopped, ADB ended with no online device, and `git diff --check`
+passed. Gate 30E remains deferred and unverified.
+
+Next action: plan the corrected data-focus traversal only; do not claim P2
+verified or diagnose an Oxygen semantics defect from this run.
