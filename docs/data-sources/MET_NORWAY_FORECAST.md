@@ -10,6 +10,15 @@
 - **Caching rules:** HTTP cache guidance is provider-specific and takes precedence where appropriate. Persist at least response `Expires`, `Last-Modified`, `ETag` if present, fetch time, response coordinates/elevation, provider `meta.updated_at`, and provider ID with cached forecast data. Do not request again before `Expires` unless the user explicitly refreshes and the repository policy permits it. Use `If-Modified-Since` for revalidation when `Last-Modified` is known. Treat HTTP 304/not-modified as cache-not-modified and keep the existing cached forecast with refreshed cache metadata. If provider cache headers are missing or unusable, fall back to Oxygen's cache policy targets: current about 15 minutes foreground refresh with about 2 hours stale tolerance, hourly about 30 minutes refresh with about 6 hours stale tolerance, and daily about 2 hours refresh with about 24 hours stale tolerance. UI/cache consumers receive only provider-neutral freshness/provenance state, not raw MET Norway headers.
 - **Fields used:** Request one Locationforecast compact response for a single explicit `WeatherLocation` with WGS84 latitude/longitude and optional whole-meter altitude. Oxygen must derive Home current, hourly, daily, metric, source/update, provenance, stale, and cache needs from the GeoJSON `properties.meta` and `properties.timeseries` envelope.
 
+  Locationforecast does not accept a client-selected forecast horizon and its
+  medium-range response can use less-dense timesteps than its short-range
+  hourly period. For Oxygen's target horizon, retain actual returned instants
+  inside the rolling 72-hour interval and derive at most the first ten actual
+  local forecast dates. Do not interpolate six-hour instants into hourly data,
+  repeat values, or fabricate absent dates. A shorter or less-dense response is
+  a truthful partial horizon and must expose its final available local hour or
+  date to presentation.
+
   Required envelope and metadata:
   `type`, `geometry.coordinates` as longitude/latitude/altitude, `properties.meta.updated_at`, `properties.meta.units`, and sorted `properties.timeseries`.
 

@@ -1594,3 +1594,38 @@ Evidence and limits:
 
 Commit state: committed in `b63b0fe`; the focused Hourly-card test is verified,
 while the installed TalkBack action traversal and Gate 30E remain unverified.
+
+### 2026-09-16-ui-specification-review-resolution
+
+Status: specified; documentation ready; uncommitted
+Mode: documentation-only UI contract and authority alignment
+
+Result:
+
+- Finalized Oxygen UI Specification Version 0.3 from the Draft 0.2 audit
+  resolutions and retained the Base Art Sheet v0.2 as direction rather than a
+  runtime asset or implementation claim.
+- Aligned the product and provider authorities to the target rolling 72-hour
+  hourly and ten-day daily horizons. Open-Meteo is specified to request those
+  horizons in the first later implementation slice; MET Norway retains actual
+  sparse/partial timestamps without padding or interpolation.
+- Resolved Standard Home window, navigation, Back, card-boundary, appearance,
+  missing-data, accessibility, and evidence rules. Remaining type, token,
+  palette, responsive, component, and screenshot-matrix choices are delegated
+  to the bounded slices that first need them.
+
+Evidence and limits:
+
+- Read repository authorities, the UI workflow, active roadmap sections, and
+  recent cycle state; inspected Base Art Sheet v0.2 and current provider and
+  presentation limits; rechecked official Open-Meteo and MET Norway horizon
+  documentation.
+- `git diff --check`, the untracked-new-file whitespace check, and the focused
+  terminology/authority search passed.
+- No Gradle, unit, connected, emulator, install, or screenshot check ran
+  because no production or test source changed. The installed app still asks
+  Open-Meteo for 48 hours and presents 12 hourly entries; no new UI behavior is
+  implemented or verified.
+
+Commit state: uncommitted; next work is a separate roadmap-sequencing cycle,
+starting with the bounded forecast-horizon data contract.
