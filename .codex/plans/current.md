@@ -1,10 +1,10 @@
 # Slice 30E-P2 — Home TalkBack Data-Focus Semantics
 
-**Status:** implemented; focused summary and Hourly-card boundaries verified; installed TalkBack action traversal deferred for remote-control logistics
+**Status:** committed at `b63b0fe`; focused summary and Hourly-card boundaries verified; installed TalkBack action traversal deferred for remote-control logistics
 **Mode:** bounded Compose semantics repair, one connected regression case, and one installed TalkBack journey
 **Cycle ID:** `2026-09-16-slice-30e-p2-home-talkback-data-focus-semantics`
-**Baseline:** the worktree contains the uncommitted P2 source/test draft. Its
-focused connected case completed 1/1 on API 37; this execution also confirmed
+**Baseline:** commit `b63b0fe` contains the P2 source/test slice. Its focused
+connected case completed 1/1 on API 37; this execution also confirmed
 the Android TTS control and the installed Now summary focus on real Chicago /
 Open-Meteo data, but did not verify the named Hourly action path.
 **Next action:** preserve the focused automated verification and defer any
@@ -195,9 +195,10 @@ Only after the implementation and installed boundary are complete:
    `docs/OXYGEN_FULL_SPECIFICATION.md` with the retained evidence. Preserve
    every unrelated unverified limitation and do not claim release-candidate,
    MVP completion, signing, publication, or release readiness.
-4. If committed, use a descriptive subject and body that state the semantic
-   behavior, exact evidence, limits, and skipped checks; then perform the
-   post-commit authority sync.
+4. Commit `b63b0fe` records the semantic behavior, exact evidence, limits, and
+   skipped checks. The post-commit authority sync is complete; README and the
+   specification remain unchanged because their Gate 30E-unverified claims are
+   still accurate.
 
 ## Intended tracked files
 

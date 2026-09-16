@@ -7,7 +7,8 @@ Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
 Revised: 2026-09-16
 Reconciled against local `origin/main` ref before this sync: `5661877`
-Synchronized through the Slice 30E-P2 evidence/documentation commit `21e188c`,
+Synchronized through the Slice 30E-P2 implementation/documentation commit
+`b63b0fe`,
 after Gate 30C3 alert evidence/documentation closure, Slice 30C2 implementation
 `70304b8`, and Slice 33B manifest repair `02f668f`; prior baseline
 roadmap synchronization remains recorded through Slice 30B1A3B1 implementation
@@ -73,8 +74,9 @@ attempt, a fresh bounded API-37 session completed normal Shallowater search and
 selection, real Open-Meteo current/hourly/daily presentation, production cache
 identity, restoration, and shutdown. The prior `NetworkUnavailable` did not
 reproduce, so no Oxygen defect or implementation change is claimed. Slice
-30E-P2 is selected as an implemented Compose semantics repair with an incomplete
-installed TalkBack speech recheck in `.codex/plans/current.md`. Its 2026-09-16
+30E-P2 is committed at `b63b0fe` as an implemented Compose semantics repair
+with an incomplete installed TalkBack speech recheck in
+`.codex/plans/current.md`. Its 2026-09-16
 bounded run initially
 appeared blocked at the independent platform speech boundary because the
 monitor was effectively silent, but the user later confirmed hearing the

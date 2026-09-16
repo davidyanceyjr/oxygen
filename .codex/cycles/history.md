@@ -1549,7 +1549,8 @@ Evidence and limits:
   `git diff --check`. The app was cleared, the emulator stopped, and final
   ADB state was captured.
 
-Commit state: uncommitted; source and documentation changes remain for review.
+Commit state: committed in `b63b0fe`; the post-commit plan, roadmap, and live
+history synchronization remains represented by the final entry below.
 
 ### 2026-09-16-slice-30e-p2-home-talkback-data-focus-semantics-installed-blocker
 
@@ -1591,5 +1592,5 @@ Evidence and limits:
   rerun because source and test inputs were unchanged and prior passing results
   remain valid.
 
-Commit state: uncommitted; the focused Hourly-card test is verified, while the
-installed TalkBack action traversal and Gate 30E remain unverified.
+Commit state: committed in `b63b0fe`; the focused Hourly-card test is verified,
+while the installed TalkBack action traversal and Gate 30E remain unverified.
