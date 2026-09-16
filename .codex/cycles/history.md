@@ -1597,7 +1597,7 @@ while the installed TalkBack action traversal and Gate 30E remain unverified.
 
 ### 2026-09-16-ui-specification-review-resolution
 
-Status: specified; documentation ready; uncommitted
+Status: specified; documentation ready; committed in `aafefe6`
 Mode: documentation-only UI contract and authority alignment
 
 Result:
@@ -1627,5 +1627,6 @@ Evidence and limits:
   Open-Meteo for 48 hours and presents 12 hourly entries; no new UI behavior is
   implemented or verified.
 
-Commit state: uncommitted; next work is a separate roadmap-sequencing cycle,
-starting with the bounded forecast-horizon data contract.
+Commit state: committed in `aafefe6`; next work is a separate
+roadmap-sequencing cycle, starting with the bounded forecast-horizon data
+contract.

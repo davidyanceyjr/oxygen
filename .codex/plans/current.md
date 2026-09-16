@@ -1,11 +1,11 @@
 # Oxygen UI Specification — Version 0.3
 
-**Status:** specified; review/audit resolutions incorporated; not implemented
+**Status:** specified; documentation committed in `aafefe6`; not implemented
 or visually verified
 **Mode:** documentation-only UI contract and authority alignment
 **Cycle ID:** `2026-09-16-ui-specification-review-resolution`
-**Baseline:** committed application state through `5c6ed6b`; Gate 30E remains
-deferred and unverified.
+**Baseline:** committed application state through `5c6ed6b`; this documentation
+cycle is committed in `aafefe6`; Gate 30E remains deferred and unverified.
 **Next action:** derive an ordered implementation roadmap from
 [`OXYGEN_UI_SPECIFICATION.md`](../../docs/OXYGEN_UI_SPECIFICATION.md), beginning
 with the bounded forecast-horizon data contract.
