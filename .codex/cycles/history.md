@@ -1630,3 +1630,39 @@ Evidence and limits:
 Commit state: committed in `aafefe6`; next work is a separate
 roadmap-sequencing cycle, starting with the bounded forecast-horizon data
 contract.
+
+### 2026-09-16-ui-specification-slice-rule-clarifications
+
+Status: documentation reviewed and committed; UI behavior specified
+Mode: documentation-only specification and operating-rule clarification
+
+Result:
+
+- Clarified independently observable slice outcomes, production-path
+  prerequisites, protection against scaffolding-only splits, and the roughly
+  40% context estimate including evidence, broad checks, and closure.
+- Required evidence proportional to the changed boundary, with necessary
+  verification included in the same slice. Defined the checkpoint after two
+  production-changing slices, counting repairs/refactors and resetting after
+  the test/documentation cycle completes.
+- Separated behavior status from commit identity and required post-commit
+  consistency review without recursive hash-only documentation commits.
+- Added the UI specification to the authority order and left sequencing to
+  the roadmap. No roadmap is active during UI specification finalization;
+  `ui-roadmap.md` is intended but not created, and the MVP roadmap is inactive.
+- Retained the pending UI rule: page names stay visible; numeric page count
+  and position remain available through accessibility semantics only.
+
+Evidence and limits:
+
+- Reviewed the complete documentation diff and focused `rg` terminology
+  results across `AGENTS.md`, the UI specification, and the active plan;
+  `git diff --check` passed. Final whitespace check is repeated after this
+  completion entry because the documentation inputs changed.
+- No production/test files changed. No Gradle build, unit test, connected
+  test, emulator, install, or screenshot acceptance ran for these Markdown
+  changes. No new runtime behavior is claimed; the generated Now concepts
+  are design references, not installed-app verification artifacts.
+
+Commit state: committed in the current documentation commit; roadmap creation
+and implementation are separate subsequent work.

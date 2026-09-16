@@ -54,11 +54,15 @@ path.
 
 ## Tracking Workflow
 
-Use four components to track project state:
+Use these components to track project state:
 
-- `git commit` records the last completed implementation.
+- `git commit` records a versioned change; its identity does not establish verification.
 - `.codex/plans/current.md` holds the active slice and its next action.
-- `.codex/plans/mvp-roadmap.md` lists ordered candidate slices.
+- The active roadmap named in `.codex/plans/current.md` lists ordered candidate
+  slices. Record when no roadmap is active. For the UI program,
+  `.codex/plans/ui-roadmap.md` is the intended roadmap; until it is created and
+  selected, UI specification finalization remains the active work.
+  `.codex/plans/mvp-roadmap.md` is inactive for this program.
 - `.codex/cycles/history.md` records completed slices and evidence.
 - `.codex/cycles/archive/` holds older live-history material when the live file grows too large.
 
@@ -77,13 +81,19 @@ Use this precedence unless a more specific nested `AGENTS.md` exists:
 2. More specific nested `AGENTS.md` or override instructions.
 3. `docs/OXYGEN_FULL_SPECIFICATION.md`.
 4. `README.md` and data-source provider contracts.
-5. Active cycle state in `.codex/plans/current.md`.
-6. Existing tests and production behavior.
-7. Historical notes in `.codex/cycles/history.md`.
+5. `docs/OXYGEN_UI_SPECIFICATION.md` for presentation and interaction requirements,
+   subject to the full product specification and provider contracts above.
+6. Active cycle state in `.codex/plans/current.md` and its named active roadmap.
+7. Existing tests and production behavior.
+8. Historical notes in `.codex/cycles/history.md`.
 
 Tests and current behavior are evidence of implementation, not permission to silently contradict the intended contract.
 
 The specification constrains behavior and architecture; it does not choose or sequence slices. Slice selection comes from the active plan and roadmap, which should be derived from the planning sources you trust.
+
+Roadmap entries are ordered candidates and remain `specified` until selected
+in `.codex/plans/current.md`. Only that plan selects one bounded active slice
+as `planned`; roadmap presence alone does not authorize implementation.
 
 When authorities materially conflict, stop implementation, identify the exact conflict, and resolve or update the higher-level authority before coding.
 
@@ -108,20 +118,32 @@ When blocked, report the exact blocker. Do not replace failed implementation wit
 
 ## Slice Size Rule
 
-- One bounded user-visible behavior per slice.
+- One bounded, independently observable outcome per slice. Product slices
+  deliver user-visible behavior. Prerequisite slices must exercise an existing
+  production path and name the downstream behavior they enable. Refactoring,
+  test-only, and documentation cycles use their applicable acceptance boundary.
 - Prefer one primary production path and one primary acceptance boundary.
 - Split a slice when it needs multiple independent state machines, new persistence layers, unrelated UI surfaces, or platform adapters.
-- Keep doc-sync work separate from product scope; use it to close a committed slice, not to widen it.
-- Target each active implementation slice to complete discovery, contract,
-  implementation, focused evidence, real-path exercise, review, and ready
-  status within roughly 40% of the available session context.
+- Keep doc-sync work separate from product scope; use it for accurate closure
+  without widening the implementation outcome.
+- Retain roughly 40% of available session context as a planning target for
+  discovery, contract, design, implementation, focused evidence, real-path
+  exercise, broad checks, review, documentation closure, and handoff. Record
+  a brief sizing rationale; this is an estimate, not a precise measurement.
 - If a planned slice is likely to exceed that context target, split it before
   coding even when the resulting work creates more roadmap entries.
 - Split by independently observable boundaries. A slice should usually include
-  no more than one of these high-context drivers: new persistence format,
-  state-machine transition set, user-facing UI surface, provider/network path,
-  platform adapter, connected/emulator real-path journey, or multi-authority
-  documentation sync.
+  no more than one independent high-context implementation concern: a new
+  persistence format, state-machine transition set, user-facing UI surface,
+  provider/network path, or platform adapter. Necessary tests and real-path
+  exercise for that same outcome belong in its size estimate; they do not
+  automatically constitute another implementation concern. Standalone
+  evidence journeys and multi-authority documentation sync have their own
+  bounded outcomes. Reassess scope when another independent acceptance
+  boundary emerges during work.
+- Do not split by file, architectural layer, model, or interface alone. Every
+  resulting slice must have its own meaningful acceptance boundary; unused
+  scaffolding is not a completed prerequisite.
 - Keep `.codex/plans/current.md` short enough to read with normal discovery:
   selected behavior, acceptance boundary, intended files, focused evidence,
   broad checks, and explicit out-of-scope limits. Put historical rationale and
@@ -138,11 +160,18 @@ planned      one bounded slice is selected
 covered      a meaningful automated test encodes the behavior
 implemented  production code exists for the behavior
 verified     real behavior and applicable checks passed
-committed    verified work exists in version-control history
+committed    the identified change exists in version-control history
 released     verified work is included in a release
 ```
 
-Do not collapse states or report a later state without evidence for earlier states.
+Track behavior status and commit identity separately. Coverage and
+implementation can be established in either order; each claim needs its own
+evidence. A commit does not imply coverage, verification, or release. A
+documentation change may be reviewed and committed while the behavior it
+specifies remains `specified`; test-only work may cover existing behavior
+without introducing new production behavior. Verification still requires
+exercised production behavior and applicable checks, and release claims require
+verified behavior in a release.
 
 ## Implementation Workflow
 
@@ -169,7 +198,11 @@ discover -> baseline-green -> design-if-needed -> build
 
 Keep `.codex/plans/current.md` focused on one bounded active slice. Append concise completion evidence to `.codex/cycles/history.md` when a cycle is ready or committed.
 
-After every commit, perform an authoritative doc sync before considering the work closed: reconcile the active plan, live cycle history, and any affected repository authorities such as `README.md` and `docs/OXYGEN_FULL_SPECIFICATION.md` with the commit's actual state.
+After every commit, review the active plan, live cycle history, and affected
+repository authorities for consistency with the commit's actual state. Correct
+stale claims before closure; if they are already accurate, record that outcome
+in the handoff without creating another documentation commit. A documentation
+commit does not require a follow-up commit solely to record its own hash.
 
 Cycle history entries must be self-contained, concise, and appended at the end
 of the live history file. Before replacing, compressing, or otherwise rewriting
@@ -222,6 +255,12 @@ tests, one connected suite when the acceptance boundary requires it, and the
 applicable broad build/checks. Record the selected commands in the active plan
 or cycle artifact directory.
 
+Match evidence to the changed production boundary: provider/repository
+exercise for data changes, installed rendering for visual changes, and Android
+evidence for platform behavior. Record why other evidence is inapplicable.
+Keep the real-path exercise needed for the selected outcome within that slice;
+do not defer required acceptance evidence merely to meet its size target.
+
 - Do not rerun a passing command unless production code, test inputs, or the
   execution environment changed in a way that could affect its result.
 - Set a practical time and token budget before verification. When the budget is
@@ -247,10 +286,16 @@ Test-volume policy:
   historical coverage. Exceed the eight-case default only when the acceptance
   boundary or a documented regression risk requires it, and record the reason
   in the active plan or verification ledger.
-- Every third implementation roadmap slice is a dedicated test-only and
-  documentation-sync session. That session may run broader connected and
-  repository suites and reconcile the active plan, cycle history, roadmap, and
-  affected repository authorities.
+- After two completed implementation slices, the next roadmap cycle is a
+  dedicated test-only and documentation-sync session. Count slices that change
+  production code, including repairs and refactors; count slices, not commits
+  or sessions. Documentation-only and test-only cycles do not increment the
+  count. Record the count in the active plan and reset it after the dedicated
+  cycle completes. That cycle may run broader connected and repository suites
+  and reconcile the active plan, cycle history, active roadmap, and affected
+  repository authorities. If it discovers a defect, select a bounded repair
+  slice and then return to the pending cycle; do not silently add product work
+  to the test-only cycle.
 - Do not defer all testing until that session: every implementation slice still
   requires focused evidence at its changed state or Android boundary.
 
@@ -290,6 +335,7 @@ Before reporting work as ready:
 - state the selected behavior and acceptance boundary;
 - identify changed production and test files;
 - report focused evidence and broad verification commands actually run;
-- if the work was committed, confirm the post-commit authoritative doc sync was completed;
+- if the work was committed, report the post-commit consistency review and any
+  required documentation corrections;
 - call out any commands not run and why;
 - leave unrelated user changes untouched.

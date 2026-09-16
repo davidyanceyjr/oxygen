@@ -28,9 +28,9 @@ MVP and 1.0-success horizons are aligned in
 `docs/OXYGEN_FULL_SPECIFICATION.md`; this document does not silently override
 that higher authority.
 
-The first implementation slice must make the active Open-Meteo request ask for
-72 hours and ten days. Provider adapters, repository/cache paths, and domain
-mapping preserve every valid returned entry in chronological order. Home
+The active Open-Meteo request must ask for 72 hours and ten days to support
+the target forecast horizon. Provider adapters, repository/cache paths, and
+domain mapping preserve every valid returned entry in chronological order. Home
 presentation selects actual entries in the rolling 72-hour interval and the
 first ten distinct local forecast dates; it does not retain the current
 12-hour presentation cap.
@@ -52,8 +52,9 @@ Now -> Hourly -> Daily -> Details
 ```
 
 Simple remains `Now -> Forecast` unless a separate layout-behavior slice
-changes it. Global page identity, count, and position are visible and exposed
-as meaningful semantics.
+changes it. Global page identity remains visible by name. Numeric page count
+and position are not rendered in page or card content; page identity, count,
+and position remain exposed as meaningful semantics.
 
 Hourly contains up to twelve chronological six-entry windows. Windows are
 anchored at the first valid forecast entry, so a rolling 72-hour interval can
@@ -171,17 +172,23 @@ accessibility traversal remain earliest-to-latest; physical directional control
 placement and global swipe meaning mirror with layout direction, and controls
 say Earlier/Later rather than relying on arrows alone.
 
-Every implementation slice must name one production boundary, one visible
-behavior, exact fixture/real-path state and horizon, focused automated
-assertion, installed-app or screenshot evidence, relevant viewport/font/RTL/
-appearance conditions, and out-of-scope limits. Compilation, previews,
-symbol-only tests, and screenshots alone are not acceptance evidence.
+Every implementation slice must name one production boundary, one independently
+observable outcome, exact fixture/real-path state and applicable horizon,
+focused automated assertion, and out-of-scope limits. Product slices identify
+their user-visible behavior; prerequisites identify the downstream behavior
+they enable and exercise an existing production path.
 
-Roadmap sequencing may begin from the accepted decisions above. The first
-implementation slice is the forecast-horizon data contract only: request and
-preserve the 72-hour/ten-day target and define truthful partial-provider
-output. It excludes Hourly UI redesign, Back behavior, card extraction, and
-theme work.
+Evidence matches the changed boundary: provider/repository exercise for data
+changes, installed rendering for visual changes, and Android evidence for
+platform behavior. Visual slices specify relevant viewport, font, RTL, and
+appearance conditions and retain installed screenshots. Record why other
+evidence is inapplicable. Compilation, previews, symbol-only tests, and
+screenshots alone are not functional acceptance evidence.
+
+These decisions support roadmap preparation. The active roadmap owns slice
+order, dependencies, and exclusions; the active plan selects one bounded slice.
+The forecast-horizon requirement is a data dependency of the target forecast
+presentation, not a prescribed slice sequence in this specification.
 
 ## 1. Authority and use
 
@@ -194,9 +201,9 @@ This specification translates three existing authorities into one UI contract:
 3. The rendered-app development and evidence loop in
    `docs/UI_DEVELOPMENT_WORKFLOW.md`.
 
-The full specification remains authoritative when this specification is
-silent. The art sheet establishes visual direction, not runtime assets or
-exact final measurements. The workflow establishes how a visual rule becomes
+The full specification remains the higher authority, including where this
+specification is silent. The art sheet establishes visual direction, not runtime
+assets or exact final measurements. The workflow establishes how a visual rule becomes
 verified behavior. A later implementation roadmap must turn this specification
 into bounded, independently observable slices.
 
@@ -528,6 +535,8 @@ Visual design is successful only when it remains usable at the accessibility
 boundary.
 
 - Important weather meaning is available as text and meaningful semantics.
+- The current Home page is visible by name; numeric page count and position are
+  semantic-only and are not rendered in page or card content.
 - Decorative weather marks and scenes do not create redundant announcements.
 - Named page movement actions remain discoverable and operable.
 - Interactive targets are at least 48dp where the platform and existing
@@ -569,11 +578,18 @@ accessibility, and offline behavior.
 
 ## 9. UI slice contract for the implementation roadmap
 
-Each later roadmap slice must fill in this template before implementation:
+Each later UI implementation slice must fill in the applicable parts of this
+template before implementation. Data prerequisites use their production
+boundary and downstream purpose; visual objectives and layout evidence apply
+when rendered behavior changes. Explain inapplicable fields briefly. Slice
+sizing, verification budgets, and the two-implementation-slice checkpoint
+cadence are governed by `AGENTS.md` rather than duplicated here.
 
 ### Slice identity
 
 - **Surface/component:**
+- **Observable outcome and primary acceptance boundary:**
+- **Downstream behavior enabled (for prerequisites):**
 - **Theme/layout/effects scope:**
 - **Out of scope:**
 
@@ -615,7 +631,7 @@ Specify the relevant boundary:
 
 ### Evidence
 
-The visual workflow for each slice is:
+For slices that change rendered UI, the visual workflow is:
 
 ```text
 establish objective
@@ -641,8 +657,9 @@ active plan and cycle history. Compilation alone is not visual evidence.
 
 The review/audit decisions above are sufficient to begin roadmap sequencing.
 The following implementation details remain deliberately unresolved. Each must
-be selected and verified before the slice that first depends on it, but none
-blocks the forecast-horizon data-contract slice:
+be selected during design and verified within the first slice that depends on
+it. These visual decisions do not block work on the forecast-horizon data
+contract:
 
 - final typeface and fallback policy for display, heading, label, and body
   roles;
@@ -653,10 +670,10 @@ blocks the forecast-horizon data-contract slice:
 - chart and metric visualization grammar;
 - loading, stale, offline, error, alert, and missing-field component designs;
 - baseline screenshot matrix and the minimum installed states for each slice;
-- which existing visual baselines are preserved, revised, or superseded;
-- the bounded component order after the forecast-horizon contract.
+- which existing visual baselines are preserved, revised, or superseded.
 
-These are slice-design questions, not permission to widen the first
-implementation slice. Once resolved and rendered successfully, repeated visual
-decisions should be promoted into versioned design tokens and the ordered
+The roadmap owns component order and dependency sequencing. These design
+questions must fit the selected slice's bounded outcome. Once resolved and
+rendered successfully, repeated visual decisions should be promoted into
+versioned design tokens and the ordered
 implementation roadmap.
