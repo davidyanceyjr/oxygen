@@ -1501,3 +1501,20 @@ passed. Gate 30E remains deferred and unverified.
 
 Next action: plan the corrected data-focus traversal only; do not claim P2
 verified or diagnose an Oxygen semantics defect from this run.
+
+### 2026-09-16-slice-30e-p2-evidence-documentation-commit
+
+Status: committed in `21e188c`; P2 and Gate 30E remain unverified
+Mode: post-commit authority synchronization
+Slice: 30E-P2, TalkBack/TTS Runtime Readiness
+
+The bounded P2 evidence, active plan, and roadmap updates are recorded in
+`21e188c`. The commit preserves the human-confirmed independent Android TTS
+control, the real Oxygen Now-to-Hourly production traversal, and the corrected
+finding that the final attempt did not establish TalkBack focus on the weather
+data nodes. No production or test source changed. The next action remains one
+corrected data-focus traversal; this commit does not close P2, Gate 30E,
+accessibility closure, release readiness, or MVP completion.
+
+Post-commit checks: `git diff --check` passed before commit; no Gradle or
+connected checks were rerun because source and test inputs were unchanged.

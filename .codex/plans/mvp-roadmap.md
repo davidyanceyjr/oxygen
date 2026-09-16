@@ -5,10 +5,11 @@ verified locally; release-candidate status not granted
 Roadmap ID: mvp-2026-08
 Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
-Revised: 2026-09-15
-Reconciled against local `origin/main` ref: `82cf281`
-Synchronized through Gate 30C3 alert evidence/documentation closure after Slice
-30C2 implementation `70304b8`, and Slice 33B manifest repair `02f668f`; prior baseline
+Revised: 2026-09-16
+Reconciled against local `origin/main` ref before this sync: `5661877`
+Synchronized through the Slice 30E-P2 evidence/documentation commit `21e188c`,
+after Gate 30C3 alert evidence/documentation closure, Slice 30C2 implementation
+`70304b8`, and Slice 33B manifest repair `02f668f`; prior baseline
 roadmap synchronization remains recorded through Slice 30B1A3B1 implementation
 `26b32b8`, Slice 29B implementation
 `441d05d`, test follow-up `86e696c`, and evidence sync `86f046b`.

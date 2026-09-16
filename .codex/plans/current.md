@@ -5,8 +5,9 @@ invalid for the required data-focus boundary
 **Mode:** bounded installed test/evidence and documentation slice; no production
 change is planned
 **Cycle ID:** `2026-09-15-slice-30e-p2-talkback-tts-runtime-readiness`
-**Baseline:** current `HEAD` (`5661877`); Slice 30E-P1 has verified, uncommitted
-installed evidence; Gate 30E remains deferred and unverified
+**Baseline:** evidence commit `21e188c`; Slice 30E-P1's verified installed
+evidence and the P2 attempt record are committed; Gate 30E remains deferred
+and unverified
 **Next action:** define one corrected diagnostic traversal that keeps TalkBack
 active while moving accessibility focus from page identity/page control into
 the Now weather-data node and then the Hourly destination/data node; do not
