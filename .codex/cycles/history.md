@@ -1844,7 +1844,7 @@ was required.
 
 ### 2026-09-17-ui-04-now-hierarchy
 
-Status: verified; ready to commit
+Status: verified; committed in `1d0547f`
 Mode: bounded Android/Compose presentation slice
 Slice: UI-04 — Standard Now hierarchy and truthful alert state
 
@@ -1886,3 +1886,6 @@ Limits and next action:
   notifications, localization completion, TalkBack traversal, and release/1.0
   claims remain outside this slice.
 - UI-04 is verified; UI-05 remains the next specified roadmap candidate.
+
+Post-commit consistency review: the active plan, roadmap, README, history,
+affected source scope, and recorded artifact paths agree with commit `1d0547f`.

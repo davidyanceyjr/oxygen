@@ -1,7 +1,7 @@
 # Oxygen UI v0.3 — UI-04 Standard Now hierarchy and truthful alert state
 
 **Status:** verified
-**Commit state:** ready to commit
+**Commit state:** committed in `1d0547f`
 **Mode:** bounded Android/Compose presentation slice
 **Cycle ID:** `2026-09-17-ui-04-now-hierarchy`
 **Active roadmap:** `.codex/plans/ui-roadmap.md`
