@@ -1470,11 +1470,12 @@ All important UI must:
 - preserve logical TalkBack order;
 - honor reduced motion.
 
-First-version release decision (2026-09-14): the Gate 30E installed TalkBack
-speech/focus audit and its host audio prerequisite are optional follow-up work.
-Their missing evidence does not block the first release or subsequent roadmap
-slices. Service-level TalkBack traversal remains unverified; this decision does
-not mark the audit passed or waive the UI accessibility obligations above.
+Project decision (2026-09-17), superseding the 2026-09-14 first-version release
+decision: the resource-intensive Gate 30E installed TalkBack speech/focus audit
+and its host audio prerequisite are canceled for this early development cycle.
+They are not a roadmap or release gate, and service-level TalkBack traversal
+remains unverified. This decision does not mark the audit passed or waive the UI
+accessibility obligations above.
 
 Good spoken output:
 
@@ -2143,12 +2144,16 @@ Evidence is retained under
 `.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`
 and `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
 
-Gate 30, Accessibility Presentation Verification, remains the next broader
-accessibility boundary and owns TalkBack, RTL, and the remaining presentation-
-condition matrix. The roadmap splits it into Home spoken semantics, compact/
-large-font Home layout, Home RTL, Home reduced-motion/appearance invariance,
-official-alert summary and detail, Appearance semantics and layout, required
-third-cycle test/document-sync gates, and an installed TalkBack closure gate.
+Gate 30, Accessibility Presentation Verification, owns the remaining
+accessibility presentation-condition matrix, including RTL and non-service
+accessibility checks. The 2026-09-17 project decision canceled the
+resource-intensive service-level TalkBack speech/focus tests and installed
+closure audit for this early development cycle; no current roadmap slice
+should schedule that boundary. The roadmap splits the applicable work into
+Home spoken semantics, compact/large-font Home layout, Home RTL,
+Home reduced-motion/appearance invariance, official-alert summary and detail,
+Appearance semantics and layout, and required third-cycle test/document-sync
+gates.
 Slice 30A1, Home Spoken-Weather Semantics, is implemented, verified, and
 committed at `da7b886`; Slice 30A2, Home Compact and Large-Font Resilience, is
 implemented, verified, and committed at `1a8e14f`; and Slice 30A3A1 Home
@@ -2236,9 +2241,10 @@ Installed evidence covers LTR, font scale 2.0, RTL, Effects Off, and
 Terminal/High while preserving the fixed Back action and saved-status meaning.
 TalkBack service traversal, localization, automatic contrast, and release
 checks remain unverified. Gate 30D3 is committed. Per the 2026-09-14 user
-release decision, Gate 30E is deferred and does not block the first version;
-its installed TalkBack audit remains unverified. Slice 33A's dependency and
-manifest audit and Slice 33B's installed manifest-exposure repair are
+release decision, superseded on 2026-09-17 by the project cancellation, Gate
+30E is canceled for this early development cycle and is not a current roadmap
+or release gate; its installed TalkBack audit remains unverified. Slice 33A's
+dependency and manifest audit and Slice 33B's installed manifest-exposure repair are
 committed. The installed package retains only the three user-facing
 permissions, exposes only MainActivity as an exported activity, and keeps
 retained AndroidX components non-exported. Backup remains `allowBackup=true`;

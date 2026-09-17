@@ -11,7 +11,7 @@ This is a Home/UI program, not an Oxygen 1.0 roadmap. The installed app already 
 
 ## Program limits
 
-Custom-unit editing, UV presentation, Detailed/Meteorologist layouts, icon packs, maps, radar, air quality, widgets, notifications, localization, release packaging/signing/publication, and service-level TalkBack traversal are outside this program. The optional deferred TalkBack audit does not waive per-slice accessibility obligations.
+Custom-unit editing, UV presentation, Detailed/Meteorologist layouts, icon packs, maps, radar, air quality, widgets, notifications, localization, release packaging/signing/publication, and service-level TalkBack traversal are outside this program. Per the 2026-09-17 user decision, resource-intensive TalkBack service/speech tests are canceled for this early development cycle and are not a roadmap or release gate. This does not waive per-slice accessibility obligations.
 
 ## Operating contract
 

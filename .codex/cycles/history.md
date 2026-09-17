@@ -16,8 +16,9 @@ file before replacing or compressing it.
 - Gate 30D3 is committed after the Appearance semantics and layout slices.
 - Gate 30E's visible emulator startup was recovered with `DISPLAY=:0`;
   installed TalkBack was confirmed, but host audio prevented the speech audit.
-- User decision on 2026-09-14: Gate 30E and its remaining audio prerequisite
-  are deferred, optional, and non-blocking for the first release. TalkBack
+- User decision on 2026-09-17 supersedes the 2026-09-14 deferral: resource-
+  intensive Gate 30E and its remaining audio prerequisite are canceled for
+  this early development cycle and are not a roadmap or release gate. TalkBack
   service traversal remains unverified. Slice 33A is the next candidate to plan.
 - Earlier summary and entries are preserved in
   `archive/2026-09-14-before-talkback-first-release-deferral.md`.
@@ -1924,3 +1925,17 @@ Limits and next action:
   route was manually selected with location permission denied.
 - The implementation-slice count is 2 of 2 since UI-03; UI-06 Checkpoint B is
   the next selected candidate.
+
+### 2026-09-17-talkback-test-cancellation
+
+Status: documentation decision; committed in this changeset
+Mode: project test-policy update
+Decision: Per the user's 2026-09-17 direction, resource-intensive TalkBack
+service/speech tests and the Gate 30E installed audit are canceled for this
+early development cycle. They are no longer a required roadmap or release gate.
+Scope: TalkBack traversal remains unverified. This decision does not remove or
+waive production Compose accessibility semantics, labels, target sizes,
+non-color meaning, readability, or other per-slice accessibility obligations.
+Updated: README, active plan, UI roadmap, and full specification decision text.
+Evidence: documentation-only review and `git diff --check`; no Android build,
+unit test, connected test, emulator, or installed-app checks were rerun.

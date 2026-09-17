@@ -53,4 +53,11 @@ presentation reach, later windows, date jumps, sparse/empty treatment, Simple
 changes, localization, TalkBack traversal, release, or UI-06 completion.
 The implementation-slice count is now 2 of 2 since UI-03; select UI-06
 Checkpoint B next. No provider, repository, cache, core, navigation, settings,
-or specification changes are needed for this closure.
+or product behavior changes are needed for this closure; the full specification
+decision text is synchronized with the test-policy update below.
+
+**TalkBack test policy:** Per the 2026-09-17 user decision, resource-intensive
+TalkBack service/speech tests are canceled for this early development cycle.
+They are not a required roadmap or release gate. Per-slice Compose accessibility
+semantics, target sizes, labels, non-color meaning, and readability obligations
+remain in scope.
