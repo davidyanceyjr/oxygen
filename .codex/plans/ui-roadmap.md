@@ -1,6 +1,8 @@
-# Oxygen Home UI v0.3 Roadmap — Reviewed Draft
+# Oxygen Home UI v0.3 Roadmap
 
-**Status:** specified; reviewed draft; no implementation slice selected
+**Status:** active roadmap; UI-01's `planned` selection is tracked only in
+`.codex/plans/current.md`. All unselected roadmap candidates remain
+`specified`.
 **Roadmap ID:** `ui-home-v0.3-2026-09-reviewed-draft`
 **Source authority:** [`docs/OXYGEN_UI_SPECIFICATION.md`](../../docs/OXYGEN_UI_SPECIFICATION.md)
 **Higher authority:** [`docs/OXYGEN_FULL_SPECIFICATION.md`](../../docs/OXYGEN_FULL_SPECIFICATION.md)
@@ -406,10 +408,10 @@ before this documentation cycle.
 signing/publication, localization completion, and TalkBack service claims.
 **Sizing:** small-to-medium; documentation/evidence only.
 
-## First selection recommendation
+## Active selection
 
-Select UI-01 in `.codex/plans/current.md` only after this reviewed roadmap is
-accepted. The active plan must name the exact fixtures, production-repository
-Android exercise, focused commands, broad checks, artifact location, sizing
-rationale, and timeout limit. UI-02 is not blocked on UI-01, but UI-05 and UI-07
-must not be selected until UI-01 is verified.
+UI-01 is selected in `.codex/plans/current.md`. Its active plan names the
+exact fixtures, production-repository Android exercise, focused commands, broad
+checks, artifact location, sizing rationale, and timeout limit. UI-02 is not
+blocked on UI-01, but UI-05 and UI-07 must not be selected until UI-01 is
+verified.
