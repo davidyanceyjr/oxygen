@@ -1,63 +1,74 @@
-# Oxygen UI — visual overhaul reset after UI-05
+# Oxygen Standard Now — compact overlap repair investigation
 
-**Status:** verified prior slice; roadmap retired by user decision
-**Cycle ID:** `2026-09-17-ui-05-hourly-window`
-**Active roadmap:** none; `.codex/plans/ui-roadmap.md` was retired by user decision
+**Status:** planned; bounded repair slice selected
+**Cycle ID:** `2026-09-17-cd-00r-standard-now-compact-overlap`
+**Active roadmap:** `.codex/plans/ui-roadmap.md`
+**Implementation-slice count:** 2 of 2 since UI-03; CD-00 did not reset the
+count because its first current-state case failed
 
-**Selected behavior:** Standard Home Hourly presents up to six actual
-chronological entries in a stable 2×3 grid with a selected-location local-date
-range. Later shows the second six-entry window and Earlier restores the first.
-The controls are local UI state and do not refetch or consume Android Back.
+## Selected outcome and acceptance boundary
 
-## Acceptance result
+Determine why the existing deterministic Standard Now compact boundary renders
+`home-section-location` and `home-section-current` with overlapping semantic
+bounds at 360x640dp, font scale 1.0, LTR, Oxygen, Effects Off. Preserve the
+current red runner/XML evidence, capture the exact two bounds and rendered
+state, then correct only the established cause.
 
-The mapper stores each hourly entry's selected-zone `LocalDate` and formats
-same-day and midnight-crossing ranges without reparsing display text. Standard
-Hourly has its own window composition and controls; Simple Forecast continues
-to use the prior six-entry composition. The deterministic 12-entry fixture
-proved the first and second ranges, entry order and speech, 2×3 non-overlap,
-48dp controls, outer pager semantics, no-refetch behavior, and Back to Now.
+If the installed/Compose production layout overlaps, make the smallest Standard
+Now layout correction and retain installed same-route before/final PNG/XML. If
+the visible production geometry is valid and the deterministic harness or
+assertion setup is wrong, correct only that test boundary and retain evidence
+that distinguishes it from a production defect. Do not weaken, delete, or
+bypass the no-overlap contract.
 
-The installed API-37 Chicago route was manually searched with location
-permission denied. It showed `Thu, Sep 17, 1 PM–6 PM`, Later showed the next
-actual six through `7 PM–12 AM`, and Earlier restored the first window. The
-installed route retained `Hourly, Page 2 of 4`.
+The repair is accepted only when
+`standardNowCompactHierarchyUsesFixedHeroAndNonOverflowingSupport` completes
+once with fresh XML, instrumentation log, textproto, and wrapper agreement:
+1/1 passed, zero failures, zero errors, and zero skips. Then run the applicable
+focused tests and broad checks for the changed boundary. Return to CD-00 after
+repair closure; CD-00 must still run its complete five-case set before the
+implementation count resets or CD-01 can be selected.
 
-## Changed files
+## Failure evidence and sizing
 
-- `app/src/main/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapper.kt`
+- CD-00 artifact directory:
+  `.codex/test-artifacts/2026-09-17-cd-00-pre-overhaul-checkpoint/`.
+- The recovered API-37 `oxygen_starter` session passed health preflight.
+- The compact case completed 1/1 with zero skips and one normal assertion
+  failure: `home-section-location should not overlap home-section-current` at
+  `HomeDashboardUiTest.kt:4447`.
+- The other four CD-00 cases were not run and the emulator was stopped.
+- Estimated repair usage is 30–35% of one context window: reproduction and
+  bounds diagnosis 10%, one bounded correction 10–15%, and focused/broad/
+  documentation closure 10%. Split before coding if the cause introduces a
+  second independent acceptance boundary or exceeds 60%.
+
+## Intended scope and evidence
+
+Likely files, conditional on the established cause:
+
 - `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`
-- `app/src/main/res/values/strings.xml`
-- `app/src/test/kotlin/com/oxygen/weather/app/HomeForecastPresentationMapperTest.kt`
 - `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
+- current plan, UI roadmap, cycle history, and README status note
 
-## Evidence
+Evidence budget:
 
-Artifact bundle: `.codex/test-artifacts/2026-09-17-ui-05-hourly-window/`.
+1. Inspect the retained failure XML/log/textproto and record the two exact
+   semantic bounds without changing production behavior.
+2. Capture the current rendered fixture and, if production is implicated, the
+   installed selected-location route at the same compact conditions.
+3. Run the one failed connected method after the correction. Do not run the
+   other four CD-00 methods inside this repair slice.
+4. Run focused tests for any changed mapper/UI contract, Android-test
+   compilation when the test source changes, app/core unit suites, debug
+   assembly, and `git diff --check` as applicable.
+5. Preserve one emulator session and one install per APK change. A normal
+   failure or bounded timeout ends the repair attempt without repeated retries.
 
-- Mapper focused test passed.
-- Both named connected methods passed once on the recovered `oxygen_starter`
-  API-37 session: 1/1 completed, zero skipped and zero failures each.
-- `:app:compileDebugAndroidTestKotlin` passed.
-- `:app:testDebugUnitTest :core:testDebugUnitTest` passed.
-- `:app:assembleDebug` passed; final APK SHA-256 is recorded in
-  `installed/apk-sha256.txt`.
-- Baseline/final installed PNG/XML and the Later capture are under `baseline/`
-  and `installed/`.
-- `git diff --check` passed after this documentation closure.
+## Limits
 
-## Limits and next action
-
-This slice retains the 12-entry mapper ceiling and does not claim 72-hour
-presentation reach, later windows, date jumps, sparse/empty treatment, Simple
-changes, localization, TalkBack traversal, release, or a completed visual
-overhaul. The UI roadmap and its UI-06 checkpoint are retired. The next
-product action must be a visibly distinct Standard Now hero visual slice;
-no replacement roadmap is active. No provider, repository, cache, core,
-navigation, or settings behavior changes are needed for this reset.
-
-**TalkBack test policy:** Per the 2026-09-17 user decision, resource-intensive
-TalkBack service/speech tests are canceled for this early development cycle.
-They are not a required roadmap or release gate. Per-slice Compose accessibility
-semantics, target sizes, labels, non-color meaning, and readability obligations
-remain in scope.
+No Celestial Dial component, visual overhaul progress, Hourly behavior,
+provider, repository, cache, persistence, navigation, theme, new weather value,
+or Simple layout change is authorized. CD-01 remains `specified`, not selected.
+The checkpoint count remains 2 of 2 until the repaired boundary returns to and
+passes the full CD-00 evidence set.
