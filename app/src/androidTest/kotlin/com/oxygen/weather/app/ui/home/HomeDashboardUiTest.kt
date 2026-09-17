@@ -4429,6 +4429,10 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithContentDescription(
             "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
         ).assertIsDisplayed()
+        val dialBounds = composeRule.onNodeWithTag("home-current-dial").fetchSemanticsNode().boundsInRoot
+        assertEquals(150f, dialBounds.width, 0.5f)
+        assertEquals(150f, dialBounds.height, 0.5f)
+        assertTrue("Central dial should be horizontally centered", dialBounds.left > 60f && dialBounds.right < 300f)
         composeRule.assertSemanticsTreeOrder(
             "home-section-location",
             "home-section-current",
@@ -4564,6 +4568,7 @@ class HomeDashboardUiTest {
             alertStatus = AlertLookupStatus.NotRequested,
         )
         replace(missingCurrent)
+        composeRule.onNodeWithTag("home-current-unavailable-dial").assertIsDisplayed()
         composeRule.onNodeWithText("Current conditions unavailable").assertIsDisplayed()
         composeRule.onAllNodesWithText("65 deg F").assertCountEquals(0)
 

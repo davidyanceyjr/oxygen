@@ -164,3 +164,44 @@ Evidence and limits:
 - No Celestial Dial production slice started; provider, repository, cache,
   persistence, navigation, theme, weather semantics, and Simple layout remain
   unchanged. CD-01 remains `specified` and is not selected by this checkpoint.
+
+### 2026-09-17-cd-01-central-dial
+
+Status: verified; committed
+Mode: bounded Standard Now visual implementation slice
+
+Result:
+
+- Replaced the normal-font Standard Now rectangular current hero with one
+  centered code-native circular dial. The dial visibly contains the condition
+  mark, current temperature, condition text, and apparent temperature; actual
+  high/low remains in the temporary line below it for CD-02.
+- Added a truthful unavailable circular state for missing current data without
+  rendering a fake temperature. Preserved the existing compact-font path,
+  current spoken summary, selected location, precipitation, alerts, footer,
+  and other page behavior.
+- Added focused connected assertions for the 150dp centered dial geometry and
+  unavailable-dial state.
+
+Evidence:
+
+- Baseline and final same-route installed captures/XML:
+  `.codex/test-artifacts/2026-09-17-cd-01-central-dial/`; final clean route is
+  `home-final-clean-2.png` with `home-final-clean-2.xml`.
+- Focused API-37 `oxygen_starter` cases
+  `standardNowCompactHierarchyUsesFixedHeroAndNonOverflowingSupport` and
+  `standardNowAlertLookupOutcomesAreTruthfulAndActionFree` each completed 1/1
+  with zero failures, errors, and skips. The single emulator session was
+  stopped after evidence capture.
+- `:app:testDebugUnitTest :core:testDebugUnitTest :app:assembleDebug`,
+  `:app:compileDebugKotlin`, and `git diff --check` passed. One first focused
+  attempt exposed insufficient lower-content space; a concrete geometry
+  adjustment fixed it and the accepted rerun passed.
+
+Limits and commit state:
+
+- No provider/repository/cache/persistence, navigation/footer, Simple layout,
+  Hourly/Daily/Details, new weather value, orbit satellite, atmosphere, or
+  theme redesign changed. Compact-font responsive variants remain CD-11 scope.
+- Committed in the current change; the implementation-slice count is now 1 of
+  2 since CD-00. CD-02 remains specified and is not selected by this slice.

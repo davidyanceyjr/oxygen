@@ -1,7 +1,7 @@
 # Oxygen Standard Now — Celestial Dial UI Overhaul Roadmap
 
-**Status:** active roadmap; design selected; CD-00 verified; all Celestial Dial
-implementation slices remain `specified`
+**Status:** active roadmap; design selected; CD-00 and CD-01 verified; CD-02+
+Celestial Dial implementation slices remain `specified`
 **Roadmap ID:** `now-celestial-dial-v0.1`
 **Selected design:** concept F, Celestial Dial
 **Selected:** 2026-09-17 by user decision
@@ -122,7 +122,7 @@ paths, unrelated Home geometry, assertion weakening, and any CD-01 work.
 
 ### CD-01 — Central dial hero
 
-**Status:** specified
+**Status:** verified; committed
 **Estimate:** 45% of one session
 **Surface:** Standard Now current-condition hero
 **Outcome:** Replace the current row/card hero with a code-native circular dial

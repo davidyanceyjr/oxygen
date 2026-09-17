@@ -127,8 +127,11 @@ and `docs/data-sources/`.
   the Standard location and current-weather regions. CD-00R added an explicit
   Compose-idle barrier; the rendered bounds are now separated and the repaired
   boundary is verified. The inherited five-case CD-00 checkpoint rerun also
-  passed with fresh runner-backed evidence; no Celestial Dial production slice
-  has started.
+  passed with fresh runner-backed evidence. CD-01 now replaces the normal-font
+  Standard Now hero with a centered code-native circular dial; its installed
+  geometry, spoken summary, missing-current state, and broad checks are
+  verified. Orbit satellites, responsive variants, and atmospheric treatment
+  remain future slices.
 - Standard Home Now, Hourly, Daily, and Details visual baselines.
 - Art-sheet-aligned Standard Home weather marks, surface roles, typography
   roles, and app-local design roles for the installed Home surface.

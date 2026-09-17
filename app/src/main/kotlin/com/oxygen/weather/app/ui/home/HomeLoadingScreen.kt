@@ -1,6 +1,7 @@
 package com.oxygen.weather.app.ui.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.activity.compose.BackHandler
@@ -41,7 +42,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -58,6 +61,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.oxygen.weather.app.HomeCurrentPresentation
 import com.oxygen.weather.app.HomeDailyPresentation
 import com.oxygen.weather.app.HomeAlertSummaryPresentation
 import com.oxygen.weather.app.HomeAlertLookupPresentation
@@ -544,7 +549,6 @@ private fun StandardNowPage(
     val dashboard = state.dashboard
     val compactFont = LocalDensity.current.fontScale > 1.2f
     val fixedGap = if (compactFont) 4.dp else roles.tileGap
-    val markSize = if (compactFont) 0.dp else 56.dp
     Column(
         modifier = Modifier.fillMaxSize().testTag("home-now-standard"),
         verticalArrangement = Arrangement.spacedBy(if (compactFont) 4.dp else roles.sectionGap),
@@ -574,100 +578,13 @@ private fun StandardNowPage(
 
             DashboardHero(tag = "home-section-current") {
                 if (dashboard.current == null) {
-                    Text(stringResource(R.string.home_current_conditions), style = roles.sectionHeading)
-                    Text(
-                        text = dashboard.currentUnavailableText ?: dashboard.returnedDataUnavailableText.orEmpty(),
-                        style = MaterialTheme.typography.bodyLarge,
+                    CurrentUnavailableDial(
+                        message = dashboard.currentUnavailableText ?: dashboard.returnedDataUnavailableText.orEmpty(),
                     )
+                } else if (compactFont) {
+                    CompactCurrentHero(dashboard.current)
                 } else {
-                    val current = dashboard.current
-                    if (compactFont) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("home-current-summary")
-                                .clearAndSetSemantics { contentDescription = current.spokenDescription },
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = current.condition,
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = current.temperature,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                            )
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("home-current-summary")
-                                .clearAndSetSemantics { contentDescription = current.spokenDescription },
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(markSize)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .testTag("home-current-mark"),
-                            ) {
-                                WeatherConditionMark(
-                                    condition = current.conditionIdentity,
-                                    modifier = Modifier.size(markSize),
-                                )
-                            }
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                Text(
-                                    text = current.condition,
-                                    modifier = Modifier.semantics { hideFromAccessibility() },
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                                Text(
-                                    text = current.temperature,
-                                    modifier = Modifier.semantics { hideFromAccessibility() },
-                                    style = roles.displayWeatherValue,
-                                    maxLines = 1,
-                                )
-                            }
-                        }
-                    }
-                    val range = listOfNotNull(current.highTemperature, current.lowTemperature)
-                        .joinToString("   ")
-                        .ifEmpty { null }
-                    if (compactFont) {
-                        Text(
-                            text = listOfNotNull(
-                                current.apparentTemperature,
-                                range?.let { stringResource(R.string.home_today) + "  " + it },
-                            ).joinToString("  ·  "),
-                            modifier = Modifier.semantics { hideFromAccessibility() },
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 2,
-                        )
-                    } else {
-                        Text(
-                            text = current.apparentTemperature,
-                            modifier = Modifier.semantics { hideFromAccessibility() },
-                            style = roles.compactWeatherValue,
-                        )
-                        range?.let {
-                            Text(
-                                text = stringResource(R.string.home_today) + "  " + it,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
+                    CentralCurrentDial(dashboard.current)
                 }
             }
 
@@ -747,6 +664,189 @@ private fun StandardNowPage(
                     style = roles.supportingLabel,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun CompactCurrentHero(current: HomeCurrentPresentation) {
+    val roles = LocalOxygenHomeDesign.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("home-current-summary")
+            .clearAndSetSemantics { contentDescription = current.spokenDescription },
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = current.condition,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = current.temperature,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+        )
+    }
+    Text(
+        text = listOfNotNull(
+            current.apparentTemperature,
+            listOfNotNull(current.highTemperature, current.lowTemperature)
+                .joinToString("   ")
+                .ifEmpty { null }
+                ?.let { stringResource(R.string.home_today) + "  " + it },
+        ).joinToString("  ·  "),
+        modifier = Modifier.semantics { hideFromAccessibility() },
+        style = MaterialTheme.typography.bodyMedium,
+        maxLines = 2,
+    )
+}
+
+@Composable
+private fun CentralCurrentDial(current: HomeCurrentPresentation) {
+    val roles = LocalOxygenHomeDesign.current
+    val accent = MaterialTheme.colorScheme.primary
+    val range = listOfNotNull(current.highTemperature, current.lowTemperature)
+        .joinToString("   ")
+        .ifEmpty { null }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(150.dp)
+                .testTag("home-current-dial"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Canvas(Modifier.matchParentSize()) {
+                val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
+                val outerRadius = size.minDimension * 0.46f
+                drawCircle(color = roles.strongGlassSurface, radius = outerRadius, center = center)
+                drawCircle(
+                    color = roles.weatherMarkGold,
+                    radius = outerRadius,
+                    center = center,
+                    style = Stroke(width = 2.5f),
+                )
+                drawArc(
+                    color = accent,
+                    startAngle = -72f,
+                    sweepAngle = 212f,
+                    useCenter = false,
+                    topLeft = androidx.compose.ui.geometry.Offset(
+                        center.x - outerRadius * 0.86f,
+                        center.y - outerRadius * 0.86f,
+                    ),
+                    size = androidx.compose.ui.geometry.Size(outerRadius * 1.72f, outerRadius * 1.72f),
+                    style = Stroke(width = 2.5f),
+                )
+                drawCircle(
+                    color = roles.outlineQuiet,
+                    radius = outerRadius * 0.78f,
+                    center = center,
+                    style = Stroke(width = 1f),
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 160.dp)
+                    .testTag("home-current-summary")
+                    .clearAndSetSemantics { contentDescription = current.spokenDescription },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(1.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("home-current-mark"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    WeatherConditionMark(
+                        condition = current.conditionIdentity,
+                        modifier = Modifier.size(44.dp),
+                    )
+                }
+                Text(
+                    text = current.temperature,
+                    modifier = Modifier.semantics { hideFromAccessibility() },
+                    style = roles.displayWeatherValue.copy(fontSize = 32.sp, lineHeight = 34.sp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = current.condition,
+                    modifier = Modifier.semantics { hideFromAccessibility() },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = current.apparentTemperature,
+                    modifier = Modifier.semantics { hideFromAccessibility() },
+                    style = roles.compactWeatherValue,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        range?.let {
+            Text(
+                text = stringResource(R.string.home_today) + "  " + it,
+                modifier = Modifier
+                    .testTag("home-current-range")
+                    .semantics { hideFromAccessibility() },
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CurrentUnavailableDial(message: String) {
+    val roles = LocalOxygenHomeDesign.current
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(150.dp)
+            .testTag("home-current-unavailable-dial"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(Modifier.size(150.dp)) {
+            val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
+            val radius = size.minDimension * 0.46f
+            drawCircle(color = roles.strongGlassSurface, radius = radius, center = center)
+            drawCircle(
+                color = roles.outlineStrong,
+                radius = radius,
+                center = center,
+                style = Stroke(width = 2.5f),
+            )
+        }
+        Column(
+            modifier = Modifier.widthIn(max = 180.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.home_current_conditions),
+                style = roles.sectionHeading,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = message,
+                modifier = Modifier.testTag("home-current-unavailable-message"),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
