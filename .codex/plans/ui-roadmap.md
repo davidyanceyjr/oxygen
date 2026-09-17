@@ -1,8 +1,8 @@
 # Oxygen Home UI v0.3 Roadmap
 
-**Status:** active roadmap; UI-01's `planned` selection is tracked only in
-`.codex/plans/current.md`. All unselected roadmap candidates remain
-`specified`.
+**Status:** active roadmap; UI-03 is the current completed `verified`
+checkpoint selected by `.codex/plans/current.md`. UI-01 and UI-02 are also
+`verified`; later unselected roadmap candidates remain `specified`.
 **Roadmap ID:** `ui-home-v0.3-2026-09-reviewed-draft`
 **Source authority:** [`docs/OXYGEN_UI_SPECIFICATION.md`](../../docs/OXYGEN_UI_SPECIFICATION.md)
 **Higher authority:** [`docs/OXYGEN_FULL_SPECIFICATION.md`](../../docs/OXYGEN_FULL_SPECIFICATION.md)
@@ -127,7 +127,7 @@ existing page shell.
 
 ### UI-03 — Checkpoint A
 
-**Status:** specified
+**Status:** verified
 **Dependencies:** UI-01 and UI-02
 **Boundary:** test-only evidence and authority reconciliation after two
 production-changing slices.
@@ -416,6 +416,7 @@ signing/publication, localization completion, and TalkBack service claims.
 
 ## Active selection
 
-UI-02 is verified in `.codex/plans/current.md`. UI-03 is the next specified
-test-only/documentation checkpoint after the two production-changing slices;
-UI-05 and UI-07 remain unselected until their dependencies are verified.
+UI-03 is verified in `.codex/plans/current.md` after UI-01 and UI-02 were
+verified. UI-04 onward remain specified; UI-05 and UI-07 remain unselected
+until their dependencies are verified. A new active plan must select the next
+slice before it becomes planned.

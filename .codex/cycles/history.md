@@ -1794,3 +1794,50 @@ Limits and next action:
 
 Commit state: committed with this change; post-commit consistency review
 completed with no further authority corrections required.
+
+### 2026-09-16-ui-03-checkpoint-a
+
+Status: verified; committed with this change
+Mode: bounded test-only evidence review and documentation synchronization
+Slice: UI-03 — Checkpoint A
+
+Result:
+
+- Audited the retained UI-01 and UI-02 acceptance bundles and confirmed their
+  dependency commits, changed-file scope, passing focused results, broad
+  results, installed/real-path evidence, limits, and artifact paths agree.
+- UI-01 retains 49 passing focused core tests, Android-test compilation, and
+  one passing API-37 installed factory/repository/fallback/cache/Room case
+  observing 72 hourly and 10 daily rows. UI-02 retains three passing API-37
+  connected cases plus the installed selected-Chicago Standard journey through
+  Now, Hourly, Daily, Details, and Back to host fallthrough.
+- Corrected the roadmap's stale UI-01-planned wording. UI-01 and UI-02 remain
+  verified, UI-03 is now verified, and UI-04 onward remain specified. README
+  already matched the verified behavior and retained all stated gaps. The full
+  product, UI, Open-Meteo, and MET Norway contracts were reviewed unchanged.
+
+Evidence and checks:
+
+- Claim matrix and command ledger: `.codex/test-artifacts/2026-09-16-ui-03-checkpoint-a/verification-ledger.md`.
+- Required `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest` passed with `BUILD SUCCESSFUL`.
+- Required `. scripts/android-env.sh && ./gradlew :app:assembleDebug` passed
+  with `BUILD SUCCESSFUL`; `git diff --check` passed with no diagnostics.
+- Connected tests, emulator, installation, live provider traffic, and new
+  screenshots were intentionally skipped because this checkpoint changes no
+  runtime or test behavior and the retained UI-01/UI-02 boundaries already
+  contain their applicable provider and installed evidence.
+
+Limits:
+
+- This checkpoint does not implement or verify Hourly/Daily window selection,
+  visual redesign, Simple/supporting-surface Back, new providers, alert
+  persistence, TalkBack service traversal, localization completion, release
+  packaging, or Oxygen 1.0 completeness.
+- The UI-01 ledger's historical wrapper status 1 is preserved as a wrapper
+  defect; its underlying Gradle and diff results were successful. No source or
+  test changes were made by UI-03.
+
+Commit state: committed with this change. Post-commit consistency review found
+the active plan, roadmap, README, history, affected contracts, and artifact
+paths consistent with the verified state; no follow-up documentation change
+was required.
