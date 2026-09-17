@@ -1,8 +1,8 @@
-# Oxygen UI v0.3 — UI-05 Hourly first/next compact window
+# Oxygen UI — visual overhaul reset after UI-05
 
-**Status:** verified; committed in this changeset
+**Status:** verified prior slice; roadmap retired by user decision
 **Cycle ID:** `2026-09-17-ui-05-hourly-window`
-**Active roadmap:** `.codex/plans/ui-roadmap.md`
+**Active roadmap:** none; `.codex/plans/ui-roadmap.md` was retired by user decision
 
 **Selected behavior:** Standard Home Hourly presents up to six actual
 chronological entries in a stable 2×3 grid with a selected-location local-date
@@ -50,11 +50,11 @@ Artifact bundle: `.codex/test-artifacts/2026-09-17-ui-05-hourly-window/`.
 
 This slice retains the 12-entry mapper ceiling and does not claim 72-hour
 presentation reach, later windows, date jumps, sparse/empty treatment, Simple
-changes, localization, TalkBack traversal, release, or UI-06 completion.
-The implementation-slice count is now 2 of 2 since UI-03; select UI-06
-Checkpoint B next. No provider, repository, cache, core, navigation, settings,
-or product behavior changes are needed for this closure; the full specification
-decision text is synchronized with the test-policy update below.
+changes, localization, TalkBack traversal, release, or a completed visual
+overhaul. The UI roadmap and its UI-06 checkpoint are retired. The next
+product action must be a visibly distinct Standard Now hero visual slice;
+no replacement roadmap is active. No provider, repository, cache, core,
+navigation, or settings behavior changes are needed for this reset.
 
 **TalkBack test policy:** Per the 2026-09-17 user decision, resource-intensive
 TalkBack service/speech tests are canceled for this early development cycle.

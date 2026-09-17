@@ -1939,3 +1939,18 @@ non-color meaning, readability, or other per-slice accessibility obligations.
 Updated: README, active plan, UI roadmap, and full specification decision text.
 Evidence: documentation-only review and `git diff --check`; no Android build,
 unit test, connected test, emulator, or installed-app checks were rerun.
+
+### 2026-09-17-ui-roadmap-retired
+
+Status: documentation decision; committed
+Mode: planning reset after failed visual-overhaul outcome
+Decision: Per the user's direction, `.codex/plans/ui-roadmap.md` is scrapped.
+The active plan no longer selects UI-06 or any replacement roadmap and records
+that the visual overhaul remains unimplemented. The next product action is a
+visibly distinct Standard Now hero visual slice.
+Evidence: inspected the affected diff and `git diff --check` passed. No
+Android, unit, connected, emulator, or installed-app checks were run because
+this change only removes planning documentation and repairs its active-plan
+reference.
+Limits: historical entries retain their original claims; no production UI or
+behavior changed, and no visual-overhaul completion is claimed.
