@@ -62,8 +62,12 @@ Evidence budget:
 4. Run focused tests for any changed mapper/UI contract, Android-test
    compilation when the test source changes, app/core unit suites, debug
    assembly, and `git diff --check` as applicable.
-5. Preserve one emulator session and one install per APK change. A normal
-   failure or bounded timeout ends the repair attempt without repeated retries.
+5. Preserve one emulator session and one install per APK change. Apply the
+   repository's bounded diagnostic rule: at most three failed attempts for this
+   boundary, each additional attempt backed by a concrete hypothesis and a
+   material diagnostic, input, or environment change. Stop earlier when the
+   cause is established; after three unresolved failures, preserve and report
+   the evidence without further attempts.
 
 ## Limits
 

@@ -269,8 +269,19 @@ do not defer required acceptance evidence merely to meet its size target.
 - Start one emulator session per task. Confirm that ADB is ready, then install
   once per APK change. Relaunch or force-stop the app with ADB when needed; do
   not restart the emulator for ordinary retries.
-- If a real-path attempt reaches a bounded platform timeout, record the exact
-  outcome as a blocker and stop repeating the same attempt. Do not convert a
+- After a failed acceptance attempt, preserve its evidence and perform bounded
+  triage sufficient to distinguish a production defect, test/harness defect,
+  environment problem, or transient failure. Allow at most three failed
+  attempts for the same acceptance boundary in one slice. Every additional
+  attempt must state a concrete hypothesis and materially change the diagnostic
+  evidence, relevant input, or execution environment; never repeat an unchanged
+  command merely to seek a different result. Stop earlier when the cause is
+  established. After three failed attempts without resolution, preserve all
+  evidence, report the unresolved boundary, and select a separate repair or
+  investigation slice.
+- A bounded platform timeout counts as a failed attempt. Record its exact
+  outcome and repeat only when an identified environment or diagnostic change
+  can test a concrete hypothesis; otherwise stop immediately. Do not convert a
   platform limitation into mock success.
 - Maintain a short verification ledger containing each command, result, and
   reason for any rerun. A passing check is evidence, not a reason to repeat it.

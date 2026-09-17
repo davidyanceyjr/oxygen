@@ -86,13 +86,17 @@ retained UI-04/UI-05 evidence and rerun the five UI-04 Home Compose cases on
 the post-UI-05 shared Home implementation. Reset the implementation count only
 after fresh accepted results and documentation closure. This checkpoint does
 not advance the visual-overhaul count.
-**Failure rule:** Preserve any ordinary failure or bounded platform timeout and
-select a separate repair slice; do not weaken coverage or start CD-01.
+**Failure rule:** Apply the repository's bounded three-attempt diagnostic rule.
+Preserve every failure, require a concrete hypothesis and material diagnostic,
+input, or environment change before another attempt, and stop as soon as the
+cause is established. After three unresolved failures, select a separate repair
+or investigation slice; do not weaken coverage or start CD-01.
 
-Fresh post-UI-05 execution stopped exactly at that rule. The compact Standard
-Now case completed 1/1 with zero skips and one failure because the location and
-current semantic regions overlapped. The other four checkpoint cases were not
-run. CD-00 remains pending and the implementation count remains 2 of 2.
+Fresh post-UI-05 execution stopped under the then-active one-failure rule. The
+compact Standard Now case completed 1/1 with zero skips and one failure because
+the location and current semantic regions overlapped. The other four checkpoint
+cases were not run. CD-00 remains pending and the implementation count remains
+2 of 2.
 
 ### CD-00R — Standard Now compact overlap repair investigation
 
