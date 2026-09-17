@@ -1841,3 +1841,48 @@ Commit state: committed with this change. Post-commit consistency review found
 the active plan, roadmap, README, history, affected contracts, and artifact
 paths consistent with the verified state; no follow-up documentation change
 was required.
+
+### 2026-09-17-ui-04-now-hierarchy
+
+Status: verified; ready to commit
+Mode: bounded Android/Compose presentation slice
+Slice: UI-04 — Standard Now hierarchy and truthful alert state
+
+Result:
+
+- Added the Standard Now fixed location/current-weather hierarchy and local
+  supporting overflow for refresh/freshness, typed alert lookup outcomes, and
+  concise source/update context. Simple Now remains unchanged and scrollable.
+- Added `HomeAlertLookupPresentation` mapping for active, no-alert, not
+  checked, unavailable, unable, and delayed outcomes. Inactive outcomes expose
+  no provider diagnostics or alert actions; legacy active alerts retain their
+  compatibility accessors and detail/link behavior.
+- Added mapper coverage for every lookup outcome, inconsistent no-alert input,
+  legacy alerts, missing current data, and empty provider output. Added the
+  five named Compose acceptance cases in `HomeDashboardUiTest`.
+
+Evidence and checks:
+
+- Focused `HomeForecastPresentationMapperTest` plus
+  `HighContrastThemeContractTest` passed.
+- All five named API-37 `oxygen_starter` connected methods passed 1/1 in one
+  recovered emulator session: compact hierarchy, lookup truthfulness,
+  operational/missing states, large-font RTL active-alert reachability, and
+  Simple regression. Artifacts are under
+  `.codex/test-artifacts/2026-09-17-ui-04-now-hierarchy/`.
+- The installed final selected-Chicago route was restored through production
+  search/Use now and captured at 360x640 dp, font scale 1.0, LTR, Effects Off;
+  the before/after screenshots and UI XML were reviewed. The live route had no
+  active alert, so deterministic Compose evidence owns active-alert actions.
+- App/core unit tests, debug assembly, Android source compilation, and
+  `git diff --check` passed. Provider/repository connected suites, full
+  connected classes, TalkBack service traversal, localization, release checks,
+  and active-alert live-provider evidence were not run or are out of scope.
+
+Limits and next action:
+
+- No provider, core, persistence, navigation, shared-theme role, or
+  supporting-surface behavior changed. Alert persistence/background behavior,
+  notifications, localization completion, TalkBack traversal, and release/1.0
+  claims remain outside this slice.
+- UI-04 is verified; UI-05 remains the next specified roadmap candidate.

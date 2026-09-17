@@ -113,6 +113,11 @@ and `docs/data-sources/`.
   previous/next actions, static-tap and child-action isolation, and
   one-page-at-a-time Android Back from Details through Now with normal host
   Back preserved at Now.
+- Standard Home Now presents a fixed location/current-weather hierarchy with
+  local supporting overflow for refresh/freshness, typed truthful official-alert
+  lookup outcomes, and concise source/update context. Simple Now retains its
+  scrollable composition; inactive alert outcomes do not expose event,
+  provider-diagnostic, or action content.
 - Standard Home Now, Hourly, Daily, and Details visual baselines.
 - Art-sheet-aligned Standard Home weather marks, surface roles, typography
   roles, and app-local design roles for the installed Home surface.

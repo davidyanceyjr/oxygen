@@ -121,6 +121,7 @@ import java.time.ZoneId
 import java.util.concurrent.Executor
 import kotlin.math.pow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -4291,6 +4292,278 @@ class HomeDashboardUiTest {
         assertEquals(listOf(oldLocation, newLocation), repository.locations)
         composeRule.onNodeWithText("Loading weather for New Compose City").assertIsDisplayed()
     }
+
+    @Test
+    fun standardNowCompactHierarchyUsesFixedHeroAndNonOverflowingSupport() {
+        val location = weatherLocation(name = "Standard Compact City")
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = emptyList()),
+            alertStatus = AlertLookupStatus.NoAlerts(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+
+        val renderedFontScale = mutableStateOf(1f)
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(1f, renderedFontScale.value),
+                LocalLayoutDirection provides LayoutDirection.Ltr,
+            ) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        HomeLoadingScreen(
+                            state = state,
+                            appearance = OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.onNodeWithTag("home-now-fixed-content").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-now-supporting-content").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+        ).assertIsDisplayed()
+        composeRule.assertSemanticsTreeOrder(
+            "home-section-location",
+            "home-section-current",
+            "home-section-precipitation",
+            "home-now-supporting-content",
+        )
+        composeRule.assertSemanticsTreeOrder("home-now-supporting-content", "home-now-source-context")
+        composeRule.assertWithinRootBounds(
+            "home-section-location",
+            "home-section-current",
+            "home-section-precipitation",
+            "home-page-tab-now",
+            "home-page-tab-hourly",
+            "home-page-tab-daily",
+            "home-page-tab-details",
+        )
+        composeRule.assertNoSiblingOverlap("home-section-location", "home-section-current", "home-section-precipitation")
+        assertFalse(composeRule.onNodeWithTag("home-page-now").fetchSemanticsNode().config.contains(SemanticsActions.ScrollBy))
+        assertTrue(composeRule.onNodeWithTag("home-now-supporting-content").fetchSemanticsNode().config.contains(SemanticsActions.ScrollBy))
+
+        composeRule.runOnIdle { renderedFontScale.value = 1.3f }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-now-fixed-content").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-now-supporting-content").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-page-tab-details").assertIsDisplayed()
+        composeRule.assertWithinRootBounds("home-current-summary", "home-page-tab-details")
+    }
+
+    @Test
+    fun standardNowAlertLookupOutcomesAreTruthfulAndActionFree() {
+        val location = weatherLocation(name = "Lookup Outcome City")
+        val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
+        val statuses = listOf(
+            AlertLookupStatus.NoAlerts(AlertSuccessMetadata(location.point, "nws", checkedAt)),
+            AlertLookupStatus.NotRequested,
+            AlertLookupStatus.UnsupportedRegion,
+            AlertLookupStatus.Failed(com.oxygen.weather.core.provider.AlertProviderError.Network),
+            AlertLookupStatus.SkippedByRateLimit("nws", location.point, Instant.parse("2026-08-22T16:10:00Z")),
+        )
+        val rendered = mutableStateOf<HomeForecastPresentationState>(
+            HomeForecastPresentationState.ForecastReady.from(
+                location = location,
+                weather = fullWeatherBundle(location).copy(alerts = emptyList()),
+                alertStatus = statuses.first(),
+            ),
+        )
+        composeRule.setDynamicHomeContent(
+            rendered,
+            OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+            onRetry = {},
+        )
+
+        statuses.forEachIndexed { index, status ->
+            composeRule.runOnIdle {
+                rendered.value = HomeForecastPresentationState.ForecastReady.from(
+                    location = location,
+                    weather = fullWeatherBundle(location).copy(alerts = emptyList()),
+                    alertStatus = status,
+                )
+            }
+            composeRule.waitForIdle()
+            composeRule.onAllNodesWithTag("home-alert-lookup").assertCountEquals(1)
+            composeRule.onAllNodesWithTag("home-section-alert").assertCountEquals(0)
+            composeRule.onAllNodesWithTag("home-alert-details").assertCountEquals(0)
+            composeRule.onAllNodesWithTag("home-alert-source-link").assertCountEquals(0)
+            composeRule.onAllNodesWithTag("home-alert-count").assertCountEquals(0)
+            val expected = when (index) {
+                0 -> "No active official alerts."
+                1 -> "Official alerts have not been checked for this location."
+                2 -> "Official alerts are unavailable for this location."
+                3 -> "Official alerts could not be checked."
+                else -> "Official alert lookup is delayed until Aug 22, 11:10 AM CDT."
+            }
+            composeRule.onNodeWithText(expected).performScrollTo().assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun standardNowOperationalMissingAndEmptyStatesRemainDistinct() {
+        val location = weatherLocation(name = "Operational State City")
+        val ready = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+            alertStatus = AlertLookupStatus.NotRequested,
+        )
+        val rendered = mutableStateOf<HomeForecastPresentationState>(ready)
+        composeRule.setDynamicHomeContent(
+            rendered,
+            OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+            onRetry = {},
+        )
+
+        fun replace(next: HomeForecastPresentationState.ForecastReady) {
+            composeRule.runOnIdle { rendered.value = next }
+            composeRule.waitForIdle()
+        }
+
+        replace(ready.copy(isRefreshInProgress = true, refreshInProgressText = "Refreshing weather for Operational State City"))
+        composeRule.onNodeWithTag("home-refreshing").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+        ).assertIsDisplayed()
+        composeRule.onNodeWithText("Refreshing weather for Operational State City").performScrollTo().assertIsDisplayed()
+
+        replace(
+            HomeForecastPresentationState.ForecastReady.fromRestoredCache(
+                location = location,
+                weather = fullWeatherBundle(location),
+                staleAge = Duration.ofMinutes(95),
+            ),
+        )
+        composeRule.onNodeWithTag("home-section-stale").assertIsDisplayed()
+        composeRule.onNodeWithText("Showing cached forecast from 1 hour ago while Oxygen refreshes this location.")
+            .performScrollTo().assertIsDisplayed()
+
+        replace(
+            ready.copy(
+                freshness = com.oxygen.weather.app.HomeForecastFreshness.StaleAfterFailedRefresh(
+                    staleAgeText = "1 hour 35 minutes",
+                    refreshFailureMessage = com.oxygen.weather.app.HomeRefreshFailureMessage.NetworkUnavailable,
+                    statusText = "Showing cached forecast from 1 hour 35 minutes ago because refresh failed.",
+                ),
+            ),
+        )
+        composeRule.onNodeWithTag("home-section-stale").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+        ).assertIsDisplayed()
+
+        val missingCurrent = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(current = null),
+            alertStatus = AlertLookupStatus.NotRequested,
+        )
+        replace(missingCurrent)
+        composeRule.onNodeWithText("Current conditions unavailable").assertIsDisplayed()
+        composeRule.onAllNodesWithText("65 deg F").assertCountEquals(0)
+
+        val empty = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = WeatherBundle(
+                location = location,
+                current = null,
+                hourly = emptyList(),
+                daily = emptyList(),
+                fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
+            ),
+            alertStatus = AlertLookupStatus.NotRequested,
+        )
+        replace(empty)
+        composeRule.onNodeWithText("Provider returned no current, hourly, or daily weather data for this location.")
+            .assertIsDisplayed()
+        composeRule.onAllNodesWithText("0 deg F").assertCountEquals(0)
+    }
+
+    @Test
+    fun standardNowLargeFontRtlOverflowKeepsHeroNavigationAndAlertActionsReachable() {
+        val location = weatherLocation(name = "RTL Long Alert City")
+        val alert = fullWeatherBundle(location).alerts.single().copy(
+            event = "Extremely Long Flash Flood Warning Event Name For A Narrow Display",
+            severity = AlertSeverity.SEVERE,
+            issuer = "National Weather Service Central Wisconsin Emergency Coordination Office",
+            web = "https://alerts.weather.gov/ui-04",
+        )
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = listOf(alert)),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+        val openedUris = mutableListOf<String>()
+        var detailClicks = 0
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(1f, 2f),
+                LocalLayoutDirection provides LayoutDirection.Rtl,
+                LocalUriHandler provides object : UriHandler {
+                    override fun openUri(uri: String) { openedUris += uri }
+                },
+            ) {
+                OxygenTheme(contrast = ContrastLevel.HIGH) {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        HomeLoadingScreen(
+                            state = state,
+                            appearance = OxygenAppearance(
+                                layout = LayoutPreset.STANDARD,
+                                effects = EffectsLevel.OFF,
+                                contrast = ContrastLevel.HIGH,
+                            ),
+                            onAlertDetailsRequested = { detailClicks++ },
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.onNodeWithTag("home-current-summary").assertExists()
+        composeRule.onNodeWithTag("home-footer-navigation").assertExists()
+        assertFalse(composeRule.onNodeWithTag("home-page-now").fetchSemanticsNode().config.contains(SemanticsActions.ScrollBy))
+        val largeSupportBounds = composeRule.onNodeWithTag("home-now-supporting-content").fetchSemanticsNode().boundsInRoot
+        assertTrue("standard Now supporting content should have a viewport", largeSupportBounds.height > 0f)
+        assertTrue(composeRule.onNodeWithTag("home-now-supporting-content").fetchSemanticsNode().config.contains(SemanticsActions.ScrollBy))
+        val eventBounds = composeRule.onNodeWithText(alert.event).performScrollTo().fetchSemanticsNode().boundsInRoot
+        assertTrue("long alert event should have readable bounds", eventBounds.width > 0f && eventBounds.height > 0f)
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("home-alert-source-link").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.assertMinimumTouchTargetAfterScroll("home-alert-details", "home-alert-source-link")
+        assertEquals(1, detailClicks)
+        assertEquals(listOf("https://alerts.weather.gov/ui-04"), openedUris)
+        composeRule.assertWithinRootBounds("home-footer-navigation", "home-page-tab-now")
+    }
+
+    @Test
+    fun simpleNowContractRemainsScrollableAndUnchanged() {
+        val location = weatherLocation(name = "Simple Contract City")
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location),
+            alertStatus = AlertLookupStatus.Available(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 640,
+            fontScale = 1.3f,
+            appearance = OxygenAppearance(layout = LayoutPreset.SIMPLE, effects = EffectsLevel.OFF),
+        )
+        composeRule.onNodeWithTag("home-page-now").assertExists()
+        assertTrue(composeRule.onNodeWithTag("home-page-now").fetchSemanticsNode().config.contains(SemanticsActions.ScrollBy))
+        composeRule.onAllNodesWithTag("home-now-fixed-content").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-now-supporting-content").assertCountEquals(0)
+        composeRule.onNodeWithText("Humidity").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Wind").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-section-provenance-footer").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-alert-details").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("home-alert-source-link").performScrollTo().assertIsDisplayed()
+    }
 }
 
 private fun ComposeContentTestRule.setHomeContent(
@@ -4873,8 +5146,8 @@ private fun ComposeTestRule.assertMinimumTouchTargetAfterScroll(vararg tags: Str
     tags.forEach { tag ->
         onNodeWithTag(tag).performScrollTo()
         val rect = onAllNodesWithTag(tag).fetchSemanticsNodes().single().boundsInRoot
-        assertTrue("$tag should be at least 48dp wide", rect.width >= 48f)
-        assertTrue("$tag should be at least 48dp tall", rect.height >= 48f)
+        assertTrue("$tag should be at least 48dp wide: $rect", rect.width >= 48f)
+        assertTrue("$tag should be at least 48dp tall: $rect", rect.height >= 48f)
     }
 }
 

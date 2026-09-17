@@ -57,6 +57,12 @@
     <string name="home_severity">Severity: %1$s</string>
     <string name="home_issuer">Issuer: %1$s</string>
     <string name="home_active_alerts">%1$d active alerts</string>
+    <string name="home_no_active_alerts">No active official alerts.</string>
+    <string name="home_alert_source_checked">Source checked %1$s.</string>
+    <string name="home_alert_not_checked">Official alerts have not been checked for this location.</string>
+    <string name="home_alert_unavailable_for_location">Official alerts are unavailable for this location.</string>
+    <string name="home_alert_unable_to_check">Official alerts could not be checked.</string>
+    <string name="home_alert_delayed">Official alert lookup is delayed until %1$s.</string>
     <string name="home_next_hours">Next hours</string>
     <string name="home_daily_forecast">Daily forecast</string>
     <string name="home_sun_summary">Sun %1$s / %2$s</string>

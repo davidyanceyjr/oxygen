@@ -19,6 +19,7 @@ import com.oxygen.weather.core.model.VisibilityUnit
 import com.oxygen.weather.core.model.WindSpeedUnit
 import com.oxygen.weather.core.model.resolve
 import com.oxygen.weather.core.provider.AlertLookupStatus
+import com.oxygen.weather.core.provider.AlertSuccessMetadata
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.net.URI
@@ -63,9 +64,8 @@ fun WeatherBundle.toHomeSuccessPresentation(
     val metricRows = current?.toMetricRows(units, compatibilityDefault).orEmpty()
     val sun = daily.firstOrNull { it.sunrise != null || it.sunset != null }?.toSunPresentation(zoneId)
     val provenance = mostRelevantProvenance()?.toSourcePresentation(zoneId) ?: bundleFallbackSource(zoneId)
-    val effectiveAlertStatus = alertStatus ?: alerts.legacyAlertStatus(selectedLocation)
-    val alertSummary = effectiveAlertStatus?.toHomeAlertSummary(alerts, zoneId)
-    val alertDetails = effectiveAlertStatus?.toHomeAlertDetails(alerts, zoneId).orEmpty()
+    val alertLookup = (alertStatus ?: alerts.legacyAlertStatus(selectedLocation))
+        .toHomeAlertLookupPresentation(alerts, zoneId)
     val precipitationSummary = hourly.nearTermPrecipitationSummary(units)
     val returnedDataUnavailable = current == null && hourly.isEmpty() && daily.isEmpty()
 
@@ -73,8 +73,7 @@ fun WeatherBundle.toHomeSuccessPresentation(
         locationName = selectedLocation.displayName,
         locationSubtitle = selectedLocation.forecastSubtitle(),
         alerts = alerts,
-        alertSummary = alertSummary,
-        alertDetails = alertDetails,
+        alertLookup = alertLookup,
         current = currentPresentation,
         currentUnavailableText = if (currentPresentation == null && !returnedDataUnavailable) {
             "Current conditions unavailable"
@@ -95,7 +94,7 @@ fun WeatherBundle.toHomeSuccessPresentation(
         sectionOrder = buildList {
             add(HomeSuccessSection.LocationHeader)
             add(HomeSuccessSection.Current)
-            if (alertSummary != null) add(HomeSuccessSection.Alerts)
+            if (alertLookup is HomeAlertLookupPresentation.Active) add(HomeSuccessSection.Alerts)
             if (precipitationSummary != null) add(HomeSuccessSection.NearTermPrecipitation)
             if (hourlyRows.isNotEmpty()) add(HomeSuccessSection.Hourly)
             if (dailyRows.isNotEmpty()) add(HomeSuccessSection.Daily)
@@ -111,8 +110,7 @@ data class HomeSuccessPresentation(
     val locationName: String,
     val locationSubtitle: String,
     val alerts: List<WeatherAlert>,
-    val alertSummary: HomeAlertSummaryPresentation?,
-    val alertDetails: List<HomeAlertDetailPresentation>,
+    val alertLookup: HomeAlertLookupPresentation,
     val current: HomeCurrentPresentation?,
     val currentUnavailableText: String?,
     val precipitationSummary: String?,
@@ -123,7 +121,15 @@ data class HomeSuccessPresentation(
     val source: HomeSourcePresentation,
     val returnedDataUnavailableText: String?,
     val sectionOrder: List<HomeSuccessSection>,
-)
+) {
+    /** Compatibility view retained for existing alert-detail and state callers. */
+    val alertSummary: HomeAlertSummaryPresentation?
+        get() = (alertLookup as? HomeAlertLookupPresentation.Active)?.summary
+
+    /** Compatibility view retained for existing alert-detail and state callers. */
+    val alertDetails: List<HomeAlertDetailPresentation>
+        get() = (alertLookup as? HomeAlertLookupPresentation.Active)?.details.orEmpty()
+}
 
 enum class HomeSuccessSection {
     LocationHeader,
@@ -151,6 +157,27 @@ data class HomeAlertSummaryPresentation(
     val detailActionLabel: String,
     val detailActionContentDescription: String,
 )
+
+sealed interface HomeAlertLookupPresentation {
+    data class Active(
+        val summary: HomeAlertSummaryPresentation,
+        val details: List<HomeAlertDetailPresentation>,
+    ) : HomeAlertLookupPresentation
+
+    data class NoActiveAlerts(
+        val sourceCheckedAt: String,
+    ) : HomeAlertLookupPresentation
+
+    data object NotChecked : HomeAlertLookupPresentation
+
+    data object UnavailableForLocation : HomeAlertLookupPresentation
+
+    data object UnableToCheck : HomeAlertLookupPresentation
+
+    data class Delayed(
+        val nextEligibleAt: String,
+    ) : HomeAlertLookupPresentation
+}
 
 data class HomeAlertDetailPresentation(
     val id: String,
@@ -459,11 +486,39 @@ private fun DailyForecast.toSunPresentation(zoneId: ZoneId): HomeSunPresentation
         sunset = sunset?.formatLocalTime(zoneId) ?: UNAVAILABLE,
     )
 
-private fun AlertLookupStatus.toHomeAlertSummary(
+private fun AlertLookupStatus?.toHomeAlertLookupPresentation(
     alerts: List<WeatherAlert>,
     zoneId: ZoneId,
-): HomeAlertSummaryPresentation? {
-    if (this !is AlertLookupStatus.Available || alerts.isEmpty()) return null
+): HomeAlertLookupPresentation = when (this) {
+    null,
+    AlertLookupStatus.NotRequested,
+    -> HomeAlertLookupPresentation.NotChecked
+    is AlertLookupStatus.NoAlerts -> HomeAlertLookupPresentation.NoActiveAlerts(
+        sourceCheckedAt = metadata.fetchedAt.formatFetched(zoneId),
+    )
+    is AlertLookupStatus.Available -> if (alerts.isEmpty()) {
+        HomeAlertLookupPresentation.NoActiveAlerts(metadata.fetchedAt.formatFetched(zoneId))
+    } else {
+        val summary = metadata.toHomeAlertSummary(alerts, zoneId)
+        HomeAlertLookupPresentation.Active(
+            summary = summary,
+            details = metadata.toHomeAlertDetails(alerts, zoneId),
+        )
+    }
+    AlertLookupStatus.UnsupportedRegion -> HomeAlertLookupPresentation.UnavailableForLocation
+    is AlertLookupStatus.Failed -> HomeAlertLookupPresentation.UnableToCheck
+    is AlertLookupStatus.SkippedByRateLimit -> HomeAlertLookupPresentation.Delayed(
+        nextEligibleAt = nextEligibleAt.formatFetched(zoneId),
+    )
+}
+
+private fun AlertSuccessMetadata.toHomeAlertSummary(
+    alerts: List<WeatherAlert>,
+    zoneId: ZoneId,
+): HomeAlertSummaryPresentation {
+    require(alerts.map { it.id }.toSet().size == alerts.size) {
+        "Available alerts must have unique IDs"
+    }
     val first = alerts.first()
     return HomeAlertSummaryPresentation(
         event = first.event,
@@ -471,7 +526,7 @@ private fun AlertLookupStatus.toHomeAlertSummary(
         issuer = first.issuer,
         expires = first.expires?.let { "Expires ${it.formatLocalTime(zoneId)}" } ?: "Expires unavailable",
         activeAlertCount = alerts.size,
-        sourceCheckedAt = "Alert source checked ${metadata.fetchedAt.formatFetched(zoneId)}",
+        sourceCheckedAt = "Alert source checked ${fetchedAt.formatFetched(zoneId)}",
         attribution = "Official alerts from NOAA/National Weather Service",
         sourceLink = first.web.validAlertSourceUrl(),
         sourceLinkLabel = "Open official NOAA/National Weather Service alert source",
@@ -480,11 +535,10 @@ private fun AlertLookupStatus.toHomeAlertSummary(
     )
 }
 
-private fun AlertLookupStatus.toHomeAlertDetails(
+private fun AlertSuccessMetadata.toHomeAlertDetails(
     alerts: List<WeatherAlert>,
     zoneId: ZoneId,
-): List<HomeAlertDetailPresentation>? {
-    if (this !is AlertLookupStatus.Available || alerts.isEmpty()) return null
+): List<HomeAlertDetailPresentation> {
     require(alerts.map { it.id }.toSet().size == alerts.size) {
         "Available alerts must have unique IDs"
     }
@@ -505,7 +559,7 @@ private fun AlertLookupStatus.toHomeAlertDetails(
             affectedArea = alert.affectedArea?.areaDescription?.takeIf { it.isNotBlank() } ?: UNAVAILABLE,
             description = alert.description?.takeIf { it.isNotBlank() } ?: UNAVAILABLE,
             instruction = alert.instruction?.takeIf { it.isNotBlank() } ?: UNAVAILABLE,
-            sourceCheckedAt = "Alert source checked ${metadata.fetchedAt.formatFetched(zoneId)}",
+            sourceCheckedAt = "Alert source checked ${fetchedAt.formatFetched(zoneId)}",
             attribution = "Official alerts from NOAA/National Weather Service",
             sourceLink = alert.web.validAlertSourceUrl(),
             sourceLinkLabel = "Open official NOAA/National Weather Service alert source for ${alert.event}",

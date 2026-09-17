@@ -60,6 +60,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import com.oxygen.weather.app.HomeDailyPresentation
 import com.oxygen.weather.app.HomeAlertSummaryPresentation
+import com.oxygen.weather.app.HomeAlertLookupPresentation
 import com.oxygen.weather.app.HomeHourlyPresentation
 import com.oxygen.weather.app.HomeMetricIdentity
 import com.oxygen.weather.app.HomeMetricPresentation
@@ -332,7 +333,10 @@ private fun ReadyContent(
                         }
                     },
             ) { pageIndex ->
-                HomePageContainer(page = pages[pageIndex]) {
+                HomePageContainer(
+                    page = pages[pageIndex],
+                    enablePageScroll = appearance.layout == LayoutPreset.SIMPLE || pages[pageIndex] != HomePage.Now,
+                ) {
                     when (pages[pageIndex]) {
                         HomePage.Now -> {
                             if (appearance.layout == LayoutPreset.SIMPLE) {
@@ -341,7 +345,7 @@ private fun ReadyContent(
                                     onAlertDetailsRequested = onAlertDetailsRequested,
                                 )
                             } else {
-                                NowPage(
+                                StandardNowPage(
                                     state = state,
                                     onAlertDetailsRequested = onAlertDetailsRequested,
                                 )
@@ -476,10 +480,11 @@ private fun HomeFooterNavigation(
 @Composable
 private fun HomePageContainer(
     page: HomePage,
+    enablePageScroll: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val roles = LocalOxygenHomeDesign.current
-    val useOverflowScroll = page != HomePage.Daily || LocalDensity.current.fontScale > 1f
+    val useOverflowScroll = enablePageScroll && (page != HomePage.Daily || LocalDensity.current.fontScale > 1f)
     val bottomClearance = if (useOverflowScroll) roles.sectionGap + 24.dp else roles.sectionGap
     val baseModifier = Modifier
         .fillMaxSize()
@@ -524,7 +529,262 @@ private fun ReadyHeader(
 }
 
 @Composable
-private fun NowPage(
+private fun StandardNowPage(
+    state: HomeForecastPresentationState.ForecastReady,
+    onAlertDetailsRequested: () -> Unit,
+) {
+    val roles = LocalOxygenHomeDesign.current
+    val dashboard = state.dashboard
+    val compactFont = LocalDensity.current.fontScale > 1.2f
+    val fixedGap = if (compactFont) 4.dp else roles.tileGap
+    val markSize = if (compactFont) 0.dp else 56.dp
+    Column(
+        modifier = Modifier.fillMaxSize().testTag("home-now-standard"),
+        verticalArrangement = Arrangement.spacedBy(if (compactFont) 4.dp else roles.sectionGap),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("home-now-fixed-content"),
+            verticalArrangement = Arrangement.spacedBy(fixedGap),
+        ) {
+            DashboardSection(tag = "home-section-location") {
+                Text(
+                    text = dashboard.locationName,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (!compactFont) {
+                    Text(
+                        text = dashboard.locationSubtitle,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = homeSupportingContent(0.68f),
+                    )
+                }
+            }
+
+            DashboardHero(tag = "home-section-current") {
+                if (dashboard.current == null) {
+                    Text(stringResource(R.string.home_current_conditions), style = roles.sectionHeading)
+                    Text(
+                        text = dashboard.currentUnavailableText ?: dashboard.returnedDataUnavailableText.orEmpty(),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                } else {
+                    val current = dashboard.current
+                    if (compactFont) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("home-current-summary")
+                                .clearAndSetSemantics { contentDescription = current.spokenDescription },
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = current.condition,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = current.temperature,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("home-current-summary")
+                                .clearAndSetSemantics { contentDescription = current.spokenDescription },
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(markSize)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .testTag("home-current-mark"),
+                            ) {
+                                WeatherConditionMark(
+                                    condition = current.conditionIdentity,
+                                    modifier = Modifier.size(markSize),
+                                )
+                            }
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Text(
+                                    text = current.condition,
+                                    modifier = Modifier.semantics { hideFromAccessibility() },
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Text(
+                                    text = current.temperature,
+                                    modifier = Modifier.semantics { hideFromAccessibility() },
+                                    style = roles.displayWeatherValue,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
+                    val range = listOfNotNull(current.highTemperature, current.lowTemperature)
+                        .joinToString("   ")
+                        .ifEmpty { null }
+                    if (compactFont) {
+                        Text(
+                            text = listOfNotNull(
+                                current.apparentTemperature,
+                                range?.let { stringResource(R.string.home_today) + "  " + it },
+                            ).joinToString("  ·  "),
+                            modifier = Modifier.semantics { hideFromAccessibility() },
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 2,
+                        )
+                    } else {
+                        Text(
+                            text = current.apparentTemperature,
+                            modifier = Modifier.semantics { hideFromAccessibility() },
+                            style = roles.compactWeatherValue,
+                        )
+                        range?.let {
+                            Text(
+                                text = stringResource(R.string.home_today) + "  " + it,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (!compactFont) {
+                dashboard.precipitationSummary?.let { precipitation ->
+                DashboardSection(tag = "home-section-precipitation") {
+                    Text(stringResource(R.string.home_near_term_precipitation), style = roles.sectionHeading)
+                    Text(precipitation, style = MaterialTheme.typography.bodyMedium)
+                }
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 48.dp)
+                .testTag("home-now-supporting-content"),
+            verticalArrangement = Arrangement.spacedBy(roles.sectionGap),
+        ) {
+            if (compactFont) {
+                dashboard.precipitationSummary?.let { precipitation ->
+                    DashboardSection(tag = "home-section-precipitation") {
+                        Text(
+                            text = stringResource(R.string.home_near_term_precipitation) + ": " + precipitation,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            state.refreshInProgressText?.let { refreshText ->
+                DashboardCard(tag = "home-refreshing") {
+                    Text(refreshText, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            when (val freshness = state.freshness) {
+                HomeForecastFreshness.Fresh -> Unit
+                is HomeForecastFreshness.RestoredFromCache -> {
+                    DashboardCard(tag = "home-section-stale") {
+                        Text(stringResource(R.string.home_cached_forecast), style = roles.sectionHeading)
+                        Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                is HomeForecastFreshness.StaleAfterFailedRefresh -> {
+                    DashboardCard(tag = "home-section-stale") {
+                        Text(stringResource(R.string.home_cached_forecast), style = roles.sectionHeading)
+                        Text(freshness.statusText, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            stringResource(R.string.home_refresh_failed, freshness.refreshFailureMessage.text),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+            StandardAlertLookup(
+                lookup = dashboard.alertLookup,
+                onAlertDetailsRequested = onAlertDetailsRequested,
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("home-now-source-context"),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                dashboard.current?.let { current ->
+                    Text(
+                        stringResource(R.string.home_updated_data, current.updatedTime, current.dataTypeLabel),
+                        style = roles.supportingLabel,
+                    )
+                }
+                Text(
+                    stringResource(R.string.home_source_data, dashboard.source.sourceName, dashboard.source.fetchedAt),
+                    style = roles.supportingLabel,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StandardAlertLookup(
+    lookup: HomeAlertLookupPresentation,
+    onAlertDetailsRequested: () -> Unit,
+) {
+    val roles = LocalOxygenHomeDesign.current
+    DashboardCard(tag = "home-alert-lookup") {
+        when (lookup) {
+            is HomeAlertLookupPresentation.Active -> OfficialAlertSummary(
+                summary = lookup.summary,
+                onAlertDetailsRequested = onAlertDetailsRequested,
+            )
+            is HomeAlertLookupPresentation.NoActiveAlerts -> {
+                Text(stringResource(R.string.home_no_active_alerts), style = roles.sectionHeading)
+                Text(
+                    stringResource(R.string.home_alert_source_checked, lookup.sourceCheckedAt),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            HomeAlertLookupPresentation.NotChecked -> Text(
+                stringResource(R.string.home_alert_not_checked),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            HomeAlertLookupPresentation.UnavailableForLocation -> Text(
+                stringResource(R.string.home_alert_unavailable_for_location),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            HomeAlertLookupPresentation.UnableToCheck -> Text(
+                stringResource(R.string.home_alert_unable_to_check),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            is HomeAlertLookupPresentation.Delayed -> Text(
+                stringResource(R.string.home_alert_delayed, lookup.nextEligibleAt),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SimpleNowPageContent(
     state: HomeForecastPresentationState.ForecastReady,
     onAlertDetailsRequested: () -> Unit,
 ) {
@@ -670,7 +930,7 @@ private fun SimpleNowPage(
     state: HomeForecastPresentationState.ForecastReady,
     onAlertDetailsRequested: () -> Unit,
 ) {
-    NowPage(
+    SimpleNowPageContent(
         state = state,
         onAlertDetailsRequested = onAlertDetailsRequested,
     )

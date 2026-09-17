@@ -1,13 +1,13 @@
 # Oxygen Home UI v0.3 Roadmap
 
-**Status:** active roadmap; UI-03 is the current completed `verified`
-checkpoint selected by `.codex/plans/current.md`. UI-01 and UI-02 are also
-`verified`; later unselected roadmap candidates remain `specified`.
+**Status:** active roadmap; UI-04 is `verified` and was selected by
+`.codex/plans/current.md`. UI-01, UI-02, and UI-03 are also `verified`; UI-05
+and later unselected roadmap candidates remain `specified`.
 **Roadmap ID:** `ui-home-v0.3-2026-09-reviewed-draft`
 **Source authority:** [`docs/OXYGEN_UI_SPECIFICATION.md`](../../docs/OXYGEN_UI_SPECIFICATION.md)
 **Higher authority:** [`docs/OXYGEN_FULL_SPECIFICATION.md`](../../docs/OXYGEN_FULL_SPECIFICATION.md)
 **Evidence authority:** [`docs/UI_DEVELOPMENT_WORKFLOW.md`](../../docs/UI_DEVELOPMENT_WORKFLOW.md)
-**Reviewed:** 2026-09-16
+**Reviewed:** 2026-09-17
 
 This roadmap delivers the UI Specification v0.3 Home program and extends its
 shared presentation roles to the existing supporting surfaces. It is not the
@@ -137,7 +137,7 @@ and affected specifications. Any defect becomes a separately selected repair.
 
 ### UI-04 — Now hierarchy and first proven shared tokens
 
-**Status:** specified
+**Status:** verified
 **Dependencies:** UI-02
 **Boundary:** Standard Home Now composition and only the semantic typography,
 spacing, shape, surface, and action roles proven by that composition.
@@ -147,11 +147,12 @@ operational state, source, update, and provenance remain calm and legible.
 Ready, stale/cache, failure-with-cache, missing-current, no-alert, active-alert,
 and unavailable-alert lookup states remain structurally distinct. Active alert
 severity and action are explicit without color alone.
-**Focused evidence:** presentation/card tests for the named states, including a
-real active-alert fixture rather than an “alert-compatible” placeholder; one
-focused Compose test for hierarchy/semantics/actions; installed before/after
-rendering of the production ready path plus the smallest deterministic state
-set needed to demonstrate the visual delta.
+**Focused evidence:** mapper tests for every alert-lookup category and preserved
+active-alert/detail compatibility; five selected Compose cases for compact
+hierarchy, inactive lookup truthfulness, operational/missing states, localized
+large-font RTL alert overflow, and unchanged Simple behavior; installed
+before/after rendering of the production ready path. Deterministic Compose
+fixtures, not fabricated installed data, own active-alert proof.
 **Layout boundary:** 360x640dp at font scale 1.0/1.3 without primary page
 scrolling; localized overflow at 2.0; long text, RTL, High Contrast, and Effects
 Off checked only where the changed composition can affect them.
@@ -159,6 +160,10 @@ Off checked only where the changed composition can affect them.
 scenes, supporting surfaces, and new weather fields.
 **Sizing:** medium; one page surface establishes reusable tokens only after
 their installed rendering succeeds.
+**Evidence:** mapper and high-contrast focused unit tests, five passing
+runner-backed API-37 connected cases, and the installed selected-Chicago
+before/after route are recorded under
+`.codex/test-artifacts/2026-09-17-ui-04-now-hierarchy/`.
 
 ### UI-05 — Hourly rolling windows and controls
 
@@ -416,7 +421,5 @@ signing/publication, localization completion, and TalkBack service claims.
 
 ## Active selection
 
-UI-03 is verified in `.codex/plans/current.md` after UI-01 and UI-02 were
-verified. UI-04 onward remain specified; UI-05 and UI-07 remain unselected
-until their dependencies are verified. A new active plan must select the next
-slice before it becomes planned.
+UI-01 through UI-04 are verified. UI-05 onward remain `specified` and
+unselected; the next active plan must select UI-05 before it becomes planned.
