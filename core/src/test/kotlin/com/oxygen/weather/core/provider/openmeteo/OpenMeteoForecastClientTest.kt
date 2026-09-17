@@ -38,7 +38,7 @@ class OpenMeteoForecastClientTest {
         assertEquals("kmh", query["wind_speed_unit"])
         assertEquals("mm", query["precipitation_unit"])
         assertEquals("10", query["forecast_days"])
-        assertEquals("48", query["forecast_hours"])
+        assertEquals("72", query["forecast_hours"])
         assertEquals(OpenMeteoForecastRequest.currentFields.joinToString(","), query["current"])
         assertEquals(OpenMeteoForecastRequest.hourlyFields.joinToString(","), query["hourly"])
         assertEquals(OpenMeteoForecastRequest.dailyFields.joinToString(","), query["daily"])

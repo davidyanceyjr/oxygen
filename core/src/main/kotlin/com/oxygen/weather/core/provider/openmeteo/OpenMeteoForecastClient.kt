@@ -11,7 +11,7 @@ data class OpenMeteoForecastRequest(
     val longitude: Double,
     val timezone: String,
     val forecastDays: Int = 10,
-    val forecastHours: Int = 48,
+    val forecastHours: Int = 72,
 ) {
     internal fun queryParameters(): List<Pair<String, String>> =
         listOf(

@@ -1,9 +1,11 @@
 package com.oxygen.weather.core.provider
 
 import com.oxygen.weather.core.model.CurrentConditions
+import com.oxygen.weather.core.model.DailyForecast
 import com.oxygen.weather.core.model.DataProvenance
 import com.oxygen.weather.core.model.DataType
 import com.oxygen.weather.core.model.GeoPoint
+import com.oxygen.weather.core.model.HourlyForecast
 import com.oxygen.weather.core.model.LocationId
 import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
@@ -82,6 +84,25 @@ class FallbackWeatherRepositoryTest {
         assertEquals("met-norway", requireNotNull(success.weather.current).provenance.providerId)
         assertEquals(listOf(chicago), openMeteo.locations)
         assertEquals(listOf(chicago), metNorway.locations)
+    }
+
+    @Test
+    fun fallbackSuccessPreservesLongNullableForecastLists() {
+        val expected = longForecastBundle("met-norway", chicago)
+
+        val success = FallbackWeatherRepository(
+            defaultRepository = RecordingWeatherRepository(
+                listOf(WeatherRepositoryResult.Failure(ForecastError.ProviderUnavailable("open-meteo"))),
+            ),
+            fallbackRepository = RecordingWeatherRepository(listOf(WeatherRepositoryResult.Success(expected))),
+        ).refresh(chicago).terminalSuccess()
+
+        assertEquals(expected.hourly, success.weather.hourly)
+        assertEquals(expected.daily, success.weather.daily)
+        assertEquals(72, success.weather.hourly.size)
+        assertEquals(10, success.weather.daily.size)
+        assertEquals(null, success.weather.hourly[17].temperatureC)
+        assertEquals(null, success.weather.daily[6].highC)
     }
 
     @Test
@@ -185,6 +206,38 @@ class FallbackWeatherRepositoryTest {
             ),
             fetchedAt = fetchedAt,
         )
+
+    private fun longForecastBundle(providerId: String, location: WeatherLocation): WeatherBundle {
+        val forecastProvenance = DataProvenance(
+            providerId = providerId,
+            sourceName = if (providerId == "met-norway") "MET Norway" else "Open-Meteo",
+            fetchedAt = fetchedAt,
+            type = DataType.FORECAST,
+        )
+        val base = bundle(providerId, location)
+        return base.copy(
+            hourly = List(72) { index ->
+                HourlyForecast(
+                    time = fetchedAt.plusSeconds(index * 3600L),
+                    temperatureC = if (index == 17) null else index.toDouble(),
+                    precipitationProbabilityPercent = null,
+                    precipitationMm = if (index % 2 == 0) null else 0.1,
+                    condition = WeatherCondition.UNKNOWN,
+                    provenance = forecastProvenance,
+                )
+            },
+            daily = List(10) { index ->
+                DailyForecast(
+                    dateEpochDay = 20688L + index,
+                    highC = if (index == 6) null else 20.0 + index,
+                    lowC = null,
+                    precipitationProbabilityPercent = null,
+                    condition = WeatherCondition.UNKNOWN,
+                    provenance = forecastProvenance,
+                )
+            },
+        )
+    }
 }
 
 private class RecordingWeatherRepository(

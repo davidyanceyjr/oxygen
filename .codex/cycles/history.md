@@ -1705,3 +1705,47 @@ Evidence and limits:
 Commit state: committed in this documentation cycle; the next action is
 acceptance of the reviewed roadmap, then separate selection of UI-01 in the
 active plan.
+
+### 2026-09-16-ui-01-forecast-horizon-transport
+
+Status: verified; committed with this change
+Mode: bounded provider, repository, cache, and installed Android acceptance
+Slice: UI-01 — Forecast-horizon transport and preservation
+
+Result:
+
+- Open-Meteo's configurable default request now asks for 72 hourly hours and
+  ten daily days. Open-Meteo mapping stably orders valid hourly and daily rows
+  after indexed mapping while retaining duplicates, null optional values,
+  unequal optional arrays, sparse entries, and valid empty timelines.
+- Fallback and cached repository tests prove long nullable hourly/daily lists
+  pass through unchanged. The one planned connected case passed 1/1 through
+  the installed Open-Meteo client/parser/repository, fallback wrapper, cache
+  wrapper, Room storage, and no-alert merge; all 72 hourly instants and ten
+  daily dates matched at the terminal and direct Room boundaries.
+
+Evidence and artifacts:
+
+- 49 focused core JVM tests passed; Android test compilation passed; app/core
+  unit tests, app Kotlin compilation, debug assembly, and `git diff --check`
+  passed. The required old-48-hour query red result is retained.
+- Evidence and command output are under
+  `.codex/test-artifacts/2026-09-16-ui-01-forecast-horizon-transport/`, with
+  the connected result in `android-factory/` and the verification ledger at
+  `verification-ledger.md`.
+- The recovered API-37 `oxygen_starter` session was stopped after the single
+  connected attempt. The recovery host wrapper ended before its preflight
+  record was written; read-only preflight was completed in that same emulator
+  session and no session restart or connected retry occurred.
+
+Limits and documentation:
+
+- Hourly/Daily window selection, partial-horizon presentation, controls,
+  visual work, new providers, Room schema/migrations, and release remain
+  outside this slice. Screenshots and live-provider traffic were inapplicable.
+- `README.md`, the Open-Meteo provider contract, the UI roadmap, and the active
+  plan now state the verified behavior. The full product specification, UI
+  specification, and MET Norway provider contract were reviewed unchanged.
+
+Commit state: committed in this change; UI-02 remains `specified` and is not
+selected until a new active plan is created.

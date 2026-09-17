@@ -31,6 +31,9 @@ and `docs/data-sources/`.
   user-facing launcher activity; dependency-owned AndroidX components remain
   non-exported where retained. Cleartext traffic is disabled.
 - Explicit selected-location Open-Meteo forecast retrieval.
+- Verified installed Open-Meteo requests use a 72-hour hourly and ten-day daily
+  forecast horizon; sparse, duplicate, nullable, and empty provider rows remain
+  truthful through the provider, fallback, and Room-cache boundaries.
 - Last selected location persistence through the local DataStore path.
 - Saved-location storage, saved-location list display, current-location marking,
   and selection of existing saved rows through the installed location-entry

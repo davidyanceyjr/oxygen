@@ -68,6 +68,24 @@ class CachedWeatherRepositoryTest {
     }
 
     @Test
+    fun cacheReadbackPreservesLongNullableForecastLists() {
+        val providerBundle = longForecastBundle(chicago, "open-meteo")
+        val storage = RecordingForecastCacheStorage(storedReads = mapOf(chicago.id to providerBundle))
+
+        val success = CachedWeatherRepository(
+            upstream = FixedWeatherRepository(WeatherRepositoryResult.Success(providerBundle)),
+            storage = storage,
+        ).refresh(chicago).terminalSuccess()
+
+        assertEquals(providerBundle.hourly, success.weather.hourly)
+        assertEquals(providerBundle.daily, success.weather.daily)
+        assertEquals(72, success.weather.hourly.size)
+        assertEquals(10, success.weather.daily.size)
+        assertEquals(null, success.weather.hourly[17].temperatureC)
+        assertEquals(null, success.weather.daily[6].highC)
+    }
+
+    @Test
     fun preservesOpenMeteoAndMetNorwayProvenanceAcrossReadback() {
         listOf(
             "open-meteo" to "Open-Meteo Forecast API",
@@ -432,6 +450,36 @@ class CachedWeatherRepositoryTest {
                 ),
             ),
             fetchedAt = Instant.parse("2026-08-26T10:20:00Z"),
+        )
+    }
+
+    private fun longForecastBundle(
+        location: WeatherLocation,
+        providerId: String,
+    ): WeatherBundle {
+        val base = bundle(location, providerId)
+        val provenance = requireNotNull(base.current).provenance.copy(type = DataType.FORECAST)
+        return base.copy(
+            hourly = List(72) { index ->
+                HourlyForecast(
+                    time = Instant.parse("2026-08-26T11:00:00Z").plusSeconds(index * 3600L),
+                    temperatureC = if (index == 17) null else index.toDouble(),
+                    precipitationProbabilityPercent = null,
+                    precipitationMm = if (index % 2 == 0) null else 0.1,
+                    condition = WeatherCondition.UNKNOWN,
+                    provenance = provenance,
+                )
+            },
+            daily = List(10) { index ->
+                DailyForecast(
+                    dateEpochDay = 20691L + index,
+                    highC = if (index == 6) null else 20.0 + index,
+                    lowC = null,
+                    precipitationProbabilityPercent = null,
+                    condition = WeatherCondition.UNKNOWN,
+                    provenance = provenance,
+                )
+            },
         )
     }
 

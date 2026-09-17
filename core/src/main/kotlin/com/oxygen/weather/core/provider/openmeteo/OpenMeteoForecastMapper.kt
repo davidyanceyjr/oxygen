@@ -92,7 +92,7 @@ object OpenMeteoForecastMapper {
                 condition = mapWeatherCode(hourly.weatherCode.getOrNull(index)),
                 provenance = provenance,
             )
-        }
+        }.sortedBy(HourlyForecast::time)
 
     private fun mapDaily(
         daily: OpenMeteoDailyForecast,
@@ -110,7 +110,7 @@ object OpenMeteoForecastMapper {
                 sunset = daily.sunset.getOrNull(index)?.toInstant(zoneId),
                 provenance = provenance,
             )
-        }
+        }.sortedBy(DailyForecast::dateEpochDay)
 
     private fun wind(
         speedKmh: Double?,

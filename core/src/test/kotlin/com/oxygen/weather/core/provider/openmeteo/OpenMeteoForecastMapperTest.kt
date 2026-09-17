@@ -7,6 +7,7 @@ import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -64,6 +65,109 @@ class OpenMeteoForecastMapperTest {
         assertEquals(Instant.parse("2026-08-20T11:05:00Z"), bundle.daily[1].sunrise)
         assertEquals(Instant.parse("2026-08-21T00:43:00Z"), bundle.daily[1].sunset)
         assertOpenMeteoProvenance(DataType.FORECAST, bundle.daily[1].provenance)
+    }
+
+    @Test
+    fun preservesFullNullableSeventyTwoHourAndTenDayTimelines() {
+        val forecast = parsedFixture("home_forecast_normal.json")
+        val hourlyTimes = List(72) { index ->
+            LocalDateTime.of(2026, 8, 19, 0, 0).plusHours(index.toLong()).toString()
+        }
+        val hourlyTemperatures = MutableList<Double?>(72) { index -> index.toDouble() }
+        hourlyTemperatures[17] = null
+        val dailyDates = List(10) { index -> LocalDate.of(2026, 8, 19).plusDays(index.toLong()).toString() }
+        val dailyHighs = MutableList<Double?>(10) { index -> 20.0 + index }
+        dailyHighs[6] = null
+
+        val response = forecast.copy(
+            hourly = forecast.hourly.copy(
+                time = hourlyTimes,
+                temperature2m = hourlyTemperatures,
+                precipitationProbability = emptyList(),
+                weatherCode = List(72) { 0 },
+            ),
+            daily = forecast.daily.copy(
+                time = dailyDates,
+                weatherCode = List(10) { 0 },
+                temperature2mMax = dailyHighs,
+                temperature2mMin = List(10) { 10.0 + it },
+                precipitationProbabilityMax = emptyList(),
+                sunrise = emptyList(),
+                sunset = emptyList(),
+            ),
+        )
+
+        val bundle = OpenMeteoForecastMapper.map(chicago, response, fetchedAt)
+
+        assertEquals(72, bundle.hourly.size)
+        assertEquals(Instant.parse("2026-08-22T04:00:00Z"), bundle.hourly.last().time)
+        assertNull(bundle.hourly[17].temperatureC)
+        assertNull(bundle.hourly.first().precipitationProbabilityPercent)
+        assertEquals(10, bundle.daily.size)
+        assertEquals(LocalDate.of(2026, 8, 28).toEpochDay(), bundle.daily.last().dateEpochDay)
+        assertNull(bundle.daily[6].highC)
+        assertNull(bundle.daily.first().precipitationProbabilityPercent)
+    }
+
+    @Test
+    fun stablySortsHourlyAndDailyRowsWithoutDroppingDuplicateKeys() {
+        val forecast = parsedFixture("home_forecast_normal.json")
+        val response = forecast.copy(
+            hourly = forecast.hourly.copy(
+                time = listOf(
+                    "2026-08-19T12:00",
+                    "2026-08-19T10:00",
+                    "2026-08-19T10:00",
+                ),
+                temperature2m = listOf(1.0, 2.0, 3.0),
+                precipitationProbability = emptyList(),
+                weatherCode = listOf(0, 0, 0),
+            ),
+            daily = forecast.daily.copy(
+                time = listOf("2026-08-20", "2026-08-19", "2026-08-19"),
+                weatherCode = listOf(0, 0, 0),
+                temperature2mMax = listOf(10.0, 20.0, 30.0),
+                temperature2mMin = emptyList(),
+                precipitationProbabilityMax = emptyList(),
+                sunrise = emptyList(),
+                sunset = emptyList(),
+            ),
+        )
+
+        val bundle = OpenMeteoForecastMapper.map(chicago, response, fetchedAt)
+
+        assertEquals(
+            listOf(
+                Instant.parse("2026-08-19T15:00:00Z"),
+                Instant.parse("2026-08-19T15:00:00Z"),
+                Instant.parse("2026-08-19T17:00:00Z"),
+            ),
+            bundle.hourly.map { it.time },
+        )
+        assertEquals(listOf(2.0, 3.0, 1.0), bundle.hourly.map { it.temperatureC })
+        assertEquals(
+            listOf(
+                LocalDate.of(2026, 8, 19).toEpochDay(),
+                LocalDate.of(2026, 8, 19).toEpochDay(),
+                LocalDate.of(2026, 8, 20).toEpochDay(),
+            ),
+            bundle.daily.map { it.dateEpochDay },
+        )
+        assertEquals(listOf(20.0, 30.0, 10.0), bundle.daily.map { it.highC })
+    }
+
+    @Test
+    fun mapsValidEmptyTimelinesToEmptyLists() {
+        val forecast = parsedFixture("home_forecast_normal.json")
+        val response = forecast.copy(
+            hourly = forecast.hourly.copy(time = emptyList()),
+            daily = forecast.daily.copy(time = emptyList()),
+        )
+
+        val bundle = OpenMeteoForecastMapper.map(chicago, response, fetchedAt)
+
+        assertEquals(emptyList<Any>(), bundle.hourly)
+        assertEquals(emptyList<Any>(), bundle.daily)
     }
 
     @Test

@@ -21,6 +21,9 @@ import com.oxygen.weather.core.model.WeatherBundle
 import com.oxygen.weather.core.model.WeatherCondition
 import com.oxygen.weather.core.model.WeatherLocation
 import com.oxygen.weather.core.model.Wind
+import com.oxygen.weather.core.provider.AlertProvider
+import com.oxygen.weather.core.provider.AlertProviderResult
+import com.oxygen.weather.core.provider.AlertSuccessMetadata
 import com.oxygen.weather.core.provider.ForecastError
 import com.oxygen.weather.core.provider.WeatherRepository
 import com.oxygen.weather.core.provider.WeatherRepositoryResult
@@ -31,14 +34,21 @@ import com.oxygen.weather.core.provider.metno.MetNoHttpRequest
 import com.oxygen.weather.core.provider.metno.MetNoHttpResponse
 import com.oxygen.weather.core.provider.metno.MetNoHttpTransport
 import com.oxygen.weather.core.provider.metno.MetNoWeatherRepository
+import com.oxygen.weather.core.provider.openmeteo.OpenMeteoForecastClient
+import com.oxygen.weather.core.provider.openmeteo.OpenMeteoHttpResponse
+import com.oxygen.weather.core.provider.openmeteo.OpenMeteoHttpTransport
+import com.oxygen.weather.core.provider.openmeteo.OpenMeteoWeatherRepository
+import java.net.URL
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.concurrent.Executor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -231,6 +241,59 @@ class InstalledFallbackRepositoryInstrumentedTest {
         assertFalse(composeRule.onRoot().printToString().contains("Alerts"))
         context.deleteDatabase("oxygen_forecast_cache.db")
     }
+
+    @Test
+    fun openMeteoSeventyTwoHourHorizonSurvivesInstalledFactoryAndRoomReadback() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.deleteDatabase("oxygen_forecast_cache.db")
+        val location = weatherLocation(
+            id = "android-installed-openmeteo-72-hour-${System.nanoTime()}",
+            name = "Android Open-Meteo 72 Hour City",
+        )
+        val transport = RecordingOpenMeteoTransport(openMeteoSeventyTwoHourForecastBody)
+        val storage = RoomForecastCacheStorageFactory.create(context)
+
+        try {
+            val repository = InstalledForecastRepositoryFactory.create(
+                storage = storage,
+                defaultRepository = OpenMeteoWeatherRepository(
+                    client = OpenMeteoForecastClient(transport = transport),
+                    clock = { Instant.parse("2026-08-23T13:20:00Z") },
+                ),
+                fallbackRepository = UnexpectedFallbackRepository,
+                clock = Clock.fixed(Instant.parse("2026-08-23T13:20:00Z"), ZoneId.of("UTC")),
+                alertProvider = NoAlertsAlertProvider,
+            )
+
+            val result = repository.refresh(location).last { it !is WeatherRepositoryResult.Loading }
+                as WeatherRepositoryResult.Success
+            val directReadback = requireNotNull(storage.readBundle(location.id))
+            val expectedHourlyTimes = List(72) { index ->
+                LocalDateTime.of(2026, 8, 23, 0, 0)
+                    .plusHours(index.toLong())
+                    .atZone(location.zoneId)
+                    .toInstant()
+            }
+            val expectedDailyDates = List(10) { index ->
+                LocalDate.of(2026, 8, 23).plusDays(index.toLong()).toEpochDay()
+            }
+
+            assertTrue(transport.requestedUrl.query.contains("forecast_hours=72"))
+            assertTrue(transport.requestedUrl.query.contains("forecast_days=10"))
+            assertEquals(expectedHourlyTimes, result.weather.hourly.map { it.time })
+            assertEquals(expectedDailyDates, result.weather.daily.map { it.dateEpochDay })
+            assertEquals(expectedHourlyTimes, directReadback.hourly.map { it.time })
+            assertEquals(expectedDailyDates, directReadback.daily.map { it.dateEpochDay })
+            assertEquals(result.weather.hourly, directReadback.hourly)
+            assertEquals(result.weather.daily, directReadback.daily)
+            assertNull(result.weather.hourly.first().temperatureC)
+            assertNull(result.weather.daily.first().highC)
+            assertTrue(result.weather.alerts.isEmpty())
+            assertTrue(result.alertStatus is com.oxygen.weather.core.provider.AlertLookupStatus.NoAlerts)
+        } finally {
+            context.deleteDatabase("oxygen_forecast_cache.db")
+        }
+    }
 }
 
 private object InstalledFallbackDirectExecutor : Executor {
@@ -279,6 +342,31 @@ private class RecordingMetNoTransport(
         this.request = request
         return response
     }
+}
+
+private class RecordingOpenMeteoTransport(
+    private val responseBody: String,
+) : OpenMeteoHttpTransport {
+    lateinit var requestedUrl: URL
+
+    override fun get(url: URL): OpenMeteoHttpResponse {
+        requestedUrl = url
+        return OpenMeteoHttpResponse(statusCode = 200, body = responseBody)
+    }
+}
+
+private object NoAlertsAlertProvider : AlertProvider {
+    override val id: String = "test-no-alerts"
+
+    override fun getActiveAlerts(location: GeoPoint): AlertProviderResult =
+        AlertProviderResult.Success(
+            alerts = emptyList(),
+            metadata = AlertSuccessMetadata(
+                requestPoint = location,
+                providerId = id,
+                fetchedAt = Instant.parse("2026-08-23T13:20:00Z"),
+            ),
+        )
 }
 
 private class InMemoryForecastCacheStorage : ForecastCacheStorage {
@@ -476,3 +564,29 @@ private val metNorwayForecastBody = """
   }
 }
 """.trimIndent()
+
+private val openMeteoSeventyTwoHourForecastBody: String = buildString {
+    val hourlyTimes = List(72) { index ->
+        LocalDateTime.of(2026, 8, 23, 0, 0).plusHours(index.toLong()).toString()
+    }
+    val dailyDates = List(10) { index ->
+        LocalDate.of(2026, 8, 23).plusDays(index.toLong()).toString()
+    }
+    val hourlyJson = hourlyTimes.joinToString(",") { "\"$it\"" }
+    val dailyJson = dailyDates.joinToString(",") { "\"$it\"" }
+    appendLine("{")
+    appendLine("  \"latitude\": 41.875,")
+    appendLine("  \"longitude\": -87.625,")
+    appendLine("  \"generationtime_ms\": 0.1,")
+    appendLine("  \"utc_offset_seconds\": -18000,")
+    appendLine("  \"timezone\": \"America/Chicago\",")
+    appendLine("  \"timezone_abbreviation\": \"CDT\",")
+    appendLine("  \"elevation\": null,")
+    appendLine("  \"current_units\": {},")
+    appendLine("  \"current\": {\"time\": \"2026-08-23T00:00\"},")
+    appendLine("  \"hourly_units\": {},")
+    appendLine("  \"hourly\": {\"time\": [$hourlyJson]},")
+    appendLine("  \"daily_units\": {},")
+    appendLine("  \"daily\": {\"time\": [$dailyJson]}")
+    appendLine("}")
+}

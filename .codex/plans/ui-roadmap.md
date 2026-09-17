@@ -77,7 +77,7 @@ these gaps with the full product specification.
 
 ### UI-01 — Forecast-horizon transport and preservation
 
-**Status:** specified
+**Status:** verified
 **Boundary:** production Open-Meteo request plus provider-neutral mapper,
 repository/fallback, and Room-cache preservation of forecast entries.
 **Observable delta:** Open-Meteo requests 72 forecast hours and ten forecast
@@ -87,12 +87,12 @@ interpolation, repetition, or fabricated values. Short, sparse, duplicate,
 null-field, and empty responses remain truthful domain output.
 **Downstream behavior enabled:** Hourly can select the rolling 72-hour interval,
 and Daily can select the first ten distinct local dates.
-**Focused evidence:** request-query assertions for `forecast_hours=72` and
-`forecast_days=10`; provider fixture tests for ordering, duplicates, nulls,
-short/sparse/empty results; repository/fallback and Room round-trip assertions;
-one Android production-repository selected-location exercise that returns the
-uncapped domain horizon. A bounded provider/platform timeout is recorded once
-as a blocker rather than retried into mock success.
+**Focused evidence:** 49 named core JVM tests pass for the request, Open-Meteo
+and MET Norway mapping, fallback pass-through, and cache readback boundaries.
+One connected API-37 `oxygen_starter` case passes through the installed factory,
+real Open-Meteo parser/repository, fallback/cache wrappers, Room readback, and
+no-alert merge, observing all 72 hourly and ten daily rows. Artifacts are under
+`.codex/test-artifacts/2026-09-16-ui-01-forecast-horizon-transport/`.
 **Out of scope:** Home window selection, partial-horizon copy, page controls,
 visual redesign, themes, scenes, and new providers.
 **Sizing:** medium; one data-transport/preservation concern exercised through
