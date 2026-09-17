@@ -1,8 +1,7 @@
 # Oxygen Standard Now — Celestial Dial UI Overhaul Roadmap
 
-**Status:** active roadmap; design selected; CD-00R repair accepted;
-CD-00 checkpoint rerun selected in `.codex/plans/current.md`; all Celestial
-Dial implementation slices remain `specified`
+**Status:** active roadmap; design selected; CD-00 verified; all Celestial Dial
+implementation slices remain `specified`
 **Roadmap ID:** `now-celestial-dial-v0.1`
 **Selected design:** concept F, Celestial Dial
 **Selected:** 2026-09-17 by user decision
@@ -77,7 +76,7 @@ uses only the installed provider-neutral presentation path.
 
 ### CD-00 — Pre-overhaul inherited checkpoint
 
-**Status:** planned; checkpoint rerun selected after CD-00R repair
+**Status:** verified; checkpoint closed after CD-00R repair
 **Dependencies:** verified UI-04 and UI-05 production slices
 **Estimate:** 30%
 **Outcome:** Close the repository-wide two-production-slice checkpoint that
@@ -95,8 +94,9 @@ or investigation slice; do not weaken coverage or start CD-01.
 The initial post-UI-05 execution stopped after the compact Standard Now case
 reported an overlap. CD-00R established valid rendered bounds after an
 explicit Compose-idle barrier and corrected the deterministic test boundary.
-The complete five-case rerun remains the active acceptance work; the count is
-still 2 of 2 until that rerun and documentation closure pass.
+The complete five-case rerun passed with fresh runner/XML/log/textproto
+agreement for every case. Documentation is closed and the implementation count
+has reset to 0 of 2; CD-01 remains `specified`.
 
 ### CD-00R — Standard Now compact overlap repair investigation
 

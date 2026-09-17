@@ -107,7 +107,7 @@ checkpoint after that repair; do not select CD-01 beforehand.
 
 ### 2026-09-17-cd-00r-standard-now-compact-overlap
 
-Status: verified; test-boundary repair accepted; documentation pending commit
+Status: verified; test-boundary repair accepted; committed in `bb2a4cc`
 Mode: bounded deterministic Compose harness repair
 
 Result:
@@ -136,3 +136,31 @@ Evidence and limits:
   five-case CD-00 checkpoint is still pending and CD-01 remains unspecified.
 
 Next action: rerun all five named CD-00 cases on the repaired test boundary.
+
+### 2026-09-17-cd-00-pre-overhaul-checkpoint-rerun
+
+Status: verified; committed
+Mode: inherited two-production-slice checkpoint rerun
+
+Result:
+
+- On one recovered API-37 x86_64 `oxygen_starter` session, all five named
+  UI-04 Home Compose cases passed individually after CD-00R:
+  compact hierarchy, alert outcomes, operational missing/empty states,
+  large-font RTL overflow, and unchanged Simple Now.
+- Each fresh runner bundle agrees: XML `tests="1" failures="0" errors="0"
+  skipped="0"`, instrumentation log `OK (1 test)`, textproto
+  `test_status: PASSED`, and wrapper status 0. The emulator was stopped after
+  the run.
+- Post-checkpoint app/core unit tests, debug assembly, and `git diff --check`
+  passed. The implementation-slice count reset from 2 of 2 to 0 of 2.
+
+Evidence and limits:
+
+- Per-case bundles and emulator diagnostics:
+  `.codex/test-artifacts/2026-09-17-cd-00-pre-overhaul-checkpoint-rerun/connected/`.
+- Broad-check log:
+  `.codex/test-artifacts/2026-09-17-cd-00-pre-overhaul-checkpoint-rerun/broad-checks.log`.
+- No Celestial Dial production slice started; provider, repository, cache,
+  persistence, navigation, theme, weather semantics, and Simple layout remain
+  unchanged. CD-01 remains `specified` and is not selected by this checkpoint.
