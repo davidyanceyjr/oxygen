@@ -100,7 +100,7 @@ the existing production repository path.
 
 ### UI-02 — Standard Home pager and Android Back contract
 
-**Status:** specified
+**Status:** verified
 **Dependencies:** existing Standard Home shell; UI-01 is not required.
 **Boundary:** outer Standard Home pager, visible/semantic page navigation, and
 Android Back dispatch.
@@ -114,6 +114,12 @@ Back.
 semantic position/actions, static-tap behavior, child-action isolation, and
 Back transitions; one installed Standard journey through all pages and Back at
 the compact viewport with Effects Off.
+**Verified evidence:** three named API-37 connected cases passed 1/1 with
+fresh XML, instrumentation logs, and textproto results; the installed
+selected-Chicago journey retained Now through Details and returned Details →
+Daily → Hourly → Now through Android Back, with Back from Now falling through
+to the host. Artifacts are under
+`.codex/test-artifacts/2026-09-16-ui-02-standard-pager-back/`.
 **Out of scope:** Hourly/Daily windows, page visual redesign, location/supporting
 surface Back contracts, and new navigation destinations.
 **Sizing:** small-to-medium; one platform navigation state machine over the
@@ -410,8 +416,6 @@ signing/publication, localization completion, and TalkBack service claims.
 
 ## Active selection
 
-UI-01 is selected in `.codex/plans/current.md`. Its active plan names the
-exact fixtures, production-repository Android exercise, focused commands, broad
-checks, artifact location, sizing rationale, and timeout limit. UI-02 is not
-blocked on UI-01, but UI-05 and UI-07 must not be selected until UI-01 is
-verified.
+UI-02 is verified in `.codex/plans/current.md`. UI-03 is the next specified
+test-only/documentation checkpoint after the two production-changing slices;
+UI-05 and UI-07 remain unselected until their dependencies are verified.

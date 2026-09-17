@@ -37,7 +37,6 @@
     <string name="home_settings">Settings</string>
     <string name="home_change_location">Change location</string>
     <string name="home_location">Location</string>
-    <string name="home_page_of">Page %1$d of %2$d</string>
     <string name="home_page_description">%1$s, Page %2$d of %3$d</string>
     <string name="home_page_label">%1$s page</string>
     <string name="home_previous_page">Show previous page: %1$s</string>

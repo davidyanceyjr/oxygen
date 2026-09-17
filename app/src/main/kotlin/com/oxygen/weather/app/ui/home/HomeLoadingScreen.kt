@@ -3,6 +3,7 @@ package com.oxygen.weather.app.ui.home
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -256,6 +257,18 @@ private fun ReadyContent(
         stringResource(R.string.home_next_page, it.title)
     }
 
+    BackHandler(
+        enabled = appearance.layout == LayoutPreset.STANDARD && currentPageIndex > 0,
+    ) {
+        scope.launch {
+            if (animationsEnabled) {
+                pagerState.animateScrollToPage(currentPageIndex - 1)
+            } else {
+                pagerState.scrollToPage(currentPageIndex - 1)
+            }
+        }
+    }
+
     LaunchedEffect(appearance.layout) {
         simpleForecast = SimpleForecastChoice.Hourly
         pagerState.scrollToPage(0)
@@ -278,8 +291,6 @@ private fun ReadyContent(
         ) {
             ReadyHeader(
                 currentPage = currentPage,
-                pageIndex = currentPageIndex,
-                pageCount = pages.size,
             )
             HorizontalPager(
                 state = pagerState,
@@ -489,23 +500,15 @@ private fun HomePageContainer(
 @Composable
 private fun ReadyHeader(
     currentPage: HomePage,
-    pageIndex: Int,
-    pageCount: Int,
 ) {
     val roles = LocalOxygenHomeDesign.current
-    val pageDescription = stringResource(
-        R.string.home_page_description,
-        currentPage.title,
-        pageIndex + 1,
-        pageCount,
-    )
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-            text = stringResource(R.string.app_name).uppercase(),
+                text = stringResource(R.string.app_name).uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -513,20 +516,10 @@ private fun ReadyHeader(
                 text = currentPage.title,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("home-page-title")
-                .semantics { contentDescription = pageDescription },
+                    .testTag("home-page-title"),
                 style = roles.sectionHeading,
             )
         }
-        Text(
-            text = stringResource(R.string.home_page_of, pageIndex + 1, pageCount),
-            modifier = Modifier
-                .widthIn(min = 72.dp)
-                .testTag("home-page-position"),
-            style = roles.supportingLabel,
-            color = homeSupportingContent(0.68f),
-            textAlign = TextAlign.End,
-        )
     }
 }
 

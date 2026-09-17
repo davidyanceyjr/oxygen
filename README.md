@@ -108,8 +108,11 @@ and `docs/data-sources/`.
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
   provenance, and disclosure presentation.
-- Standard Home paged interaction foundation with Now, Hourly, Daily, and
-  Details pages.
+- Standard Home pager with visible Now, Hourly, Daily, and Details tabs, one
+  outer horizontal-swipe owner, semantic current-page position/count and named
+  previous/next actions, static-tap and child-action isolation, and
+  one-page-at-a-time Android Back from Details through Now with normal host
+  Back preserved at Now.
 - Standard Home Now, Hourly, Daily, and Details visual baselines.
 - Art-sheet-aligned Standard Home weather marks, surface roles, typography
   roles, and app-local design roles for the installed Home surface.

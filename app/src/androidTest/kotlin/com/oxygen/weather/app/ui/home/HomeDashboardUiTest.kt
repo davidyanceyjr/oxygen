@@ -1,6 +1,7 @@
 package com.oxygen.weather.app.ui.home
 
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -149,7 +151,7 @@ class HomeDashboardUiTest {
 
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertHomePagePosition("Page 1 of 4")
         composeRule.onNodeWithText("Baseline Paper Rendering City").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("65 deg F").performScrollTo().assertIsDisplayed()
         composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
@@ -263,7 +265,7 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
         val requestCountAfterReady = repository.locations.size
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
         composeRule.onNodeWithText("Paper Simple Forecast City").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Severity: Severe").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Open-Meteo").performScrollTo().assertIsDisplayed()
@@ -410,7 +412,7 @@ class HomeDashboardUiTest {
         )
         composeRule.assertNowHeroDominatesLocationChrome()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertHomePagePosition("Page 1 of 4")
         composeRule.onAllNodesWithTag("home-page-previous").assertCountEquals(0)
         composeRule.onAllNodesWithTag("home-page-next").assertCountEquals(0)
         composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
@@ -427,7 +429,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 4")
+        composeRule.assertHomePagePosition("Page 2 of 4")
         composeRule.onNodeWithTag("home-hourly-grid").assertIsDisplayed()
         composeRule.onNodeWithTag("home-page-tab-daily").performClick()
         composeRule.waitForIdle()
@@ -437,7 +439,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.assertHomePagePosition("Page 4 of 4")
         composeRule.onAllNodesWithTag("home-page-next").assertCountEquals(0)
         composeRule.onNodeWithText("Fetched Aug 22, 7:00 AM CDT").assertExists()
         composeRule.onNodeWithText("Issued Aug 22, 6:45 AM CDT").assertExists()
@@ -514,7 +516,7 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
         composeRule.onNodeWithTag("home-page-tab-now").assertIsDisplayed()
         composeRule.onNodeWithTag("home-page-tab-forecast").assertIsDisplayed()
         composeRule.onAllNodesWithTag("home-page-tab-hourly").assertCountEquals(0)
@@ -543,7 +545,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 2")
+        composeRule.assertHomePagePosition("Page 2 of 2")
         composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
         composeRule.onNodeWithTag("home-simple-forecast-daily").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("6 AM, Rain, 64 deg F, 60%").assertIsDisplayed()
@@ -590,7 +592,7 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
         composeRule.onNodeWithText("Simple Replacement City").assertIsDisplayed()
         composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
         composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
@@ -612,7 +614,7 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertHomePagePosition("Page 1 of 4")
         composeRule.onNodeWithTag("home-page-tab-details").assertIsDisplayed()
         composeRule.onNodeWithText("Simple Replacement City").assertIsDisplayed()
         composeRule.onNodeWithText("65 deg F").assertIsDisplayed()
@@ -1754,29 +1756,58 @@ class HomeDashboardUiTest {
             location = weatherLocation(),
             weather = fullWeatherBundle(weatherLocation()),
         )
+        var refreshCount = 0
 
-        composeRule.setHomeContent(state)
+        composeRule.setHomeContent(state, onRefresh = { refreshCount += 1 })
 
         composeRule.onAllNodesWithTag("home-page-previous").assertCountEquals(0)
         composeRule.onAllNodesWithTag("home-page-next").assertCountEquals(0)
+        listOf("Now", "Hourly", "Daily", "Details").forEachIndexed { index, title ->
+            composeRule.onNodeWithTag("home-page-tab-${title.lowercase()}")
+                .assertTextContains(title)
+                .let { node ->
+                    if (index == 0) node.assertIsSelected()
+                }
+        }
+        composeRule.assertHomePageDescription("Now", "Page 1 of 4")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show next page: Hourly")
+
+        composeRule.onNodeWithTag("home-page-container").performTouchInput {
+            click(androidx.compose.ui.geometry.Offset(1f, 1f))
+        }
+        composeRule.waitForIdle()
+        composeRule.assertHomePageDescription("Now", "Page 1 of 4")
+        composeRule.onNodeWithTag("home-refresh").performClick()
+        composeRule.waitForIdle()
+        assertEquals(1, refreshCount)
+        composeRule.assertHomePageDescription("Now", "Page 1 of 4")
 
         composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.onNodeWithTag("home-page-tab-hourly").assertIsSelected()
+        composeRule.assertHomePageDescription("Hourly", "Page 2 of 4")
         composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.onNodeWithTag("home-page-tab-daily").assertIsSelected()
+        composeRule.assertHomePageDescription("Daily", "Page 3 of 4")
 
         composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeRight() }
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.assertHomePageDescription("Hourly", "Page 2 of 4")
 
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.onNodeWithTag("home-page-tab-details").assertIsSelected()
+        composeRule.assertHomePageDescription("Details", "Page 4 of 4")
         composeRule.onNodeWithTag("home-page-container").performTouchInput { swipeLeft() }
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.assertHomePageDescription("Details", "Page 4 of 4")
     }
 
     @Test
@@ -2512,22 +2543,82 @@ class HomeDashboardUiTest {
 
         composeRule.setHomeContent(state)
 
+        composeRule.assertHomePageDescription("Now", "Page 1 of 4")
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show next page: Hourly")
         composeRule.performPagerCustomAction("Show next page: Hourly")
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        composeRule.assertHomePageDescription("Hourly", "Page 2 of 4")
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show previous page: Now", "Show next page: Daily")
-
-        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.performPagerCustomAction("Show next page: Daily")
         composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        composeRule.assertHomePageDescription("Daily", "Page 3 of 4")
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show previous page: Hourly", "Show next page: Details")
+        composeRule.performPagerCustomAction("Show next page: Details")
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        composeRule.assertHomePageDescription("Details", "Page 4 of 4")
+
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show previous page: Daily")
         composeRule.performPagerCustomAction("Show previous page: Daily")
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 3 of 4")
+        composeRule.assertHomePageDescription("Daily", "Page 3 of 4")
+    }
+
+    @Test
+    fun standardHomeBackReturnsOneGlobalPageAndFallsThroughFromNow() {
+        val location = weatherLocation(name = "Standard Back City")
+        val holder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = RecordingWeatherRepository(
+                listOf(WeatherRepositoryResult.Success(fullWeatherBundle(location))),
+            ),
+            initialLayout = LayoutPreset.STANDARD,
+            forecastExecutor = DirectExecutor,
+        )
+        var hostBackCount = 0
+
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 1f)) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        BackHandler { hostBackCount += 1 }
+                        OxygenApp(
+                            stateHolder = holder,
+                            appearance = OxygenAppearance(
+                                layout = LayoutPreset.STANDARD,
+                                effects = EffectsLevel.OFF,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
+        pressBack()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
+        pressBack()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
+        pressBack()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        assertEquals(0, hostBackCount)
+        pressBack()
+        composeRule.waitForIdle()
+        assertEquals(1, hostBackCount)
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
     }
 
     @Test
@@ -2544,35 +2635,35 @@ class HomeDashboardUiTest {
         )
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertHomePagePosition("Page 1 of 4")
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show next page: Hourly")
         composeRule.performPagerCustomAction("Show next page: Hourly")
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 4")
+        composeRule.assertHomePagePosition("Page 2 of 4")
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show previous page: Now", "Show next page: Daily")
         composeRule.performPagerCustomAction("Show next page: Daily")
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 3 of 4")
+        composeRule.assertHomePagePosition("Page 3 of 4")
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show previous page: Hourly", "Show next page: Details")
         composeRule.performPagerCustomAction("Show next page: Details")
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.assertHomePagePosition("Page 4 of 4")
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show previous page: Daily")
         composeRule.performPagerCustomAction("Show previous page: Daily")
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 3 of 4")
+        composeRule.assertHomePagePosition("Page 3 of 4")
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show previous page: Hourly", "Show next page: Details")
     }
@@ -2591,21 +2682,21 @@ class HomeDashboardUiTest {
         )
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show next page: Forecast")
         composeRule.performPagerCustomAction("Show next page: Forecast")
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 2")
+        composeRule.assertHomePagePosition("Page 2 of 2")
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show previous page: Now")
         composeRule.performPagerCustomAction("Show previous page: Now")
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
         composeRule.onNodeWithTag("home-page-container")
             .assertCustomActions("Show next page: Forecast")
     }
@@ -2817,7 +2908,7 @@ class HomeDashboardUiTest {
             rtlEntries.last().hourlyRenderedText(),
         )
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 4")
+        composeRule.assertHomePagePosition("Page 2 of 4")
         composeRule.writeSemanticsArtifact("rtl-standard-hourly-chronology-semantics.txt")
     }
 
@@ -2876,7 +2967,7 @@ class HomeDashboardUiTest {
             rtlEntries.last().dailyDescription(),
         )
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Daily")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 3 of 4")
+        composeRule.assertHomePagePosition("Page 3 of 4")
         composeRule.onNodeWithText("67 deg F", useUnmergedTree = true).assertExists()
         composeRule.writeSemanticsArtifact("rtl-standard-daily-chronology-semantics.txt")
     }
@@ -2968,7 +3059,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 2")
+        composeRule.assertHomePagePosition("Page 2 of 2")
         composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
 
         val ltrHourlyEntries = composeRule.renderedHourlyEntriesInSemanticsOrder()
@@ -3004,7 +3095,7 @@ class HomeDashboardUiTest {
         composeRule.writeSemanticsArtifact("rtl-simple-hourly-chronology-semantics.txt")
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 2 of 2")
+        composeRule.assertHomePagePosition("Page 2 of 2")
         composeRule.onNodeWithTag("home-simple-forecast-hourly").assertIsSelected()
     }
 
@@ -3124,7 +3215,7 @@ class HomeDashboardUiTest {
             composeRule.onNodeWithTag(tag).performClick()
             composeRule.waitForIdle()
             composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-            composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+            composeRule.assertHomePagePosition("Page 1 of 4")
         }
     }
 
@@ -3306,7 +3397,7 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.assertHomePagePosition("Page 4 of 4")
         composeRule.onNodeWithTag("home-section-metrics").assertIsDisplayed()
         composeRule.onNodeWithTag("home-section-comfort").assertIsDisplayed()
         composeRule.onNodeWithTag("home-section-wind").assertIsDisplayed()
@@ -3556,7 +3647,7 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertHomePagePosition("Page 1 of 4")
         composeRule.onAllNodesWithContentDescription(
             "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
         ).assertCountEquals(1)
@@ -3603,7 +3694,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.assertHomePagePosition("Page 4 of 4")
         composeRule.assertReadableBoundsAfterScroll(
             "home-section-comfort",
             "home-section-wind",
@@ -3686,7 +3777,7 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
         composeRule.onNodeWithText("65 deg F", useUnmergedTree = true).assertExists()
         composeRule.onAllNodesWithContentDescription(
             "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
@@ -3784,7 +3875,7 @@ class HomeDashboardUiTest {
         val requestLocationsAfterReady = repository.locations.toList()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertHomePagePosition("Page 1 of 4")
         composeRule.assertWithinRootBounds(
             "home-page-tab-now", "home-page-tab-hourly", "home-page-tab-daily",
             "home-page-tab-details", "home-change-location", "home-refresh", "home-about-entry",
@@ -3832,7 +3923,7 @@ class HomeDashboardUiTest {
         composeRule.onNodeWithTag("home-page-tab-details").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.assertHomePagePosition("Page 4 of 4")
         composeRule.assertReadableBoundsAfterScroll(
             "home-section-comfort", "home-section-wind", "home-section-atmosphere",
             "home-section-source", "home-section-status", "home-section-sun",
@@ -3887,7 +3978,7 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
         composeRule.assertWithinRootBounds(
             "home-page-tab-now", "home-page-tab-forecast", "home-change-location", "home-refresh", "home-about-entry",
         )
@@ -3958,7 +4049,7 @@ class HomeDashboardUiTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Details")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 4 of 4")
+        composeRule.assertHomePagePosition("Page 4 of 4")
         composeRule.assertMinimumTouchTarget(
             "home-page-tab-now",
             "home-page-tab-hourly",
@@ -4211,6 +4302,7 @@ private fun ComposeContentTestRule.setHomeContent(
     themeId: OxygenThemeId = appearance.theme,
     layoutDirection: LayoutDirection = LayoutDirection.Ltr,
     onRetry: () -> Unit = {},
+    onRefresh: () -> Unit = {},
 ) {
     setContent {
         CompositionLocalProvider(
@@ -4219,14 +4311,24 @@ private fun ComposeContentTestRule.setHomeContent(
         ) {
             OxygenTheme(themeId = themeId, contrast = appearance.contrast) {
                 if (widthDp == null) {
-                    HomeLoadingScreen(state = state, appearance = appearance, onRetry = onRetry)
+                    HomeLoadingScreen(
+                        state = state,
+                        appearance = appearance,
+                        onRetry = onRetry,
+                        onRefresh = onRefresh,
+                    )
                 } else {
                     Box(
                         Modifier
                             .width(widthDp.dp)
                             .height(heightDp.dp),
                     ) {
-                        HomeLoadingScreen(state = state, appearance = appearance, onRetry = onRetry)
+                        HomeLoadingScreen(
+                            state = state,
+                            appearance = appearance,
+                            onRetry = onRetry,
+                            onRefresh = onRefresh,
+                        )
                     }
                 }
             }
@@ -4745,9 +4847,26 @@ private fun ComposeTestRule.assertHomePage(
     actions: List<String>,
 ) {
     onNodeWithTag("home-page-title").assertTextContains(title)
-    onNodeWithTag("home-page-position").assertTextContains(position)
+    assertHomePageDescription(title, position)
     onNodeWithTag(selectedTab).assertIsSelected()
     onNodeWithTag("home-page-container").assertCustomActions(*actions.toTypedArray())
+}
+
+private fun ComposeTestRule.assertHomePageDescription(title: String, position: String) {
+    val descriptions = onNodeWithTag("home-page-container")
+        .fetchSemanticsNode()
+        .config
+        .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+    assertEquals(listOf("$title, $position"), descriptions)
+}
+
+private fun ComposeTestRule.assertHomePagePosition(position: String) {
+    val description = onNodeWithTag("home-page-container")
+        .fetchSemanticsNode()
+        .config
+        .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+        .single()
+    assertTrue("Expected pager position '$position' in '$description'", position in description)
 }
 
 private fun ComposeTestRule.assertMinimumTouchTargetAfterScroll(vararg tags: String) {

@@ -1749,3 +1749,48 @@ Limits and documentation:
 
 Commit state: committed in this change; UI-02 remains `specified` and is not
 selected until a new active plan is created.
+
+### 2026-09-16-ui-02-standard-pager-back
+
+Status: verified; committed with this change
+Mode: bounded Android/Compose interaction slice
+Slice: UI-02 — Standard Home pager and Android Back contract
+
+Result:
+
+- Standard Home keeps one outer horizontal pager and four visible named tabs.
+  The pager alone exposes the named page plus numeric position/count semantics
+  and ordered named previous/next actions; duplicate rendered page-position
+  text and the header's duplicate description were removed.
+- Static pager-content taps did not change the page, and the existing refresh
+  child action remained isolated. Standard-only Android Back returned Details
+  → Daily → Hourly → Now one page at a time; Back from Now fell through to a
+  test host callback, proving the production Home handler is disabled there.
+- Existing Simple/layout-preference tests were migrated from the removed
+  rendered tag to the pager semantic description.
+
+Evidence:
+
+- Three named API-37 `oxygen_starter` connected cases passed 1/1 with fresh
+  XML, instrumentation logs, textproto results, device diagnostics, and
+  logcat. The cases covered navigation/gesture isolation, all-position named
+  pager semantics/actions, and the Standard Back sequence with host fallthrough.
+- The installed selected-Chicago/Open-Meteo journey retained real weather
+  through Now, Hourly, Daily, and Details, then recorded Android Back at each
+  non-Now page and host fallthrough at Now. Baseline/final screenshots and UI
+  hierarchies are under
+  `.codex/test-artifacts/2026-09-16-ui-02-standard-pager-back/`.
+- Changed-state app and Android-test compilation, app/core debug unit tests,
+  debug assembly, and `git diff --check` passed. No old-production red result
+  was retained; the first feasible changed-state validation was compilation.
+
+Limits and next action:
+
+- Hourly/Daily windows, visual redesign, Simple Back, supporting-screen Back,
+  TalkBack service traversal, localization, provider changes, release checks,
+  and 1.0 completeness remain outside this slice.
+- UI-03 is the next specified test-only/documentation checkpoint after the two
+  production-changing slices.
+
+Commit state: committed with this change; post-commit consistency review
+completed with no further authority corrections required.
