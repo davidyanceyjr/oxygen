@@ -1,78 +1,38 @@
-# Oxygen Standard Now — compact overlap repair investigation
+# Oxygen Standard Now — inherited CD-00 checkpoint
 
-**Status:** planned; bounded repair slice selected
-**Cycle ID:** `2026-09-17-cd-00r-standard-now-compact-overlap`
+**Status:** planned; repaired compact boundary accepted, checkpoint rerun selected
+**Cycle ID:** `2026-09-17-cd-00-pre-overhaul-checkpoint-rerun`
 **Active roadmap:** `.codex/plans/ui-roadmap.md`
-**Implementation-slice count:** 2 of 2 since UI-03; CD-00 did not reset the
-count because its first current-state case failed
+**Implementation-slice count:** 2 of 2 since UI-03; reset only after all five
+CD-00 cases pass and documentation closes
 
 ## Selected outcome and acceptance boundary
 
-Determine why the existing deterministic Standard Now compact boundary renders
-`home-section-location` and `home-section-current` with overlapping semantic
-bounds at 360x640dp, font scale 1.0, LTR, Oxygen, Effects Off. Preserve the
-current red runner/XML evidence, capture the exact two bounds and rendered
-state, then correct only the established cause.
+Close the inherited repository-wide two-production-slice checkpoint after the
+CD-00R repair. Run each of the five named UI-04 Home Compose cases individually
+against the current post-UI-05 Home implementation, accepting only fresh
+runner/XML/log/textproto evidence with 1/1 passed, zero failures, errors, and
+skips per case.
 
-If the installed/Compose production layout overlaps, make the smallest Standard
-Now layout correction and retain installed same-route before/final PNG/XML. If
-the visible production geometry is valid and the deterministic harness or
-assertion setup is wrong, correct only that test boundary and retain evidence
-that distinguishes it from a production defect. Do not weaken, delete, or
-bypass the no-overlap contract.
+The repaired compact Standard Now case now waits for Compose idle before
+measuring the fixed location/current/precipitation hierarchy. Its diagnostic
+run recorded valid bounds: location `Rect(18,92–342,140)`, current
+`Rect(18,150–342,297)`, precipitation `Rect(18,307–342,379)`.
 
-The repair is accepted only when
-`standardNowCompactHierarchyUsesFixedHeroAndNonOverflowingSupport` completes
-once with fresh XML, instrumentation log, textproto, and wrapper agreement:
-1/1 passed, zero failures, zero errors, and zero skips. Then run the applicable
-focused tests and broad checks for the changed boundary. Return to CD-00 after
-repair closure; CD-00 must still run its complete five-case set before the
-implementation count resets or CD-01 can be selected.
+## Evidence and scope
 
-## Failure evidence and sizing
-
-- CD-00 artifact directory:
-  `.codex/test-artifacts/2026-09-17-cd-00-pre-overhaul-checkpoint/`.
-- The recovered API-37 `oxygen_starter` session passed health preflight.
-- The compact case completed 1/1 with zero skips and one normal assertion
-  failure: `home-section-location should not overlap home-section-current` at
-  `HomeDashboardUiTest.kt:4447`.
-- The other four CD-00 cases were not run and the emulator was stopped.
-- Estimated repair usage is 30–35% of one context window: reproduction and
-  bounds diagnosis 10%, one bounded correction 10–15%, and focused/broad/
-  documentation closure 10%. Split before coding if the cause introduces a
-  second independent acceptance boundary or exceeds 60%.
-
-## Intended scope and evidence
-
-Likely files, conditional on the established cause:
-
-- `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`
-- `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`
-- current plan, UI roadmap, cycle history, and README status note
-
-Evidence budget:
-
-1. Inspect the retained failure XML/log/textproto and record the two exact
-   semantic bounds without changing production behavior.
-2. Capture the current rendered fixture and, if production is implicated, the
-   installed selected-location route at the same compact conditions.
-3. Run the one failed connected method after the correction. Do not run the
-   other four CD-00 methods inside this repair slice.
-4. Run focused tests for any changed mapper/UI contract, Android-test
-   compilation when the test source changes, app/core unit suites, debug
-   assembly, and `git diff --check` as applicable.
-5. Preserve one emulator session and one install per APK change. Apply the
-   repository's bounded diagnostic rule: at most three failed attempts for this
-   boundary, each additional attempt backed by a concrete hypothesis and a
-   material diagnostic, input, or environment change. Stop earlier when the
-   cause is established; after three unresolved failures, preserve and report
-   the evidence without further attempts.
+- CD-00R repair artifacts:
+  `.codex/test-artifacts/2026-09-17-cd-00r-standard-now-compact-overlap/`.
+- CD-00 rerun artifacts:
+  `.codex/test-artifacts/2026-09-17-cd-00-pre-overhaul-checkpoint-rerun/`.
+- Use one recovered API-37 `oxygen_starter` emulator session and one APK
+  installation for this checkpoint; run the five methods individually.
+- After the five cases, run `:app:testDebugUnitTest :core:testDebugUnitTest`,
+  `:app:assembleDebug`, and `git diff --check` if source or documentation
+  changes remain.
 
 ## Limits
 
-No Celestial Dial component, visual overhaul progress, Hourly behavior,
-provider, repository, cache, persistence, navigation, theme, new weather value,
-or Simple layout change is authorized. CD-01 remains `specified`, not selected.
-The checkpoint count remains 2 of 2 until the repaired boundary returns to and
-passes the full CD-00 evidence set.
+No Celestial Dial production work, provider/repository/cache/persistence change,
+navigation/theme change, new weather value, or Simple layout change. CD-01
+remains `specified` until this checkpoint is fully verified and documented.

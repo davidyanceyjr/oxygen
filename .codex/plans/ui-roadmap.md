@@ -1,8 +1,8 @@
 # Oxygen Standard Now — Celestial Dial UI Overhaul Roadmap
 
-**Status:** active roadmap; design selected; CD-00 stopped on a current-state
-failure; CD-00R repair investigation selected in `.codex/plans/current.md`;
-all Celestial Dial implementation slices remain `specified`
+**Status:** active roadmap; design selected; CD-00R repair accepted;
+CD-00 checkpoint rerun selected in `.codex/plans/current.md`; all Celestial
+Dial implementation slices remain `specified`
 **Roadmap ID:** `now-celestial-dial-v0.1`
 **Selected design:** concept F, Celestial Dial
 **Selected:** 2026-09-17 by user decision
@@ -77,7 +77,7 @@ uses only the installed provider-neutral presentation path.
 
 ### CD-00 — Pre-overhaul inherited checkpoint
 
-**Status:** covered but not verified; stopped after the first fresh case failed
+**Status:** planned; checkpoint rerun selected after CD-00R repair
 **Dependencies:** verified UI-04 and UI-05 production slices
 **Estimate:** 30%
 **Outcome:** Close the repository-wide two-production-slice checkpoint that
@@ -92,15 +92,15 @@ input, or environment change before another attempt, and stop as soon as the
 cause is established. After three unresolved failures, select a separate repair
 or investigation slice; do not weaken coverage or start CD-01.
 
-Fresh post-UI-05 execution stopped under the then-active one-failure rule. The
-compact Standard Now case completed 1/1 with zero skips and one failure because
-the location and current semantic regions overlapped. The other four checkpoint
-cases were not run. CD-00 remains pending and the implementation count remains
-2 of 2.
+The initial post-UI-05 execution stopped after the compact Standard Now case
+reported an overlap. CD-00R established valid rendered bounds after an
+explicit Compose-idle barrier and corrected the deterministic test boundary.
+The complete five-case rerun remains the active acceptance work; the count is
+still 2 of 2 until that rerun and documentation closure pass.
 
 ### CD-00R — Standard Now compact overlap repair investigation
 
-**Status:** planned; selected repair slice
+**Status:** verified; test-boundary repair accepted
 **Dependency:** CD-00's retained normal failure
 **Estimate:** 35% of one session
 **Surface:** existing Standard Now compact location/current boundary

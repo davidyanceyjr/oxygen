@@ -123,9 +123,11 @@ and `docs/data-sources/`.
   lookup outcomes, and concise source/update context. Simple Now retains its
   scrollable composition; inactive alert outcomes do not expose event,
   provider-diagnostic, or action content. A post-Hourly current-state checkpoint
-  exposed overlapping compact semantic bounds between the Standard location and
-  current-weather regions; that no-overlap boundary is pending a bounded repair
-  and is not currently verified.
+  initially exposed an overlapping compact semantic-bound measurement between
+  the Standard location and current-weather regions. CD-00R added an explicit
+  Compose-idle barrier; the rendered bounds are now separated and the repaired
+  boundary is verified. The inherited five-case CD-00 checkpoint rerun remains
+  pending.
 - Standard Home Now, Hourly, Daily, and Details visual baselines.
 - Art-sheet-aligned Standard Home weather marks, surface roles, typography
   roles, and app-local design roles for the installed Home surface.

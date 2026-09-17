@@ -4423,6 +4423,7 @@ class HomeDashboardUiTest {
                 }
             }
         }
+        composeRule.waitForIdle()
         composeRule.onNodeWithTag("home-now-fixed-content").assertIsDisplayed()
         composeRule.onNodeWithTag("home-now-supporting-content").assertIsDisplayed()
         composeRule.onNodeWithContentDescription(
@@ -5087,7 +5088,10 @@ private fun ComposeTestRule.assertNoSiblingOverlap(vararg tags: String) {
         val after = requireNotNull(bounds[afterTag])
         val overlaps = before.left < after.right && after.left < before.right &&
             before.top < after.bottom && after.top < before.bottom
-        assertTrue("$beforeTag should not overlap $afterTag", !overlaps)
+        assertTrue(
+            "$beforeTag should not overlap $afterTag (before=$before, after=$after)",
+            !overlaps,
+        )
     }
 }
 

@@ -104,3 +104,35 @@ Evidence and limits:
 Next action: CD-00R, a bounded investigation and repair of the Standard Now
 compact location/current overlap. Return to the complete five-case CD-00
 checkpoint after that repair; do not select CD-01 beforehand.
+
+### 2026-09-17-cd-00r-standard-now-compact-overlap
+
+Status: verified; test-boundary repair accepted; documentation pending commit
+Mode: bounded deterministic Compose harness repair
+
+Result:
+
+- The initial retained CD-00 failure was reproduced once as a normal assertion
+  failure. A diagnostic rerun passed and recorded valid production semantic
+  bounds: location `Rect.fromLTRB(18, 92, 342, 140)`, current
+  `Rect.fromLTRB(18, 150, 342, 297)`, and precipitation
+  `Rect.fromLTRB(18, 307, 342, 379)`.
+- The deterministic compact case now waits for Compose idle before reading
+  semantics bounds. The final named method completed 1/1 with zero failures,
+  errors, and skips; fresh XML, instrumentation log, textproto, and wrapper
+  agree.
+
+Evidence and limits:
+
+- Repair artifacts, including the retained failed run, diagnostic bounds log,
+  and accepted result bundles:
+  `.codex/test-artifacts/2026-09-17-cd-00r-standard-now-compact-overlap/`.
+- Focused broad checks passed in
+  `.codex/test-artifacts/2026-09-17-cd-00r-standard-now-compact-overlap/broad-checks.log`:
+  Android-test compilation, app/core unit tests, debug assembly, and
+  `git diff --check`.
+- No production layout, weather semantics, provider, repository, cache,
+  persistence, navigation, theme, or Simple layout changed. The complete
+  five-case CD-00 checkpoint is still pending and CD-01 remains unspecified.
+
+Next action: rerun all five named CD-00 cases on the repaired test boundary.
