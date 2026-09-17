@@ -219,6 +219,7 @@ data class HomeCurrentPresentation(
 
 data class HomeHourlyPresentation(
     val time: String,
+    val localDate: LocalDate,
     val condition: String,
     val conditionIdentity: WeatherCondition,
     val temperature: String,
@@ -227,6 +228,30 @@ data class HomeHourlyPresentation(
     val precipitationProbabilityPercent: Int?,
     val spokenDescription: String,
 )
+
+data class HomeHourlyWindowPresentation(
+    val entries: List<HomeHourlyPresentation>,
+    val rangeLabel: String,
+)
+
+fun HomeSuccessPresentation.hourlyWindow(windowIndex: Int): HomeHourlyWindowPresentation? {
+    if (windowIndex < 0) return null
+    val entries = hourly.drop(windowIndex * HOME_HOURLY_WINDOW_SIZE).take(HOME_HOURLY_WINDOW_SIZE)
+    if (entries.isEmpty()) return null
+    val first = entries.first()
+    val last = entries.last()
+    val firstDate = DAY_FORMAT.format(first.localDate)
+    val lastDate = DAY_FORMAT.format(last.localDate)
+    val rangeLabel = if (first.localDate == last.localDate) {
+        "$firstDate, ${first.time}–${last.time}"
+    } else {
+        "$firstDate, ${first.time}–$lastDate, ${last.time}"
+    }
+    return HomeHourlyWindowPresentation(entries = entries, rangeLabel = rangeLabel)
+}
+
+fun HomeSuccessPresentation.hourlyWindowRangeLabel(windowIndex: Int): String? =
+    hourlyWindow(windowIndex)?.rangeLabel
 
 data class HomeDailyPresentation(
     val date: String,
@@ -340,6 +365,7 @@ private fun HourlyForecast.toHourlyPresentation(
 ): HomeHourlyPresentation =
     HomeHourlyPresentation(
         time = HOUR_FORMAT.format(time.atZone(zoneId)),
+        localDate = time.atZone(zoneId).toLocalDate(),
         condition = condition.displayName(),
         conditionIdentity = condition,
         temperature = temperatureC.formatTemperature(units.temperature),
@@ -353,6 +379,8 @@ private fun HourlyForecast.toHourlyPresentation(
             precipitationProbabilityPercent?.let { add("$it percent chance of precipitation.") }
         }.joinToString(" "),
     )
+
+private const val HOME_HOURLY_WINDOW_SIZE = 6
 
 private fun DailyForecast.toDailyPresentation(
     zoneId: ZoneId,

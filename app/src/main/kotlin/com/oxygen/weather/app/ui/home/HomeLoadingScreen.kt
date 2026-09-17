@@ -62,6 +62,8 @@ import com.oxygen.weather.app.HomeDailyPresentation
 import com.oxygen.weather.app.HomeAlertSummaryPresentation
 import com.oxygen.weather.app.HomeAlertLookupPresentation
 import com.oxygen.weather.app.HomeHourlyPresentation
+import com.oxygen.weather.app.HomeHourlyWindowPresentation
+import com.oxygen.weather.app.hourlyWindow
 import com.oxygen.weather.app.HomeMetricIdentity
 import com.oxygen.weather.app.HomeMetricPresentation
 import com.oxygen.weather.app.HomeForecastFreshness
@@ -241,6 +243,7 @@ private fun ReadyContent(
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
     var simpleForecast by remember(appearance.layout) { mutableStateOf(SimpleForecastChoice.Hourly) }
+    var standardHourlyWindowIndex by remember(dashboard.hourly) { mutableStateOf(0) }
     val currentPageIndex = pagerState.currentPage.coerceIn(0, pages.lastIndex)
     val currentPage = pages[currentPageIndex]
     val currentPageDescription = stringResource(
@@ -356,7 +359,11 @@ private fun ReadyContent(
                             selectedChoice = simpleForecast,
                             onChoiceSelected = { simpleForecast = it },
                         )
-                        HomePage.Hourly -> HourlyPage(state)
+                        HomePage.Hourly -> StandardHourlyPage(
+                            state = state,
+                            windowIndex = standardHourlyWindowIndex,
+                            onWindowIndexChanged = { standardHourlyWindowIndex = it },
+                        )
                         HomePage.Daily -> DailyPage(state)
                         HomePage.Details -> DetailsPage(state)
                     }
@@ -1037,7 +1044,7 @@ private fun NowContextGrid(items: List<NowContextItem>) {
 }
 
 @Composable
-private fun HourlyPage(state: HomeForecastPresentationState.ForecastReady) {
+private fun SimpleHourlyPage(state: HomeForecastPresentationState.ForecastReady) {
     val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
 
@@ -1075,6 +1082,86 @@ private fun HourlyPage(state: HomeForecastPresentationState.ForecastReady) {
 }
 
 @Composable
+private fun StandardHourlyPage(
+    state: HomeForecastPresentationState.ForecastReady,
+    windowIndex: Int,
+    onWindowIndexChanged: (Int) -> Unit,
+) {
+    val roles = LocalOxygenHomeDesign.current
+    val dashboard = state.dashboard
+    val window = dashboard.hourlyWindow(windowIndex)
+
+    if (window != null) {
+        DashboardSection(tag = "home-section-hourly") {
+            Text(stringResource(R.string.home_next_hours), style = roles.sectionHeading)
+            Text(
+                text = window.rangeLabel,
+                modifier = Modifier.testTag("home-hourly-range"),
+                style = roles.supportingLabel,
+                color = homeSupportingContent(0.78f),
+            )
+            HourlyGrid(window)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("home-hourly-window-actions"),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                TextButton(
+                    onClick = { onWindowIndexChanged((windowIndex - 1).coerceAtLeast(0)) },
+                    enabled = windowIndex > 0,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .testTag("home-hourly-earlier"),
+                ) {
+                    Text(stringResource(R.string.home_hourly_earlier))
+                }
+                TextButton(
+                    onClick = { onWindowIndexChanged(windowIndex + 1) },
+                    enabled = dashboard.hourlyWindow(windowIndex + 1) != null,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .testTag("home-hourly-later"),
+                ) {
+                    Text(stringResource(R.string.home_hourly_later))
+                }
+            }
+        }
+    } else {
+        UnavailablePageCard("Hourly forecast", dashboard.returnedDataUnavailableText)
+    }
+}
+
+@Composable
+private fun HourlyGrid(window: HomeHourlyWindowPresentation) {
+    val roles = LocalOxygenHomeDesign.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("home-hourly-grid"),
+        verticalArrangement = Arrangement.spacedBy(roles.tileGap),
+    ) {
+        window.entries.chunked(2).forEachIndexed { rowIndex, row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(roles.tileGap),
+            ) {
+                row.forEachIndexed { columnIndex, hour ->
+                    HourlyTile(
+                        hour = hour,
+                        index = rowIndex * 2 + columnIndex,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (row.size == 1) {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun SimpleForecastPage(
     state: HomeForecastPresentationState.ForecastReady,
     selectedChoice: SimpleForecastChoice,
@@ -1105,7 +1192,7 @@ private fun SimpleForecastPage(
             )
         }
         when (selectedChoice) {
-            SimpleForecastChoice.Hourly -> HourlyPage(state)
+            SimpleForecastChoice.Hourly -> SimpleHourlyPage(state)
             SimpleForecastChoice.Daily -> DailyPage(state)
         }
     }

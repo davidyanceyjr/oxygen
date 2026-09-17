@@ -64,6 +64,8 @@
     <string name="home_alert_unable_to_check">Official alerts could not be checked.</string>
     <string name="home_alert_delayed">Official alert lookup is delayed until %1$s.</string>
     <string name="home_next_hours">Next hours</string>
+    <string name="home_hourly_earlier">Earlier</string>
+    <string name="home_hourly_later">Later</string>
     <string name="home_daily_forecast">Daily forecast</string>
     <string name="home_sun_summary">Sun %1$s / %2$s</string>
     <string name="home_sun">Sun</string>

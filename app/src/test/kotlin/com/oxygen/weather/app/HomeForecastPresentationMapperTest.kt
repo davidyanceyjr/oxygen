@@ -34,6 +34,34 @@ import org.junit.Test
 
 class HomeForecastPresentationMapperTest {
     @Test
+    fun `hourly window range uses selected local date for same day entries`() {
+        val weather = fullWeatherBundle().copy(
+            hourly = listOf(
+                fullWeatherBundle().hourly.single().copy(time = Instant.parse("2026-08-22T11:00:00Z")),
+                fullWeatherBundle().hourly.single().copy(time = Instant.parse("2026-08-22T12:00:00Z")),
+            ),
+        )
+
+        val presentation = weather.toHomeSuccessPresentation(testLocation)
+
+        assertEquals("Sat, Aug 22, 6 AM–7 AM", presentation.hourlyWindowRangeLabel(0))
+    }
+
+    @Test
+    fun `hourly window range names both selected local dates across midnight`() {
+        val weather = fullWeatherBundle().copy(
+            hourly = listOf(
+                fullWeatherBundle().hourly.single().copy(time = Instant.parse("2026-08-23T04:00:00Z")),
+                fullWeatherBundle().hourly.single().copy(time = Instant.parse("2026-08-23T05:00:00Z")),
+            ),
+        )
+
+        val presentation = weather.toHomeSuccessPresentation(testLocation)
+
+        assertEquals("Sat, Aug 22, 11 PM–Sun, Aug 23, 12 AM", presentation.hourlyWindowRangeLabel(0))
+    }
+
+    @Test
     fun `home presentation normalizes only legacy MET Norway license provenance`() {
         fun presentationSource(providerId: String, licenseId: String): String? =
             fullWeatherBundle().copy(

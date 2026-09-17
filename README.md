@@ -113,6 +113,10 @@ and `docs/data-sources/`.
   previous/next actions, static-tap and child-action isolation, and
   one-page-at-a-time Android Back from Details through Now with normal host
   Back preserved at Now.
+- Standard Home Hourly presents a local-date range over up to six actual
+  chronological entries in a stable two-column, three-row window. The
+  installed two-window limit supports Earlier/Later without refetch; full
+  horizon presentation remains future work.
 - Standard Home Now presents a fixed location/current-weather hierarchy with
   local supporting overflow for refresh/freshness, typed truthful official-alert
   lookup outcomes, and concise source/update context. Simple Now retains its

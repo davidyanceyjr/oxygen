@@ -1889,3 +1889,38 @@ Limits and next action:
 
 Post-commit consistency review: the active plan, roadmap, README, history,
 affected source scope, and recorded artifact paths agree with commit `1d0547f`.
+
+### 2026-09-17-ui-05-hourly-window
+
+Status: verified; committed in this changeset
+Mode: bounded Standard Home Hourly presentation and local window transition
+Slice: UI-05 — Hourly first/next compact window
+
+Result:
+
+- Added selected-zone local dates to hourly presentation mapping and truthful
+  same-day/midnight-crossing range labels.
+- Split Standard Hourly from Simple Forecast Hourly. Standard now renders up
+  to six actual entries in a stable 2×3 grid with local Earlier/Later controls;
+  the two mapped windows do not refetch and Android Back still returns to Now.
+- Added the two planned mapper tests and two named deterministic connected
+  cases. Both connected cases passed 1/1 with zero skipped and zero failures.
+
+Evidence:
+
+- One recovered API-37 `oxygen_starter` session (`emulator-5554`) and final
+  APK SHA-256 `5f80b2ce1a2ed5ca43c197e71cfd58f4375901a1f56eff5f0630f640c45cf080`.
+- Baseline/final installed Chicago PNG/XML, Later capture, runner outputs,
+  and command ledger are under
+  `.codex/test-artifacts/2026-09-17-ui-05-hourly-window/`.
+- Mapper test, Android-test compilation, app/core unit suites, debug assembly,
+  and `git diff --check` passed after documentation closure.
+
+Limits and next action:
+
+- The mapper retains its 12-entry ceiling; later windows, date jumps,
+  exceptional states, UI-06 checkpoint, TalkBack traversal, localization, and
+  release checks remain unverified or out of scope. The production Chicago
+  route was manually selected with location permission denied.
+- The implementation-slice count is 2 of 2 since UI-03; UI-06 Checkpoint B is
+  the next selected candidate.

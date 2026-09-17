@@ -3343,6 +3343,109 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun standardHourlyFirstWindowUsesTruthfulLocalRange() {
+        val location = weatherLocation(name = "Hourly Window City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(twelveHourWeatherBundle(location))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactContent {
+            OxygenApp(
+                stateHolder = stateHolder,
+                appearance = OxygenAppearance(
+                    layout = LayoutPreset.STANDARD,
+                    effects = EffectsLevel.OFF,
+                ),
+            )
+        }
+        composeRule.waitForIdle()
+        assertEquals(1, repository.locations.size)
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.assertHomePageDescription("Hourly", "Page 2 of 4")
+        composeRule.onNodeWithTag("home-hourly-range").assertTextContains("Sat, Aug 22, 6 AM–11 AM")
+        val entries = composeRule.renderedHourlyEntriesInSemanticsOrder()
+        assertEquals((0..5).map { "home-hourly-entry-$it" }, entries.map { it.hourlyTag() })
+        assertEquals(
+            listOf("6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM"),
+            entries.map { it.hourlyTimeLabel() },
+        )
+        entries.forEach { entry ->
+            val description = entry.config
+                .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                .singleOrNull()
+            assertTrue("Hourly entry should have one concise spoken description", !description.isNullOrBlank())
+        }
+        composeRule.assertWithinRootBounds(*(0..5).map { "home-hourly-entry-$it" }.toTypedArray())
+        composeRule.assertNoSiblingOverlap(*(0..5).map { "home-hourly-entry-$it" }.toTypedArray())
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show previous page: Now", "Show next page: Daily")
+        composeRule.writeSemanticsArtifact("standard-hourly-first-window-semantics.txt")
+        composeRule.writeScreenshotArtifact("standard-hourly-first-window.png")
+    }
+
+    @Test
+    fun standardHourlyLaterThenEarlierRestoresWindowWithoutRefetch() {
+        val location = weatherLocation(name = "Hourly Window City")
+        val repository = RecordingWeatherRepository(
+            listOf(WeatherRepositoryResult.Success(twelveHourWeatherBundle(location))),
+        )
+        val stateHolder = OxygenAppStateHolder(
+            selectedLocation = location,
+            weatherRepository = repository,
+            forecastExecutor = DirectExecutor,
+        )
+
+        composeRule.setCompactContent {
+            OxygenApp(
+                stateHolder = stateHolder,
+                appearance = OxygenAppearance(
+                    layout = LayoutPreset.STANDARD,
+                    effects = EffectsLevel.OFF,
+                ),
+            )
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-hourly-earlier").performScrollTo().assertIsNotEnabled()
+        composeRule.assertMinimumTouchTargetAfterScroll("home-hourly-earlier", "home-hourly-later")
+        composeRule.onNodeWithTag("home-hourly-later").performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home-hourly-range").performScrollTo()
+            .assertTextContains("Sat, Aug 22, 12 PM–5 PM")
+        assertEquals(
+            listOf("12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM"),
+            composeRule.renderedHourlyEntriesInSemanticsOrder().map { it.hourlyTimeLabel() },
+        )
+        assertEquals(1, repository.locations.size)
+
+        composeRule.onNodeWithTag("home-hourly-earlier").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-hourly-range").performScrollTo()
+            .assertTextContains("Sat, Aug 22, 6 AM–11 AM")
+        assertEquals(
+            listOf("6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM"),
+            composeRule.renderedHourlyEntriesInSemanticsOrder().map { it.hourlyTimeLabel() },
+        )
+        assertEquals(1, repository.locations.size)
+        composeRule.onNodeWithTag("home-page-container")
+            .assertCustomActions("Show previous page: Now", "Show next page: Daily")
+        pressBack()
+        composeRule.waitForIdle()
+        composeRule.assertHomePageDescription("Now", "Page 1 of 4")
+        composeRule.writeSemanticsArtifact("standard-hourly-window-transition-semantics.txt")
+        composeRule.writeScreenshotArtifact("standard-hourly-window-transition.png")
+    }
+
+    @Test
     fun compactDailyPageShowsFourChronologicalEntriesWithHonestPrecipitation() {
         val state = HomeForecastPresentationState.ForecastReady.from(
             location = weatherLocation(
@@ -5111,7 +5214,7 @@ private fun SemanticsNode.hourlyRenderedText(): List<String> =
 
 private fun SemanticsNode.hourlyTimeLabel(): String =
     hourlyRenderedText()
-        .first { it.matches(Regex("\\d{1,2} AM")) }
+        .first { it.matches(Regex("\\d{1,2} [AP]M")) }
 
 private fun ComposeTestRule.assertHomePage(
     title: String,
@@ -5241,6 +5344,18 @@ private fun weatherLocation(
         point = GeoPoint(43.0731, -89.4012),
         zoneId = ZoneId.of("America/Chicago"),
     )
+
+private fun twelveHourWeatherBundle(location: WeatherLocation): WeatherBundle {
+    val bundle = fullWeatherBundle(location)
+    val first = bundle.hourly.first()
+    return bundle.copy(
+        hourly = (0 until 12).map { index ->
+            first.copy(
+                time = Instant.parse("2026-08-22T11:00:00Z").plusSeconds(index * 60L * 60L),
+            )
+        },
+    )
+}
 
 private fun fullWeatherBundle(
     location: WeatherLocation,
