@@ -205,3 +205,58 @@ Limits and commit state:
   theme redesign changed. Compact-font responsive variants remain CD-11 scope.
 - Committed in the current change; the implementation-slice count is now 1 of
   2 since CD-00. CD-02 remains specified and is not selected by this slice.
+
+### 2026-09-18-cd-02-high-low-satellites
+
+Status: verified; ready for commit
+Mode: bounded normal-font Standard Now visual implementation slice
+
+Result:
+
+- Replaced CD-01's temporary Today high/low line with an upper High/Low
+  constellation of two static 52dp circular satellites above the unchanged
+  centered 150dp dial. Existing formatted presentation values are rendered
+  verbatim; missing high/low values omit only their named satellite and both
+  missing omits the constellation.
+- Preserved the merged current spoken description, condition/current/apparent
+  semantics, selected location, precipitation, source/update context, footer,
+  compact path, unavailable-current path, and all provider/repository inputs.
+- Added two focused connected methods covering available values plus dynamic
+  high-missing, low-missing, and both-missing fixtures. The sparse fixture was
+  constrained so the mapper's intentional next-daily fallback could not supply
+  stale hero values in the both-missing case.
+
+Evidence:
+
+- Installed same-route baseline/final PNG and XML:
+  `.codex/test-artifacts/2026-09-17-cd-02-high-low-satellites/baseline/` and
+  `final/`. The final real Chicago route visibly shows both satellites and
+  retains actual high/low, spoken summary, source/update, and footer context.
+- Focused API-37 `oxygen_starter` cases
+  `standardNowShowsHighLowSatellitesWithoutChangingCurrentSummary` and
+  `standardNowSatelliteStatesOmitOnlyMissingDailyValues` each completed 1/1
+  with zero failures, errors, and skips. Fresh runner bundles and diagnostics
+  are under `focused-available/` and `focused-sparse-final/`; the failed
+  fixture and diagnostic attempts remain under `focused-sparse/` and
+  `focused-sparse-diagnostic/`.
+- `broad-checks.log` records passing `:app:compileDebugKotlin`,
+  `:app:testDebugUnitTest :core:testDebugUnitTest`, `:app:assembleDebug`, and
+  `git diff --check`. Full ledger:
+  `.codex/test-artifacts/2026-09-17-cd-02-high-low-satellites/verification-ledger.md`.
+
+Limits and next action:
+
+- Provider/repository exercise was inapplicable because production data,
+  mapper logic, cache, persistence, units, and navigation did not change.
+  Compact/large-font responsive work, RTL/theme translation, precipitation or
+  wind satellites, atmosphere, and other Celestial Dial surfaces remain out of
+  scope. TalkBack service traversal remains unverified under the project
+  decision.
+- The implementation count is now 2 of 2 since CD-00. CD-03 is selected as
+  the required test/documentation checkpoint and will reset the count before
+  another production slice is selected.
+
+Commit state:
+
+- This verified slice is included in the current documentation and production
+  change; the commit identity is recorded separately by Git.

@@ -1,75 +1,66 @@
-# Oxygen Standard Now — CD-01 central dial hero
+# Oxygen Standard Now — CD-02 high and low orbit satellites
 
-**Status:** verified; committed
-**Cycle ID:** `2026-09-17-cd-01-central-dial`
+**Status:** verified; ready for commit
+**Cycle ID:** `2026-09-17-cd-02-high-low-satellites`
 **Active roadmap:** `.codex/plans/ui-roadmap.md`
-**Implementation-slice count:** 1 of 2 since CD-00
+**Implementation-slice count:** 2 of 2 since CD-00; CD-03 is next and resets it
 
-## Selected outcome and acceptance boundary
+## Selected behavior and acceptance boundary
 
-Implement CD-01's central Standard Now hero: replace the current rectangular
-hero with one centered code-native circular dial containing the condition mark,
-current temperature, condition text, and apparent temperature. Keep today's
-high/low in a temporary compact line below the dial until CD-02.
+The normal-font Standard Now route now replaces CD-01's temporary Today range
+line with a static upper constellation. High and Low render the existing
+formatted presentation values in separate 52dp circular satellites above the
+unchanged centered 150dp dial. Missing values omit only their named satellite;
+both missing omits the constellation. The merged current spoken summary,
+weather semantics, units, provider behavior, and all other Home actions remain
+unchanged.
 
-At 360x640dp, Oxygen, Standard layout, Effects Off, the installed production
-Now route must show an unmistakable centered dial. Location, dial/current
-content, temporary range, lower status content, and footer must remain readable
-and non-overlapping. The existing current-weather spoken description remains
-one ordered semantic unit. Missing current data shows an explicit unavailable
-dial state without a fabricated temperature.
+Acceptance passed at 360x640dp, Oxygen, Standard, Effects Off through the
+installed selected-location route plus two deterministic connected Compose
+methods covering available, high-missing, low-missing, and both-missing states.
 
-## Intended scope
+## Changed files
 
-- Production: `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`;
-  add a focused dial composable there unless a small reusable component is
-  needed after inspection. Promote only repeated Now-local styling to
-  `OxygenTheme.kt`.
-- Tests: extend the focused Standard Now Compose coverage in
-  `HomeDashboardUiTest.kt` for dial geometry/content/semantics and unavailable
-  current state if the existing boundary does not already cover it.
-- Evidence: baseline and final same-route installed PNG/XML under
-  `.codex/test-artifacts/2026-09-17-cd-01-central-dial/`; one focused connected
-  case at the changed boundary; applicable unit/build checks; `git diff --check`.
+- `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`:
+  added `HighLowSatelliteConstellation` and `DialSatellite`; removed only the
+  normal-font temporary range rendering. Compact, unavailable-current, and
+  Simple paths remain unchanged.
+- `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`:
+  added the two focused methods and a font-scale parameter to the existing
+  dynamic test helper so the sparse fixture exercises the normal-font route.
+- `README.md`, `.codex/plans/ui-roadmap.md`, and this plan: synchronized the
+  verified CD-02 behavior and selected CD-03 checkpoint.
 
-## Verification budget and limits
+## Evidence and verification
 
-Use one emulator session and one install per APK change. Do not rerun passing
-checks without a source, test-input, or environment change. The primary
-acceptance boundary is installed rendering plus the focused Compose geometry,
-content, semantics, and missing-current assertion; provider, repository,
-cache, persistence, navigation, footer, Simple layout, Hourly/Daily/Details,
-new weather values, orbit satellites, atmosphere, and theme redesign are out
-of scope.
-
-Sizing rationale: this is one user-visible hero composition concern with one
-focused Android boundary and visual iteration; estimated 45% of the session,
-within the roadmap ceiling.
-
-## Evidence and result
-
-- Replaced the normal-font rectangular Standard Now current hero with a
-  150dp centered code-native circular dial containing the weather mark,
-  temperature, condition, and apparent temperature. High/low remains in the
-  temporary line below the dial. The compact-font path remains unchanged for
-  CD-11's later responsive slice.
-- Added an explicit unavailable circular state with no fabricated temperature.
-- Focused connected cases passed individually on one API-37 `oxygen_starter`
-  session: `standardNowCompactHierarchyUsesFixedHeroAndNonOverflowingSupport`
-  and `standardNowAlertLookupOutcomesAreTruthfulAndActionFree`; each completed
-  1/1 with zero failures, errors, and skips.
-- Installed same-route evidence is under
-  `.codex/test-artifacts/2026-09-17-cd-01-central-dial/`, including
-  `home-baseline-route.png`, `home-final-clean-2.png`, and their XML dumps.
-  Final XML records separated location, dial, precipitation, supporting, and
-  footer bounds with the current spoken summary inside the dial.
-- Broad checks passed in `broad-checks.log`:
-  `:app:testDebugUnitTest :core:testDebugUnitTest :app:assembleDebug`; compile
-  and `git diff --check` also passed.
+- Installed baseline/final: `.codex/test-artifacts/2026-09-17-cd-02-high-low-satellites/baseline/`
+  and `final/`. The real selected Chicago route had actual high/low values;
+  final PNG visibly shows the two upper satellites and final XML retains the
+  spoken summary, source/update context, and footer bounds.
+- Focused connected evidence: `focused-available/` and
+  `focused-sparse-final/`; each fresh runner bundle is 1/1 with zero failures,
+  errors, and skips. The failed fixture and diagnostic triage remain in
+  `focused-sparse/` and `focused-sparse-diagnostic/`.
+- Broad evidence: `broad-checks.log` records passing `:app:compileDebugKotlin`,
+  app/core unit tests, `:app:assembleDebug`, and `git diff --check`.
+- The Android-test compile initially exposed and then passed after correcting a
+  missing local `width` import. The sparse fixture initially permitted the
+  mapper's intentional next-daily fallback; constraining other fixture rows to
+  missing high/low made both-missing behavior truthful without production data
+  changes.
 
 ## Limits and next action
 
-No provider, repository, cache, persistence, navigation, footer, Simple layout,
-Hourly/Daily/Details, new weather value, orbit satellite, atmosphere, or theme
-redesign changed. CD-02 remains the next specified roadmap slice; the
-two-slice implementation count is now 1 of 2.
+No provider, repository, cache, persistence, mapper production logic, units,
+navigation, footer, Simple layout, compact/large-font responsive behavior,
+RTL/theme translation, precipitation/wind satellites, atmosphere, or other
+Celestial Dial surface changed. Provider/repository exercise is inapplicable.
+
+Next: execute CD-03, the required test/documentation checkpoint for the two
+production slices since CD-00. Reconcile the CD-01/CD-02 installed pairs,
+focused results, functional invariants, and broad checks, then reset the
+implementation count before selecting CD-04 or CD-05.
+
+Sizing rationale: CD-02 stayed within the planned 50% session estimate as one
+normal-font Now composition concern with two focused Android cases, one
+installed visual boundary, and bounded documentation closure.

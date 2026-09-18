@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -711,15 +712,16 @@ private fun CompactCurrentHero(current: HomeCurrentPresentation) {
 private fun CentralCurrentDial(current: HomeCurrentPresentation) {
     val roles = LocalOxygenHomeDesign.current
     val accent = MaterialTheme.colorScheme.primary
-    val range = listOfNotNull(current.highTemperature, current.lowTemperature)
-        .joinToString("   ")
-        .ifEmpty { null }
     Column(
         modifier = Modifier
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        HighLowSatelliteConstellation(
+            highTemperature = current.highTemperature,
+            lowTemperature = current.lowTemperature,
+        )
         Box(
             modifier = Modifier
                 .size(150.dp)
@@ -798,15 +800,75 @@ private fun CentralCurrentDial(current: HomeCurrentPresentation) {
                 )
             }
         }
-        range?.let {
-            Text(
-                text = stringResource(R.string.home_today) + "  " + it,
-                modifier = Modifier
-                    .testTag("home-current-range")
-                    .semantics { hideFromAccessibility() },
-                style = MaterialTheme.typography.bodyMedium,
+    }
+}
+
+@Composable
+private fun HighLowSatelliteConstellation(
+    highTemperature: String?,
+    lowTemperature: String?,
+) {
+    if (highTemperature == null && lowTemperature == null) return
+
+    Row(
+        modifier = Modifier
+            .width(220.dp)
+            .height(52.dp)
+            .testTag("home-high-low-constellation"),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        if (highTemperature != null) {
+            DialSatellite(
+                tag = "home-current-high-satellite",
+                text = highTemperature,
+            )
+        } else {
+            Spacer(Modifier.size(52.dp))
+        }
+        if (lowTemperature != null) {
+            DialSatellite(
+                tag = "home-current-low-satellite",
+                text = lowTemperature,
+            )
+        } else {
+            Spacer(Modifier.size(52.dp))
+        }
+    }
+}
+
+@Composable
+private fun DialSatellite(
+    tag: String,
+    text: String,
+) {
+    val roles = LocalOxygenHomeDesign.current
+    Box(
+        modifier = Modifier
+            .size(52.dp)
+            .testTag(tag)
+            .semantics { hideFromAccessibility() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(Modifier.matchParentSize()) {
+            val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
+            val radius = size.minDimension * 0.46f
+            drawCircle(color = roles.strongGlassSurface, radius = radius, center = center)
+            drawCircle(
+                color = roles.outlineQuiet,
+                radius = radius,
+                center = center,
+                style = Stroke(width = 1.5f),
             )
         }
+        Text(
+            text = text,
+            modifier = Modifier.semantics { hideFromAccessibility() },
+            color = roles.normalContent,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 10.sp),
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Clip,
+        )
     }
 }
 

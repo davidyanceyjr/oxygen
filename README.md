@@ -130,7 +130,8 @@ and `docs/data-sources/`.
   passed with fresh runner-backed evidence. CD-01 now replaces the normal-font
   Standard Now hero with a centered code-native circular dial; its installed
   geometry, spoken summary, missing-current state, and broad checks are
-  verified. Orbit satellites, responsive variants, and atmospheric treatment
+  verified. CD-02 now adds truthful high/low orbit satellites above the dial;
+  precipitation/wind satellites, responsive variants, and atmospheric treatment
   remain future slices.
 - Standard Home Now, Hourly, Daily, and Details visual baselines.
 - Art-sheet-aligned Standard Home weather marks, surface roles, typography

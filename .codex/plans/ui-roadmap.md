@@ -1,7 +1,8 @@
 # Oxygen Standard Now — Celestial Dial UI Overhaul Roadmap
 
-**Status:** active roadmap; design selected; CD-00 and CD-01 verified; CD-02+
-Celestial Dial implementation slices remain `specified`
+**Status:** active roadmap; design selected; CD-00 through CD-02 verified;
+CD-03 is `planned`; later Celestial Dial implementation slices remain
+`specified`
 **Roadmap ID:** `now-celestial-dial-v0.1`
 **Selected design:** concept F, Celestial Dial
 **Selected:** 2026-09-17 by user decision
@@ -143,7 +144,7 @@ Simple Now, provider or mapper changes.
 
 ### CD-02 — High and low orbit satellites
 
-**Status:** specified
+**Status:** verified; ready for commit
 **Dependencies:** CD-01
 **Estimate:** 30%
 **Surface:** upper dial constellation
@@ -157,7 +158,7 @@ upper constellation.
 
 ### CD-03 — Checkpoint A
 
-**Status:** specified; test/documentation only
+**Status:** planned; selected in `.codex/plans/current.md`
 **Dependencies:** CD-01, CD-02
 **Estimate:** 15%
 **Outcome:** Reconcile the two installed before/final pairs, focused connected
@@ -335,7 +336,7 @@ states; applicable unit/build checks; `git diff --check`.
 
 ## Selection state
 
-CD-00 is selected by `.codex/plans/current.md` because UI-04 and UI-05 exhausted
-the two-production-slice allowance after UI-03. CD-01 remains the next
-implementation candidate and becomes `planned` only after CD-00 is verified
-and a later active plan selects it.
+CD-03 is selected by `.codex/plans/current.md` after verified CD-00 through
+CD-02. It is the required test/documentation checkpoint because CD-02 is the
+second production implementation slice since CD-00; completion resets the
+implementation count before another production slice is selected.

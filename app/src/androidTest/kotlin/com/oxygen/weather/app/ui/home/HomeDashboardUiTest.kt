@@ -4462,6 +4462,129 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun standardNowShowsHighLowSatellitesWithoutChangingCurrentSummary() {
+        val location = weatherLocation(name = "Satellite City")
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = emptyList()),
+            alertStatus = AlertLookupStatus.NoAlerts(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 640,
+            appearance = OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+        )
+        composeRule.waitForIdle()
+
+        val high = composeRule.onNodeWithTag("home-current-high-satellite").fetchSemanticsNode().boundsInRoot
+        val low = composeRule.onNodeWithTag("home-current-low-satellite").fetchSemanticsNode().boundsInRoot
+        val dial = composeRule.onNodeWithTag("home-current-dial").fetchSemanticsNode().boundsInRoot
+        assertEquals(52f, high.width, 0.5f)
+        assertEquals(52f, high.height, 0.5f)
+        assertEquals(52f, low.width, 0.5f)
+        assertEquals(52f, low.height, 0.5f)
+        assertEquals(150f, dial.width, 0.5f)
+        assertEquals(150f, dial.height, 0.5f)
+        assertTrue("High satellite should be on the leading side", high.left < low.left)
+        assertEquals("High and low satellites should be symmetric", high.left + low.right, 360f, 1f)
+        assertTrue("Satellites should be above the dial", high.bottom <= dial.top && low.bottom <= dial.top)
+        composeRule.onAllNodesWithTag("home-current-range").assertCountEquals(0)
+        composeRule.onAllNodesWithText("H 73 deg F", useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onAllNodesWithText("L 54 deg F", useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onNodeWithContentDescription(
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+        ).assertIsDisplayed()
+        assertEquals(
+            1,
+            composeRule.onAllNodesWithContentDescription(
+                "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+            ).fetchSemanticsNodes().size,
+        )
+        composeRule.assertSemanticsTreeOrder(
+            "home-section-location",
+            "home-section-current",
+            "home-section-precipitation",
+            "home-now-supporting-content",
+        )
+        composeRule.assertWithinRootBounds(
+            "home-section-location",
+            "home-section-current",
+            "home-section-precipitation",
+            "home-page-tab-now",
+            "home-page-tab-hourly",
+            "home-page-tab-daily",
+            "home-page-tab-details",
+        )
+        composeRule.assertNoSiblingOverlap("home-section-location", "home-section-current", "home-section-precipitation")
+    }
+
+    @Test
+    fun standardNowSatelliteStatesOmitOnlyMissingDailyValues() {
+        val location = weatherLocation(name = "Sparse Satellite City")
+        val base = fullWeatherBundle(location).copy(
+            alerts = emptyList(),
+            daily = fullWeatherBundle(location).daily.map { it.copy(highC = null, lowC = null) },
+        )
+        val rendered = mutableStateOf<HomeForecastPresentationState>(
+            HomeForecastPresentationState.ForecastReady.from(
+                location = location,
+                weather = base,
+                alertStatus = AlertLookupStatus.NotRequested,
+            ),
+        )
+        composeRule.setDynamicHomeContent(
+            rendered,
+            OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+            onRetry = {},
+            fontScale = 1f,
+        )
+
+        fun replace(high: Double?, low: Double?, spoken: String) {
+            composeRule.runOnIdle {
+                rendered.value = HomeForecastPresentationState.ForecastReady.from(
+                    location = location,
+                    weather = base.copy(daily = listOf(base.daily.first().copy(highC = high, lowC = low)) + base.daily.drop(1)),
+                    alertStatus = AlertLookupStatus.NotRequested,
+                )
+            }
+            composeRule.waitForIdle()
+            composeRule.onNodeWithContentDescription(spoken).assertIsDisplayed()
+            composeRule.onNodeWithTag("home-current-dial").assertIsDisplayed()
+            composeRule.onAllNodesWithTag("home-current-range").assertCountEquals(0)
+            composeRule.assertNoSiblingOverlap("home-section-location", "home-section-current", "home-section-precipitation")
+        }
+
+        replace(22.7, 12.3, "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.")
+        composeRule.onNodeWithTag("home-current-high-satellite").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-current-low-satellite").assertIsDisplayed()
+        composeRule.onAllNodesWithText("H 73 deg F", useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onAllNodesWithText("L 54 deg F", useUnmergedTree = true).assertCountEquals(1)
+
+        replace(null, 12.3, "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. Low 54 degrees Fahrenheit.")
+        composeRule.onAllNodesWithTag("home-current-high-satellite").assertCountEquals(0)
+        composeRule.onNodeWithTag("home-current-low-satellite").assertIsDisplayed()
+        composeRule.onAllNodesWithText("H 73 deg F", useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("L 54 deg F", useUnmergedTree = true).assertCountEquals(1)
+
+        replace(22.7, null, "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit.")
+        composeRule.onNodeWithTag("home-current-high-satellite").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("home-current-low-satellite").assertCountEquals(0)
+        composeRule.onAllNodesWithText("H 73 deg F", useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onAllNodesWithText("L 54 deg F", useUnmergedTree = true).assertCountEquals(0)
+
+        replace(null, null, "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit.")
+        composeRule.onAllNodesWithTag("home-high-low-constellation").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-current-high-satellite").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-current-low-satellite").assertCountEquals(0)
+        composeRule.onAllNodesWithText("H 73 deg F", useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("L 54 deg F", useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
     fun standardNowAlertLookupOutcomesAreTruthfulAndActionFree() {
         val location = weatherLocation(name = "Lookup Outcome City")
         val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
@@ -4762,9 +4885,10 @@ private fun ComposeContentTestRule.setDynamicHomeContent(
     state: androidx.compose.runtime.MutableState<HomeForecastPresentationState>,
     appearance: OxygenAppearance,
     onRetry: () -> Unit,
+    fontScale: Float = 1.3f,
 ) {
     setContent {
-        CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 1.3f)) {
+        CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = fontScale)) {
             OxygenTheme(themeId = appearance.theme, contrast = appearance.contrast) {
                 Box(Modifier.width(360.dp).height(640.dp)) {
                     HomeLoadingScreen(state = state.value, appearance = appearance, onRetry = onRetry)
