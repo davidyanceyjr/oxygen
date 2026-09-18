@@ -158,7 +158,7 @@ upper constellation.
 
 ### CD-03 — Checkpoint A
 
-**Status:** verified; ready for commit
+**Status:** verified; committed in `ec49c5f`
 **Dependencies:** CD-01, CD-02
 **Estimate:** 15%
 **Outcome:** Reconcile the two installed before/final pairs, focused connected

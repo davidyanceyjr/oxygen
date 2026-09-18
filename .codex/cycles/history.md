@@ -263,7 +263,7 @@ Commit state:
 
 ### 2026-09-18-cd-03-checkpoint-a
 
-Status: verified; ready for commit
+Status: verified; committed in `ec49c5f`
 Mode: evidence-recovery and documentation checkpoint over CD-01/CD-02
 
 Result:
@@ -298,5 +298,5 @@ State closure:
 
 - The implementation-slice count reset from 2 of 2 to 0 of 2. CD-04 and CD-05
   remain `specified`; no visual-overhaul progress beyond CD-01/CD-02 is claimed.
-- The active plan and roadmap now record CD-03 as verified and ready for
-  commit. Commit state is tracked separately by Git.
+- The active plan and roadmap now record CD-03 as verified and committed in
+  `ec49c5f`.

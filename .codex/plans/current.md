@@ -1,6 +1,6 @@
 # Oxygen Standard Now — CD-03 Checkpoint A
 
-**Status:** verified; ready for commit
+**Status:** verified; committed in `ec49c5f`
 **Cycle ID:** `2026-09-18-cd-03-checkpoint-a`
 **Active roadmap:** `.codex/plans/ui-roadmap.md`
 **Implementation-slice count:** 0 of 2 since CD-00; CD-03A recovered the missing CD-01 evidence
