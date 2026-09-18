@@ -1,7 +1,7 @@
 # Oxygen Standard Now — Celestial Dial UI Overhaul Roadmap
 
-**Status:** active roadmap; design selected; CD-00 through CD-02 verified;
-CD-03 is `planned`; later Celestial Dial implementation slices remain
+**Status:** active roadmap; design selected; CD-00 through CD-03 verified;
+CD-04 and later Celestial Dial implementation slices remain
 `specified`
 **Roadmap ID:** `now-celestial-dial-v0.1`
 **Selected design:** concept F, Celestial Dial
@@ -158,13 +158,20 @@ upper constellation.
 
 ### CD-03 — Checkpoint A
 
-**Status:** planned; selected in `.codex/plans/current.md`
+**Status:** verified; ready for commit
 **Dependencies:** CD-01, CD-02
 **Estimate:** 15%
 **Outcome:** Reconcile the two installed before/final pairs, focused connected
 results, functional invariants, broad unit/build results, and status claims.
-Reset the two-slice implementation count. This checkpoint does not advance the
-visual-overhaul count.
+Recover any missing retained runner evidence before closing the reconciliation,
+then reset the two-slice implementation count. This checkpoint does not advance
+the visual-overhaul count.
+
+CD-03A recovered the missing CD-01 focused XML, instrumentation log, textproto,
+wrapper, and acceptance-marker bundles for the two accepted cases on one
+API-37 `oxygen_starter` session. The bundles agree on 1/1 with zero failures,
+errors, and skips; the retained CD-02 bundles and both slices' broad checks
+remain consistent. The count is now 0 of 2; CD-04 and CD-05 remain `specified`.
 
 ### CD-04 — Precipitation and wind orbit satellites
 

@@ -260,3 +260,43 @@ Commit state:
 
 - This verified slice is included in the current documentation and production
   change; the commit identity is recorded separately by Git.
+
+### 2026-09-18-cd-03-checkpoint-a
+
+Status: verified; ready for commit
+Mode: evidence-recovery and documentation checkpoint over CD-01/CD-02
+
+Result:
+
+- Reconciled the installed same-route CD-01 and CD-02 baseline/final PNG/XML
+  pairs. Visual inspection confirms the CD-01 centered dial and CD-02 upper
+  High/Low satellites while retaining current semantics, source/update context,
+  footer, and the documented scope limits.
+- Recovered the missing CD-01 focused runner bundles in one API-37 x86_64
+  `oxygen_starter` session. The compact hierarchy and alert-outcome cases each
+  completed 1/1 with matching XML, instrumentation log, textproto, wrapper
+  status 0, acceptance marker, and zero failures/errors/skips.
+- Confirmed CD-02's retained focused bundles and both slices' retained broad
+  compile, unit, assembly, and diff results. Commits `3cf07b9`, `3500f1f`, and
+  `54c53a6` remain in the current ancestry; no app or core source changed.
+
+Evidence and limits:
+
+- Recovery ledger and accepted CD-01 bundles:
+  `.codex/test-artifacts/2026-09-18-cd-03a-cd-01-evidence-recovery/`.
+- CD-01 and CD-02 installed evidence and retained CD-02 verification ledger
+  remain under their existing artifact directories.
+- README and the product/UI specifications required no edits because their
+  CD-01/CD-02 status and limits were already accurate. Provider, repository,
+  cache, persistence, mapper, navigation, theme, Simple layout, responsive,
+  RTL, atmosphere, TalkBack, and release behavior remain outside this
+  checkpoint.
+- The emulator was stopped after the two recovery cases. Broad Android checks
+  were not rerun because source and test inputs did not change.
+
+State closure:
+
+- The implementation-slice count reset from 2 of 2 to 0 of 2. CD-04 and CD-05
+  remain `specified`; no visual-overhaul progress beyond CD-01/CD-02 is claimed.
+- The active plan and roadmap now record CD-03 as verified and ready for
+  commit. Commit state is tracked separately by Git.
