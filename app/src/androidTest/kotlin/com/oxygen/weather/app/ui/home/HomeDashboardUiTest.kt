@@ -4523,6 +4523,146 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun standardNowShowsPrecipitationAndWindSatellitesWithoutChangingCurrentSummary() {
+        val location = weatherLocation(name = "Lower Satellite City")
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = emptyList()),
+            alertStatus = AlertLookupStatus.NoAlerts(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 640,
+            fontScale = 1f,
+            appearance = OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+        )
+        composeRule.waitForIdle()
+
+        val precipitation = composeRule.onNodeWithTag("home-current-precipitation-satellite")
+            .fetchSemanticsNode().boundsInRoot
+        val wind = composeRule.onNodeWithTag("home-current-wind-satellite")
+            .fetchSemanticsNode().boundsInRoot
+        val lower = composeRule.onNodeWithTag("home-current-lower-constellation")
+            .fetchSemanticsNode().boundsInRoot
+        val dial = composeRule.onNodeWithTag("home-current-dial").fetchSemanticsNode().boundsInRoot
+        assertEquals(64f, precipitation.width, 0.5f)
+        assertEquals(64f, precipitation.height, 0.5f)
+        assertEquals(64f, wind.width, 0.5f)
+        assertEquals(64f, wind.height, 0.5f)
+        assertEquals(220f, lower.width, 0.5f)
+        assertEquals(64f, lower.height, 0.5f)
+        assertTrue("Precipitation satellite should precede wind", precipitation.left < wind.left)
+        assertEquals("Lower satellites should be symmetric", precipitation.left + wind.right, 360f, 1f)
+        assertTrue("Lower constellation should follow the dial", dial.bottom <= lower.top)
+        assertTrue("Precipitation satellite should fit its row", precipitation.top >= lower.top && precipitation.bottom <= lower.bottom)
+        assertTrue("Wind satellite should fit its row", wind.top >= lower.top && wind.bottom <= lower.bottom)
+
+        composeRule.onNodeWithContentDescription(
+            "Forecast precipitation: 2.2 millimetres possible in the next 6 hours. " +
+                "Wind: 14 kilometers per hour, gust 25 kilometers per hour, direction 225 degrees.",
+        ).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+        ).assertIsDisplayed()
+        composeRule.onAllNodesWithText("2.2 mm", useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onAllNodesWithText("14 km/h", useUnmergedTree = true).assertCountEquals(1)
+        composeRule.assertWithinRootBounds(
+            "home-section-location",
+            "home-section-current",
+            "home-current-lower-constellation",
+            "home-section-precipitation",
+            "home-page-tab-now",
+            "home-page-tab-hourly",
+            "home-page-tab-daily",
+            "home-page-tab-details",
+        )
+        composeRule.assertNoSiblingOverlap(
+            "home-section-location",
+            "home-section-current",
+            "home-section-precipitation",
+        )
+        composeRule.assertNoSiblingOverlap("home-current-dial", "home-current-lower-constellation")
+        composeRule.assertNoSiblingOverlap(
+            "home-current-precipitation-satellite",
+            "home-current-wind-satellite",
+        )
+    }
+
+    @Test
+    fun standardNowLowerSatelliteStatesOmitOnlyUnavailableValues() {
+        val location = weatherLocation(name = "Lower Satellite States City")
+        val base = fullWeatherBundle(location).copy(alerts = emptyList())
+        val rendered = mutableStateOf<HomeForecastPresentationState>(
+            HomeForecastPresentationState.ForecastReady.from(
+                location = location,
+                weather = base,
+                alertStatus = AlertLookupStatus.NotRequested,
+            ),
+        )
+        composeRule.setDynamicHomeContent(
+            rendered,
+            OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+            onRetry = {},
+            fontScale = 1f,
+        )
+
+        fun replace(wind: Wind?, hourly: List<HourlyForecast>) {
+            composeRule.runOnIdle {
+                rendered.value = HomeForecastPresentationState.ForecastReady.from(
+                    location = location,
+                    weather = base.copy(
+                        current = requireNotNull(base.current).copy(wind = wind),
+                        hourly = hourly,
+                    ),
+                    alertStatus = AlertLookupStatus.NotRequested,
+                )
+            }
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag("home-current-dial").assertIsDisplayed()
+            composeRule.onNodeWithTag("home-current-lower-constellation").assertIsDisplayed()
+            composeRule.onNodeWithContentDescription(
+                "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+            ).assertIsDisplayed()
+            composeRule.onAllNodesWithText("Unavailable", useUnmergedTree = true).assertCountEquals(0)
+            composeRule.assertNoSiblingOverlap(
+                "home-current-dial",
+                "home-current-lower-constellation",
+            )
+            composeRule.onNodeWithTag("home-current-high-satellite").assertIsDisplayed()
+            composeRule.onNodeWithTag("home-current-low-satellite").assertIsDisplayed()
+        }
+
+        val precipitation = base.hourly
+        replace(requireNotNull(base.current).wind, precipitation)
+        composeRule.onNodeWithTag("home-current-precipitation-satellite").assertIsDisplayed()
+        composeRule.onNodeWithTag("home-current-wind-satellite").assertIsDisplayed()
+
+        replace(null, precipitation)
+        val precipitationOnly = composeRule.onNodeWithTag("home-current-precipitation-satellite")
+            .fetchSemanticsNode().boundsInRoot
+        assertEquals(148f, precipitationOnly.left, 1f)
+        composeRule.onAllNodesWithTag("home-current-wind-satellite").assertCountEquals(0)
+
+        replace(requireNotNull(base.current).wind, precipitation.map {
+            it.copy(precipitationProbabilityPercent = null, precipitationMm = null)
+        })
+        val windOnly = composeRule.onNodeWithTag("home-current-wind-satellite")
+            .fetchSemanticsNode().boundsInRoot
+        assertEquals(148f, windOnly.left, 1f)
+        composeRule.onAllNodesWithTag("home-current-precipitation-satellite").assertCountEquals(0)
+
+        replace(null, precipitation.map {
+            it.copy(precipitationProbabilityPercent = null, precipitationMm = null)
+        })
+        composeRule.onAllNodesWithTag("home-current-precipitation-satellite").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-current-wind-satellite").assertCountEquals(0)
+    }
+
+    @Test
     fun standardNowSatelliteStatesOmitOnlyMissingDailyValues() {
         val location = weatherLocation(name = "Sparse Satellite City")
         val base = fullWeatherBundle(location).copy(

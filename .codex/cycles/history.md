@@ -300,3 +300,50 @@ State closure:
   remain `specified`; no visual-overhaul progress beyond CD-01/CD-02 is claimed.
 - The active plan and roadmap now record CD-03 as verified and committed in
   `ec49c5f`.
+
+### 2026-09-18-cd-04-precipitation-wind-satellites
+
+Status: verified; commit pending
+Mode: bounded Standard Now typed presentation and lower constellation slice
+
+Result:
+
+- Added typed near-term forecast precipitation and current-wind satellite
+  presentation values. Hourly precipitation is aggregated canonically before
+  resolved-unit conversion; current-condition precipitation is not used as a
+  forecast satellite. Wind retains raw speed, gust, and direction components,
+  and the renderer consumes mapper-owned compact and semantic values.
+- Added a fixed 220dp by 64dp lower constellation beneath the unchanged 150dp
+  dial. Available satellites use stable tags, symmetric end placement, sole
+  satellite centering, truthful omission, and one ordered precipitation-then-
+  wind accessibility description. The existing current summary remains
+  unchanged and child satellite decoration is hidden from accessibility.
+- Added exactly three focused mapper tests and exactly two focused connected
+  cases for the planned acceptance boundary.
+
+Evidence and limits:
+
+- Same-route cache-backed Chicago baseline/final PNG/XML, focused unit log,
+  connected bundles, broad checks, and the complete ledger are retained under
+  `.codex/test-artifacts/2026-09-18-cd-04-precipitation-wind-satellites/`.
+- The initial connected attempt failed deterministically because
+  `clearAndSetSemantics` hid required child tags; the bounded semantics change
+  was applied and the accepted rerun passed. Both accepted connected methods
+  completed 1/1 with zero failures, errors, and skips on API-37
+  `oxygen_starter`.
+- The final installed capture was relaunched with networking disabled from the
+  selected Room-backed cache and visibly shows both lower satellites. The
+  connected runner removed app data after its run, so Chicago was restored
+  through the real saved-location path before the final offline capture.
+- Passing broad checks: `:app:compileDebugKotlin`,
+  `:app:testDebugUnitTest :core:testDebugUnitTest`, `:app:assembleDebug`, and
+  `git diff --check`. Provider/repository/cache tests were inapplicable because
+  those production boundaries did not change. Responsive variants, other
+  themes, localization, TalkBack traversal, and release verification remain
+  out of scope or unverified.
+
+Commit state:
+
+- The verified implementation and documentation closure are ready for the
+  closing commit; CD-05 remains `specified` and no next production slice is
+  selected.

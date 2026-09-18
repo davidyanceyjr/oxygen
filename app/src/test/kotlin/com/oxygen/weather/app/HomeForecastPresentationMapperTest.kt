@@ -646,6 +646,149 @@ class HomeForecastPresentationMapperTest {
     }
 
     @Test
+    fun nearTermPrecipitationSatelliteUsesCanonicalAggregateAndResolvedUnits() {
+        val weather = fullWeatherBundle().copy(
+            hourly = listOf(
+                fullWeatherBundle().hourly.single().copy(
+                    precipitationProbabilityPercent = 60,
+                    precipitationMm = 1.025,
+                ),
+                fullWeatherBundle().hourly.single().copy(
+                    precipitationProbabilityPercent = 80,
+                    precipitationMm = 0.025,
+                ),
+                fullWeatherBundle().hourly.single().copy(
+                    precipitationProbabilityPercent = 20,
+                    precipitationMm = 0.0,
+                ),
+            ),
+        )
+
+        val metric = requireNotNull(
+            requireNotNull(weather.toHomeSuccessPresentation(
+                testLocation,
+                UnitPreference.Preset(UnitPreferencePreset.METRIC),
+            ).current).precipitationSatellite,
+        )
+        assertEquals(1.05, metric.precipitationMm ?: Double.NaN, 0.000001)
+        assertEquals(80, metric.maximumProbabilityPercent)
+        assertEquals("1.1 mm", metric.compactValue)
+        assertEquals(
+            "Forecast precipitation: 1.1 millimetres possible in the next 6 hours.",
+            metric.spokenDescription,
+        )
+
+        val us = requireNotNull(
+            requireNotNull(weather.toHomeSuccessPresentation(
+                testLocation,
+                UnitPreference.Preset(UnitPreferencePreset.US),
+            ).current).precipitationSatellite,
+        )
+        assertEquals(1.05, us.precipitationMm ?: Double.NaN, 0.000001)
+        assertEquals("0.04 in", us.compactValue)
+        assertEquals(
+            "Forecast precipitation: 0.04 inches possible in the next 6 hours.",
+            us.spokenDescription,
+        )
+        assertEquals(
+            "Up to 80% precipitation chance in the next 6 hours; 1.1 mm possible in the next 6 hours",
+            weather.toHomeSuccessPresentation(
+                testLocation,
+                UnitPreference.Preset(UnitPreferencePreset.METRIC),
+            ).precipitationSummary,
+        )
+
+        val probabilityOnly = requireNotNull(
+            requireNotNull(weather.copy(hourly = weather.hourly.map {
+                it.copy(precipitationMm = null)
+            }).toHomeSuccessPresentation(testLocation).current).precipitationSatellite,
+        )
+        assertNull(probabilityOnly.precipitationMm)
+        assertEquals(80, probabilityOnly.maximumProbabilityPercent)
+        assertEquals("Up to 80%", probabilityOnly.compactValue)
+        assertEquals(
+            "Forecast precipitation: up to 80 percent chance in the next 6 hours.",
+            probabilityOnly.spokenDescription,
+        )
+
+        val reportedZero = requireNotNull(
+            requireNotNull(weather.copy(hourly = listOf(weather.hourly.first().copy(
+                precipitationProbabilityPercent = null,
+                precipitationMm = 0.0,
+            ))).toHomeSuccessPresentation(testLocation).current).precipitationSatellite,
+        )
+        assertEquals(0.0, reportedZero.precipitationMm ?: Double.NaN, 0.000001)
+        assertEquals("0.0 mm", reportedZero.compactValue)
+    }
+
+    @Test
+    fun currentWindSatelliteUsesResolvedUnitsAndPreservesAllComponents() {
+        val metric = requireNotNull(
+            requireNotNull(fullWeatherBundle().toHomeSuccessPresentation(
+                testLocation,
+                UnitPreference.Preset(UnitPreferencePreset.METRIC),
+            ).current).windSatellite,
+        )
+        assertEquals(4.0, metric.speedMetersPerSecond)
+        assertEquals(7.0, metric.gustMetersPerSecond)
+        assertEquals(225.0, metric.directionDegrees)
+        assertEquals("14 km/h", metric.compactValue)
+        assertEquals(
+            "Wind: 14 kilometers per hour, gust 25 kilometers per hour, direction 225 degrees.",
+            metric.spokenDescription,
+        )
+
+        val directionOnly = requireNotNull(
+            requireNotNull(fullWeatherBundle().copy(
+                current = requireNotNull(fullWeatherBundle().current).copy(
+                    wind = Wind(null, null, 270.5),
+                ),
+            ).toHomeSuccessPresentation(testLocation).current).windSatellite,
+        )
+        assertEquals("271 deg", directionOnly.compactValue)
+        assertEquals(270.5, directionOnly.directionDegrees)
+        assertEquals("Wind: direction 271 degrees.", directionOnly.spokenDescription)
+
+        val noComponents = fullWeatherBundle().copy(
+            current = requireNotNull(fullWeatherBundle().current).copy(wind = Wind(null, null, null)),
+        ).toHomeSuccessPresentation(testLocation)
+        assertNull(requireNotNull(noComponents.current).windSatellite)
+    }
+
+    @Test
+    fun currentSatelliteAvailabilityNeverFabricatesMissingValues() {
+        val precipitationOnly = fullWeatherBundle().copy(
+            current = requireNotNull(fullWeatherBundle().current).copy(wind = null),
+        ).toHomeSuccessPresentation(testLocation)
+        assertNotNull(requireNotNull(precipitationOnly.current).precipitationSatellite)
+        assertNull(requireNotNull(precipitationOnly.current).windSatellite)
+        assertNotNull(precipitationOnly.precipitationSummary)
+
+        val windOnly = fullWeatherBundle().copy(
+            hourly = fullWeatherBundle().hourly.map {
+                it.copy(precipitationProbabilityPercent = null, precipitationMm = null)
+            },
+        ).toHomeSuccessPresentation(testLocation)
+        assertNull(requireNotNull(windOnly.current).precipitationSatellite)
+        assertNotNull(requireNotNull(windOnly.current).windSatellite)
+        assertNull(windOnly.precipitationSummary)
+
+        val neither = fullWeatherBundle().copy(
+            current = requireNotNull(fullWeatherBundle().current).copy(wind = Wind(null, null, null)),
+            hourly = fullWeatherBundle().hourly.map {
+                it.copy(precipitationProbabilityPercent = null, precipitationMm = null)
+            },
+        ).toHomeSuccessPresentation(testLocation)
+        assertNull(requireNotNull(neither.current).precipitationSatellite)
+        assertNull(requireNotNull(neither.current).windSatellite)
+        assertNull(neither.precipitationSummary)
+        assertEquals(
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+            requireNotNull(neither.current).spokenDescription,
+        )
+    }
+
+    @Test
     fun `direction remains visible when speed and gust are absent`() {
         val weather = fullWeatherBundle().copy(
             current = requireNotNull(fullWeatherBundle().current).copy(wind = Wind(null, null, 270.5)),

@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -64,6 +65,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oxygen.weather.app.HomeCurrentPresentation
+import com.oxygen.weather.app.HomePrecipitationSatellitePresentation
+import com.oxygen.weather.app.HomeWindSatellitePresentation
 import com.oxygen.weather.app.HomeDailyPresentation
 import com.oxygen.weather.app.HomeAlertSummaryPresentation
 import com.oxygen.weather.app.HomeAlertLookupPresentation
@@ -79,6 +82,7 @@ import com.oxygen.weather.app.HomeSunPresentation
 import com.oxygen.weather.R
 import com.oxygen.weather.app.ui.theme.EffectsLevel
 import com.oxygen.weather.app.ui.theme.LayoutPreset
+import com.oxygen.weather.app.ui.theme.LocalOxygenPalette
 import com.oxygen.weather.app.ui.theme.LocalOxygenHomeDesign
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
@@ -800,7 +804,77 @@ private fun CentralCurrentDial(current: HomeCurrentPresentation) {
                 )
             }
         }
+        LowerCurrentSatelliteConstellation(
+            precipitation = current.precipitationSatellite,
+            wind = current.windSatellite,
+        )
     }
+}
+
+@Composable
+private fun LowerCurrentSatelliteConstellation(
+    precipitation: HomePrecipitationSatellitePresentation?,
+    wind: HomeWindSatellitePresentation?,
+) {
+    val semanticDescription = listOfNotNull(
+        precipitation?.spokenDescription,
+        wind?.spokenDescription,
+    ).joinToString(" ")
+    Box(
+        modifier = Modifier
+            .width(220.dp)
+            .height(64.dp)
+            .testTag("home-current-lower-constellation")
+            .semantics {
+                if (semanticDescription.isNotEmpty()) {
+                    contentDescription = semanticDescription
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (precipitation != null && wind != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                LowerDialSatellite(
+                    tag = "home-current-precipitation-satellite",
+                    text = precipitation.compactValue,
+                    textColor = LocalOxygenPalette.current.precipitation,
+                )
+                LowerDialSatellite(
+                    tag = "home-current-wind-satellite",
+                    text = wind.compactValue,
+                )
+            }
+        } else if (precipitation != null) {
+            LowerDialSatellite(
+                tag = "home-current-precipitation-satellite",
+                text = precipitation.compactValue,
+                textColor = LocalOxygenPalette.current.precipitation,
+            )
+        } else if (wind != null) {
+            LowerDialSatellite(
+                tag = "home-current-wind-satellite",
+                text = wind.compactValue,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LowerDialSatellite(
+    tag: String,
+    text: String,
+    textColor: Color = LocalOxygenHomeDesign.current.normalContent,
+) {
+    DialSatellite(
+        tag = tag,
+        text = text,
+        satelliteSize = 64.dp,
+        textColor = textColor,
+    )
 }
 
 @Composable
@@ -840,11 +914,13 @@ private fun HighLowSatelliteConstellation(
 private fun DialSatellite(
     tag: String,
     text: String,
+    satelliteSize: androidx.compose.ui.unit.Dp = 52.dp,
+    textColor: Color = LocalOxygenHomeDesign.current.normalContent,
 ) {
     val roles = LocalOxygenHomeDesign.current
     Box(
         modifier = Modifier
-            .size(52.dp)
+            .size(satelliteSize)
             .testTag(tag)
             .semantics { hideFromAccessibility() },
         contentAlignment = Alignment.Center,
@@ -863,7 +939,7 @@ private fun DialSatellite(
         Text(
             text = text,
             modifier = Modifier.semantics { hideFromAccessibility() },
-            color = roles.normalContent,
+            color = textColor,
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 10.sp),
             maxLines = 1,
             softWrap = false,

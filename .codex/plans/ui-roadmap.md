@@ -1,8 +1,7 @@
 # Oxygen Standard Now — Celestial Dial UI Overhaul Roadmap
 
-**Status:** active roadmap; design selected; CD-00 through CD-03 verified;
-CD-04 and later Celestial Dial implementation slices remain
-`specified`
+**Status:** active roadmap; design selected; CD-00 through CD-04 verified;
+later Celestial Dial implementation slices remain `specified`
 **Roadmap ID:** `now-celestial-dial-v0.1`
 **Selected design:** concept F, Celestial Dial
 **Selected:** 2026-09-17 by user decision
@@ -171,24 +170,29 @@ CD-03A recovered the missing CD-01 focused XML, instrumentation log, textproto,
 wrapper, and acceptance-marker bundles for the two accepted cases on one
 API-37 `oxygen_starter` session. The bundles agree on 1/1 with zero failures,
 errors, and skips; the retained CD-02 bundles and both slices' broad checks
-remain consistent. The count is now 0 of 2; CD-04 and CD-05 remain `specified`.
+remain consistent. The count is now 1 of 2; CD-04 is verified and CD-05 remains
+`specified`.
 
 ### CD-04 — Precipitation and wind orbit satellites
 
-**Status:** specified
+**Status:** verified; commit pending in the current active plan
 **Dependencies:** CD-02
 **Estimate:** 45%
 **Surface:** lower dial constellation and its typed presentation mapping
-**Outcome:** Add actual near-term precipitation and current wind satellites
-below the dial. Introduce only the typed presentation fields needed to render
-those values; UI code must not parse display strings. Missing values collapse
-to a balanced truthful layout rather than zero or placeholder weather.
+**Outcome:** Add available near-term forecast precipitation and current wind
+satellites below the dial. Introduce only the typed presentation fields needed
+to render those values; UI code must not parse display strings. Missing values
+collapse to a balanced truthful layout rather than a fabricated zero or
+placeholder weather; a reported zero remains visible.
 **Acceptance:** Available, precipitation-missing, wind-missing, and both-missing
 fixtures prove exact displayed values, text equivalents, stable geometry, and
 unchanged canonical inputs. The installed final visibly completes the four-
 satellite constellation without a provider request.
+**Evidence:** mapper tests, two accepted API-37 `oxygen_starter` connected
+bundles, and same-route cache-backed baseline/final PNG/XML are retained under
+`.codex/test-artifacts/2026-09-18-cd-04-precipitation-wind-satellites/`.
 **Out:** new provider/domain fields, charts, compass, humidity/pressure or other
-Details metrics.
+Details metrics; CD-05 remains the next specified candidate and is not selected.
 
 ### CD-05 — Celestial halo and Now-local atmosphere
 
@@ -343,7 +347,7 @@ states; applicable unit/build checks; `git diff --check`.
 
 ## Selection state
 
-CD-03 is selected by `.codex/plans/current.md` after verified CD-00 through
-CD-02. It is the required test/documentation checkpoint because CD-02 is the
-second production implementation slice since CD-00; completion resets the
-implementation count before another production slice is selected.
+CD-04 was selected by `.codex/plans/current.md` after verified CD-03 reset the
+implementation count to 0 of 2. It is now the first verified production
+implementation slice in the new count; CD-05 remains `specified` and no next
+production slice is selected.
