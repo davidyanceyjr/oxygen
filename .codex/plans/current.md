@@ -1,6 +1,6 @@
 # Oxygen Standard Now — CD-02 high and low orbit satellites
 
-**Status:** verified; ready for commit
+**Status:** verified; committed in `3500f1f`
 **Cycle ID:** `2026-09-17-cd-02-high-low-satellites`
 **Active roadmap:** `.codex/plans/ui-roadmap.md`
 **Implementation-slice count:** 2 of 2 since CD-00; CD-03 is next and resets it

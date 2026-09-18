@@ -144,7 +144,7 @@ Simple Now, provider or mapper changes.
 
 ### CD-02 — High and low orbit satellites
 
-**Status:** verified; ready for commit
+**Status:** verified; committed in `3500f1f`
 **Dependencies:** CD-01
 **Estimate:** 30%
 **Surface:** upper dial constellation

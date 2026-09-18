@@ -208,7 +208,7 @@ Limits and commit state:
 
 ### 2026-09-18-cd-02-high-low-satellites
 
-Status: verified; ready for commit
+Status: verified; committed in `3500f1f`
 Mode: bounded normal-font Standard Now visual implementation slice
 
 Result:
