@@ -303,7 +303,7 @@ State closure:
 
 ### 2026-09-18-cd-04-precipitation-wind-satellites
 
-Status: verified; committed in `17c7a60`; documentation sync pending
+Status: verified; committed in `17c7a60`
 Mode: bounded Standard Now typed presentation and lower constellation slice
 
 Result:
