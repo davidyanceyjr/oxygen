@@ -1,6 +1,6 @@
 # Oxygen Standard Now — CD-04 Precipitation and Wind Satellites
 
-**Status:** verified; commit pending
+**Status:** verified; committed in `17c7a60`
 **Cycle ID:** `2026-09-18-cd-04-precipitation-wind-satellites`
 **Active roadmap:** `.codex/plans/ui-roadmap.md`
 **Implementation-slice count:** 1 of 2 since CD-00

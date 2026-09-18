@@ -175,7 +175,7 @@ remain consistent. The count is now 1 of 2; CD-04 is verified and CD-05 remains
 
 ### CD-04 — Precipitation and wind orbit satellites
 
-**Status:** verified; commit pending in the current active plan
+**Status:** verified; committed in `17c7a60`
 **Dependencies:** CD-02
 **Estimate:** 45%
 **Surface:** lower dial constellation and its typed presentation mapping

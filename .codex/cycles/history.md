@@ -303,7 +303,7 @@ State closure:
 
 ### 2026-09-18-cd-04-precipitation-wind-satellites
 
-Status: verified; commit pending
+Status: verified; committed in `17c7a60`; documentation sync pending
 Mode: bounded Standard Now typed presentation and lower constellation slice
 
 Result:
@@ -344,6 +344,6 @@ Evidence and limits:
 
 Commit state:
 
-- The verified implementation and documentation closure are ready for the
-  closing commit; CD-05 remains `specified` and no next production slice is
-  selected.
+- The verified implementation is committed in `17c7a60`; this documentation
+  entry is synchronized by the follow-up documentation commit. CD-05 remains
+  `specified` and no next production slice is selected.
