@@ -1,10 +1,10 @@
 # Oxygen Standard Now — CD-05 Celestial Halo and Now-local Atmosphere
 
-**Status:** implemented and verified; documentation/commit closure pending
+**Status:** verified; implementation committed in `e8a24a1`; CD-06 selected
 **Cycle ID:** `2026-09-18-cd-05-celestial-halo-now-atmosphere`
 **Active roadmap:** `.codex/plans/ui-roadmap.md`
 **Implementation-slice count:** 2 of 2 since the CD-03 checkpoint reset; CD-06
-is due after this slice closes.
+is the active test/documentation-only checkpoint.
 
 ## Accepted outcome
 
@@ -58,5 +58,6 @@ did not change. Full effects, other themes/high contrast, responsive/RTL,
 localization, TalkBack service traversal, alert redesign, and release checks
 remain out of scope or unverified.
 
-**Next action:** after committing this implementation, synchronize the roadmap,
-README, and cycle history, then select the CD-06 test/documentation checkpoint.
+**Next action:** execute CD-06's test/documentation checkpoint contract and
+reset the implementation-slice count only after its accepted evidence and
+documentation closure.

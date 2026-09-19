@@ -347,3 +347,49 @@ Commit state:
 - The verified implementation is committed in `17c7a60`; this documentation
   entry is synchronized by the follow-up documentation commit. CD-05 remains
   `specified` and no next production slice is selected.
+
+### 2026-09-18-cd-05-celestial-halo-now-atmosphere
+
+Status: verified; implementation committed in `e8a24a1`; documentation closure
+committed with this entry
+Mode: bounded Standard Now visual implementation slice
+
+Result:
+
+- Replaced the generic full-screen scene branch with explicit static profiles
+  for every `WeatherCondition`, including a distinct `RAIN_SHOWERS` profile and
+  neutral `UNKNOWN` fallback. The renderer uses no animation clock, random
+  output, downloaded imagery, or intensity/day-night inference.
+- Scoped the scene to the active Standard Now page and clipped it away from
+  the shared header/footer and all other Standard/Simple pages. Added a
+  distinct gold/cyan concentric halo inside the unchanged 150dp dial for
+  effective Subtle effects. Both decorative hosts are hidden from accessibility
+  and expose no spoken content or actions.
+- Preserved current values, exact merged spoken description, satellite and
+  fixed-section bounds, page behavior, and Effects-Off completeness. Added the
+  condition profile unit matrix, one Now-local connected case, the retained
+  scene accessibility assertion, and the disabled-motion halo-off assertion.
+
+Evidence and limits:
+
+- Same-route Room-cache Chicago baseline/final Off and Subtle PNG/XML pairs,
+  focused unit log, accepted connected bundles, broad checks, emulator
+  preflight, and the complete verification ledger are retained under
+  `.codex/test-artifacts/2026-09-18-cd-05-celestial-halo-now-atmosphere/`.
+- `WeatherSceneTest` passed; both named API-37 `oxygen_starter` connected
+  methods passed 1/1 with zero failures, errors, and skips. App/core unit
+  suites, Kotlin compilation, debug assembly/install, and `git diff --check`
+  passed. The first recovery setup, baseline timing, and missing dial-flag
+  compile issues were corrected with changed retries and remain recorded in
+  the ledger.
+- Provider/repository/cache checks were inapplicable because no data boundary
+  changed. Full effects, other themes/high contrast, responsive/RTL,
+  localization, TalkBack service traversal, alert redesign, and release
+  verification remain out of scope or unverified.
+
+State closure:
+
+- The implementation count is now 2 of 2 since CD-03. CD-06 is selected as the
+  required test/documentation-only checkpoint; no further production slice is
+  selected. README, roadmap, and active plan are synchronized with the
+  implementation commit.

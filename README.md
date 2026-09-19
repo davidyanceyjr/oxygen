@@ -136,8 +136,16 @@ and `docs/data-sources/`.
   sole-satellite centering. The cache-backed Oxygen/Standard/Effects-Off
   Chicago final is retained at
   `.codex/test-artifacts/2026-09-18-cd-04-precipitation-wind-satellites/`;
-  responsive variants, other-theme evidence, TalkBack traversal, and
-  atmospheric treatment remain future or unverified work.
+  CD-05 now adds a static condition-profile atmosphere clipped to the active
+  Standard Now page and a distinct concentric dial halo for effective Subtle
+  effects. Effects Off remains scene-free, opaque, and complete; disabled
+  animation resolves saved Subtle to that same effective-Off result without a
+  preference write. Same-route Chicago baseline/final PNG/XML plus focused
+  unit and API-37 connected evidence are retained at
+  `.codex/test-artifacts/2026-09-18-cd-05-celestial-halo-now-atmosphere/`.
+  Responsive variants, other-theme/high-contrast convergence, TalkBack
+  traversal, localization, Full effects, and release verification remain
+  future or unverified work.
 - Standard Home Now, Hourly, Daily, and Details visual baselines.
 - Art-sheet-aligned Standard Home weather marks, surface roles, typography
   roles, and app-local design roles for the installed Home surface.

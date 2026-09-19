@@ -1,7 +1,7 @@
 # Oxygen Standard Now — Celestial Dial UI Overhaul Roadmap
 
-**Status:** active roadmap; design selected; CD-00 through CD-04 verified;
-later Celestial Dial implementation slices remain `specified`
+**Status:** active roadmap; design selected; CD-00 through CD-05 verified;
+CD-06 is the active test/documentation-only checkpoint
 **Roadmap ID:** `now-celestial-dial-v0.1`
 **Selected design:** concept F, Celestial Dial
 **Selected:** 2026-09-17 by user decision
@@ -196,7 +196,7 @@ Details metrics; CD-05 remains the next specified candidate and is not selected.
 
 ### CD-05 — Celestial halo and Now-local atmosphere
 
-**Status:** specified
+**Status:** verified; committed in `e8a24a1`
 **Dependencies:** CD-01
 **Estimate:** 45%
 **Surface:** dial halo and Standard Now backdrop
@@ -208,6 +208,11 @@ do not silently change.
 the intended atmospheric difference while preserving identical text, controls,
 geometry, and semantics. Effects Off remains complete and opaque. Disabled
 animations resolve to the Off result without changing the saved preference.
+**Evidence:** Same-route Room-cache Chicago baseline/final PNG/XML, the
+`WeatherSceneTest` profile matrix, two accepted API-37 `oxygen_starter`
+connected bundles, app/core unit suites, Kotlin compilation, debug
+assembly/install, and `git diff --check` are retained under
+`.codex/test-artifacts/2026-09-18-cd-05-celestial-halo-now-atmosphere/`.
 **Out:** downloaded imagery, continuous mandatory animation, Full-effects
 expansion, other Home pages.
 
@@ -347,7 +352,8 @@ states; applicable unit/build checks; `git diff --check`.
 
 ## Selection state
 
-CD-04 was selected by `.codex/plans/current.md` after verified CD-03 reset the
-implementation count to 0 of 2. It is now the first verified production
-implementation slice in the new count; CD-05 remains `specified` and no next
-production slice is selected.
+CD-05 was selected by `.codex/plans/current.md` after verified CD-03 reset the
+implementation count to 0 of 2. It is the second verified production
+implementation slice in the count, now 2 of 2. CD-06 is selected by the active
+plan as the required test/documentation-only checkpoint; no further production
+slice is selected.
