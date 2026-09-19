@@ -520,7 +520,8 @@ follow-up documentation commit.
 
 ### 2026-09-19-cd-08ar2-standard-now-layout-repair
 
-Status: verified; implementation and documentation remain uncommitted
+Status: verified; implementation and documentation committed in `a6db648`,
+merged to `main` in `68f1fba`
 Mode: bounded Standard Now layout repair after the CD-08A harness investigation
 
 Result:
@@ -561,6 +562,6 @@ Evidence:
   reconciliation, TalkBack service traversal, localization, and release checks
   remain out of scope.
 
-Commit state: production/test changes and synchronized status files are present
-in the worktree and are not committed in this cycle. CD-09 is selected as the
-next test/documentation checkpoint; CD-08B remains specified after it.
+Commit state: production/test changes and synchronized status files are
+committed in `a6db648` and merged to `main` in `68f1fba`. CD-09 is selected as
+the next test/documentation checkpoint; CD-08B remains specified after it.

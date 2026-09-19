@@ -257,7 +257,7 @@ release checks.
 
 ### CD-08A — Non-active alert lookup glass panel
 
-**Status:** verified; implementation remains uncommitted
+**Status:** verified; committed in `a6db648`
 **Dependencies:** CD-07
 **Estimate:** 48%
 **Surface:** second lower glass panel, non-active lookup states
