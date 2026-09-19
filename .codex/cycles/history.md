@@ -424,3 +424,94 @@ Commit state:
 
 - This checkpoint closure and CD-07 selection are committed together as a
   documentation-only change; no production behavior changed.
+
+### 2026-09-18-cd-07-plan-draft
+
+Status: planned; active first implementation draft; not committed
+Mode: bounded planning and authority-consistency documentation
+
+Result:
+
+- Refined `.codex/plans/current.md` as the active CD-07 plan for the
+  precipitation and provenance glass panel.
+- Kept CD-07 as the only planned slice after the CD-06 reset, with a 35%
+  session estimate, a 360x640dp installed Standard Now acceptance boundary,
+  typed mapper ownership, and explicit out-of-scope limits.
+- Added the mapper production boundary to the intended implementation files
+  and staged the baseline, red/baseline coverage, Compose implementation,
+  installed exercise, and broad-check sequence.
+- Corrected the active roadmap header so it agrees with its body: CD-00
+  through CD-06 are verified and CD-07 is the active planned production
+  slice.
+
+Evidence and limits:
+
+- Reviewed the active roadmap, current Standard Now mapper/screen path, focused
+  mapper coverage, connected Home coverage, UI workflow, and repository
+  authorities.
+- `git diff --check` passed. No Android build, unit test, connected test,
+  emulator, install, or screenshot command ran because this cycle changes
+  planning documentation only.
+- No production behavior, test behavior, provider/repository behavior, or
+  artifact payload changed.
+
+Commit state: the plan and roadmap correction are present in the worktree and
+are not committed in this turn.
+
+### 2026-09-18-cd-07-precipitation-provenance-glass-panel
+
+Status: verified; implementation committed in `74e4b33`; documentation closure
+in this follow-up commit
+Mode: bounded Standard Now typed presentation and compact GlassPanel slice
+
+Result:
+
+- Promoted the existing six-row, canonical `BigDecimal` precipitation aggregate
+  to `HomeNearTermPrecipitationPresentation`, owning millimetres, maximum
+  probability, compact typed probability/amount text, the compatibility
+  summary, and the existing spoken text. The lower precipitation satellite
+  derives from that same presentation value.
+- Replaced only the normal-font Standard Now precipitation section with one
+  opaque existing `GlassPanel`. Its ordered semantics are title, available
+  probability, and available amount; it has no action. Simple and large-font
+  paths retain their existing summary projection.
+- Added mapper assertions for canonical aggregation, metric/US formatting,
+  reported zero, probability-only data, absent data, satellite projection,
+  summary compatibility, and spoken meaning. Added the two planned Compose
+  methods for available context/geometry and zero/probability-only/absent
+  omission behavior.
+
+Evidence and artifacts:
+
+- Real selected-location route: Chicago was searched, saved, and selected
+  through the installed Open-Meteo path. Baseline is retained at
+  `.codex/test-artifacts/2026-09-18-cd-07-precipitation-provenance-glass-panel/baseline/`.
+  Final Standard Now panel is retained at `.../final/home-final.png` and its
+  hierarchy at `.../final/home-final-hierarchy.xml`. Actual Details provenance
+  is retained at `.../final/details-provenance.png` and its hierarchy.
+- Both final connected methods passed 1/1 with zero skips, failures, and
+  errors on API-37 `oxygen_starter`. Accepted runner XML, instrumentation log,
+  textproto, and device/logcat evidence are retained under
+  `.../connected-available-final-panel/` and
+  `.../connected-omission-final-panel/`.
+- Focused mapper tests, Android-test compilation, app/core unit suites, app
+  Kotlin compilation, debug assembly, and `git diff --check` passed. The
+  verification ledger is
+  `.codex/test-artifacts/2026-09-18-cd-07-precipitation-provenance-glass-panel/verification-ledger.md`.
+
+Failed-attempt disposition and limits:
+
+- The first installed visual attempt exposed a collapsed panel; the panel was
+  redesigned as a single compact row while retaining typed semantics and the
+  fixed geometry. The first available connected runner then timed out without
+  XML and no app ANR; a changed rerun exposed a test assertion against a
+  non-merged parent text node, which was corrected. The final changed-source
+  rerun passed.
+- No provider, repository, cache, persistence, navigation, core-model,
+  alert, stale/error, responsive/RTL, localization, TalkBack service, or
+  release behavior changed or was claimed. No additional product slice is
+  selected; CD-08 remains specified.
+
+Commit state: implementation and tests are committed in `74e4b33`; README,
+roadmap, active-plan, history, and ledger closure is committed in this
+follow-up documentation commit.

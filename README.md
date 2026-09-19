@@ -144,8 +144,17 @@ and `docs/data-sources/`.
   unit and API-37 connected evidence are retained at
   `.codex/test-artifacts/2026-09-18-cd-05-celestial-halo-now-atmosphere/`.
   CD-06 reconciled the CD-04/CD-05 evidence and reset the implementation-slice
-  count; CD-07 is now the selected next slice for the first precipitation and
-  provenance glass panel.
+  count. CD-07 is verified in commit `74e4b33`: normal-font Standard Now now
+  presents the existing six-hour precipitation aggregate in one opaque,
+  semantics-named glass panel with typed probability/amount lines. Reported
+  zero and probability-only values remain truthful, and absent aggregate data
+  omits the panel. Same-route Chicago baseline/final PNG/XML plus actual
+  Details provenance evidence, mapper coverage, and API-37 connected bundles
+  are retained at
+  `.codex/test-artifacts/2026-09-18-cd-07-precipitation-provenance-glass-panel/`.
+  Source/update context, attribution, tabs, actions, the dial, lower
+  constellation, Simple, and large-font paths remain unchanged. CD-08 is the
+  next specified candidate but is not selected.
   Responsive variants, other-theme/high-contrast convergence, TalkBack
   traversal, localization, Full effects, and release verification remain
   future or unverified work.

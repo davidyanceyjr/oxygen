@@ -1,7 +1,7 @@
 # Oxygen Standard Now — Celestial Dial UI Overhaul Roadmap
 
-**Status:** active roadmap; design selected; CD-00 through CD-05 verified;
-CD-06 is the active test/documentation-only checkpoint
+**Status:** active roadmap; design selected; CD-00 through CD-07 verified;
+CD-08 is the next specified production slice
 **Roadmap ID:** `now-celestial-dial-v0.1`
 **Selected design:** concept F, Celestial Dial
 **Selected:** 2026-09-17 by user decision
@@ -232,18 +232,27 @@ slice.
 
 ### CD-07 — Precipitation and provenance glass panel
 
-**Status:** specified
+**Status:** verified; committed in `74e4b33`
 **Dependencies:** CD-04, CD-05
-**Estimate:** 35%
+**Estimate:** 45%
 **Surface:** first lower glass panel beneath the constellation
-**Outcome:** Present the existing near-term precipitation summary as concept F's
-compact glass panel and reduce source/update/provenance to readable tertiary
-context without hiding it.
-**Acceptance:** Wet and no-near-term-precipitation fixtures prove truthful panel
-presence/absence, exact source/update meaning, non-overlap, and stable dial
-space. The installed wet-weather route shows the distinct glass panel. No text
-is derived by reparsing the satellite label.
-**Out:** alert treatment, stale/error status, source navigation changes.
+**Outcome:** Present the existing near-term precipitation aggregate as one
+compact opaque GlassPanel on normal-font Standard Now. Typed probability and
+amount fields drive the panel and lower satellite; the compatibility summary,
+source/update context, spoken meaning, and provenance remain intact.
+**Acceptance:** Verified at 360x640dp, font 1.0, LTR, Oxygen, Standard, Effects
+Off. Mapper coverage proves canonical six-row aggregation, resolved units,
+reported zero, probability-only, and absent truthfulness. Two accepted API-37
+connected methods prove the named panel, ordered semantics, 150dp dial,
+220x64dp lower constellation, existing spoken descriptions, context, controls,
+and omission behavior. The installed selected Chicago/Open-Meteo route shows
+the final panel with `Up to 10%` and `0.0 mm`; actual Details evidence retains
+Open-Meteo fetched time, model-estimate type, and license provenance. Evidence
+is retained under
+`.codex/test-artifacts/2026-09-18-cd-07-precipitation-provenance-glass-panel/`.
+**Out:** alert treatment, stale/error status, source navigation changes,
+responsive/RTL/theme convergence, localization, TalkBack traversal, and
+release checks.
 
 ### CD-08 — Alert glass panel
 
@@ -358,7 +367,6 @@ states; applicable unit/build checks; `git diff --check`.
 
 ## Selection state
 
-CD-07 is selected by `.codex/plans/current.md` after verified CD-06 reset the
-implementation count to 0 of 2. CD-04 and CD-05 are the two verified
-production implementation slices in the count; CD-07 is the next bounded
-production slice.
+CD-07 was selected by `.codex/plans/current.md` after verified CD-06 reset the
+implementation count to 0 of 2 and is committed in `74e4b33`. The count is now
+1 of 2; CD-08 remains specified and is not selected.
