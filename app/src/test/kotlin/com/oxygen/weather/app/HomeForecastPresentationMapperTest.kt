@@ -670,6 +670,19 @@ class HomeForecastPresentationMapperTest {
                 UnitPreference.Preset(UnitPreferencePreset.METRIC),
             ).current).precipitationSatellite,
         )
+        val metricPresentation = weather.toHomeSuccessPresentation(
+            testLocation,
+            UnitPreference.Preset(UnitPreferencePreset.METRIC),
+        )
+        val metricAggregate = requireNotNull(metricPresentation.nearTermPrecipitation)
+        assertEquals(1.05, metricAggregate.precipitationMm ?: Double.NaN, 0.000001)
+        assertEquals(80, metricAggregate.maximumProbabilityPercent)
+        assertEquals("Up to 80%", metricAggregate.probabilityText)
+        assertEquals("1.1 mm", metricAggregate.amountText)
+        assertEquals(
+            "Forecast precipitation: 1.1 millimetres possible in the next 6 hours.",
+            metricAggregate.spokenDescription,
+        )
         assertEquals(1.05, metric.precipitationMm ?: Double.NaN, 0.000001)
         assertEquals(80, metric.maximumProbabilityPercent)
         assertEquals("1.1 mm", metric.compactValue)
@@ -698,26 +711,30 @@ class HomeForecastPresentationMapperTest {
             ).precipitationSummary,
         )
 
-        val probabilityOnly = requireNotNull(
-            requireNotNull(weather.copy(hourly = weather.hourly.map {
-                it.copy(precipitationMm = null)
-            }).toHomeSuccessPresentation(testLocation).current).precipitationSatellite,
-        )
+        val probabilityOnlyPresentation = weather.copy(hourly = weather.hourly.map {
+            it.copy(precipitationMm = null)
+        }).toHomeSuccessPresentation(testLocation)
+        val probabilityOnly = requireNotNull(requireNotNull(probabilityOnlyPresentation.current).precipitationSatellite)
+        val probabilityOnlyAggregate = requireNotNull(probabilityOnlyPresentation.nearTermPrecipitation)
         assertNull(probabilityOnly.precipitationMm)
         assertEquals(80, probabilityOnly.maximumProbabilityPercent)
+        assertEquals("Up to 80%", probabilityOnlyAggregate.probabilityText)
+        assertNull(probabilityOnlyAggregate.amountText)
         assertEquals("Up to 80%", probabilityOnly.compactValue)
         assertEquals(
             "Forecast precipitation: up to 80 percent chance in the next 6 hours.",
             probabilityOnly.spokenDescription,
         )
 
-        val reportedZero = requireNotNull(
-            requireNotNull(weather.copy(hourly = listOf(weather.hourly.first().copy(
+        val reportedZeroPresentation = weather.copy(hourly = listOf(weather.hourly.first().copy(
                 precipitationProbabilityPercent = null,
                 precipitationMm = 0.0,
-            ))).toHomeSuccessPresentation(testLocation).current).precipitationSatellite,
-        )
+            ))).toHomeSuccessPresentation(testLocation)
+        val reportedZero = requireNotNull(requireNotNull(reportedZeroPresentation.current).precipitationSatellite)
+        val reportedZeroAggregate = requireNotNull(reportedZeroPresentation.nearTermPrecipitation)
         assertEquals(0.0, reportedZero.precipitationMm ?: Double.NaN, 0.000001)
+        assertNull(reportedZeroAggregate.probabilityText)
+        assertEquals("0.0 mm", reportedZeroAggregate.amountText)
         assertEquals("0.0 mm", reportedZero.compactValue)
     }
 
@@ -781,6 +798,7 @@ class HomeForecastPresentationMapperTest {
         ).toHomeSuccessPresentation(testLocation)
         assertNull(requireNotNull(neither.current).precipitationSatellite)
         assertNull(requireNotNull(neither.current).windSatellite)
+        assertNull(neither.nearTermPrecipitation)
         assertNull(neither.precipitationSummary)
         assertEquals(
             "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",

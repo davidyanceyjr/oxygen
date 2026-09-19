@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -87,6 +88,7 @@ import com.oxygen.weather.app.ui.theme.LocalOxygenPalette
 import com.oxygen.weather.app.ui.theme.LocalOxygenHomeDesign
 import com.oxygen.weather.app.ui.theme.OxygenAppearance
 import com.oxygen.weather.app.ui.components.WeatherConditionMark
+import com.oxygen.weather.app.ui.components.GlassPanel
 import com.oxygen.weather.app.ui.weather.WeatherScene
 import com.oxygen.weather.core.model.WeatherCondition
 import kotlinx.coroutines.launch
@@ -609,11 +611,50 @@ private fun StandardNowPage(
             }
 
             if (!compactFont) {
-                dashboard.precipitationSummary?.let { precipitation ->
-                DashboardSection(tag = "home-section-precipitation") {
-                    Text(stringResource(R.string.home_near_term_precipitation), style = roles.sectionHeading)
-                    Text(precipitation, style = MaterialTheme.typography.bodyMedium)
-                }
+                dashboard.nearTermPrecipitation?.let { precipitation ->
+                    val title = stringResource(R.string.home_near_term_precipitation)
+                    GlassPanel(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 40.dp)
+                            .testTag("home-section-precipitation")
+                            .clearAndSetSemantics {
+                                contentDescription = listOfNotNull(
+                                    title,
+                                    precipitation.probabilityText,
+                                    precipitation.amountText,
+                                ).joinToString(". ")
+                            },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                text = title,
+                                modifier = Modifier.weight(1f),
+                                style = roles.supportingLabel,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            precipitation.probabilityText?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                )
+                            }
+                            precipitation.amountText?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

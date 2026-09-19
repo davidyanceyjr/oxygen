@@ -4595,6 +4595,154 @@ class HomeDashboardUiTest {
     }
 
     @Test
+    fun standardNowPrecipitationGlassPanelUsesTypedAggregateAndRetainsContext() {
+        val location = weatherLocation(name = "Typed Precipitation City")
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = emptyList()),
+            alertStatus = AlertLookupStatus.NoAlerts(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+        val aggregate = requireNotNull(state.dashboard.nearTermPrecipitation)
+        val panelDescription = listOfNotNull(
+            "Near-term precipitation",
+            aggregate.probabilityText,
+            aggregate.amountText,
+        ).joinToString(". ")
+
+        composeRule.setHomeContent(
+            state = state,
+            widthDp = 360,
+            heightDp = 640,
+            fontScale = 1f,
+            appearance = OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+        )
+        composeRule.waitForIdle()
+
+        val panel = composeRule.onNodeWithTag("home-section-precipitation")
+        panel.assertIsDisplayed()
+        assertEquals(
+            listOf(panelDescription),
+            panel.fetchSemanticsNode().config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() },
+        )
+        assertFalse(panel.fetchSemanticsNode().config.contains(SemanticsActions.OnClick))
+        composeRule.onNodeWithContentDescription(
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. " +
+                "High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+        ).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Forecast precipitation: 2.2 millimetres possible in the next 6 hours. " +
+                "Wind: 14 kilometers per hour, gust 25 kilometers per hour, direction 225 degrees.",
+        ).assertIsDisplayed()
+
+        val dial = composeRule.onNodeWithTag("home-current-dial").fetchSemanticsNode().boundsInRoot
+        val lower = composeRule.onNodeWithTag("home-current-lower-constellation").fetchSemanticsNode().boundsInRoot
+        assertEquals(150f, dial.width, 0.5f)
+        assertEquals(150f, dial.height, 0.5f)
+        assertEquals(220f, lower.width, 0.5f)
+        assertEquals(64f, lower.height, 0.5f)
+        assertTrue("Lower constellation should follow dial", dial.bottom <= lower.top)
+        composeRule.assertSemanticsTreeOrder(
+            "home-section-location",
+            "home-section-current",
+            "home-section-precipitation",
+            "home-now-supporting-content",
+        )
+        composeRule.assertWithinRootBounds(
+            "home-section-location",
+            "home-section-current",
+            "home-current-lower-constellation",
+            "home-section-precipitation",
+            "home-page-tab-now",
+            "home-page-tab-hourly",
+            "home-page-tab-daily",
+            "home-page-tab-details",
+        )
+        composeRule.assertNoSiblingOverlap(
+            "home-section-location",
+            "home-section-current",
+            "home-section-precipitation",
+        )
+        composeRule.onNodeWithText("Updated 5:30 AM | Model estimate").assertExists()
+        composeRule.onNodeWithText("Open-Meteo | Fetched Aug 22, 7:00 AM CDT").assertExists()
+        composeRule.assertMinimumTouchTarget(
+            "home-page-tab-now",
+            "home-page-tab-hourly",
+            "home-page-tab-daily",
+            "home-page-tab-details",
+            "home-change-location",
+            "home-refresh",
+            "home-about-entry",
+        )
+        composeRule.onNodeWithTag("home-page-tab-details").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-section-provenance-footer")
+            .assertExists()
+        composeRule.onNodeWithText("Weather data by Open-Meteo.")
+            .assertExists()
+    }
+
+    @Test
+    fun standardNowPrecipitationGlassPanelOmitsOnlyAbsentAggregate() {
+        val location = weatherLocation(name = "Precipitation State City")
+        val base = fullWeatherBundle(location).copy(alerts = emptyList())
+        val rendered = mutableStateOf<HomeForecastPresentationState>(
+            HomeForecastPresentationState.ForecastReady.from(
+                location = location,
+                weather = base,
+                alertStatus = AlertLookupStatus.NotRequested,
+            ),
+        )
+        composeRule.setDynamicHomeContent(
+            rendered,
+            OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+            onRetry = {},
+            fontScale = 1f,
+        )
+        composeRule.waitForIdle()
+
+        fun replace(hourly: List<HourlyForecast>) {
+            composeRule.runOnIdle {
+                rendered.value = HomeForecastPresentationState.ForecastReady.from(
+                    location = location,
+                    weather = base.copy(hourly = hourly),
+                    alertStatus = AlertLookupStatus.NotRequested,
+                )
+            }
+            composeRule.waitForIdle()
+        }
+
+        val zeroHourly = listOf(base.hourly.first().copy(precipitationProbabilityPercent = null, precipitationMm = 0.0))
+        replace(zeroHourly)
+        composeRule.onNodeWithTag("home-section-precipitation").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Near-term precipitation. 0.0 mm",
+        ).assertIsDisplayed()
+        composeRule.onNodeWithTag("home-current-precipitation-satellite").assertIsDisplayed()
+
+        val probabilityOnlyHourly = base.hourly.map { it.copy(precipitationMm = null) }
+        replace(probabilityOnlyHourly)
+        composeRule.onNodeWithTag("home-section-precipitation").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Near-term precipitation. Up to 60%",
+        ).assertIsDisplayed()
+        composeRule.onNodeWithTag("home-current-precipitation-satellite").assertIsDisplayed()
+
+        val absentHourly = base.hourly.map {
+            it.copy(precipitationProbabilityPercent = null, precipitationMm = null)
+        }
+        replace(absentHourly)
+        composeRule.onAllNodesWithTag("home-section-precipitation").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Near-term precipitation", useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-current-precipitation-satellite").assertCountEquals(0)
+        composeRule.assertNoSiblingOverlap(
+            "home-section-location",
+            "home-section-current",
+        )
+    }
+
+    @Test
     fun standardNowLowerSatelliteStatesOmitOnlyUnavailableValues() {
         val location = weatherLocation(name = "Lower Satellite States City")
         val base = fullWeatherBundle(location).copy(alerts = emptyList())

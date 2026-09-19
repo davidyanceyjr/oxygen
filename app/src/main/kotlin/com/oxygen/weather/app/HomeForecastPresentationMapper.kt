@@ -82,6 +82,7 @@ fun WeatherBundle.toHomeSuccessPresentation(
         } else {
             null
         },
+        nearTermPrecipitation = precipitationPresentation,
         precipitationSummary = precipitationSummary,
         hourly = hourlyRows,
         daily = dailyRows,
@@ -115,6 +116,7 @@ data class HomeSuccessPresentation(
     val alertLookup: HomeAlertLookupPresentation,
     val current: HomeCurrentPresentation?,
     val currentUnavailableText: String?,
+    val nearTermPrecipitation: HomeNearTermPrecipitationPresentation?,
     val precipitationSummary: String?,
     val hourly: List<HomeHourlyPresentation>,
     val daily: List<HomeDailyPresentation>,
@@ -343,9 +345,11 @@ private data class HomeHeroRangePresentation(
     val lowTemperatureC: Double?,
 )
 
-private data class NearTermPrecipitationPresentation(
+data class HomeNearTermPrecipitationPresentation(
     val precipitationMm: Double?,
     val maximumProbabilityPercent: Int?,
+    val probabilityText: String?,
+    val amountText: String?,
     val compactValue: String,
     val spokenDescription: String,
     val summaryText: String,
@@ -688,7 +692,7 @@ private const val OFFICIAL_ALERT_SOURCE_FALLBACK = "https://www.weather.gov/"
 
 private fun List<HourlyForecast>.nearTermPrecipitationPresentation(
     units: ResolvedUnitPreference,
-): NearTermPrecipitationPresentation? {
+): HomeNearTermPrecipitationPresentation? {
     val nearTerm = take(6)
     val probabilities = nearTerm.mapNotNull { it.precipitationProbabilityPercent }
     val amounts = nearTerm.mapNotNull { it.precipitationMm }
@@ -699,27 +703,32 @@ private fun List<HourlyForecast>.nearTermPrecipitationPresentation(
         values.fold(BigDecimal.ZERO) { total, value -> total + BigDecimal.valueOf(value) }.toDouble()
     }
     val amountText = precipitationMm?.formatPrecipitation(units.precipitation)
-    val probabilityText = maximumProbabilityPercent?.let {
+    val probabilityText = maximumProbabilityPercent?.let { "Up to $it%" }
+    val probabilitySummaryText = maximumProbabilityPercent?.let {
         "Up to $it% precipitation chance in the next 6 hours"
     }
     val summaryText = buildList {
-        probabilityText?.let(::add)
+        probabilitySummaryText?.let(::add)
         amountText?.let { add("$it possible in the next 6 hours") }
     }.joinToString("; ")
 
     return if (precipitationMm != null) {
-        NearTermPrecipitationPresentation(
+        HomeNearTermPrecipitationPresentation(
             precipitationMm = precipitationMm,
             maximumProbabilityPercent = maximumProbabilityPercent,
+            probabilityText = probabilityText,
+            amountText = amountText,
             compactValue = amountText.orEmpty(),
             spokenDescription = "Forecast precipitation: ${precipitationMm.formatSpokenPrecipitation(units.precipitation)} possible in the next 6 hours.",
             summaryText = summaryText,
         )
     } else {
         val maximumProbability = requireNotNull(maximumProbabilityPercent)
-        NearTermPrecipitationPresentation(
+        HomeNearTermPrecipitationPresentation(
             precipitationMm = null,
             maximumProbabilityPercent = maximumProbability,
+            probabilityText = probabilityText,
+            amountText = null,
             compactValue = "Up to $maximumProbability%",
             spokenDescription = "Forecast precipitation: up to $maximumProbability percent chance in the next 6 hours.",
             summaryText = summaryText,
