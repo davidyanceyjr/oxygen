@@ -226,9 +226,10 @@ implementation count. It does not count as visual progress.
 
 CD-06 reconciled the retained CD-04 and CD-05 installed baseline/final pairs,
 focused and connected results, broad checks, functional limits, and commit
-ancestry. Both production slices remain verified; the implementation count is
-reset to 0 of 2. CD-07 is selected in the active plan as the next production
-slice.
+ancestry. Both production slices remain verified; the implementation count was
+reset to 0 of 2. CD-07 was then selected, verified, and committed in `74e4b33`,
+bringing the count to 1 of 2. CD-08 remains the next specified candidate and
+is not selected.
 
 ### CD-07 — Precipitation and provenance glass panel
 
