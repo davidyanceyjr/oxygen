@@ -393,7 +393,9 @@ class HomeDashboardUiTest {
 
         composeRule.setHomeContent(state)
 
-        composeRule.onNodeWithTag("home-weather-scene").assertExists()
+        val sceneHost = composeRule.onNodeWithTag("home-weather-scene", useUnmergedTree = true)
+        sceneHost.assertExists()
+        assertTrue(sceneHost.fetchSemanticsNode().config.contains(SemanticsProperties.HideFromAccessibility))
         listOf(
             "home-page-tab-now",
             "home-page-tab-hourly",
@@ -4660,6 +4662,107 @@ class HomeDashboardUiTest {
         })
         composeRule.onAllNodesWithTag("home-current-precipitation-satellite").assertCountEquals(0)
         composeRule.onAllNodesWithTag("home-current-wind-satellite").assertCountEquals(0)
+    }
+
+    @Test
+    fun standardNowSubtleAtmosphereAndHaloAreNowLocalWithoutChangingMeaning() {
+        val location = weatherLocation(name = "Celestial Dial Fixture City")
+        val state = HomeForecastPresentationState.ForecastReady.from(
+            location = location,
+            weather = fullWeatherBundle(location).copy(alerts = emptyList()),
+            alertStatus = AlertLookupStatus.NoAlerts(
+                AlertSuccessMetadata(location.point, "nws", Instant.parse("2026-08-22T15:05:00Z")),
+            ),
+        )
+        val appearance = mutableStateOf(
+            OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+        )
+        val spokenDescription =
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit."
+        val fixedTags = listOf(
+            "home-section-location",
+            "home-section-current",
+            "home-current-high-satellite",
+            "home-current-low-satellite",
+            "home-current-lower-constellation",
+            "home-section-precipitation",
+        )
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(1f, 1f),
+                LocalLayoutDirection provides LayoutDirection.Ltr,
+            ) {
+                OxygenTheme {
+                    Box(Modifier.width(360.dp).height(640.dp)) {
+                        HomeLoadingScreen(state = state, appearance = appearance.value)
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription(spokenDescription).assertIsDisplayed()
+        val offSummaryBounds = composeRule.onNodeWithTag("home-current-summary").fetchSemanticsNode().boundsInRoot
+        val offDialBounds = composeRule.onNodeWithTag("home-current-dial").fetchSemanticsNode().boundsInRoot
+        val offFixedBounds = fixedTags.associateWith { tag ->
+            composeRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+        }
+        composeRule.onAllNodesWithTag("home-weather-scene", useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-current-halo", useUnmergedTree = true).assertCountEquals(0)
+
+        composeRule.runOnIdle {
+            appearance.value = appearance.value.copy(effects = EffectsLevel.SUBTLE)
+        }
+        composeRule.waitForIdle()
+
+        fun assertDecorativeHost(tag: String) {
+            val node = composeRule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode()
+            assertTrue("$tag should be hidden from accessibility", node.config.contains(SemanticsProperties.HideFromAccessibility))
+            assertFalse("$tag should not expose spoken content", node.config.contains(SemanticsProperties.ContentDescription))
+        }
+
+        composeRule.onAllNodesWithTag("home-weather-scene", useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onAllNodesWithTag("home-current-halo", useUnmergedTree = true).assertCountEquals(1)
+        assertDecorativeHost("home-weather-scene")
+        assertDecorativeHost("home-current-halo")
+        assertEquals(offSummaryBounds, composeRule.onNodeWithTag("home-current-summary").fetchSemanticsNode().boundsInRoot)
+        assertEquals(offDialBounds, composeRule.onNodeWithTag("home-current-dial").fetchSemanticsNode().boundsInRoot)
+        fixedTags.forEach { tag ->
+            assertEquals(offFixedBounds.getValue(tag), composeRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot)
+        }
+        composeRule.assertNoSiblingOverlap(
+            "home-section-location",
+            "home-section-current",
+            "home-section-precipitation",
+        )
+        composeRule.writeScreenshotArtifact("cd05-now-local-final.png")
+        composeRule.writeSemanticsArtifact("cd05-now-local-semantics.txt")
+
+        listOf(
+            "home-page-tab-hourly" to "Hourly",
+            "home-page-tab-daily" to "Daily",
+            "home-page-tab-details" to "Details",
+        ).forEach { (tag, title) ->
+            composeRule.onNodeWithTag(tag).performClick()
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag("home-page-title").assertTextContains(title)
+            composeRule.onAllNodesWithTag("home-weather-scene", useUnmergedTree = true).assertCountEquals(0)
+            composeRule.onAllNodesWithTag("home-current-halo", useUnmergedTree = true).assertCountEquals(0)
+        }
+
+        composeRule.runOnIdle {
+            appearance.value = appearance.value.copy(layout = LayoutPreset.SIMPLE)
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
+        composeRule.onAllNodesWithTag("home-weather-scene", useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-current-halo", useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onNodeWithTag("home-page-tab-forecast").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home-page-title").assertTextContains("Forecast")
+        composeRule.onAllNodesWithTag("home-weather-scene", useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-current-halo", useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test

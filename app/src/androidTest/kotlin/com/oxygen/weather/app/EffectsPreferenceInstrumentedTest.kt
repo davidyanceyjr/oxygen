@@ -72,6 +72,7 @@ class EffectsPreferenceInstrumentedTest {
         val requests = repository.locations.toList()
         assertEquals(listOf(location), requests)
         composeRule.onAllNodesWithTag("home-weather-scene").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("home-current-halo").assertCountEquals(0)
         composeRule.onNodeWithTag("home-page-tab-hourly").performClick()
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Hourly")
         composeRule.onNodeWithTag("home-page-tab-details").performClick()

@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -289,12 +290,6 @@ private fun ReadyContent(
     }
 
     Box(Modifier.fillMaxSize()) {
-        if (appearance.effects != EffectsLevel.OFF) {
-            WeatherScene(
-                condition = dashboard.current?.conditionIdentity ?: WeatherCondition.UNKNOWN,
-                modifier = Modifier.testTag("home-weather-scene"),
-            )
-        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -357,6 +352,25 @@ private fun ReadyContent(
                                     state = state,
                                     onAlertDetailsRequested = onAlertDetailsRequested,
                                 )
+                            } else if (pageIndex == currentPageIndex && appearance.effects != EffectsLevel.OFF) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clipToBounds(),
+                                ) {
+                                    WeatherScene(
+                                        condition = dashboard.current?.conditionIdentity ?: WeatherCondition.UNKNOWN,
+                                        modifier = Modifier
+                                            .matchParentSize()
+                                            .testTag("home-weather-scene")
+                                            .semantics { hideFromAccessibility() },
+                                    )
+                                    StandardNowPage(
+                                        state = state,
+                                        onAlertDetailsRequested = onAlertDetailsRequested,
+                                        showHalo = true,
+                                    )
+                                }
                             } else {
                                 StandardNowPage(
                                     state = state,
@@ -549,6 +563,7 @@ private fun ReadyHeader(
 private fun StandardNowPage(
     state: HomeForecastPresentationState.ForecastReady,
     onAlertDetailsRequested: () -> Unit,
+    showHalo: Boolean = false,
 ) {
     val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
@@ -589,7 +604,7 @@ private fun StandardNowPage(
                 } else if (compactFont) {
                     CompactCurrentHero(dashboard.current)
                 } else {
-                    CentralCurrentDial(dashboard.current)
+                    CentralCurrentDial(dashboard.current, showHalo = showHalo)
                 }
             }
 
@@ -713,7 +728,10 @@ private fun CompactCurrentHero(current: HomeCurrentPresentation) {
 }
 
 @Composable
-private fun CentralCurrentDial(current: HomeCurrentPresentation) {
+private fun CentralCurrentDial(
+    current: HomeCurrentPresentation,
+    showHalo: Boolean,
+) {
     val roles = LocalOxygenHomeDesign.current
     val accent = MaterialTheme.colorScheme.primary
     Column(
@@ -760,6 +778,41 @@ private fun CentralCurrentDial(current: HomeCurrentPresentation) {
                     center = center,
                     style = Stroke(width = 1f),
                 )
+            }
+            if (showHalo) {
+                Canvas(
+                    Modifier
+                        .matchParentSize()
+                        .testTag("home-current-halo")
+                        .semantics { hideFromAccessibility() },
+                ) {
+                    val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
+                    val outerRadius = size.minDimension * 0.46f
+                    drawCircle(
+                        color = roles.weatherMarkGold.copy(alpha = 0.78f),
+                        radius = outerRadius * 0.96f,
+                        center = center,
+                        style = Stroke(width = 1.25f),
+                    )
+                    drawArc(
+                        color = accent.copy(alpha = 0.72f),
+                        startAngle = 118f,
+                        sweepAngle = 214f,
+                        useCenter = false,
+                        topLeft = androidx.compose.ui.geometry.Offset(
+                            center.x - outerRadius * 0.84f,
+                            center.y - outerRadius * 0.84f,
+                        ),
+                        size = androidx.compose.ui.geometry.Size(outerRadius * 1.68f, outerRadius * 1.68f),
+                        style = Stroke(width = 1.25f),
+                    )
+                    drawCircle(
+                        color = roles.weatherMarkGold.copy(alpha = 0.36f),
+                        radius = outerRadius * 0.68f,
+                        center = center,
+                        style = Stroke(width = 1f),
+                    )
+                }
             }
             Column(
                 modifier = Modifier
