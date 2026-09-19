@@ -1,6 +1,6 @@
 # Oxygen Weather for Android — Full Product and Technical Specification
 
-**Specification version:** 0.2.0  
+**Specification version:** 0.2.1
 **Status:** Implementation authority
 **Platform:** Android  
 **Primary implementation:** Kotlin + Jetpack Compose  
@@ -96,8 +96,8 @@ The application should remain useful with:
 - Current location or manually selected location.
 - Multiple saved locations.
 - Current conditions.
-- 24–48 hour hourly forecast.
-- 7–10 day daily forecast.
+- Rolling 72-hour hourly forecast.
+- Ten-day daily forecast.
 - Temperature.
 - Apparent temperature.
 - Precipitation probability and amount.
@@ -1206,9 +1206,14 @@ redundant to this summary for accessibility.
 
 ### 31.5 Hourly
 
-Hourly forecast content may use local horizontal movement or paging where it
-improves comparison, but it must remain subordinate to Home's semantic page
-navigation and must not be the only way to reach required information.
+Hourly presents actual provider entries in a rolling 72-hour interval. It uses
+up to twelve chronological six-entry windows with visible Earlier/Later
+controls and one local-date control for each represented date. A window may
+contain fewer than six entries when a provider returns a shorter or less-dense
+valid horizon. Hourly does not own a nested horizontal swipe; the outer Home
+pager remains the sole horizontal-swipe owner. A later chart may consume
+horizontal gestures only inside declared chart bounds and must provide an
+equivalent visible and semantic control.
 
 Each hour includes:
 
@@ -1220,10 +1225,14 @@ Each hour includes:
 Its mapper-owned spoken description uses local time, condition, temperature,
 and an available `percent chance of precipitation` fact. Missing temperature
 is announced as `Temperature unavailable`; absent precipitation is omitted.
+Entries remain earliest-to-latest in LTR and RTL. Missing or less-dense
+provider hours are not padded, interpolated, repeated, or fabricated; the page
+states the final available local hour.
 
 ### 31.6 Daily
 
-Rows include:
+Daily presents up to ten actual local forecast dates in two chronological
+five-day windows with visible Earlier/Later controls. Rows include:
 
 - day;
 - condition;
@@ -1235,6 +1244,10 @@ Its mapper-owned spoken description uses local date, condition, available
 high/low values, and available precipitation probability. A row with neither a
 high nor low announces `High and low unavailable`; missing optional facts are
 omitted.
+
+Fewer than ten returned dates retain their real order and state the final
+available date. Missing dates are not padded or fabricated, and an empty daily
+list is a distinct unavailable-page state.
 
 ### 31.7 Metric grid
 
@@ -1318,7 +1331,7 @@ Do not abbreviate or paraphrase critical official instructions in a way that cha
 
 - Tap: inspect.
 - Horizontal swipe on Home: navigate between semantic Home pages, with visible alternative controls. Saved-location switching must use a distinct control or interaction that does not conflict with Home page navigation.
-- Horizontal local movement: allowed for focused content such as charts or compact forecast strips when it does not obscure Home page navigation.
+- Horizontal local movement: reserved for a later chart inside declared chart bounds, with an equivalent visible and semantic control; Hourly and Daily forecast windows use visible controls.
 - Vertical scroll: reserved for content whose length or reading nature genuinely requires continuous scrolling, or for localized accessibility/content overflow.
 - Pull to refresh: explicit foreground refresh.
 - Long press saved location: reorder/remove context action.
@@ -1328,9 +1341,9 @@ Safety information must not require hidden gestures.
 
 ### 34.1 Home page navigation
 
-A tap on appropriate non-interactive page/background space may advance to the
-next Home page. Implementations do not have to wrap from the final page to the
-first page unless that behavior is deliberately selected and verified later.
+Static page and background taps do not advance the Home page. Buttons,
+refresh/retry, location, settings, alerts, links, chart controls, and card
+actions retain their own gestures.
 
 Horizontal swipe may navigate forward and backward. Swipe must not be the only
 way to reach information.
@@ -1344,6 +1357,11 @@ Interactive controls must retain their own behavior. Refresh, retry, settings,
 alerts, chart interactions, links, buttons, and other controls must not
 accidentally trigger Home page advancement. Avoid a naive full-screen clickable
 wrapper that steals child input.
+
+Android Back closes a dialog, alert detail, Settings/supporting surface, or
+location surface according to its existing return contract. From a non-Now
+Standard Home page it moves to the previous global page. From Now it uses
+normal Android Back behavior. Forecast-window selection never consumes Back.
 
 Accessibility users must be able to determine the current semantic Home page,
 position among available pages, how to move forward, and how to move backward
@@ -1452,11 +1470,12 @@ All important UI must:
 - preserve logical TalkBack order;
 - honor reduced motion.
 
-First-version release decision (2026-09-14): the Gate 30E installed TalkBack
-speech/focus audit and its host audio prerequisite are optional follow-up work.
-Their missing evidence does not block the first release or subsequent roadmap
-slices. Service-level TalkBack traversal remains unverified; this decision does
-not mark the audit passed or waive the UI accessibility obligations above.
+Project decision (2026-09-17), superseding the 2026-09-14 first-version release
+decision: the resource-intensive Gate 30E installed TalkBack speech/focus audit
+and its host audio prerequisite are canceled for this early development cycle.
+They are not a roadmap or release gate, and service-level TalkBack traversal
+remains unverified. This decision does not mark the audit passed or waive the UI
+accessibility obligations above.
 
 Good spoken output:
 
@@ -1858,8 +1877,8 @@ Oxygen 1.0 is ready when a user can:
 2. Search for and save a city.
 3. Optionally use device location.
 4. Immediately see current conditions.
-5. Browse 24–48 hours.
-6. Browse a 7–10 day forecast.
+5. Browse a rolling 72-hour forecast, with truthful partial-horizon treatment.
+6. Browse a ten-day forecast, with truthful partial-horizon treatment.
 7. Inspect precipitation, wind, humidity, pressure, visibility, and UV where available.
 8. Receive/display supported official alerts.
 9. Understand where weather information came from.
@@ -2125,12 +2144,16 @@ Evidence is retained under
 `.codex/test-artifacts/2026-09-09-slice-29a-high-contrast-rendering-contract/`
 and `.codex/test-artifacts/2026-09-09-slice-29b-high-contrast-preference-ui/`.
 
-Gate 30, Accessibility Presentation Verification, remains the next broader
-accessibility boundary and owns TalkBack, RTL, and the remaining presentation-
-condition matrix. The roadmap splits it into Home spoken semantics, compact/
-large-font Home layout, Home RTL, Home reduced-motion/appearance invariance,
-official-alert summary and detail, Appearance semantics and layout, required
-third-cycle test/document-sync gates, and an installed TalkBack closure gate.
+Gate 30, Accessibility Presentation Verification, owns the remaining
+accessibility presentation-condition matrix, including RTL and non-service
+accessibility checks. The 2026-09-17 project decision canceled the
+resource-intensive service-level TalkBack speech/focus tests and installed
+closure audit for this early development cycle; no current roadmap slice
+should schedule that boundary. The roadmap splits the applicable work into
+Home spoken semantics, compact/large-font Home layout, Home RTL,
+Home reduced-motion/appearance invariance, official-alert summary and detail,
+Appearance semantics and layout, and required third-cycle test/document-sync
+gates.
 Slice 30A1, Home Spoken-Weather Semantics, is implemented, verified, and
 committed at `da7b886`; Slice 30A2, Home Compact and Large-Font Resilience, is
 implemented, verified, and committed at `1a8e14f`; and Slice 30A3A1 Home
@@ -2218,9 +2241,10 @@ Installed evidence covers LTR, font scale 2.0, RTL, Effects Off, and
 Terminal/High while preserving the fixed Back action and saved-status meaning.
 TalkBack service traversal, localization, automatic contrast, and release
 checks remain unverified. Gate 30D3 is committed. Per the 2026-09-14 user
-release decision, Gate 30E is deferred and does not block the first version;
-its installed TalkBack audit remains unverified. Slice 33A's dependency and
-manifest audit and Slice 33B's installed manifest-exposure repair are
+release decision, superseded on 2026-09-17 by the project cancellation, Gate
+30E is canceled for this early development cycle and is not a current roadmap
+or release gate; its installed TalkBack audit remains unverified. Slice 33A's
+dependency and manifest audit and Slice 33B's installed manifest-exposure repair are
 committed. The installed package retains only the three user-facing
 permissions, exposes only MainActivity as an exported activity, and keeps
 retained AndroidX components non-exported. Backup remains `allowBackup=true`;

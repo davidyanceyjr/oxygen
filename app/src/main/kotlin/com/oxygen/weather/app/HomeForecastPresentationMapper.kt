@@ -19,6 +19,7 @@ import com.oxygen.weather.core.model.VisibilityUnit
 import com.oxygen.weather.core.model.WindSpeedUnit
 import com.oxygen.weather.core.model.resolve
 import com.oxygen.weather.core.provider.AlertLookupStatus
+import com.oxygen.weather.core.provider.AlertSuccessMetadata
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.net.URI
@@ -53,34 +54,35 @@ fun WeatherBundle.toHomeSuccessPresentation(
     val compatibilityDefault = unitPreference == null || resolvedPreference == DEFAULT_HOME_UNIT_PREFERENCE
     val zoneId = selectedLocation.zoneId
     val heroRange = daily.firstOrNull { it.highC != null || it.lowC != null }?.toHeroRangePresentation(units)
+    val precipitationPresentation = hourly.nearTermPrecipitationPresentation(units)
     val currentPresentation = current?.toCurrentPresentation(
         zoneId = zoneId,
         heroRange = heroRange,
         units = units,
+        precipitationSatellite = precipitationPresentation?.toSatellite(),
     )
     val hourlyRows = hourly.take(12).map { it.toHourlyPresentation(zoneId, units) }
     val dailyRows = daily.take(10).map { it.toDailyPresentation(zoneId, units) }
     val metricRows = current?.toMetricRows(units, compatibilityDefault).orEmpty()
     val sun = daily.firstOrNull { it.sunrise != null || it.sunset != null }?.toSunPresentation(zoneId)
     val provenance = mostRelevantProvenance()?.toSourcePresentation(zoneId) ?: bundleFallbackSource(zoneId)
-    val effectiveAlertStatus = alertStatus ?: alerts.legacyAlertStatus(selectedLocation)
-    val alertSummary = effectiveAlertStatus?.toHomeAlertSummary(alerts, zoneId)
-    val alertDetails = effectiveAlertStatus?.toHomeAlertDetails(alerts, zoneId).orEmpty()
-    val precipitationSummary = hourly.nearTermPrecipitationSummary(units)
+    val alertLookup = (alertStatus ?: alerts.legacyAlertStatus(selectedLocation))
+        .toHomeAlertLookupPresentation(alerts, zoneId)
+    val precipitationSummary = precipitationPresentation?.summaryText
     val returnedDataUnavailable = current == null && hourly.isEmpty() && daily.isEmpty()
 
     return HomeSuccessPresentation(
         locationName = selectedLocation.displayName,
         locationSubtitle = selectedLocation.forecastSubtitle(),
         alerts = alerts,
-        alertSummary = alertSummary,
-        alertDetails = alertDetails,
+        alertLookup = alertLookup,
         current = currentPresentation,
         currentUnavailableText = if (currentPresentation == null && !returnedDataUnavailable) {
             "Current conditions unavailable"
         } else {
             null
         },
+        nearTermPrecipitation = precipitationPresentation,
         precipitationSummary = precipitationSummary,
         hourly = hourlyRows,
         daily = dailyRows,
@@ -95,7 +97,7 @@ fun WeatherBundle.toHomeSuccessPresentation(
         sectionOrder = buildList {
             add(HomeSuccessSection.LocationHeader)
             add(HomeSuccessSection.Current)
-            if (alertSummary != null) add(HomeSuccessSection.Alerts)
+            if (alertLookup is HomeAlertLookupPresentation.Active) add(HomeSuccessSection.Alerts)
             if (precipitationSummary != null) add(HomeSuccessSection.NearTermPrecipitation)
             if (hourlyRows.isNotEmpty()) add(HomeSuccessSection.Hourly)
             if (dailyRows.isNotEmpty()) add(HomeSuccessSection.Daily)
@@ -111,10 +113,10 @@ data class HomeSuccessPresentation(
     val locationName: String,
     val locationSubtitle: String,
     val alerts: List<WeatherAlert>,
-    val alertSummary: HomeAlertSummaryPresentation?,
-    val alertDetails: List<HomeAlertDetailPresentation>,
+    val alertLookup: HomeAlertLookupPresentation,
     val current: HomeCurrentPresentation?,
     val currentUnavailableText: String?,
+    val nearTermPrecipitation: HomeNearTermPrecipitationPresentation?,
     val precipitationSummary: String?,
     val hourly: List<HomeHourlyPresentation>,
     val daily: List<HomeDailyPresentation>,
@@ -123,7 +125,15 @@ data class HomeSuccessPresentation(
     val source: HomeSourcePresentation,
     val returnedDataUnavailableText: String?,
     val sectionOrder: List<HomeSuccessSection>,
-)
+) {
+    /** Compatibility view retained for existing alert-detail and state callers. */
+    val alertSummary: HomeAlertSummaryPresentation?
+        get() = (alertLookup as? HomeAlertLookupPresentation.Active)?.summary
+
+    /** Compatibility view retained for existing alert-detail and state callers. */
+    val alertDetails: List<HomeAlertDetailPresentation>
+        get() = (alertLookup as? HomeAlertLookupPresentation.Active)?.details.orEmpty()
+}
 
 enum class HomeSuccessSection {
     LocationHeader,
@@ -151,6 +161,27 @@ data class HomeAlertSummaryPresentation(
     val detailActionLabel: String,
     val detailActionContentDescription: String,
 )
+
+sealed interface HomeAlertLookupPresentation {
+    data class Active(
+        val summary: HomeAlertSummaryPresentation,
+        val details: List<HomeAlertDetailPresentation>,
+    ) : HomeAlertLookupPresentation
+
+    data class NoActiveAlerts(
+        val sourceCheckedAt: String,
+    ) : HomeAlertLookupPresentation
+
+    data object NotChecked : HomeAlertLookupPresentation
+
+    data object UnavailableForLocation : HomeAlertLookupPresentation
+
+    data object UnableToCheck : HomeAlertLookupPresentation
+
+    data class Delayed(
+        val nextEligibleAt: String,
+    ) : HomeAlertLookupPresentation
+}
 
 data class HomeAlertDetailPresentation(
     val id: String,
@@ -185,13 +216,31 @@ data class HomeCurrentPresentation(
     val highTemperatureC: Double?,
     val lowTemperature: String?,
     val lowTemperatureC: Double?,
+    val precipitationSatellite: HomePrecipitationSatellitePresentation?,
+    val windSatellite: HomeWindSatellitePresentation?,
     val updatedTime: String,
     val dataTypeLabel: String,
     val spokenDescription: String,
 )
 
+data class HomePrecipitationSatellitePresentation(
+    val precipitationMm: Double?,
+    val maximumProbabilityPercent: Int?,
+    val compactValue: String,
+    val spokenDescription: String,
+)
+
+data class HomeWindSatellitePresentation(
+    val speedMetersPerSecond: Double?,
+    val gustMetersPerSecond: Double?,
+    val directionDegrees: Double?,
+    val compactValue: String,
+    val spokenDescription: String,
+)
+
 data class HomeHourlyPresentation(
     val time: String,
+    val localDate: LocalDate,
     val condition: String,
     val conditionIdentity: WeatherCondition,
     val temperature: String,
@@ -200,6 +249,30 @@ data class HomeHourlyPresentation(
     val precipitationProbabilityPercent: Int?,
     val spokenDescription: String,
 )
+
+data class HomeHourlyWindowPresentation(
+    val entries: List<HomeHourlyPresentation>,
+    val rangeLabel: String,
+)
+
+fun HomeSuccessPresentation.hourlyWindow(windowIndex: Int): HomeHourlyWindowPresentation? {
+    if (windowIndex < 0) return null
+    val entries = hourly.drop(windowIndex * HOME_HOURLY_WINDOW_SIZE).take(HOME_HOURLY_WINDOW_SIZE)
+    if (entries.isEmpty()) return null
+    val first = entries.first()
+    val last = entries.last()
+    val firstDate = DAY_FORMAT.format(first.localDate)
+    val lastDate = DAY_FORMAT.format(last.localDate)
+    val rangeLabel = if (first.localDate == last.localDate) {
+        "$firstDate, ${first.time}–${last.time}"
+    } else {
+        "$firstDate, ${first.time}–$lastDate, ${last.time}"
+    }
+    return HomeHourlyWindowPresentation(entries = entries, rangeLabel = rangeLabel)
+}
+
+fun HomeSuccessPresentation.hourlyWindowRangeLabel(windowIndex: Int): String? =
+    hourlyWindow(windowIndex)?.rangeLabel
 
 data class HomeDailyPresentation(
     val date: String,
@@ -272,10 +345,29 @@ private data class HomeHeroRangePresentation(
     val lowTemperatureC: Double?,
 )
 
+data class HomeNearTermPrecipitationPresentation(
+    val precipitationMm: Double?,
+    val maximumProbabilityPercent: Int?,
+    val probabilityText: String?,
+    val amountText: String?,
+    val compactValue: String,
+    val spokenDescription: String,
+    val summaryText: String,
+) {
+    fun toSatellite(): HomePrecipitationSatellitePresentation =
+        HomePrecipitationSatellitePresentation(
+            precipitationMm = precipitationMm,
+            maximumProbabilityPercent = maximumProbabilityPercent,
+            compactValue = compactValue,
+            spokenDescription = spokenDescription,
+        )
+}
+
 private fun CurrentConditions.toCurrentPresentation(
     zoneId: ZoneId,
     heroRange: HomeHeroRangePresentation?,
     units: ResolvedUnitPreference,
+    precipitationSatellite: HomePrecipitationSatellitePresentation?,
 ): HomeCurrentPresentation =
     HomeCurrentPresentation(
         temperature = temperatureC.formatTemperature(units.temperature),
@@ -288,6 +380,8 @@ private fun CurrentConditions.toCurrentPresentation(
         highTemperatureC = heroRange?.highTemperatureC,
         lowTemperature = heroRange?.lowTemperature,
         lowTemperatureC = heroRange?.lowTemperatureC,
+        precipitationSatellite = precipitationSatellite,
+        windSatellite = wind?.toWindSatellite(units.windSpeed),
         updatedTime = "Updated ${time.formatLocalTime(zoneId)}",
         dataTypeLabel = provenance.type.displayLabel(),
         spokenDescription = buildList {
@@ -313,6 +407,7 @@ private fun HourlyForecast.toHourlyPresentation(
 ): HomeHourlyPresentation =
     HomeHourlyPresentation(
         time = HOUR_FORMAT.format(time.atZone(zoneId)),
+        localDate = time.atZone(zoneId).toLocalDate(),
         condition = condition.displayName(),
         conditionIdentity = condition,
         temperature = temperatureC.formatTemperature(units.temperature),
@@ -326,6 +421,8 @@ private fun HourlyForecast.toHourlyPresentation(
             precipitationProbabilityPercent?.let { add("$it percent chance of precipitation.") }
         }.joinToString(" "),
     )
+
+private const val HOME_HOURLY_WINDOW_SIZE = 6
 
 private fun DailyForecast.toDailyPresentation(
     zoneId: ZoneId,
@@ -453,17 +550,67 @@ private fun Wind.toMetricText(unit: WindSpeedUnit): String? {
     return listOfNotNull(speed, gust, direction).takeIf { it.isNotEmpty() }?.joinToString(", ")
 }
 
+private fun Wind.toWindSatellite(unit: WindSpeedUnit): HomeWindSatellitePresentation? {
+    val speed = speedMetersPerSecond?.let { "${it.convertWindSpeed(unit).whole()} ${unit.symbol}" }
+    val gust = gustMetersPerSecond?.let { "gust ${it.convertWindSpeed(unit).whole()} ${unit.symbol}" }
+    val direction = directionDegrees?.let { "direction ${it.whole()} degrees" }
+    val compactValue = speed
+        ?: gust
+        ?: directionDegrees?.let { "${it.whole()} deg" }
+        ?: return null
+    val spokenParts = listOfNotNull(
+        speed?.replace(unit.symbol, unit.spokenName),
+        gust?.replace(unit.symbol, unit.spokenName),
+        direction,
+    )
+    return HomeWindSatellitePresentation(
+        speedMetersPerSecond = speedMetersPerSecond,
+        gustMetersPerSecond = gustMetersPerSecond,
+        directionDegrees = directionDegrees,
+        compactValue = compactValue,
+        spokenDescription = "Wind: ${spokenParts.joinToString(", ") }.",
+    )
+}
+
 private fun DailyForecast.toSunPresentation(zoneId: ZoneId): HomeSunPresentation =
     HomeSunPresentation(
         sunrise = sunrise?.formatLocalTime(zoneId) ?: UNAVAILABLE,
         sunset = sunset?.formatLocalTime(zoneId) ?: UNAVAILABLE,
     )
 
-private fun AlertLookupStatus.toHomeAlertSummary(
+private fun AlertLookupStatus?.toHomeAlertLookupPresentation(
     alerts: List<WeatherAlert>,
     zoneId: ZoneId,
-): HomeAlertSummaryPresentation? {
-    if (this !is AlertLookupStatus.Available || alerts.isEmpty()) return null
+): HomeAlertLookupPresentation = when (this) {
+    null,
+    AlertLookupStatus.NotRequested,
+    -> HomeAlertLookupPresentation.NotChecked
+    is AlertLookupStatus.NoAlerts -> HomeAlertLookupPresentation.NoActiveAlerts(
+        sourceCheckedAt = metadata.fetchedAt.formatFetched(zoneId),
+    )
+    is AlertLookupStatus.Available -> if (alerts.isEmpty()) {
+        HomeAlertLookupPresentation.NoActiveAlerts(metadata.fetchedAt.formatFetched(zoneId))
+    } else {
+        val summary = metadata.toHomeAlertSummary(alerts, zoneId)
+        HomeAlertLookupPresentation.Active(
+            summary = summary,
+            details = metadata.toHomeAlertDetails(alerts, zoneId),
+        )
+    }
+    AlertLookupStatus.UnsupportedRegion -> HomeAlertLookupPresentation.UnavailableForLocation
+    is AlertLookupStatus.Failed -> HomeAlertLookupPresentation.UnableToCheck
+    is AlertLookupStatus.SkippedByRateLimit -> HomeAlertLookupPresentation.Delayed(
+        nextEligibleAt = nextEligibleAt.formatFetched(zoneId),
+    )
+}
+
+private fun AlertSuccessMetadata.toHomeAlertSummary(
+    alerts: List<WeatherAlert>,
+    zoneId: ZoneId,
+): HomeAlertSummaryPresentation {
+    require(alerts.map { it.id }.toSet().size == alerts.size) {
+        "Available alerts must have unique IDs"
+    }
     val first = alerts.first()
     return HomeAlertSummaryPresentation(
         event = first.event,
@@ -471,7 +618,7 @@ private fun AlertLookupStatus.toHomeAlertSummary(
         issuer = first.issuer,
         expires = first.expires?.let { "Expires ${it.formatLocalTime(zoneId)}" } ?: "Expires unavailable",
         activeAlertCount = alerts.size,
-        sourceCheckedAt = "Alert source checked ${metadata.fetchedAt.formatFetched(zoneId)}",
+        sourceCheckedAt = "Alert source checked ${fetchedAt.formatFetched(zoneId)}",
         attribution = "Official alerts from NOAA/National Weather Service",
         sourceLink = first.web.validAlertSourceUrl(),
         sourceLinkLabel = "Open official NOAA/National Weather Service alert source",
@@ -480,11 +627,10 @@ private fun AlertLookupStatus.toHomeAlertSummary(
     )
 }
 
-private fun AlertLookupStatus.toHomeAlertDetails(
+private fun AlertSuccessMetadata.toHomeAlertDetails(
     alerts: List<WeatherAlert>,
     zoneId: ZoneId,
-): List<HomeAlertDetailPresentation>? {
-    if (this !is AlertLookupStatus.Available || alerts.isEmpty()) return null
+): List<HomeAlertDetailPresentation> {
     require(alerts.map { it.id }.toSet().size == alerts.size) {
         "Available alerts must have unique IDs"
     }
@@ -505,7 +651,7 @@ private fun AlertLookupStatus.toHomeAlertDetails(
             affectedArea = alert.affectedArea?.areaDescription?.takeIf { it.isNotBlank() } ?: UNAVAILABLE,
             description = alert.description?.takeIf { it.isNotBlank() } ?: UNAVAILABLE,
             instruction = alert.instruction?.takeIf { it.isNotBlank() } ?: UNAVAILABLE,
-            sourceCheckedAt = "Alert source checked ${metadata.fetchedAt.formatFetched(zoneId)}",
+            sourceCheckedAt = "Alert source checked ${fetchedAt.formatFetched(zoneId)}",
             attribution = "Official alerts from NOAA/National Weather Service",
             sourceLink = alert.web.validAlertSourceUrl(),
             sourceLinkLabel = "Open official NOAA/National Weather Service alert source for ${alert.event}",
@@ -544,17 +690,50 @@ private fun String?.validAlertSourceUrl(): String {
 
 private const val OFFICIAL_ALERT_SOURCE_FALLBACK = "https://www.weather.gov/"
 
-private fun List<HourlyForecast>.nearTermPrecipitationSummary(units: ResolvedUnitPreference): String? {
+private fun List<HourlyForecast>.nearTermPrecipitationPresentation(
+    units: ResolvedUnitPreference,
+): HomeNearTermPrecipitationPresentation? {
     val nearTerm = take(6)
     val probabilities = nearTerm.mapNotNull { it.precipitationProbabilityPercent }
     val amounts = nearTerm.mapNotNull { it.precipitationMm }
     if (probabilities.isEmpty() && amounts.isEmpty()) return null
 
-    val parts = buildList {
-        probabilities.maxOrNull()?.let { add("Up to $it% precipitation chance in the next 6 hours") }
-        if (amounts.isNotEmpty()) add("${amounts.sum().formatPrecipitation(units.precipitation)} possible in the next 6 hours")
+    val maximumProbabilityPercent = probabilities.maxOrNull()
+    val precipitationMm = amounts.takeIf { it.isNotEmpty() }?.let { values ->
+        values.fold(BigDecimal.ZERO) { total, value -> total + BigDecimal.valueOf(value) }.toDouble()
     }
-    return parts.joinToString("; ")
+    val amountText = precipitationMm?.formatPrecipitation(units.precipitation)
+    val probabilityText = maximumProbabilityPercent?.let { "Up to $it%" }
+    val probabilitySummaryText = maximumProbabilityPercent?.let {
+        "Up to $it% precipitation chance in the next 6 hours"
+    }
+    val summaryText = buildList {
+        probabilitySummaryText?.let(::add)
+        amountText?.let { add("$it possible in the next 6 hours") }
+    }.joinToString("; ")
+
+    return if (precipitationMm != null) {
+        HomeNearTermPrecipitationPresentation(
+            precipitationMm = precipitationMm,
+            maximumProbabilityPercent = maximumProbabilityPercent,
+            probabilityText = probabilityText,
+            amountText = amountText,
+            compactValue = amountText.orEmpty(),
+            spokenDescription = "Forecast precipitation: ${precipitationMm.formatSpokenPrecipitation(units.precipitation)} possible in the next 6 hours.",
+            summaryText = summaryText,
+        )
+    } else {
+        val maximumProbability = requireNotNull(maximumProbabilityPercent)
+        HomeNearTermPrecipitationPresentation(
+            precipitationMm = null,
+            maximumProbabilityPercent = maximumProbability,
+            probabilityText = probabilityText,
+            amountText = null,
+            compactValue = "Up to $maximumProbability%",
+            spokenDescription = "Forecast precipitation: up to $maximumProbability percent chance in the next 6 hours.",
+            summaryText = summaryText,
+        )
+    }
 }
 
 private fun WeatherBundle.mostRelevantProvenance(): DataProvenance? =
@@ -631,6 +810,14 @@ private val WindSpeedUnit.symbol: String
         WindSpeedUnit.KNOTS -> "kn"
     }
 
+private val WindSpeedUnit.spokenName: String
+    get() = when (this) {
+        WindSpeedUnit.KILOMETERS_PER_HOUR -> "kilometers per hour"
+        WindSpeedUnit.MILES_PER_HOUR -> "miles per hour"
+        WindSpeedUnit.METERS_PER_SECOND -> "meters per second"
+        WindSpeedUnit.KNOTS -> "knots"
+    }
+
 private fun Double.formatPressure(unit: PressureUnit): String = when (unit) {
     PressureUnit.HECTOPASCALS -> "${whole()} hPa"
     PressureUnit.INCHES_OF_MERCURY -> "${(this * 0.0295299830714).decimal(2)} inHg"
@@ -640,6 +827,11 @@ private fun Double.formatPressure(unit: PressureUnit): String = when (unit) {
 private fun Double.formatPrecipitation(unit: PrecipitationUnit): String = when (unit) {
     PrecipitationUnit.MILLIMETERS -> "${decimal(1)} mm"
     PrecipitationUnit.INCHES -> "${(this / 25.4).decimal(2)} in"
+}
+
+private fun Double.formatSpokenPrecipitation(unit: PrecipitationUnit): String = when (unit) {
+    PrecipitationUnit.MILLIMETERS -> "${decimal(1)} millimetres"
+    PrecipitationUnit.INCHES -> "${(this / 25.4).decimal(2)} inches"
 }
 
 private fun Double.formatVisibility(unit: VisibilityUnit, compatibilityDefault: Boolean): String = when {

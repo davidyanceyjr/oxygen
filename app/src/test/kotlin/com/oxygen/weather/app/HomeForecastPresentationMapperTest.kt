@@ -26,11 +26,41 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HomeForecastPresentationMapperTest {
+    @Test
+    fun `hourly window range uses selected local date for same day entries`() {
+        val weather = fullWeatherBundle().copy(
+            hourly = listOf(
+                fullWeatherBundle().hourly.single().copy(time = Instant.parse("2026-08-22T11:00:00Z")),
+                fullWeatherBundle().hourly.single().copy(time = Instant.parse("2026-08-22T12:00:00Z")),
+            ),
+        )
+
+        val presentation = weather.toHomeSuccessPresentation(testLocation)
+
+        assertEquals("Sat, Aug 22, 6 AM–7 AM", presentation.hourlyWindowRangeLabel(0))
+    }
+
+    @Test
+    fun `hourly window range names both selected local dates across midnight`() {
+        val weather = fullWeatherBundle().copy(
+            hourly = listOf(
+                fullWeatherBundle().hourly.single().copy(time = Instant.parse("2026-08-23T04:00:00Z")),
+                fullWeatherBundle().hourly.single().copy(time = Instant.parse("2026-08-23T05:00:00Z")),
+            ),
+        )
+
+        val presentation = weather.toHomeSuccessPresentation(testLocation)
+
+        assertEquals("Sat, Aug 22, 11 PM–Sun, Aug 23, 12 AM", presentation.hourlyWindowRangeLabel(0))
+    }
+
     @Test
     fun `home presentation normalizes only legacy MET Norway license provenance`() {
         fun presentationSource(providerId: String, licenseId: String): String? =
@@ -202,6 +232,115 @@ class HomeForecastPresentationMapperTest {
         fullWeatherBundle().copy(alerts = listOf(alert, alert)).toHomeSuccessPresentation(
             testLocation,
             alertStatus = AlertLookupStatus.Available(AlertSuccessMetadata(testLocation.point, "nws", Instant.parse("2026-08-22T15:05:00Z"))),
+        )
+    }
+
+    @Test
+    fun alertLookupPresentationNamesEveryOutcomeWithoutProviderDiagnostics() {
+        val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
+        val metadata = AlertSuccessMetadata(testLocation.point, "nws", checkedAt)
+        val activeAlert = mapperAlert(id = "severe", event = "Severe Storm", web = "https://alerts.weather.gov/severe")
+            .copy(severity = AlertSeverity.SEVERE)
+        val active = fullWeatherBundle().copy(alerts = listOf(activeAlert, mapperAlert(id = "second")))
+            .toHomeSuccessPresentation(testLocation, alertStatus = AlertLookupStatus.Available(metadata))
+        assertTrue(active.alertLookup is HomeAlertLookupPresentation.Active)
+        val activeLookup = active.alertLookup as HomeAlertLookupPresentation.Active
+        assertEquals("Severe Storm", activeLookup.summary.event)
+        assertEquals(2, activeLookup.summary.activeAlertCount)
+        assertEquals(listOf("severe", "second"), activeLookup.details.map { it.id })
+        assertEquals(activeLookup.summary, active.alertSummary)
+        assertEquals(activeLookup.details, active.alertDetails)
+
+        val noAlertsWithStrayData = fullWeatherBundle().copy(alerts = listOf(activeAlert, activeAlert.copy(id = "stray")))
+            .toHomeSuccessPresentation(testLocation, alertStatus = AlertLookupStatus.NoAlerts(metadata))
+        assertEquals(
+            HomeAlertLookupPresentation.NoActiveAlerts("Aug 22, 10:05 AM CDT"),
+            noAlertsWithStrayData.alertLookup,
+        )
+        assertNull(noAlertsWithStrayData.alertSummary)
+        assertTrue(noAlertsWithStrayData.alertDetails.isEmpty())
+
+        assertEquals(
+            HomeAlertLookupPresentation.NoActiveAlerts("Aug 22, 10:05 AM CDT"),
+            fullWeatherBundle().copy(alerts = emptyList())
+                .toHomeSuccessPresentation(testLocation, alertStatus = AlertLookupStatus.Available(metadata))
+                .alertLookup,
+        )
+        assertEquals(
+            HomeAlertLookupPresentation.NotChecked,
+            fullWeatherBundle().toHomeSuccessPresentation(
+                testLocation,
+                alertStatus = AlertLookupStatus.NotRequested,
+            ).alertLookup,
+        )
+        assertEquals(
+            HomeAlertLookupPresentation.UnavailableForLocation,
+            fullWeatherBundle().toHomeSuccessPresentation(
+                testLocation,
+                alertStatus = AlertLookupStatus.UnsupportedRegion,
+            ).alertLookup,
+        )
+        listOf(
+            com.oxygen.weather.core.provider.AlertProviderError.InvalidPoint,
+            com.oxygen.weather.core.provider.AlertProviderError.InvalidRequest,
+            com.oxygen.weather.core.provider.AlertProviderError.UnsupportedRegion,
+            com.oxygen.weather.core.provider.AlertProviderError.IdentificationRejected,
+            com.oxygen.weather.core.provider.AlertProviderError.Network,
+            com.oxygen.weather.core.provider.AlertProviderError.RateLimited("retry"),
+            com.oxygen.weather.core.provider.AlertProviderError.ProviderUnavailable,
+            com.oxygen.weather.core.provider.AlertProviderError.InvalidResponse,
+            com.oxygen.weather.core.provider.AlertProviderError.UnexpectedProvider,
+        ).forEach { error ->
+            assertEquals(
+                HomeAlertLookupPresentation.UnableToCheck,
+                fullWeatherBundle().toHomeSuccessPresentation(
+                    testLocation,
+                    alertStatus = AlertLookupStatus.Failed(error),
+                ).alertLookup,
+            )
+        }
+        val delayed = fullWeatherBundle().toHomeSuccessPresentation(
+            testLocation,
+            alertStatus = AlertLookupStatus.SkippedByRateLimit(
+                providerId = "nws",
+                requestPoint = GeoPoint(99.0, 199.0),
+                nextEligibleAt = Instant.parse("2026-08-22T16:10:00Z"),
+            ),
+        ).alertLookup
+        assertEquals(HomeAlertLookupPresentation.Delayed("Aug 22, 11:10 AM CDT"), delayed)
+        assertFalse(delayed.toString().contains("nws"))
+        assertFalse(delayed.toString().contains("99.0"))
+    }
+
+    @Test
+    fun legacyAlertsBecomeActiveButEmptyAndMissingWeatherRemainTruthful() {
+        val legacy = fullWeatherBundle().copy(alerts = listOf(mapperAlert()))
+            .toHomeSuccessPresentation(testLocation)
+        assertTrue(legacy.alertLookup is HomeAlertLookupPresentation.Active)
+
+        val missingCurrent = fullWeatherBundle().copy(current = null)
+            .toHomeSuccessPresentation(testLocation, alertStatus = AlertLookupStatus.NotRequested)
+        assertNull(missingCurrent.current)
+        assertEquals("Current conditions unavailable", missingCurrent.currentUnavailableText)
+        assertTrue(missingCurrent.sectionOrder.contains(HomeSuccessSection.Current))
+
+        val empty = WeatherBundle(
+            location = testLocation,
+            current = null,
+            hourly = emptyList(),
+            daily = emptyList(),
+            fetchedAt = Instant.parse("2026-08-22T12:00:00Z"),
+        ).toHomeSuccessPresentation(testLocation)
+        assertNull(empty.current)
+        assertNotNull(empty.returnedDataUnavailableText)
+        assertEquals(
+            listOf(
+                HomeSuccessSection.LocationHeader,
+                HomeSuccessSection.Current,
+                HomeSuccessSection.Source,
+                HomeSuccessSection.ProvenanceFooter,
+            ),
+            empty.sectionOrder,
         )
     }
     @Test
@@ -504,6 +643,167 @@ class HomeForecastPresentationMapperTest {
         assertEquals("1 km/h, gust 2 km/h, 13 deg", metric(presentation, HomeMetricIdentity.Wind).value)
         assertEquals("1013 hPa", metric(presentation, HomeMetricIdentity.Pressure).value)
         assertEquals("0.1 mm", presentation.precipitationSummary?.substringAfter("; ")?.substringBefore(" possible"))
+    }
+
+    @Test
+    fun nearTermPrecipitationSatelliteUsesCanonicalAggregateAndResolvedUnits() {
+        val weather = fullWeatherBundle().copy(
+            hourly = listOf(
+                fullWeatherBundle().hourly.single().copy(
+                    precipitationProbabilityPercent = 60,
+                    precipitationMm = 1.025,
+                ),
+                fullWeatherBundle().hourly.single().copy(
+                    precipitationProbabilityPercent = 80,
+                    precipitationMm = 0.025,
+                ),
+                fullWeatherBundle().hourly.single().copy(
+                    precipitationProbabilityPercent = 20,
+                    precipitationMm = 0.0,
+                ),
+            ),
+        )
+
+        val metric = requireNotNull(
+            requireNotNull(weather.toHomeSuccessPresentation(
+                testLocation,
+                UnitPreference.Preset(UnitPreferencePreset.METRIC),
+            ).current).precipitationSatellite,
+        )
+        val metricPresentation = weather.toHomeSuccessPresentation(
+            testLocation,
+            UnitPreference.Preset(UnitPreferencePreset.METRIC),
+        )
+        val metricAggregate = requireNotNull(metricPresentation.nearTermPrecipitation)
+        assertEquals(1.05, metricAggregate.precipitationMm ?: Double.NaN, 0.000001)
+        assertEquals(80, metricAggregate.maximumProbabilityPercent)
+        assertEquals("Up to 80%", metricAggregate.probabilityText)
+        assertEquals("1.1 mm", metricAggregate.amountText)
+        assertEquals(
+            "Forecast precipitation: 1.1 millimetres possible in the next 6 hours.",
+            metricAggregate.spokenDescription,
+        )
+        assertEquals(1.05, metric.precipitationMm ?: Double.NaN, 0.000001)
+        assertEquals(80, metric.maximumProbabilityPercent)
+        assertEquals("1.1 mm", metric.compactValue)
+        assertEquals(
+            "Forecast precipitation: 1.1 millimetres possible in the next 6 hours.",
+            metric.spokenDescription,
+        )
+
+        val us = requireNotNull(
+            requireNotNull(weather.toHomeSuccessPresentation(
+                testLocation,
+                UnitPreference.Preset(UnitPreferencePreset.US),
+            ).current).precipitationSatellite,
+        )
+        assertEquals(1.05, us.precipitationMm ?: Double.NaN, 0.000001)
+        assertEquals("0.04 in", us.compactValue)
+        assertEquals(
+            "Forecast precipitation: 0.04 inches possible in the next 6 hours.",
+            us.spokenDescription,
+        )
+        assertEquals(
+            "Up to 80% precipitation chance in the next 6 hours; 1.1 mm possible in the next 6 hours",
+            weather.toHomeSuccessPresentation(
+                testLocation,
+                UnitPreference.Preset(UnitPreferencePreset.METRIC),
+            ).precipitationSummary,
+        )
+
+        val probabilityOnlyPresentation = weather.copy(hourly = weather.hourly.map {
+            it.copy(precipitationMm = null)
+        }).toHomeSuccessPresentation(testLocation)
+        val probabilityOnly = requireNotNull(requireNotNull(probabilityOnlyPresentation.current).precipitationSatellite)
+        val probabilityOnlyAggregate = requireNotNull(probabilityOnlyPresentation.nearTermPrecipitation)
+        assertNull(probabilityOnly.precipitationMm)
+        assertEquals(80, probabilityOnly.maximumProbabilityPercent)
+        assertEquals("Up to 80%", probabilityOnlyAggregate.probabilityText)
+        assertNull(probabilityOnlyAggregate.amountText)
+        assertEquals("Up to 80%", probabilityOnly.compactValue)
+        assertEquals(
+            "Forecast precipitation: up to 80 percent chance in the next 6 hours.",
+            probabilityOnly.spokenDescription,
+        )
+
+        val reportedZeroPresentation = weather.copy(hourly = listOf(weather.hourly.first().copy(
+                precipitationProbabilityPercent = null,
+                precipitationMm = 0.0,
+            ))).toHomeSuccessPresentation(testLocation)
+        val reportedZero = requireNotNull(requireNotNull(reportedZeroPresentation.current).precipitationSatellite)
+        val reportedZeroAggregate = requireNotNull(reportedZeroPresentation.nearTermPrecipitation)
+        assertEquals(0.0, reportedZero.precipitationMm ?: Double.NaN, 0.000001)
+        assertNull(reportedZeroAggregate.probabilityText)
+        assertEquals("0.0 mm", reportedZeroAggregate.amountText)
+        assertEquals("0.0 mm", reportedZero.compactValue)
+    }
+
+    @Test
+    fun currentWindSatelliteUsesResolvedUnitsAndPreservesAllComponents() {
+        val metric = requireNotNull(
+            requireNotNull(fullWeatherBundle().toHomeSuccessPresentation(
+                testLocation,
+                UnitPreference.Preset(UnitPreferencePreset.METRIC),
+            ).current).windSatellite,
+        )
+        assertEquals(4.0, metric.speedMetersPerSecond)
+        assertEquals(7.0, metric.gustMetersPerSecond)
+        assertEquals(225.0, metric.directionDegrees)
+        assertEquals("14 km/h", metric.compactValue)
+        assertEquals(
+            "Wind: 14 kilometers per hour, gust 25 kilometers per hour, direction 225 degrees.",
+            metric.spokenDescription,
+        )
+
+        val directionOnly = requireNotNull(
+            requireNotNull(fullWeatherBundle().copy(
+                current = requireNotNull(fullWeatherBundle().current).copy(
+                    wind = Wind(null, null, 270.5),
+                ),
+            ).toHomeSuccessPresentation(testLocation).current).windSatellite,
+        )
+        assertEquals("271 deg", directionOnly.compactValue)
+        assertEquals(270.5, directionOnly.directionDegrees)
+        assertEquals("Wind: direction 271 degrees.", directionOnly.spokenDescription)
+
+        val noComponents = fullWeatherBundle().copy(
+            current = requireNotNull(fullWeatherBundle().current).copy(wind = Wind(null, null, null)),
+        ).toHomeSuccessPresentation(testLocation)
+        assertNull(requireNotNull(noComponents.current).windSatellite)
+    }
+
+    @Test
+    fun currentSatelliteAvailabilityNeverFabricatesMissingValues() {
+        val precipitationOnly = fullWeatherBundle().copy(
+            current = requireNotNull(fullWeatherBundle().current).copy(wind = null),
+        ).toHomeSuccessPresentation(testLocation)
+        assertNotNull(requireNotNull(precipitationOnly.current).precipitationSatellite)
+        assertNull(requireNotNull(precipitationOnly.current).windSatellite)
+        assertNotNull(precipitationOnly.precipitationSummary)
+
+        val windOnly = fullWeatherBundle().copy(
+            hourly = fullWeatherBundle().hourly.map {
+                it.copy(precipitationProbabilityPercent = null, precipitationMm = null)
+            },
+        ).toHomeSuccessPresentation(testLocation)
+        assertNull(requireNotNull(windOnly.current).precipitationSatellite)
+        assertNotNull(requireNotNull(windOnly.current).windSatellite)
+        assertNull(windOnly.precipitationSummary)
+
+        val neither = fullWeatherBundle().copy(
+            current = requireNotNull(fullWeatherBundle().current).copy(wind = Wind(null, null, null)),
+            hourly = fullWeatherBundle().hourly.map {
+                it.copy(precipitationProbabilityPercent = null, precipitationMm = null)
+            },
+        ).toHomeSuccessPresentation(testLocation)
+        assertNull(requireNotNull(neither.current).precipitationSatellite)
+        assertNull(requireNotNull(neither.current).windSatellite)
+        assertNull(neither.nearTermPrecipitation)
+        assertNull(neither.precipitationSummary)
+        assertEquals(
+            "Rain showers. 65 degrees Fahrenheit. Feels like 63 degrees Fahrenheit. High 73 degrees Fahrenheit. Low 54 degrees Fahrenheit.",
+            requireNotNull(neither.current).spokenDescription,
+        )
     }
 
     @Test

@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -73,7 +75,7 @@ class LayoutPreferenceUiTest {
         drainUi(executor)
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
         composeRule.onNodeWithTag("home-about-entry").performClick()
         drainUi(executor)
         composeRule.onNodeWithTag("settings-destination-appearance").performClick()
@@ -104,7 +106,7 @@ class LayoutPreferenceUiTest {
         composeRule.onNodeWithTag("settings-back").performClick()
         drainUi(executor)
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertHomePagePosition("Page 1 of 4")
 
         composeRule.onNodeWithTag("home-about-entry").performClick()
         drainUi(executor)
@@ -122,7 +124,7 @@ class LayoutPreferenceUiTest {
         composeRule.onNodeWithTag("settings-back").performClick()
         drainUi(executor)
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
         assertEquals(1, repository.refreshCount)
     }
 
@@ -147,7 +149,7 @@ class LayoutPreferenceUiTest {
         setContent(holder)
         drainUi(executor)
 
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertHomePagePosition("Page 1 of 4")
         composeRule.onNodeWithTag("home-about-entry").performClick()
         drainUi(executor)
         composeRule.onNodeWithTag("settings-destination-appearance").performClick()
@@ -173,7 +175,7 @@ class LayoutPreferenceUiTest {
         drainUi(executor)
         composeRule.onNodeWithTag("settings-back").performClick()
         drainUi(executor)
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
 
         composeRule.onNodeWithTag("home-about-entry").performClick()
         drainUi(executor)
@@ -190,7 +192,7 @@ class LayoutPreferenceUiTest {
         drainUi(executor)
         composeRule.onNodeWithTag("settings-back").performClick()
         drainUi(executor)
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
 
         composeRule.onNodeWithTag("home-about-entry").performClick()
         drainUi(executor)
@@ -225,7 +227,7 @@ class LayoutPreferenceUiTest {
         drainUi(executor)
         composeRule.onNodeWithTag("settings-back").performClick()
         drainUi(executor)
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertHomePagePosition("Page 1 of 4")
     }
 
     private fun setContent(holder: OxygenAppStateHolder) {
@@ -266,6 +268,15 @@ class LayoutPreferenceUiTest {
         val lower = composeRule.onNodeWithTag(lowerTag).fetchSemanticsNode().boundsInRoot
         assertTrue("Expected $upperTag above $lowerTag", upper.top <= lower.top)
     }
+}
+
+private fun ComposeTestRule.assertHomePagePosition(position: String) {
+    val description = onNodeWithTag("home-page-container")
+        .fetchSemanticsNode()
+        .config
+        .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+        .single()
+    assertTrue("Expected pager position '$position' in '$description'", position in description)
 }
 
 private class ControlledExecutor : Executor {

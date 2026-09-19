@@ -8,10 +8,11 @@ subscriptions, mandatory accounts, or a single locked-in weather vendor.
 This repository is an early Android app, not an MVP, beta, release candidate,
 or finished weather product.
 
-The installed TalkBack speech/focus audit (Gate 30E) is deferred and optional
-for the first release, per the 2026-09-14 release decision. Its host audio issue
-does not block release or further development. TalkBack traversal remains
-unverified; existing accessibility requirements and other release checks apply.
+Resource-intensive TalkBack service/speech tests (Gate 30E) are canceled for
+this early development cycle by the 2026-09-17 project decision. They are not a
+current roadmap or release gate, and TalkBack traversal remains unverified.
+Compose accessibility semantics, target sizes, labels, non-color meaning, and
+other applicable accessibility checks remain required.
 
 Oxygen source code is licensed under GPL-3.0-or-later. Weather data,
 geocoding data, third-party dependency licenses, and provider attribution are
@@ -31,6 +32,9 @@ and `docs/data-sources/`.
   user-facing launcher activity; dependency-owned AndroidX components remain
   non-exported where retained. Cleartext traffic is disabled.
 - Explicit selected-location Open-Meteo forecast retrieval.
+- Verified installed Open-Meteo requests use a 72-hour hourly and ten-day daily
+  forecast horizon; sparse, duplicate, nullable, and empty provider rows remain
+  truthful through the provider, fallback, and Room-cache boundaries.
 - Last selected location persistence through the local DataStore path.
 - Saved-location storage, saved-location list display, current-location marking,
   and selection of existing saved rows through the installed location-entry
@@ -105,8 +109,64 @@ and `docs/data-sources/`.
   mapper boundary, while canonical forecast and cache data remain unchanged.
 - Provider-neutral Home loading, error/retry, success, source, update,
   provenance, and disclosure presentation.
-- Standard Home paged interaction foundation with Now, Hourly, Daily, and
-  Details pages.
+- Standard Home pager with visible Now, Hourly, Daily, and Details tabs, one
+  outer horizontal-swipe owner, semantic current-page position/count and named
+  previous/next actions, static-tap and child-action isolation, and
+  one-page-at-a-time Android Back from Details through Now with normal host
+  Back preserved at Now.
+- Standard Home Hourly presents a local-date range over up to six actual
+  chronological entries in a stable two-column, three-row window. The
+  installed two-window limit supports Earlier/Later without refetch; full
+  horizon presentation remains future work.
+- Standard Home Now presents a fixed location/current-weather hierarchy with
+  local supporting overflow for refresh/freshness, typed truthful official-alert
+  lookup outcomes, and concise source/update context. Simple Now retains its
+  scrollable composition; inactive alert outcomes do not expose event,
+  provider-diagnostic, or action content. A post-Hourly current-state checkpoint
+  initially exposed an overlapping compact semantic-bound measurement between
+  the Standard location and current-weather regions. CD-00R added an explicit
+  Compose-idle barrier; the rendered bounds are now separated and the repaired
+  boundary is verified. The inherited five-case CD-00 checkpoint rerun also
+  passed with fresh runner-backed evidence. CD-01 now replaces the normal-font
+  Standard Now hero with a centered code-native circular dial; its installed
+  geometry, spoken summary, missing-current state, and broad checks are
+  verified. CD-02 now adds truthful high/low orbit satellites above the dial;
+  CD-04 now adds the installed Standard Now lower precipitation forecast and
+  current-wind satellites with typed mapper semantics, truthful omission and
+  sole-satellite centering. The cache-backed Oxygen/Standard/Effects-Off
+  Chicago final is retained at
+  `.codex/test-artifacts/2026-09-18-cd-04-precipitation-wind-satellites/`;
+  CD-05 now adds a static condition-profile atmosphere clipped to the active
+  Standard Now page and a distinct concentric dial halo for effective Subtle
+  effects. Effects Off remains scene-free, opaque, and complete; disabled
+  animation resolves saved Subtle to that same effective-Off result without a
+  preference write. Same-route Chicago baseline/final PNG/XML plus focused
+  unit and API-37 connected evidence are retained at
+  `.codex/test-artifacts/2026-09-18-cd-05-celestial-halo-now-atmosphere/`.
+  CD-06 reconciled the CD-04/CD-05 evidence and reset the implementation-slice
+  count. CD-07 is verified in commit `74e4b33`: normal-font Standard Now now
+  presents the existing six-hour precipitation aggregate in one opaque,
+  semantics-named glass panel with typed probability/amount lines. Reported
+  zero and probability-only values remain truthful, and absent aggregate data
+  omits the panel. Same-route Chicago baseline/final PNG/XML plus actual
+  Details provenance evidence, mapper coverage, and API-37 connected bundles
+  are retained at
+  `.codex/test-artifacts/2026-09-18-cd-07-precipitation-provenance-glass-panel/`.
+  Source/update context, attribution, tabs, actions, the dial, lower
+  constellation, Simple, and large-font paths remain unchanged. CD-08A is
+  verified at 360x640dp: normal-font Standard Now preserves all five typed
+  non-active lookup outcomes in an opaque panel with reachable local scrolling,
+  while the fixed dial/lower geometry and active-alert action branch remain
+  intact. The installed selected Chicago route returned a live Flood Watch and
+  is retained as active-state evidence; it is not relabeled as a no-alert
+  route. Focused runner bundles, deterministic no-alert PNG/semantics, and the
+  installed PNG/XML are retained under
+  `.codex/test-artifacts/2026-09-19-cd-08ar2-standard-now-layout-repair/`.
+  CD-09 is the current checkpoint; active-alert glass treatment remains the
+  later CD-08B candidate.
+  Responsive variants, other-theme/high-contrast convergence, TalkBack
+  traversal, localization, Full effects, and release verification remain
+  future or unverified work.
 - Standard Home Now, Hourly, Daily, and Details visual baselines.
 - Art-sheet-aligned Standard Home weather marks, surface roles, typography
   roles, and app-local design roles for the installed Home surface.

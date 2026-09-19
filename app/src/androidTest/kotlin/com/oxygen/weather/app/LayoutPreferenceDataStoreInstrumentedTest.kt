@@ -12,9 +12,11 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.runtime.mutableStateOf
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -34,6 +36,7 @@ import java.util.ArrayDeque
 import java.util.concurrent.Executor
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,7 +80,7 @@ class LayoutPreferenceDataStoreInstrumentedTest {
         waitForHomeReady()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 4")
+        composeRule.assertHomePagePosition("Page 1 of 4")
         composeRule.onNodeWithTag("home-about-entry").performClick()
         composeRule.onNodeWithTag("settings-destination-appearance").performClick()
         composeRule.onNodeWithTag("settings-layout-standard").assertIsSelected()
@@ -109,7 +112,7 @@ class LayoutPreferenceDataStoreInstrumentedTest {
         waitForHomeReady()
 
         composeRule.onNodeWithTag("home-page-title").assertTextContains("Now")
-        composeRule.onNodeWithTag("home-page-position").assertTextContains("Page 1 of 2")
+        composeRule.assertHomePagePosition("Page 1 of 2")
         composeRule.onNodeWithTag("home-about-entry").performClick()
         composeRule.onNodeWithTag("settings-destination-appearance").performClick()
         composeRule.onNodeWithTag("settings-layout-simple").assertIsSelected()
@@ -144,7 +147,7 @@ class LayoutPreferenceDataStoreInstrumentedTest {
 
     private fun waitForHomeReady() {
         composeRule.waitUntil(timeoutMillis = 10_000) {
-            composeRule.onAllNodesWithTag("home-page-position").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithTag("home-page-container").fetchSemanticsNodes().isNotEmpty()
         }
     }
 
@@ -152,6 +155,15 @@ class LayoutPreferenceDataStoreInstrumentedTest {
         executor.drainAll()
         composeRule.waitForIdle()
     }
+}
+
+private fun ComposeTestRule.assertHomePagePosition(position: String) {
+    val description = onNodeWithTag("home-page-container")
+        .fetchSemanticsNode()
+        .config
+        .getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+        .single()
+    assertTrue("Expected pager position '$position' in '$description'", position in description)
 }
 
 private class ControlledExecutor : Executor {

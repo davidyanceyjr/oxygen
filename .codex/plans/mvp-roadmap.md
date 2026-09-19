@@ -7,7 +7,8 @@ Source authority: `docs/OXYGEN_FULL_SPECIFICATION.md`
 Created: 2026-08-18
 Revised: 2026-09-16
 Reconciled against local `origin/main` ref before this sync: `5661877`
-Synchronized through the Slice 30E-P2 evidence/documentation commit `21e188c`,
+Synchronized through the Slice 30E-P2 implementation/documentation commit
+`b63b0fe`,
 after Gate 30C3 alert evidence/documentation closure, Slice 30C2 implementation
 `70304b8`, and Slice 33B manifest repair `02f668f`; prior baseline
 roadmap synchronization remains recorded through Slice 30B1A3B1 implementation
@@ -73,20 +74,27 @@ attempt, a fresh bounded API-37 session completed normal Shallowater search and
 selection, real Open-Meteo current/hourly/daily presentation, production cache
 identity, restoration, and shutdown. The prior `NetworkUnavailable` did not
 reproduce, so no Oxygen defect or implementation change is claimed. Slice
-30E-P2 is selected as a planned slice in `.codex/plans/current.md` and its
-2026-09-16 bounded run initially appeared blocked at the independent platform
-speech boundary because the monitor was effectively silent, but the user later
-confirmed hearing the synthesized voice from the Android TTS Play control.
-Platform speech is therefore human-confirmed retrospectively. A fresh retry-2
-session then installed the unchanged APK once, reached the combined Now
-summary and named Hourly action through TalkBack focus, and visibly activated
-Hourly on real Chicago/Open-Meteo data. The final user observation corrected
-the semantic interpretation: TalkBack announced page-level `Oxygen` and page
-identity/page names, while the Now and Hourly weather-data nodes were not
-confirmed as active TalkBack focus. The user answered NO to both semantic
-blockers. P2 remains unverified, and this result does not yet distinguish a
-test-navigation error from an Oxygen semantics defect. No product defect or
-source change is claimed. Slice 33A's
+30E-P2 is committed at `b63b0fe` as an implemented Compose semantics repair
+with an incomplete installed TalkBack speech recheck in
+`.codex/plans/current.md`. Its 2026-09-16
+bounded run initially
+appeared blocked at the independent platform speech boundary because the
+monitor was effectively silent, but the user later confirmed hearing the
+synthesized voice from the Android TTS Play control. Platform speech is
+therefore human-confirmed retrospectively. A fresh retry-2 session installed
+the unchanged APK once, reached the combined Now summary and named Hourly
+action through TalkBack focus, and visibly activated Hourly on real
+Chicago/Open-Meteo data. The final user observation corrected the semantic
+interpretation: TalkBack announced page-level `Oxygen` and page identity/page
+names, while the Now and Hourly weather-data nodes were not confirmed as active
+TalkBack focus. Source review found the complete Now description attached to
+the decorative current-weather mark while the pager owns the page action. P2
+now separates that summary into an explicit reading target, retains the named
+pager action and hourly-card semantics, and passes one focused connected
+boundary. The installed production hierarchy also exposes the corrected
+summary, but no human TalkBack speech observation was captured; P2 remains
+unverified. This does not claim a TalkBack defect, Gate 30E closure, or release
+readiness. Slice 33A's
 audit, Slice 33B's manifest repair, and the provider-disclosure privacy audit
 are committed
 at `da3a9a3`.

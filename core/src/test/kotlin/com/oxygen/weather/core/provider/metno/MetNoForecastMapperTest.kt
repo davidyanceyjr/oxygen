@@ -126,6 +126,59 @@ class MetNoForecastMapperTest {
     }
 
     @Test
+    fun preservesSparseOutOfOrderDuplicateTimestepsAndGroupsBySelectedLocalDate() {
+        val forecast = parsedFixture("home_forecast_normal.json")
+        val early = forecast.timeseries[0].copy(
+            time = "2026-08-23T11:00:00Z",
+            instant = forecast.timeseries[0].instant.copy(
+                details = forecast.timeseries[0].instant.details.copy(airTemperature = 22.0),
+            ),
+        )
+        val duplicateFirst = forecast.timeseries[1].copy(
+            time = "2026-08-23T12:00:00Z",
+            instant = forecast.timeseries[1].instant.copy(
+                details = forecast.timeseries[1].instant.details.copy(airTemperature = 23.0),
+            ),
+        )
+        val duplicateSecond = duplicateFirst.copy(
+            instant = duplicateFirst.instant.copy(
+                details = duplicateFirst.instant.details.copy(airTemperature = 24.0),
+            ),
+        )
+        val nextLocalDate = forecast.timeseries[0].copy(
+            time = "2026-08-24T06:00:00Z",
+            instant = forecast.timeseries[0].instant.copy(
+                details = forecast.timeseries[0].instant.details.copy(airTemperature = 20.0),
+            ),
+        )
+        val response = forecast.copy(
+            timeseries = listOf(nextLocalDate, duplicateFirst, early, duplicateSecond),
+        )
+
+        val bundle = MetNoForecastMapper.map(chicago, response, fetchedAt)
+
+        assertEquals(
+            listOf(
+                Instant.parse("2026-08-23T11:00:00Z"),
+                Instant.parse("2026-08-23T12:00:00Z"),
+                Instant.parse("2026-08-23T12:00:00Z"),
+                Instant.parse("2026-08-24T06:00:00Z"),
+            ),
+            bundle.hourly.map { it.time },
+        )
+        assertEquals(listOf(22.0, 23.0, 24.0, 20.0), bundle.hourly.map { it.temperatureC })
+        assertEquals(
+            listOf(
+                LocalDate.of(2026, 8, 23).toEpochDay(),
+                LocalDate.of(2026, 8, 24).toEpochDay(),
+            ),
+            bundle.daily.map { it.dateEpochDay },
+        )
+        assertEquals(24.9, requireNotNull(bundle.daily[0].highC), 0.0)
+        assertEquals(24.9, requireNotNull(bundle.daily[1].highC), 0.0)
+    }
+
+    @Test
     fun usesDailyConditionPeriodPriorityBeforeTimestepOrder() {
         val forecast = parsedFixture("home_forecast_normal.json")
         val response = forecast.copy(
