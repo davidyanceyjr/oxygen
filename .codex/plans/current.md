@@ -1,6 +1,6 @@
 # Oxygen CD-09 — CD-07/CD-08A checkpoint
 
-**Status:** planned; CD-08A behavior is verified and remains uncommitted.
+**Status:** planned; CD-08A behavior is verified and committed in `a6db648`.
 **Next action:** reconcile the CD-07/CD-08A evidence and reset the
 implementation-slice count. Do not select CD-08B until this checkpoint closes.
 **Cycle ID:** `2026-09-19-cd-09-checkpoint`
