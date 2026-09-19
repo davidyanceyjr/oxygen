@@ -143,6 +143,9 @@ and `docs/data-sources/`.
   preference write. Same-route Chicago baseline/final PNG/XML plus focused
   unit and API-37 connected evidence are retained at
   `.codex/test-artifacts/2026-09-18-cd-05-celestial-halo-now-atmosphere/`.
+  CD-06 reconciled the CD-04/CD-05 evidence and reset the implementation-slice
+  count; CD-07 is now the selected next slice for the first precipitation and
+  provenance glass panel.
   Responsive variants, other-theme/high-contrast convergence, TalkBack
   traversal, localization, Full effects, and release verification remain
   future or unverified work.

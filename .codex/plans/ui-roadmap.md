@@ -218,11 +218,17 @@ expansion, other Home pages.
 
 ### CD-06 — Checkpoint B
 
-**Status:** specified; test/documentation only
+**Status:** verified; test/documentation checkpoint closed
 **Dependencies:** CD-04, CD-05
 **Estimate:** 15%
 **Outcome:** Apply the CD-03 checkpoint contract to CD-04/CD-05 and reset the
 implementation count. It does not count as visual progress.
+
+CD-06 reconciled the retained CD-04 and CD-05 installed baseline/final pairs,
+focused and connected results, broad checks, functional limits, and commit
+ancestry. Both production slices remain verified; the implementation count is
+reset to 0 of 2. CD-07 is selected in the active plan as the next production
+slice.
 
 ### CD-07 — Precipitation and provenance glass panel
 
@@ -352,8 +358,7 @@ states; applicable unit/build checks; `git diff --check`.
 
 ## Selection state
 
-CD-05 was selected by `.codex/plans/current.md` after verified CD-03 reset the
-implementation count to 0 of 2. It is the second verified production
-implementation slice in the count, now 2 of 2. CD-06 is selected by the active
-plan as the required test/documentation-only checkpoint; no further production
-slice is selected.
+CD-07 is selected by `.codex/plans/current.md` after verified CD-06 reset the
+implementation count to 0 of 2. CD-04 and CD-05 are the two verified
+production implementation slices in the count; CD-07 is the next bounded
+production slice.

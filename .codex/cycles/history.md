@@ -18,11 +18,10 @@ file before replacing or compressing it.
   retained under `.codex/test-artifacts/`.
 - The former UI roadmap was retired after its visual-overhaul outcome failed.
   The user then selected concept F, Celestial Dial, and a new active roadmap was
-  specified. No Celestial Dial production slice has started.
-- The inherited two-implementation-slice checkpoint remains due. CD-00 stopped
-  when its first fresh post-UI-05 Compose case completed 1/1 with one compact
-  Standard Now location/current overlap failure. Its other four cases were not
-  run, the count remains 2 of 2, and CD-00R is the selected bounded repair.
+  specified. CD-01 through CD-05 are now verified production slices.
+- CD-00 and CD-03 closed the inherited checkpoint and CD-06 closed the second
+  two-slice checkpoint. The active implementation count is 0 of 2, with CD-07
+  selected as the next bounded production slice.
 - TalkBack service traversal remains unverified and is not an early-cycle
   roadmap or release gate under the 2026-09-17 project decision.
 
@@ -393,3 +392,35 @@ State closure:
   required test/documentation-only checkpoint; no further production slice is
   selected. README, roadmap, and active plan are synchronized with the
   implementation commit.
+
+### 2026-09-18-cd-06-checkpoint-b
+
+Status: verified; test/documentation checkpoint closed
+Mode: CD-04/CD-05 evidence reconciliation and implementation-count reset
+
+Result:
+
+- Reconciled the retained CD-04 and CD-05 same-route installed baseline/final
+  PNG/XML pairs, focused unit results, accepted connected bundles, broad
+  checks, failed-attempt dispositions, and stated limits.
+- Confirmed implementation commits `17c7a60` and `e8a24a1` are in the current
+  ancestry and that both slices' production, test, and documentation claims
+  remain consistent with the retained evidence.
+- Reset the implementation-slice count from 2 of 2 to 0 of 2. CD-07 is now
+  selected as the next bounded production slice; this checkpoint adds no visual
+  progress.
+
+Evidence and limits:
+
+- CD-04 artifacts are retained under
+  `.codex/test-artifacts/2026-09-18-cd-04-precipitation-wind-satellites/`;
+  CD-05 artifacts are retained under
+  `.codex/test-artifacts/2026-09-18-cd-05-celestial-halo-now-atmosphere/`.
+- No Android, emulator, connected, provider, repository, or installed-app
+  command was rerun because the accepted evidence and source inputs did not
+  change. Documentation consistency was checked with `git diff --check`.
+
+Commit state:
+
+- This checkpoint closure and CD-07 selection are committed together as a
+  documentation-only change; no production behavior changed.
