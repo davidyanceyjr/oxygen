@@ -1,7 +1,7 @@
 # Oxygen Standard Now — Celestial Dial UI Overhaul Roadmap
 
-**Status:** active roadmap; design selected; CD-00 through CD-07 verified;
-CD-08 is the next specified production slice
+**Status:** active roadmap; design selected; CD-00 through CD-08A verified;
+CD-09 is the planned active checkpoint; CD-08B remains specified
 **Roadmap ID:** `now-celestial-dial-v0.1`
 **Selected design:** concept F, Celestial Dial
 **Selected:** 2026-09-17 by user decision
@@ -228,8 +228,8 @@ CD-06 reconciled the retained CD-04 and CD-05 installed baseline/final pairs,
 focused and connected results, broad checks, functional limits, and commit
 ancestry. Both production slices remain verified; the implementation count was
 reset to 0 of 2. CD-07 was then selected, verified, and committed in `74e4b33`,
-bringing the count to 1 of 2. CD-08 remains the next specified candidate and
-is not selected.
+bringing the count to 1 of 2. CD-08A is verified and CD-09 is selected in
+`.codex/plans/current.md`; CD-08B remains specified until after CD-09.
 
 ### CD-07 — Precipitation and provenance glass panel
 
@@ -255,26 +255,53 @@ is retained under
 responsive/RTL/theme convergence, localization, TalkBack traversal, and
 release checks.
 
-### CD-08 — Alert glass panel
+### CD-08A — Non-active alert lookup glass panel
+
+**Status:** verified; implementation remains uncommitted
+**Dependencies:** CD-07
+**Estimate:** 48%
+**Surface:** second lower glass panel, non-active lookup states
+**Outcome:** Render the existing no-alert, not-checked, unavailable,
+unable-to-check, and delayed alert lookup outcomes as one opaque GlassPanel on
+normal-font Standard Now. Preserve every existing string, time, selected
+location, source/update context, action omission, and compact/large-font
+branch. Active alerts remain on their current card/action presentation.
+**Acceptance:** Installed selected-location no-alert evidence at 360x640dp,
+font scale 1.0, LTR, Oxygen, Effects Off shows the named glass panel.
+One deterministic normal-font case cycles all five typed non-active states and
+proves exact text/times, ordered semantics, no actions/count, supporting-
+viewport reachability, and unchanged fixed dial/lower-constellation geometry.
+A focused large-font non-active regression and the existing active-alert action
+case prove the preserved branches remain readable and functional. The
+multi-line lookup body must remain vertically ordered inside GlassPanel; no
+direct sibling placement may overlap its children.
+**Out:** active-alert severity/icon redesign, alert persistence, notifications,
+official wording changes, alert detail-screen redesign, responsive/RTL/theme
+convergence, and release checks.
+
+### CD-08B — Active alert glass panel and severity mark
 
 **Status:** specified
-**Dependencies:** CD-05
-**Estimate:** 40%
-**Surface:** second lower glass panel
-**Outcome:** Render no-alert, unavailable/not-checked, delayed/failed, and active
-alert outcomes in the Celestial Dial glass language. Active severity uses icon,
-label, structure, and action—not color alone.
-**Acceptance:** The existing typed alert outcomes render truthful distinct
-states; active detail/source actions retain 48dp targets and exact behavior;
-no-alert exposes no false action. Installed no-alert evidence plus deterministic
-active-alert evidence show the visual delta.
+**Dependencies:** CD-08A and CD-09
+**Estimate:** 42%
+**Surface:** active-alert lower glass panel
+**Outcome:** Move the existing active-alert summary into the Celestial Dial
+glass language and add a code-native severity mark plus structural severity
+label. Preserve exact detail/source destinations, 48dp targets, attribution,
+count, and existing alert-detail behavior; severity is never conveyed by
+color alone.
+**Acceptance:** Deterministic active-alert evidence proves the visible mark,
+severity/event/issuer/source meaning, ordered semantics, unchanged actions and
+URI, and non-overlap with the precipitation panel and context. An installed
+active-alert route is optional and cannot be fabricated when live traffic is
+unavailable.
 **Out:** alert persistence, notifications, official wording changes, alert
-detail-screen redesign.
+detail-screen redesign, provider changes, and release checks.
 
 ### CD-09 — Checkpoint C
 
-**Status:** specified; test/documentation only
-**Dependencies:** CD-07, CD-08
+**Status:** planned; selected in `.codex/plans/current.md`; test/documentation only
+**Dependencies:** CD-07, CD-08A
 **Estimate:** 15%
 **Outcome:** Apply the CD-03 checkpoint contract to CD-07/CD-08 and reset the
 implementation count. It does not count as visual progress.
@@ -369,5 +396,9 @@ states; applicable unit/build checks; `git diff --check`.
 ## Selection state
 
 CD-07 was selected by `.codex/plans/current.md` after verified CD-06 reset the
-implementation count to 0 of 2 and is committed in `74e4b33`. The count is now
-1 of 2; CD-08 remains specified and is not selected.
+implementation count to 0 of 2 and is committed in `74e4b33`. The first
+revised CD-08 draft exceeded the 60% context ceiling because it combined two
+independent alert presentation boundaries. CD-08A is verified through the
+normal-font layout repair and named preservation cases, with evidence under
+`.codex/test-artifacts/2026-09-19-cd-08ar2-standard-now-layout-repair/`.
+CD-09 is now selected in `.codex/plans/current.md`; CD-08B follows CD-09.

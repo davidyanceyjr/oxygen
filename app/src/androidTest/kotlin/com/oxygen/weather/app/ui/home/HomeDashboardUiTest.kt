@@ -4202,17 +4202,25 @@ class HomeDashboardUiTest {
                     sourceName = "Open-Meteo Long Provider Attribution Name",
                     licenseId = "Creative Commons Attribution 4.0 International",
                 ),
-            ),
+            ).copy(alerts = emptyList()),
             freshness = ForecastFreshness.StaleAfterFailedRefresh(
                 staleAge = Duration.ofMinutes(95),
                 refreshFailure = ForecastError.ProviderUnavailable("open-meteo"),
             ),
+            alertStatus = AlertLookupStatus.NotRequested,
         )
 
         composeRule.setHomeContent(state = state, widthDp = 360, fontScale = 1.3f)
 
         composeRule.onNodeWithText(location.displayName).assertIsDisplayed()
         composeRule.onNodeWithText("Refresh").assertIsDisplayed()
+        val nonActiveLookup = composeRule.onNodeWithTag("home-alert-lookup")
+        nonActiveLookup.performScrollTo().assertIsDisplayed()
+        assertFalse(nonActiveLookup.fetchSemanticsNode().config.contains(SemanticsActions.OnClick))
+        composeRule.onNodeWithText("Official alerts have not been checked for this location.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.assertReadableBoundsAfterScroll("home-alert-lookup")
         composeRule.assertReadableBoundsAfterScroll(
             "home-section-location",
             "home-section-stale",
@@ -4977,6 +4985,25 @@ class HomeDashboardUiTest {
 
     @Test
     fun standardNowAlertLookupOutcomesAreTruthfulAndActionFree() {
+        val phaseFile = File(
+            InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
+            "cd08a-alert-phases.txt",
+        )
+        phaseFile.writeText("")
+        fun <T> phase(name: String, action: () -> T): T {
+            fun mark(event: String) {
+                val message = "${android.os.SystemClock.elapsedRealtime()} $name $event"
+                android.util.Log.i("CD08AAlertTest", message)
+                phaseFile.appendText("$message\n")
+            }
+            mark("BEGIN")
+            return try {
+                action().also { mark("PASS") }
+            } catch (failure: Throwable) {
+                mark("FAIL ${failure.javaClass.simpleName}: ${failure.message}")
+                throw failure
+            }
+        }
         val location = weatherLocation(name = "Lookup Outcome City")
         val checkedAt = Instant.parse("2026-08-22T15:05:00Z")
         val statuses = listOf(
@@ -4993,34 +5020,114 @@ class HomeDashboardUiTest {
                 alertStatus = statuses.first(),
             ),
         )
-        composeRule.setDynamicHomeContent(
-            rendered,
-            OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
-            onRetry = {},
-        )
+        phase("set-content fontScale=1.0") {
+            composeRule.setDynamicHomeContent(
+                rendered,
+                OxygenAppearance(layout = LayoutPreset.STANDARD, effects = EffectsLevel.OFF),
+                onRetry = {},
+                fontScale = 1f,
+            )
+        }
 
+        val expectedOutcomes = listOf(
+            "No active official alerts." to "Source checked Aug 22, 10:05 AM CDT.",
+            "Official alerts have not been checked for this location." to null,
+            "Official alerts are unavailable for this location." to null,
+            "Official alerts could not be checked." to null,
+            "Official alert lookup is delayed until Aug 22, 11:10 AM CDT." to null,
+        )
         statuses.forEachIndexed { index, status ->
-            composeRule.runOnIdle {
-                rendered.value = HomeForecastPresentationState.ForecastReady.from(
-                    location = location,
-                    weather = fullWeatherBundle(location).copy(alerts = emptyList()),
-                    alertStatus = status,
+            val statePhase = "state[$index] ${status.javaClass.simpleName}"
+            phase("$statePhase transition") {
+                composeRule.runOnIdle {
+                    rendered.value = HomeForecastPresentationState.ForecastReady.from(
+                        location = location,
+                        weather = fullWeatherBundle(location).copy(alerts = emptyList()),
+                        alertStatus = status,
+                    )
+                }
+            }
+            phase("$statePhase idle") { composeRule.waitForIdle() }
+            phase("$statePhase lookup count") {
+                composeRule.onAllNodesWithTag("home-alert-lookup").assertCountEquals(1)
+            }
+            listOf("home-section-alert", "home-alert-details", "home-alert-source-link", "home-alert-count").forEach { tag ->
+                phase("$statePhase absent $tag") { composeRule.onAllNodesWithTag(tag).assertCountEquals(0) }
+            }
+            val (expected, expectedTime) = expectedOutcomes[index]
+            phase("$statePhase no click") {
+                assertFalse(composeRule.onNodeWithTag("home-alert-lookup").fetchSemanticsNode().config.contains(SemanticsActions.OnClick))
+            }
+            // Fail before performScrollTo can loop on an unreachable, zero-height viewport.
+            if (index == 0) {
+                phase("$statePhase initial semantics artifact") {
+                    composeRule.writeSemanticsArtifact("cd08a-initial-alert-semantics.txt")
+                }
+                phase("$statePhase initial screenshot artifact") {
+                    composeRule.writeScreenshotArtifact("cd08a-initial-alert.png")
+                }
+            }
+            phase("$statePhase layout bounds") {
+                val tags = listOf(
+                    "home-page-now",
+                    "home-now-standard",
+                    "home-now-fixed-content",
+                    "home-section-location",
+                    "home-section-current",
+                    "home-current-dial",
+                    "home-current-lower-constellation",
+                    "home-section-precipitation",
+                    "home-now-supporting-content",
+                    "home-footer-navigation",
+                )
+                val bounds = tags.joinToString(" ") { tag ->
+                    val rect = composeRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+                    "$tag=$rect"
+                }
+                android.util.Log.i("CD08AAlertTest", bounds)
+            }
+            phase("$statePhase supporting viewport has visible area") {
+                val viewport = composeRule.onNodeWithTag("home-now-supporting-content")
+                    .fetchSemanticsNode().boundsInRoot
+                val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+                assertTrue(
+                    "Supporting viewport must have positive visible bounds before scrolling: viewport=$viewport root=$root",
+                    viewport.width > 0f && viewport.height > 0f &&
+                        viewport.top >= root.top && viewport.bottom <= root.bottom,
                 )
             }
-            composeRule.waitForIdle()
-            composeRule.onAllNodesWithTag("home-alert-lookup").assertCountEquals(1)
-            composeRule.onAllNodesWithTag("home-section-alert").assertCountEquals(0)
-            composeRule.onAllNodesWithTag("home-alert-details").assertCountEquals(0)
-            composeRule.onAllNodesWithTag("home-alert-source-link").assertCountEquals(0)
-            composeRule.onAllNodesWithTag("home-alert-count").assertCountEquals(0)
-            val expected = when (index) {
-                0 -> "No active official alerts."
-                1 -> "Official alerts have not been checked for this location."
-                2 -> "Official alerts are unavailable for this location."
-                3 -> "Official alerts could not be checked."
-                else -> "Official alert lookup is delayed until Aug 22, 11:10 AM CDT."
+            phase("$statePhase scroll outcome") { composeRule.onNodeWithText(expected).performScrollTo() }
+            phase("$statePhase visible outcome") { composeRule.onNodeWithText(expected).assertIsDisplayed() }
+            expectedTime?.let { time ->
+                phase("$statePhase visible checked time") { composeRule.onNodeWithText(time).assertIsDisplayed() }
             }
-            composeRule.onNodeWithText(expected).performScrollTo().assertIsDisplayed()
+            phase("$statePhase readable lookup") { composeRule.assertReadableBoundsAfterScroll("home-alert-lookup") }
+            phase("$statePhase readable source") { composeRule.assertReadableBoundsAfterScroll("home-now-source-context") }
+            phase("$statePhase non-overlap") { composeRule.assertNoSiblingOverlap("home-alert-lookup", "home-now-source-context") }
+            phase("$statePhase semantics order") {
+                composeRule.assertSemanticsTreeOrder(
+                    "home-now-supporting-content", "home-alert-lookup", "home-now-source-context",
+                )
+            }
+            val dial = phase("$statePhase read dial bounds") {
+                composeRule.onNodeWithTag("home-current-dial").fetchSemanticsNode().boundsInRoot
+            }
+            val lower = phase("$statePhase read lower bounds") {
+                composeRule.onNodeWithTag("home-current-lower-constellation").fetchSemanticsNode().boundsInRoot
+            }
+            phase("$statePhase dial width") { assertEquals(150f, dial.width, 0.5f) }
+            phase("$statePhase dial height") { assertEquals(150f, dial.height, 0.5f) }
+            phase("$statePhase lower width") { assertEquals(220f, lower.width, 0.5f) }
+            phase("$statePhase lower height") { assertEquals(64f, lower.height, 0.5f) }
+            phase("$statePhase hero order") { assertTrue("Lower constellation should follow dial", dial.bottom <= lower.top) }
+            if (index == 0) {
+                phase("$statePhase semantics artifact") {
+                    composeRule.writeSemanticsArtifact("cd08a-no-active-alert-semantics.txt")
+                }
+                phase("$statePhase screenshot artifact") {
+                    composeRule.writeScreenshotArtifact("cd08a-no-active-alert.png")
+                }
+            }
         }
     }
 

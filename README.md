@@ -153,8 +153,17 @@ and `docs/data-sources/`.
   are retained at
   `.codex/test-artifacts/2026-09-18-cd-07-precipitation-provenance-glass-panel/`.
   Source/update context, attribution, tabs, actions, the dial, lower
-  constellation, Simple, and large-font paths remain unchanged. CD-08 is the
-  next specified candidate but is not selected.
+  constellation, Simple, and large-font paths remain unchanged. CD-08A is
+  verified at 360x640dp: normal-font Standard Now preserves all five typed
+  non-active lookup outcomes in an opaque panel with reachable local scrolling,
+  while the fixed dial/lower geometry and active-alert action branch remain
+  intact. The installed selected Chicago route returned a live Flood Watch and
+  is retained as active-state evidence; it is not relabeled as a no-alert
+  route. Focused runner bundles, deterministic no-alert PNG/semantics, and the
+  installed PNG/XML are retained under
+  `.codex/test-artifacts/2026-09-19-cd-08ar2-standard-now-layout-repair/`.
+  CD-09 is the current checkpoint; active-alert glass treatment remains the
+  later CD-08B candidate.
   Responsive variants, other-theme/high-contrast convergence, TalkBack
   traversal, localization, Full effects, and release verification remain
   future or unverified work.

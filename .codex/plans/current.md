@@ -1,52 +1,46 @@
-# Oxygen Standard Now — CD-07 Precipitation and Provenance Glass Panel
+# Oxygen CD-09 — CD-07/CD-08A checkpoint
 
-**Status:** verified; committed in `74e4b33`
-**Cycle ID:** `2026-09-18-cd-07-precipitation-provenance-glass-panel`
+**Status:** planned; CD-08A behavior is verified and remains uncommitted.
+**Next action:** reconcile the CD-07/CD-08A evidence and reset the
+implementation-slice count. Do not select CD-08B until this checkpoint closes.
+**Cycle ID:** `2026-09-19-cd-09-checkpoint`
 **Active roadmap:** `.codex/plans/ui-roadmap.md`
-**Implementation-slice count:** 1 of 2 since the CD-06 checkpoint reset
+**Implementation-slice count:** 2 of 2 since CD-06; this checkpoint resets it.
 
-**Next action:** no additional product slice is selected. CD-08 remains the
-next specified roadmap candidate until a new bounded slice is selected here.
+## Selected boundary and limits
 
-## Completed behavior
+Documentation and evidence reconciliation for the verified CD-08A normal-font
+Standard Now non-active alert lookup panel and the preceding CD-07 slice.
+Confirm that the production layout repair, five typed outcomes, large-font
+non-active branch, active-alert RTL action branch, installed Chicago route,
+artifact ledger, and broad checks agree with the repository authorities.
+Provider/cache, alert persistence, CD-08B, responsive convergence beyond the
+named cases, TalkBack service traversal, and release work remain out of scope.
 
-Normal-font Standard Now presents the existing six-hour precipitation
-aggregate as one opaque `GlassPanel` below the fixed lower constellation. The
-mapper exposes `HomeNearTermPrecipitationPresentation` with canonical
-millimetres, maximum probability, compact typed probability/amount text, the
-existing summary, and the existing spoken text. The lower satellite derives
-from that same value; the compatibility `precipitationSummary` projection
-remains. Reported zero and probability-only data stay visible; wholly absent
-data omits the panel.
+## CD-08A completion evidence
 
-Simple, large-font, current-weather and satellite spoken descriptions,
-source/update context, provenance, tabs, actions, request behavior, provider,
-cache, persistence, navigation, and core models are unchanged.
+Production: `app/src/main/kotlin/com/oxygen/weather/app/ui/home/HomeLoadingScreen.kt`.
+Tests: `app/src/androidTest/kotlin/com/oxygen/weather/app/ui/home/HomeDashboardUiTest.kt`.
+Evidence root:
+`.codex/test-artifacts/2026-09-19-cd-08ar2-standard-now-layout-repair/`.
 
-## Acceptance and evidence
+- The normal-font five-state runner passed with accepted XML, instrumentation
+  log, textproto, exact copy/time checks, action absence, semantic order,
+  positive local viewport, non-overlap, and unchanged 150dp dial/220x64dp
+  lower constellation geometry.
+- `compactLargeFontDashboardSectionsHaveReadableRenderedBounds` and
+  `standardNowLargeFontRtlOverflowKeepsHeroNavigationAndAlertActionsReachable`
+  each passed with accepted runner evidence.
+- `simpleNowContractRemainsScrollableAndUnchanged` passed after the final
+  shared-container guard was narrowed to Standard Now, preserving Simple.
+- The installed selected Chicago route passed through real search/save/select
+  behavior and captured PNG/XML. Its actual live state was an active `Flood
+  Watch`; it is retained as active-state evidence and is not relabeled as a
+  no-alert route. Deterministic no-alert PNG/semantics were pulled from the
+  test app while it was installed.
+- App/core unit suites, app Kotlin and Android-test compilation, debug
+  assembly, and `git diff --check` passed.
 
-- Focused mapper coverage passed for canonical six-row aggregation, resolved
-  units, reported zero, probability-only, absent data, satellite projection,
-  summary, and spoken text.
-- `standardNowPrecipitationGlassPanelUsesTypedAggregateAndRetainsContext`
-  passed 1/1 on API-37 `oxygen_starter`; it proves ordered panel semantics,
-  no action, 150dp dial, 220x64dp lower constellation, spoken descriptions,
-  source/update text, provenance reachability, controls, and non-overlap.
-- `standardNowPrecipitationGlassPanelOmitsOnlyAbsentAggregate` passed 1/1 on
-  the same emulator; it proves zero, probability-only, and absent behavior.
-- The installed selected Chicago/Open-Meteo route visibly shows the panel with
-  `Up to 10%` and `0.0 mm`; Details visibly retains Open-Meteo, fetched time,
-  model-estimate type, and license provenance.
-- Evidence root and verification ledger:
-  `.codex/test-artifacts/2026-09-18-cd-07-precipitation-provenance-glass-panel/`
-- Broad checks passed: app/core unit suites, app Kotlin compilation, debug
-  assembly, and `git diff --check`.
-
-## Limits
-
-This slice does not cover alerts, stale/error treatment, source navigation,
-responsive/RTL/theme convergence, localization, TalkBack service traversal,
-Simple/large-font visual convergence, provider/repository/cache changes, or
-release checks. The first available connected attempt timed out without a
-result bundle; a later test-harness assertion issue was repaired, and the
-final rerun passed. Both dispositions are recorded in the ledger.
+The required checkpoint ledger is the cycle artifact's
+`verification-ledger.md`. CD-08A active-alert treatment remains the later
+CD-08B candidate.

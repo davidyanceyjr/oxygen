@@ -273,6 +273,9 @@ private fun ReadyContent(
     val nextPageLabel = nextPage?.let {
         stringResource(R.string.home_next_page, it.title)
     }
+    val nowPageChrome = appearance.layout != LayoutPreset.SIMPLE && currentPage == HomePage.Now
+    val pageMarginVertical = if (nowPageChrome) 10.dp else roles.pageMarginVertical
+    val pageGap = if (nowPageChrome) 4.dp else roles.pageGap
 
     BackHandler(
         enabled = appearance.layout == LayoutPreset.STANDARD && currentPageIndex > 0,
@@ -296,9 +299,9 @@ private fun ReadyContent(
             modifier = Modifier
                 .fillMaxSize()
                 .safeDrawingPadding()
-                .padding(horizontal = roles.pageMarginHorizontal, vertical = roles.pageMarginVertical)
+                .padding(horizontal = roles.pageMarginHorizontal, vertical = pageMarginVertical)
                 .testTag("home-dashboard"),
-            verticalArrangement = Arrangement.spacedBy(roles.pageGap),
+            verticalArrangement = Arrangement.spacedBy(pageGap),
         ) {
             ReadyHeader(
                 currentPage = currentPage,
@@ -518,7 +521,11 @@ private fun HomePageContainer(
 ) {
     val roles = LocalOxygenHomeDesign.current
     val useOverflowScroll = enablePageScroll && (page != HomePage.Daily || LocalDensity.current.fontScale > 1f)
-    val bottomClearance = if (useOverflowScroll) roles.sectionGap + 24.dp else roles.sectionGap
+    val bottomClearance = when {
+        page == HomePage.Now && !enablePageScroll -> 0.dp
+        useOverflowScroll -> roles.sectionGap + 24.dp
+        else -> roles.sectionGap
+    }
     val baseModifier = Modifier
         .fillMaxSize()
         .padding(bottom = bottomClearance)
@@ -570,10 +577,10 @@ private fun StandardNowPage(
     val roles = LocalOxygenHomeDesign.current
     val dashboard = state.dashboard
     val compactFont = LocalDensity.current.fontScale > 1.2f
-    val fixedGap = if (compactFont) 4.dp else roles.tileGap
+    val fixedGap = 4.dp
     Column(
         modifier = Modifier.fillMaxSize().testTag("home-now-standard"),
-        verticalArrangement = Arrangement.spacedBy(if (compactFont) 4.dp else roles.sectionGap),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Column(
             modifier = Modifier
@@ -588,14 +595,6 @@ private fun StandardNowPage(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
-                if (!compactFont) {
-                    Text(
-                        text = dashboard.locationSubtitle,
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = homeSupportingContent(0.68f),
-                    )
-                }
             }
 
             DashboardHero(tag = "home-section-current") {
@@ -714,6 +713,12 @@ private fun StandardNowPage(
                     .testTag("home-now-source-context"),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                if (!compactFont) {
+                    Text(
+                        text = dashboard.locationSubtitle,
+                        style = roles.supportingLabel,
+                    )
+                }
                 dashboard.current?.let { current ->
                     Text(
                         stringResource(R.string.home_updated_data, current.updatedTime, current.dataTypeLabel),
@@ -779,7 +784,7 @@ private fun CentralCurrentDial(
         modifier = Modifier
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         HighLowSatelliteConstellation(
             highTemperature = current.highTemperature,
@@ -1089,36 +1094,57 @@ private fun StandardAlertLookup(
     onAlertDetailsRequested: () -> Unit,
 ) {
     val roles = LocalOxygenHomeDesign.current
-    DashboardCard(tag = "home-alert-lookup") {
-        when (lookup) {
-            is HomeAlertLookupPresentation.Active -> OfficialAlertSummary(
+    when {
+        lookup is HomeAlertLookupPresentation.Active -> DashboardCard(tag = "home-alert-lookup") {
+            OfficialAlertSummary(
                 summary = lookup.summary,
                 onAlertDetailsRequested = onAlertDetailsRequested,
             )
-            is HomeAlertLookupPresentation.NoActiveAlerts -> {
-                Text(stringResource(R.string.home_no_active_alerts), style = roles.sectionHeading)
-                Text(
-                    stringResource(R.string.home_alert_source_checked, lookup.sourceCheckedAt),
-                    style = MaterialTheme.typography.bodySmall,
-                )
+        }
+        LocalDensity.current.fontScale <= 1.2f -> GlassPanel(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("home-alert-lookup"),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(roles.tileGap - 2.dp)) {
+                NonActiveAlertLookupContent(lookup)
             }
-            HomeAlertLookupPresentation.NotChecked -> Text(
-                stringResource(R.string.home_alert_not_checked),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            HomeAlertLookupPresentation.UnavailableForLocation -> Text(
-                stringResource(R.string.home_alert_unavailable_for_location),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            HomeAlertLookupPresentation.UnableToCheck -> Text(
-                stringResource(R.string.home_alert_unable_to_check),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            is HomeAlertLookupPresentation.Delayed -> Text(
-                stringResource(R.string.home_alert_delayed, lookup.nextEligibleAt),
-                style = MaterialTheme.typography.bodyMedium,
+        }
+        else -> DashboardCard(tag = "home-alert-lookup") {
+            NonActiveAlertLookupContent(lookup)
+        }
+    }
+}
+
+@Composable
+private fun NonActiveAlertLookupContent(lookup: HomeAlertLookupPresentation) {
+    val roles = LocalOxygenHomeDesign.current
+    when (lookup) {
+        is HomeAlertLookupPresentation.NoActiveAlerts -> {
+            Text(stringResource(R.string.home_no_active_alerts), style = roles.sectionHeading)
+            Text(
+                stringResource(R.string.home_alert_source_checked, lookup.sourceCheckedAt),
+                style = MaterialTheme.typography.bodySmall,
             )
         }
+        HomeAlertLookupPresentation.NotChecked -> Text(
+            stringResource(R.string.home_alert_not_checked),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        HomeAlertLookupPresentation.UnavailableForLocation -> Text(
+            stringResource(R.string.home_alert_unavailable_for_location),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        HomeAlertLookupPresentation.UnableToCheck -> Text(
+            stringResource(R.string.home_alert_unable_to_check),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        is HomeAlertLookupPresentation.Delayed -> Text(
+            stringResource(R.string.home_alert_delayed, lookup.nextEligibleAt),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        is HomeAlertLookupPresentation.Active -> Unit
     }
 }
 

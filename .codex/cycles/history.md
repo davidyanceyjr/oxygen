@@ -20,8 +20,10 @@ file before replacing or compressing it.
   The user then selected concept F, Celestial Dial, and a new active roadmap was
   specified. CD-01 through CD-05 are now verified production slices.
 - CD-00 and CD-03 closed the inherited checkpoint and CD-06 closed the second
-  two-slice checkpoint. The active implementation count is 0 of 2, with CD-07
-  selected as the next bounded production slice.
+  two-slice checkpoint. CD-07 is verified and the active implementation count
+  is 1 of 2. The combined CD-08 draft exceeded the context ceiling and was
+  decomposed; CD-08A is now the selected bounded production slice, with CD-09
+  due after CD-08A verification.
 - TalkBack service traversal remains unverified and is not an early-cycle
   roadmap or release gate under the 2026-09-17 project decision.
 
@@ -515,3 +517,50 @@ Failed-attempt disposition and limits:
 Commit state: implementation and tests are committed in `74e4b33`; README,
 roadmap, active-plan, history, and ledger closure is committed in this
 follow-up documentation commit.
+
+### 2026-09-19-cd-08ar2-standard-now-layout-repair
+
+Status: verified; implementation and documentation remain uncommitted
+Mode: bounded Standard Now layout repair after the CD-08A harness investigation
+
+Result:
+
+- Repaired the normal-font Standard Now composition so the local supporting
+  alert viewport has usable height at 360x640 while preserving the fixed
+  150dp dial, 220x64dp lower constellation, typed alert copy, semantics order,
+  action absence, and active-alert action branch.
+- Kept the five-state regression at explicit `fontScale = 1f`, added elapsed
+  phase markers and bounds diagnostics, and retained the large-font non-active
+  and large-font RTL active-alert preservation checks.
+- The repair first used three failed materially changed attempts: zero-height
+  viewport, diagnosed 20dp viewport, and a 20dp-to-48dp repair that exposed
+  checked-time reachability. A separate repair slice then passed after the
+  supporting viewport reached 72dp and the compact non-active panel used
+  tighter vertical padding.
+
+Evidence:
+
+- `standardNowAlertLookupOutcomesAreTruthfulAndActionFree` passed with accepted
+  XML, instrumentation log, textproto, exact five-state text/time checks,
+  local scrolling, non-overlap, and fixed geometry under
+  `.codex/test-artifacts/2026-09-19-cd-08ar2-standard-now-layout-repair/`.
+- `compactLargeFontDashboardSectionsHaveReadableRenderedBounds` and
+  `standardNowLargeFontRtlOverflowKeepsHeroNavigationAndAlertActionsReachable`
+  each passed with accepted runner bundles in the same root.
+- `simpleNowContractRemainsScrollableAndUnchanged` also passed after the
+  final guard was narrowed to Standard Now; this fourth named case was the
+  justified shared-container regression check.
+- Private deterministic no-alert PNG and semantics were pulled while the test
+  app was installed under `five-state-private-artifacts/`. The installed
+  selected Chicago search/save/select route produced a live `Flood Watch`; its
+  PNG/XML and actual state are retained under `installed/` and are not claimed
+  as no-alert evidence.
+- `. scripts/android-env.sh && ./gradlew :app:testDebugUnitTest :core:testDebugUnitTest`,
+  app and Android-test Kotlin compilation, `:app:assembleDebug`, debug install,
+  and `git diff --check` passed. Provider/cache checks, CD-08B, CD-09
+  reconciliation, TalkBack service traversal, localization, and release checks
+  remain out of scope.
+
+Commit state: production/test changes and synchronized status files are present
+in the worktree and are not committed in this cycle. CD-09 is selected as the
+next test/documentation checkpoint; CD-08B remains specified after it.
